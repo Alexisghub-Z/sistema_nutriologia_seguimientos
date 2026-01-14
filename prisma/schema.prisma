@@ -1,0 +1,403 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USUARIOS Y AUTENTICACIÓN
+// ============================================
+
+model Usuario {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  nombre        String
+  password_hash String
+  rol           Rol      @default(ADMIN)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([email]) // Login rápido
+  @@map("usuarios")
+}
+
+enum Rol {
+  ADMIN
+  // Preparado para más roles en el futuro
+}
+
+// ============================================
+// PACIENTES
+// ============================================
+
+model Paciente {
+  id               String   @id @default(cuid())
+  nombre           String
+  email            String   @unique
+  telefono         String   @unique
+  fecha_nacimiento DateTime
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relaciones
+  citas           Cita[]
+  consultas       Consulta[]
+  mensajes        MensajeWhatsApp[]
+  configuraciones ConfiguracionMensajePaciente[]
+
+  // Índices para búsquedas y ordenamiento
+  @@index([email])
+  @@index([telefono])
+  @@index([nombre]) // Búsqueda por nombre
+  @@index([createdAt]) // Ordenar por fecha de registro
+  @@index([fecha_nacimiento]) // Ordenar por edad
+  @@map("pacientes")
+}
+
+// ============================================
+// CITAS
+// ============================================
+
+model Cita {
+  id                 String     @id @default(cuid())
+  paciente_id        String
+  fecha_hora         DateTime
+  duracion_minutos   Int        @default(60)
+  motivo_consulta    String     @db.Text
+  estado             EstadoCita @default(PENDIENTE)
+  google_calendar_id String?    @unique
+
+  // Sistema de confirmación y seguimiento
+  codigo_cita                   String?  @unique // Código único para acceso público
+  estado_confirmacion           EstadoConfirmacion @default(PENDIENTE)
+  confirmada_por_paciente       Boolean  @default(false)
+  fecha_confirmacion            DateTime?
+  recordatorio_confirmacion_enviado Boolean @default(false)
+  recordatorio_24h_enviado      Boolean  @default(false)
+  recordatorio_1h_enviado       Boolean  @default(false)
+  seguimiento_enviado           Boolean  @default(false)
+  solicitud_cancelacion         Boolean  @default(false) // Paciente solicitó cancelar
+
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  // Relaciones
+  paciente          Paciente                      @relation(fields: [paciente_id], references: [id], onDelete: Cascade)
+  consulta          Consulta?
+  configuracion_msg ConfiguracionMensajeCita?
+
+  // Índices simples
+  @@index([paciente_id])
+  @@index([fecha_hora])
+  @@index([estado])
+  @@index([codigo_cita]) // Búsqueda rápida por código
+  @@index([estado_confirmacion]) // Filtrar por confirmación
+  // Índices compuestos para queries comunes
+  @@index([paciente_id, fecha_hora]) // Citas de paciente ordenadas por fecha
+  @@index([paciente_id, estado]) // Filtrar citas pendientes de un paciente
+  @@index([estado, fecha_hora]) // Citas por estado ordenadas por fecha
+  @@index([estado_confirmacion, fecha_hora]) // Citas sin confirmar próximas
+  @@map("citas")
+}
+
+enum EstadoCita {
+  PENDIENTE
+  COMPLETADA
+  CANCELADA
+  NO_ASISTIO
+}
+
+enum EstadoConfirmacion {
+  PENDIENTE        // No se ha enviado recordatorio
+  RECORDATORIO_ENVIADO  // Recordatorio enviado, esperando respuesta
+  CONFIRMADA       // Paciente confirmó asistencia
+  NO_CONFIRMADA    // Paciente no respondió (asumimos que va)
+  CANCELADA_PACIENTE // Paciente canceló
+}
+
+// ============================================
+// CONSULTAS (EXPEDIENTE DIGITAL)
+// ============================================
+
+model Consulta {
+  id            String   @id @default(cuid())
+  cita_id       String   @unique
+  paciente_id   String
+  fecha         DateTime
+  motivo        String?  // Motivo de la consulta
+
+  // Mediciones corporales
+  peso          Float?   // kg
+  talla         Float?   // metros
+  imc           Float?   // Calculado automáticamente
+  cintura       Float?   // cm
+  cadera        Float?   // cm
+  brazo         Float?   // cm
+  muslo         Float?   // cm
+  grasa_corporal Float?  // porcentaje
+
+  // Presión arterial
+  presion_sistolica  Int?
+  presion_diastolica Int?
+
+  // Notas del nutriólogo
+  notas         String?  @db.Text // Notas de la consulta
+  diagnostico   String?  @db.Text // Diagnóstico nutricional
+  objetivo      String?  @db.Text // Objetivo del tratamiento
+  plan          String?  @db.Text // Plan nutricional asignado
+  observaciones String?  @db.Text // Observaciones adicionales
+
+  // Seguimiento
+  proxima_cita  DateTime? // Próxima cita sugerida
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relaciones
+  cita     Cita             @relation(fields: [cita_id], references: [id], onDelete: Cascade)
+  paciente Paciente         @relation(fields: [paciente_id], references: [id], onDelete: Cascade)
+  archivos ArchivoAdjunto[]
+
+  // Índices simples
+  @@index([paciente_id])
+  @@index([fecha])
+  @@index([cita_id])
+  // Índices compuestos para queries comunes
+  @@index([paciente_id, fecha]) // Historial de consultas ordenado por fecha
+  @@map("consultas")
+}
+
+// ============================================
+// ARCHIVOS ADJUNTOS
+// ============================================
+
+model ArchivoAdjunto {
+  id              String            @id @default(cuid())
+  consulta_id     String
+  categoria       CategoriaArchivo  @default(OTRO)
+  nombre_original String
+  nombre_archivo  String            // Nombre sanitizado en servidor
+  ruta_archivo    String
+  tipo_mime       String
+  tamanio_bytes   Int
+  descripcion     String?           // Descripción opcional del archivo
+  createdAt       DateTime          @default(now())
+
+  // Relaciones
+  consulta Consulta @relation(fields: [consulta_id], references: [id], onDelete: Cascade)
+
+  // Índices simples
+  @@index([consulta_id])
+  @@index([categoria])
+  @@index([createdAt]) // Ordenar archivos por fecha de subida
+  // Índices compuestos
+  @@index([consulta_id, categoria]) // Archivos de consulta filtrados por categoría
+  @@index([consulta_id, createdAt]) // Archivos de consulta ordenados por fecha
+  @@map("archivos_adjuntos")
+}
+
+enum CategoriaArchivo {
+  LABORATORIO       // Análisis de sangre, orina, etc.
+  ESTUDIO_MEDICO    // Rayos X, ultrasonido, etc.
+  FOTO_PROGRESO     // Fotos del paciente
+  PLAN_ALIMENTICIO  // PDFs de planes
+  RECETA            // Recetas médicas
+  DOCUMENTO         // Documentos generales
+  OTRO             // Otros archivos
+}
+
+// ============================================
+// MENSAJERÍA WHATSAPP
+// ============================================
+
+model MensajeWhatsApp {
+  id          String            @id @default(cuid())
+  paciente_id String
+  direccion   DireccionMensaje
+  contenido   String            @db.Text
+  tipo        TipoMensaje
+  twilio_sid  String?           @unique
+  estado      EstadoMensaje     @default(ENVIADO)
+  leido       Boolean           @default(false)
+  media_url   String?           // URL del archivo multimedia (imagen, video, audio, documento)
+  media_type  String?           // Tipo MIME del archivo (image/jpeg, video/mp4, etc)
+  createdAt   DateTime          @default(now())
+
+  // Relaciones
+  paciente Paciente @relation(fields: [paciente_id], references: [id], onDelete: Cascade)
+
+  // Índices simples
+  @@index([paciente_id])
+  @@index([createdAt])
+  @@index([leido])
+  @@index([estado])
+  // Índices compuestos
+  @@index([paciente_id, createdAt]) // Mensajes de paciente ordenados por fecha
+  @@index([paciente_id, leido]) // Filtrar mensajes no leídos de un paciente
+  @@map("mensajes_whatsapp")
+}
+
+enum DireccionMensaje {
+  ENTRANTE
+  SALIENTE
+}
+
+enum TipoMensaje {
+  AUTOMATICO_CONFIRMACION
+  AUTOMATICO_RECORDATORIO
+  AUTOMATICO_SEGUIMIENTO
+  MANUAL
+}
+
+enum EstadoMensaje {
+  ENVIADO
+  ENTREGADO
+  LEIDO
+  FALLIDO
+}
+
+// ============================================
+// PLANTILLAS DE MENSAJES
+// ============================================
+
+model PlantillaMensaje {
+  id          String   @id @default(cuid())
+  nombre      String // Ej: "Recordatorio de Cita", "Confirmación"
+  tipo        TipoMensaje
+  contenido   String   @db.Text
+  activa      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("plantillas_mensaje")
+}
+
+// ============================================
+// CONFIGURACIÓN GENERAL DEL SISTEMA
+// ============================================
+
+model ConfiguracionGeneral {
+  id                              String   @id @default(cuid())
+
+  // Recordatorios
+  recordatorio_24h_activo         Boolean  @default(true)
+  recordatorio_1h_activo          Boolean  @default(true)
+
+  // Seguimiento post-consulta
+  seguimiento_activo              Boolean  @default(true)
+  seguimiento_dias_despues        Int      @default(2)
+
+  // Confirmación automática al crear cita
+  confirmacion_automatica_activa  Boolean  @default(true)
+
+  // URLs del sistema
+  url_portal                      String?
+  nombre_consultorio              String   @default("Consultorio")
+
+  // Configuración del calendario
+  horario_inicio                  String   @default("09:00") // HH:mm
+  horario_fin                     String   @default("18:00") // HH:mm
+  duracion_cita_default           Int      @default(60) // minutos
+  intervalo_entre_citas           Int      @default(0) // minutos de descanso
+  dias_laborales                  String   @default("1,2,3,4,5") // 0=Dom, 1=Lun, ..., 6=Sab
+  citas_simultaneas_max           Int      @default(1) // Cuántas citas al mismo tiempo
+  dias_anticipacion_max           Int      @default(30) // Máximo días para agendar
+  horas_anticipacion_min          Int      @default(24) // Mínimo horas de anticipación
+
+  createdAt                       DateTime @default(now())
+  updatedAt                       DateTime @updatedAt
+
+  @@map("configuracion_general")
+}
+
+// ============================================
+// CONFIGURACIÓN DE MENSAJES POR CITA
+// ============================================
+
+model ConfiguracionMensajeCita {
+  id                        String   @id @default(cuid())
+  cita_id                   String   @unique
+  recordatorio_activo       Boolean  @default(true)
+  recordatorio_horas_antes  Int      @default(1)
+  seguimiento_activo        Boolean  @default(false)
+  seguimiento_frecuencia    Int? // días
+  plantilla_recordatorio_id String?
+  plantilla_seguimiento_id  String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  // Relaciones
+  cita Cita @relation(fields: [cita_id], references: [id], onDelete: Cascade)
+
+  @@map("configuracion_mensajes_cita")
+}
+
+// ============================================
+// CONFIGURACIÓN DE MENSAJES POR PACIENTE
+// ============================================
+
+model ConfiguracionMensajePaciente {
+  id                  String       @id @default(cuid())
+  paciente_id         String
+  tipo_mensaje        TipoMensaje
+  activo              Boolean      @default(true)
+  frecuencia_dias     Int?
+  ultima_ejecucion    DateTime?
+  siguiente_ejecucion DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  // Relaciones
+  paciente Paciente @relation(fields: [paciente_id], references: [id], onDelete: Cascade)
+
+  @@unique([paciente_id, tipo_mensaje])
+  @@index([paciente_id])
+  @@index([siguiente_ejecucion])
+  @@map("configuracion_mensajes_paciente")
+}
+
+// ============================================
+// PLANTILLAS DE WHATSAPP
+// ============================================
+
+model PlantillaWhatsApp {
+  id         String              @id @default(cuid())
+  nombre     String              @unique
+  categoria  CategoriaPlantilla
+  contenido  String              @db.Text
+  twilio_sid String?             @unique
+  activa     Boolean             @default(true)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  @@index([categoria])
+  @@index([activa])
+  @@map("plantillas_whatsapp")
+}
+
+enum CategoriaPlantilla {
+  CONFIRMACION
+  RECORDATORIO
+  SEGUIMIENTO
+  PERSONALIZADO
+}
+
+// ============================================
+// CONFIGURACIÓN DEL SISTEMA
+// ============================================
+
+model ConfiguracionSistema {
+  id          String   @id @default(cuid())
+  clave       String   @unique
+  valor       String   @db.Text
+  descripcion String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("configuracion_sistema")
+}
