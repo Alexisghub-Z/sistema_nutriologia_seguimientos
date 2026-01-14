@@ -28,13 +28,23 @@ export default function ConsultaForm({
     motivo: '',
     peso: '',
     talla: '',
-    cintura: '',
-    cadera: '',
-    brazo: '',
-    muslo: '',
     grasa_corporal: '',
-    presion_sistolica: '',
-    presion_diastolica: '',
+    porcentaje_agua: '',
+    masa_muscular_kg: '',
+    grasa_visceral: '',
+    brazo_relajado: '',
+    brazo_flexionado: '',
+    cintura: '',
+    cadera_maximo: '',
+    muslo_maximo: '',
+    muslo_medio: '',
+    pantorrilla_maximo: '',
+    pliegue_tricipital: '',
+    pliegue_subescapular: '',
+    pliegue_bicipital: '',
+    pliegue_cresta_iliaca: '',
+    pliegue_supraespinal: '',
+    pliegue_abdominal: '',
     notas: '',
     diagnostico: '',
     objetivo: '',
@@ -84,16 +94,23 @@ export default function ConsultaForm({
       // Agregar mediciones numéricas si tienen valor
       if (formData.peso) data.peso = parseFloat(formData.peso)
       if (formData.talla) data.talla = parseFloat(formData.talla)
+      if (formData.grasa_corporal) data.grasa_corporal = parseFloat(formData.grasa_corporal)
+      if (formData.porcentaje_agua) data.porcentaje_agua = parseFloat(formData.porcentaje_agua)
+      if (formData.masa_muscular_kg) data.masa_muscular_kg = parseFloat(formData.masa_muscular_kg)
+      if (formData.grasa_visceral) data.grasa_visceral = parseInt(formData.grasa_visceral)
+      if (formData.brazo_relajado) data.brazo_relajado = parseFloat(formData.brazo_relajado)
+      if (formData.brazo_flexionado) data.brazo_flexionado = parseFloat(formData.brazo_flexionado)
       if (formData.cintura) data.cintura = parseFloat(formData.cintura)
-      if (formData.cadera) data.cadera = parseFloat(formData.cadera)
-      if (formData.brazo) data.brazo = parseFloat(formData.brazo)
-      if (formData.muslo) data.muslo = parseFloat(formData.muslo)
-      if (formData.grasa_corporal)
-        data.grasa_corporal = parseFloat(formData.grasa_corporal)
-      if (formData.presion_sistolica)
-        data.presion_sistolica = parseInt(formData.presion_sistolica)
-      if (formData.presion_diastolica)
-        data.presion_diastolica = parseInt(formData.presion_diastolica)
+      if (formData.cadera_maximo) data.cadera_maximo = parseFloat(formData.cadera_maximo)
+      if (formData.muslo_maximo) data.muslo_maximo = parseFloat(formData.muslo_maximo)
+      if (formData.muslo_medio) data.muslo_medio = parseFloat(formData.muslo_medio)
+      if (formData.pantorrilla_maximo) data.pantorrilla_maximo = parseFloat(formData.pantorrilla_maximo)
+      if (formData.pliegue_tricipital) data.pliegue_tricipital = parseFloat(formData.pliegue_tricipital)
+      if (formData.pliegue_subescapular) data.pliegue_subescapular = parseFloat(formData.pliegue_subescapular)
+      if (formData.pliegue_bicipital) data.pliegue_bicipital = parseFloat(formData.pliegue_bicipital)
+      if (formData.pliegue_cresta_iliaca) data.pliegue_cresta_iliaca = parseFloat(formData.pliegue_cresta_iliaca)
+      if (formData.pliegue_supraespinal) data.pliegue_supraespinal = parseFloat(formData.pliegue_supraespinal)
+      if (formData.pliegue_abdominal) data.pliegue_abdominal = parseFloat(formData.pliegue_abdominal)
 
       // Crear consulta
       const response = await fetch('/api/consultas', {
@@ -183,11 +200,11 @@ export default function ConsultaForm({
 
       {/* Mediciones Corporales */}
       <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>Mediciones Corporales</h3>
+        <h3 className={styles.sectionTitle}>Mediciones Básicas</h3>
         <div className={styles.gridTwo}>
           <div className={styles.formGroup}>
             <label htmlFor="peso" className={styles.label}>
-              Peso (kg)
+              Peso actual (kg)
             </label>
             <input
               type="number"
@@ -229,11 +246,120 @@ export default function ConsultaForm({
             {parseFloat(imc) >= 30 && ' (Obesidad)'}
           </div>
         )}
+      </div>
 
+      {/* Composición Corporal */}
+      <div className={styles.section}>
+        <h3 className={styles.sectionTitle}>Composición Corporal</h3>
         <div className={styles.gridFour}>
           <div className={styles.formGroup}>
+            <label htmlFor="grasa_corporal" className={styles.label}>
+              % Grasa
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              id="grasa_corporal"
+              name="grasa_corporal"
+              value={formData.grasa_corporal}
+              onChange={handleChange}
+              className={styles.input}
+              placeholder="25.5"
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="porcentaje_agua" className={styles.label}>
+              % Agua
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              id="porcentaje_agua"
+              name="porcentaje_agua"
+              value={formData.porcentaje_agua}
+              onChange={handleChange}
+              className={styles.input}
+              placeholder="55.0"
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="masa_muscular_kg" className={styles.label}>
+              M. Muscular (kg)
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              id="masa_muscular_kg"
+              name="masa_muscular_kg"
+              value={formData.masa_muscular_kg}
+              onChange={handleChange}
+              className={styles.input}
+              placeholder="45.5"
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="grasa_visceral" className={styles.label}>
+              G. Visceral (número)
+            </label>
+            <input
+              type="number"
+              id="grasa_visceral"
+              name="grasa_visceral"
+              value={formData.grasa_visceral}
+              onChange={handleChange}
+              className={styles.input}
+              placeholder="8"
+              disabled={loading}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Perímetros */}
+      <div className={styles.section}>
+        <h3 className={styles.sectionTitle}>Perímetros (cm)</h3>
+        <div className={styles.gridFour}>
+          <div className={styles.formGroup}>
+            <label htmlFor="brazo_relajado" className={styles.label}>
+              Brazo relajado
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              id="brazo_relajado"
+              name="brazo_relajado"
+              value={formData.brazo_relajado}
+              onChange={handleChange}
+              className={styles.input}
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="brazo_flexionado" className={styles.label}>
+              Brazo flexionado
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              id="brazo_flexionado"
+              name="brazo_flexionado"
+              value={formData.brazo_flexionado}
+              onChange={handleChange}
+              className={styles.input}
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
             <label htmlFor="cintura" className={styles.label}>
-              Cintura (cm)
+              Cintura
             </label>
             <input
               type="number"
@@ -248,15 +374,15 @@ export default function ConsultaForm({
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="cadera" className={styles.label}>
-              Cadera (cm)
+            <label htmlFor="cadera_maximo" className={styles.label}>
+              Cadera máximo
             </label>
             <input
               type="number"
               step="0.1"
-              id="cadera"
-              name="cadera"
-              value={formData.cadera}
+              id="cadera_maximo"
+              name="cadera_maximo"
+              value={formData.cadera_maximo}
               onChange={handleChange}
               className={styles.input}
               disabled={loading}
@@ -264,15 +390,15 @@ export default function ConsultaForm({
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="brazo" className={styles.label}>
-              Brazo (cm)
+            <label htmlFor="muslo_maximo" className={styles.label}>
+              Muslo máximo
             </label>
             <input
               type="number"
               step="0.1"
-              id="brazo"
-              name="brazo"
-              value={formData.brazo}
+              id="muslo_maximo"
+              name="muslo_maximo"
+              value={formData.muslo_maximo}
               onChange={handleChange}
               className={styles.input}
               disabled={loading}
@@ -280,33 +406,31 @@ export default function ConsultaForm({
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="muslo" className={styles.label}>
-              Muslo (cm)
+            <label htmlFor="muslo_medio" className={styles.label}>
+              Muslo medio
             </label>
             <input
               type="number"
               step="0.1"
-              id="muslo"
-              name="muslo"
-              value={formData.muslo}
+              id="muslo_medio"
+              name="muslo_medio"
+              value={formData.muslo_medio}
               onChange={handleChange}
               className={styles.input}
               disabled={loading}
             />
           </div>
-        </div>
 
-        <div className={styles.gridTwo}>
           <div className={styles.formGroup}>
-            <label htmlFor="grasa_corporal" className={styles.label}>
-              Grasa Corporal (%)
+            <label htmlFor="pantorrilla_maximo" className={styles.label}>
+              Pantorrilla máximo
             </label>
             <input
               type="number"
               step="0.1"
-              id="grasa_corporal"
-              name="grasa_corporal"
-              value={formData.grasa_corporal}
+              id="pantorrilla_maximo"
+              name="pantorrilla_maximo"
+              value={formData.pantorrilla_maximo}
               onChange={handleChange}
               className={styles.input}
               disabled={loading}
@@ -315,38 +439,102 @@ export default function ConsultaForm({
         </div>
       </div>
 
-      {/* Presión Arterial */}
+      {/* Pliegues Cutáneos */}
       <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>Presión Arterial</h3>
-        <div className={styles.gridTwo}>
+        <h3 className={styles.sectionTitle}>Pliegues Cutáneos (mm)</h3>
+        <div className={styles.gridFour}>
           <div className={styles.formGroup}>
-            <label htmlFor="presion_sistolica" className={styles.label}>
-              Sistólica (mmHg)
+            <label htmlFor="pliegue_tricipital" className={styles.label}>
+              P. Tricipital
             </label>
             <input
               type="number"
-              id="presion_sistolica"
-              name="presion_sistolica"
-              value={formData.presion_sistolica}
+              step="0.1"
+              id="pliegue_tricipital"
+              name="pliegue_tricipital"
+              value={formData.pliegue_tricipital}
               onChange={handleChange}
               className={styles.input}
-              placeholder="120"
               disabled={loading}
             />
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="presion_diastolica" className={styles.label}>
-              Diastólica (mmHg)
+            <label htmlFor="pliegue_subescapular" className={styles.label}>
+              P. Subescapular
             </label>
             <input
               type="number"
-              id="presion_diastolica"
-              name="presion_diastolica"
-              value={formData.presion_diastolica}
+              step="0.1"
+              id="pliegue_subescapular"
+              name="pliegue_subescapular"
+              value={formData.pliegue_subescapular}
               onChange={handleChange}
               className={styles.input}
-              placeholder="80"
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="pliegue_bicipital" className={styles.label}>
+              P. Bicipital
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              id="pliegue_bicipital"
+              name="pliegue_bicipital"
+              value={formData.pliegue_bicipital}
+              onChange={handleChange}
+              className={styles.input}
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="pliegue_cresta_iliaca" className={styles.label}>
+              P. Cresta ilíaca
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              id="pliegue_cresta_iliaca"
+              name="pliegue_cresta_iliaca"
+              value={formData.pliegue_cresta_iliaca}
+              onChange={handleChange}
+              className={styles.input}
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="pliegue_supraespinal" className={styles.label}>
+              P. Supraespinal
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              id="pliegue_supraespinal"
+              name="pliegue_supraespinal"
+              value={formData.pliegue_supraespinal}
+              onChange={handleChange}
+              className={styles.input}
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="pliegue_abdominal" className={styles.label}>
+              P. Abdominal
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              id="pliegue_abdominal"
+              name="pliegue_abdominal"
+              value={formData.pliegue_abdominal}
+              onChange={handleChange}
+              className={styles.input}
               disabled={loading}
             />
           </div>
