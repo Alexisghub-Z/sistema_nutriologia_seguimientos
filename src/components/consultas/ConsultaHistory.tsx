@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
+import { Card, CardContent } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
@@ -243,7 +243,7 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
               </div>
               <div className={styles.headerRight}>
                 {consulta.archivos.length > 0 && (
-                  <Badge variant="info">{consulta.archivos.length} archivos</Badge>
+                  <Badge variant="primary">{consulta.archivos.length} archivos</Badge>
                 )}
                 <button type="button" className={styles.expandButton}>
                   <svg

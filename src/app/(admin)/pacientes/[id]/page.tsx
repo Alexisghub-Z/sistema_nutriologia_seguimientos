@@ -441,18 +441,20 @@ export default function DetallePacientePage() {
                 {paciente.citas.map((cita) => (
                   <div key={cita.id} className={styles.listItem}>
                     <div className={styles.listItemContent}>
-                      <div>
+                      <div className={styles.citaInfo}>
                         <span className={styles.listItemTitle}>
                           {cita.motivo_consulta}
                         </span>
-                        <span className={styles.listItemDate}>
-                          {formatearFechaCorta(cita.fecha_hora)}
+                        <div className={styles.citaMeta}>
+                          <span className={styles.listItemDate}>
+                            {formatearFechaCorta(cita.fecha_hora)}
+                          </span>
                           {cita.codigo_cita && (
-                            <span style={{ marginLeft: '1rem', fontWeight: 600, color: '#667eea' }}>
-                              🔑 {cita.codigo_cita}
+                            <span className={styles.citaCodigo}>
+                              Código: {cita.codigo_cita}
                             </span>
                           )}
-                        </span>
+                        </div>
                       </div>
                       <div className={styles.listItemActions}>
                         {getEstadoBadge(cita.estado, cita.estado_confirmacion, cita.confirmada_por_paciente)}
@@ -465,7 +467,7 @@ export default function DetallePacientePage() {
                               )
                             }
                           >
-                            Registrar Consulta
+                            Registrar
                           </Button>
                         )}
                       </div>

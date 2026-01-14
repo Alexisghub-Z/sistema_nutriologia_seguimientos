@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import ConversationList from '@/components/mensajes/ConversationList'
 import ChatWindow from '@/components/mensajes/ChatWindow'
 import styles from './mensajes.module.css'
