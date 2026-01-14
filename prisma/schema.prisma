@@ -132,19 +132,33 @@ model Consulta {
   fecha         DateTime
   motivo        String?  // Motivo de la consulta
 
-  // Mediciones corporales
-  peso          Float?   // kg
-  talla         Float?   // metros
-  imc           Float?   // Calculado automáticamente
-  cintura       Float?   // cm
-  cadera        Float?   // cm
-  brazo         Float?   // cm
-  muslo         Float?   // cm
-  grasa_corporal Float?  // porcentaje
+  // Mediciones corporales básicas
+  peso               Float?   // kg
+  talla              Float?   // metros (se mantiene para calcular IMC)
+  imc                Float?   // Calculado automáticamente
 
-  // Presión arterial
-  presion_sistolica  Int?
-  presion_diastolica Int?
+  // Composición corporal
+  grasa_corporal     Float?   // porcentaje
+  porcentaje_agua    Float?   // porcentaje de agua
+  masa_muscular_kg   Float?   // masa muscular en kg
+  grasa_visceral     Int?     // grasa visceral en número
+
+  // Perímetros
+  brazo_relajado     Float?   // cm
+  brazo_flexionado   Float?   // cm
+  cintura            Float?   // cm
+  cadera_maximo      Float?   // cm
+  muslo_maximo       Float?   // cm
+  muslo_medio        Float?   // cm
+  pantorrilla_maximo Float?   // cm
+
+  // Pliegues cutáneos (mm)
+  pliegue_tricipital    Float?   // mm
+  pliegue_subescapular  Float?   // mm
+  pliegue_bicipital     Float?   // mm
+  pliegue_cresta_iliaca Float?   // mm
+  pliegue_supraespinal  Float?   // mm
+  pliegue_abdominal     Float?   // mm
 
   // Notas del nutriólogo
   notas         String?  @db.Text // Notas de la consulta
