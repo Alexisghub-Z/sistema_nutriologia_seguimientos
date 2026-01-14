@@ -16,10 +16,30 @@ interface Consulta {
   peso: number | null
   talla: number | null
   imc: number | null
+
+  // Composición corporal
+  grasa_corporal: number | null
+  porcentaje_agua: number | null
+  masa_muscular_kg: number | null
+  grasa_visceral: number | null
+
+  // Perímetros
+  brazo_relajado: number | null
+  brazo_flexionado: number | null
   cintura: number | null
-  cadera: number | null
-  presion_sistolica: number | null
-  presion_diastolica: number | null
+  cadera_maximo: number | null
+  muslo_maximo: number | null
+  muslo_medio: number | null
+  pantorrilla_maximo: number | null
+
+  // Pliegues cutáneos
+  pliegue_tricipital: number | null
+  pliegue_subescapular: number | null
+  pliegue_bicipital: number | null
+  pliegue_cresta_iliaca: number | null
+  pliegue_supraespinal: number | null
+  pliegue_abdominal: number | null
+
   notas: string | null
   diagnostico: string | null
   objetivo: string | null
@@ -245,14 +265,10 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
 
             {expandedId === consulta.id && (
               <CardContent className={styles.consultaContent}>
-                {/* Mediciones */}
-                {(consulta.peso ||
-                  consulta.talla ||
-                  consulta.imc ||
-                  consulta.cintura ||
-                  consulta.cadera) && (
+                {/* Mediciones Básicas */}
+                {(consulta.peso || consulta.talla || consulta.imc) && (
                   <div className={styles.section}>
-                    <h5 className={styles.sectionTitle}>Mediciones</h5>
+                    <h5 className={styles.sectionTitle}>Mediciones Básicas</h5>
                     <div className={styles.mediciones}>
                       {consulta.peso && (
                         <div className={styles.medicion}>
@@ -276,6 +292,81 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
                           <span className={styles.medicionValue}>{consulta.imc}</span>
                         </div>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Composición Corporal */}
+                {(consulta.grasa_corporal ||
+                  consulta.porcentaje_agua ||
+                  consulta.masa_muscular_kg ||
+                  consulta.grasa_visceral) && (
+                  <div className={styles.section}>
+                    <h5 className={styles.sectionTitle}>Composición Corporal</h5>
+                    <div className={styles.mediciones}>
+                      {consulta.grasa_corporal && (
+                        <div className={styles.medicion}>
+                          <span className={styles.medicionLabel}>% Grasa:</span>
+                          <span className={styles.medicionValue}>
+                            {consulta.grasa_corporal}%
+                          </span>
+                        </div>
+                      )}
+                      {consulta.porcentaje_agua && (
+                        <div className={styles.medicion}>
+                          <span className={styles.medicionLabel}>% Agua:</span>
+                          <span className={styles.medicionValue}>
+                            {consulta.porcentaje_agua}%
+                          </span>
+                        </div>
+                      )}
+                      {consulta.masa_muscular_kg && (
+                        <div className={styles.medicion}>
+                          <span className={styles.medicionLabel}>Masa Muscular:</span>
+                          <span className={styles.medicionValue}>
+                            {consulta.masa_muscular_kg} kg
+                          </span>
+                        </div>
+                      )}
+                      {consulta.grasa_visceral && (
+                        <div className={styles.medicion}>
+                          <span className={styles.medicionLabel}>Grasa Visceral:</span>
+                          <span className={styles.medicionValue}>
+                            {consulta.grasa_visceral}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Perímetros */}
+                {(consulta.brazo_relajado ||
+                  consulta.brazo_flexionado ||
+                  consulta.cintura ||
+                  consulta.cadera_maximo ||
+                  consulta.muslo_maximo ||
+                  consulta.muslo_medio ||
+                  consulta.pantorrilla_maximo) && (
+                  <div className={styles.section}>
+                    <h5 className={styles.sectionTitle}>Perímetros (cm)</h5>
+                    <div className={styles.mediciones}>
+                      {consulta.brazo_relajado && (
+                        <div className={styles.medicion}>
+                          <span className={styles.medicionLabel}>Brazo relajado:</span>
+                          <span className={styles.medicionValue}>
+                            {consulta.brazo_relajado} cm
+                          </span>
+                        </div>
+                      )}
+                      {consulta.brazo_flexionado && (
+                        <div className={styles.medicion}>
+                          <span className={styles.medicionLabel}>Brazo flexionado:</span>
+                          <span className={styles.medicionValue}>
+                            {consulta.brazo_flexionado} cm
+                          </span>
+                        </div>
+                      )}
                       {consulta.cintura && (
                         <div className={styles.medicion}>
                           <span className={styles.medicionLabel}>Cintura:</span>
@@ -284,20 +375,97 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
                           </span>
                         </div>
                       )}
-                      {consulta.cadera && (
+                      {consulta.cadera_maximo && (
                         <div className={styles.medicion}>
-                          <span className={styles.medicionLabel}>Cadera:</span>
+                          <span className={styles.medicionLabel}>Cadera máximo:</span>
                           <span className={styles.medicionValue}>
-                            {consulta.cadera} cm
+                            {consulta.cadera_maximo} cm
                           </span>
                         </div>
                       )}
-                      {consulta.presion_sistolica && consulta.presion_diastolica && (
+                      {consulta.muslo_maximo && (
                         <div className={styles.medicion}>
-                          <span className={styles.medicionLabel}>Presión:</span>
+                          <span className={styles.medicionLabel}>Muslo máximo:</span>
                           <span className={styles.medicionValue}>
-                            {consulta.presion_sistolica}/{consulta.presion_diastolica}{' '}
-                            mmHg
+                            {consulta.muslo_maximo} cm
+                          </span>
+                        </div>
+                      )}
+                      {consulta.muslo_medio && (
+                        <div className={styles.medicion}>
+                          <span className={styles.medicionLabel}>Muslo medio:</span>
+                          <span className={styles.medicionValue}>
+                            {consulta.muslo_medio} cm
+                          </span>
+                        </div>
+                      )}
+                      {consulta.pantorrilla_maximo && (
+                        <div className={styles.medicion}>
+                          <span className={styles.medicionLabel}>Pantorrilla máximo:</span>
+                          <span className={styles.medicionValue}>
+                            {consulta.pantorrilla_maximo} cm
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Pliegues Cutáneos */}
+                {(consulta.pliegue_tricipital ||
+                  consulta.pliegue_subescapular ||
+                  consulta.pliegue_bicipital ||
+                  consulta.pliegue_cresta_iliaca ||
+                  consulta.pliegue_supraespinal ||
+                  consulta.pliegue_abdominal) && (
+                  <div className={styles.section}>
+                    <h5 className={styles.sectionTitle}>Pliegues Cutáneos (mm)</h5>
+                    <div className={styles.mediciones}>
+                      {consulta.pliegue_tricipital && (
+                        <div className={styles.medicion}>
+                          <span className={styles.medicionLabel}>P. Tricipital:</span>
+                          <span className={styles.medicionValue}>
+                            {consulta.pliegue_tricipital} mm
+                          </span>
+                        </div>
+                      )}
+                      {consulta.pliegue_subescapular && (
+                        <div className={styles.medicion}>
+                          <span className={styles.medicionLabel}>P. Subescapular:</span>
+                          <span className={styles.medicionValue}>
+                            {consulta.pliegue_subescapular} mm
+                          </span>
+                        </div>
+                      )}
+                      {consulta.pliegue_bicipital && (
+                        <div className={styles.medicion}>
+                          <span className={styles.medicionLabel}>P. Bicipital:</span>
+                          <span className={styles.medicionValue}>
+                            {consulta.pliegue_bicipital} mm
+                          </span>
+                        </div>
+                      )}
+                      {consulta.pliegue_cresta_iliaca && (
+                        <div className={styles.medicion}>
+                          <span className={styles.medicionLabel}>P. Cresta ilíaca:</span>
+                          <span className={styles.medicionValue}>
+                            {consulta.pliegue_cresta_iliaca} mm
+                          </span>
+                        </div>
+                      )}
+                      {consulta.pliegue_supraespinal && (
+                        <div className={styles.medicion}>
+                          <span className={styles.medicionLabel}>P. Supraespinal:</span>
+                          <span className={styles.medicionValue}>
+                            {consulta.pliegue_supraespinal} mm
+                          </span>
+                        </div>
+                      )}
+                      {consulta.pliegue_abdominal && (
+                        <div className={styles.medicion}>
+                          <span className={styles.medicionLabel}>P. Abdominal:</span>
+                          <span className={styles.medicionValue}>
+                            {consulta.pliegue_abdominal} mm
                           </span>
                         </div>
                       )}
