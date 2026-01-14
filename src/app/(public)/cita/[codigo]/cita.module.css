@@ -1,0 +1,412 @@
+.main {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem 1rem;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.header h1 {
+  color: white;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.badge.warning {
+  background-color: #ffd93d;
+  color: #7d6608;
+}
+
+.badge.success {
+  background-color: #6bcf7f;
+  color: #155724;
+}
+
+.badge.info {
+  background-color: #74b9ff;
+  color: #004085;
+}
+
+.badge.danger {
+  background-color: #ff7675;
+  color: #721c24;
+}
+
+.badge.default {
+  background-color: #dfe6e9;
+  color: #2d3436;
+}
+
+.citaCard {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  padding: 2rem;
+}
+
+.section {
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #eee;
+}
+
+.section:last-of-type {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.section h2 {
+  color: #2d3436;
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.infoRow {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.label {
+  font-size: 0.85rem;
+  color: #636e72;
+  margin: 0 0 0.25rem 0;
+  font-weight: 500;
+}
+
+.value {
+  font-size: 1rem;
+  color: #2d3436;
+  margin: 0;
+}
+
+.valueBold {
+  font-size: 1.1rem;
+  color: #2d3436;
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.notas {
+  color: #636e72;
+  line-height: 1.6;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+.cancelButton,
+.rescheduleButton {
+  flex: 1;
+  min-width: 200px;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancelButton {
+  background-color: #ff7675;
+  color: white;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background-color: #d63031;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(214, 48, 49, 0.3);
+}
+
+.cancelButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.rescheduleButton {
+  background-color: #74b9ff;
+  color: white;
+}
+
+.rescheduleButton:hover {
+  background-color: #0984e3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(9, 132, 227, 0.3);
+}
+
+.alertDanger {
+  padding: 1rem;
+  background-color: #ffe5e5;
+  color: #721c24;
+  border-radius: 8px;
+  border-left: 4px solid #ff7675;
+  margin-top: 1rem;
+  font-weight: 500;
+}
+
+.alertInfo {
+  padding: 1rem;
+  background-color: #e3f2fd;
+  color: #004085;
+  border-radius: 8px;
+  border-left: 4px solid #74b9ff;
+  margin-top: 1rem;
+  font-weight: 500;
+}
+
+.backLink {
+  display: inline-block;
+  margin-top: 2rem;
+  color: white;
+  font-weight: 600;
+  background: transparent;
+  border: 2px solid white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.backLink:hover {
+  background: white;
+  color: #667eea;
+  transform: translateX(-4px);
+}
+
+/* Loader */
+.loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  color: white;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loader p {
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+/* Error card */
+.errorCard {
+  background: white;
+  border-radius: 16px;
+  padding: 3rem 2rem;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.errorIcon {
+  font-size: 4rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.errorCard h2 {
+  color: #d63031;
+  margin-bottom: 1rem;
+}
+
+.errorCard p {
+  color: #636e72;
+  margin-bottom: 2rem;
+}
+
+.backButton {
+  background-color: #667eea;
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.backButton:hover {
+  background-color: #764ba2;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modalContent {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modalContent h3 {
+  margin: 0 0 1rem 0;
+  color: #2d3436;
+  font-size: 1.5rem;
+}
+
+.modalContent p {
+  margin: 0 0 1rem 0;
+  color: #636e72;
+}
+
+.modalWarning {
+  color: #d63031;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.modalActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.modalCancelButton,
+.modalConfirmButton {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.modalCancelButton {
+  background-color: #dfe6e9;
+  color: #2d3436;
+}
+
+.modalCancelButton:hover:not(:disabled) {
+  background-color: #b2bec3;
+}
+
+.modalCancelButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modalConfirmButton {
+  background-color: #d63031;
+  color: white;
+}
+
+.modalConfirmButton:hover:not(:disabled) {
+  background-color: #c0392b;
+  box-shadow: 0 4px 12px rgba(192, 57, 43, 0.4);
+}
+
+.modalConfirmButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header h1 {
+    font-size: 1.5rem;
+  }
+
+  .citaCard {
+    padding: 1.5rem;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .cancelButton,
+  .rescheduleButton {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .modalActions {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,279 @@
+.container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Calendario */
+.calendario {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.mesTitle {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #2d3436;
+}
+
+.navButton {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: #667eea;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.navButton:hover {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.diasSemana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.diaSemana {
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #636e72;
+  padding: 0.5rem 0;
+}
+
+.diasGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+}
+
+.dia {
+  aspect-ratio: 1;
+  border: none;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #2d3436;
+  transition: all 0.2s;
+  border: 2px solid #e0e0e0;
+}
+
+.dia:hover:not(:disabled) {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: #667eea;
+  transform: scale(1.05);
+}
+
+.diaVacio {
+  aspect-ratio: 1;
+}
+
+.diaPasado {
+  color: #b2bec3;
+  cursor: not-allowed;
+  background: #f8f9fa;
+  border-color: #f1f3f5;
+}
+
+.diaHoy {
+  background: #fff3cd;
+  border-color: #ffc107;
+  font-weight: 700;
+}
+
+.diaSeleccionado {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: #667eea;
+  font-weight: 700;
+}
+
+.diaSeleccionado:hover {
+  transform: scale(1.05);
+}
+
+/* Horarios */
+.horarios {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.horariosTitle {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #2d3436;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.duracion {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #636e72;
+}
+
+.horariosGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.horariosGrid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.horariosGrid::-webkit-scrollbar-track {
+  background: #f1f3f5;
+  border-radius: 10px;
+}
+
+.horariosGrid::-webkit-scrollbar-thumb {
+  background: #667eea;
+  border-radius: 10px;
+}
+
+.horario {
+  padding: 0.875rem 1rem;
+  border: 2px solid #e0e0e0;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2d3436;
+  transition: all 0.2s;
+}
+
+.horario:hover {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: #667eea;
+  transform: translateY(-2px);
+}
+
+.horarioSeleccionado {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: #667eea;
+}
+
+.horarioSeleccionado:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3rem 1rem;
+  color: #636e72;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(102, 126, 234, 0.1);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sinHorarios {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #636e72;
+}
+
+.sinHorarios p {
+  margin: 0.5rem 0;
+}
+
+.hint {
+  font-size: 0.9rem;
+  color: #95a5a6;
+}
+
+.placeholderHorarios {
+  background: white;
+  border-radius: 12px;
+  padding: 3rem 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  color: #636e72;
+  font-size: 1rem;
+}
+
+.placeholderHorarios p {
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+
+  .horariosGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .mesTitle {
+    font-size: 1.1rem;
+  }
+
+  .diaSemana {
+    font-size: 0.75rem;
+  }
+
+  .dia {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .calendario,
+  .horarios {
+    padding: 1rem;
+  }
+
+  .horariosGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .navButton {
+    padding: 0.25rem 0.75rem;
+  }
+}

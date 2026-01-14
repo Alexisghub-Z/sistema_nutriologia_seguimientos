@@ -1,0 +1,81 @@
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: nutriologo-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
+      POSTGRES_DB: ${DB_NAME:-nutriologo_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - '${DB_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - nutriologo-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-postgres}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for Bull Queue
+  redis:
+    image: redis:7-alpine
+    container_name: nutriologo-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - nutriologo-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Next.js Application (development)
+  # Comentado: En desarrollo local usamos 'npm run dev' en lugar de Docker
+  # Descomentar solo si quieres correr todo en Docker
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.dev
+  #   container_name: nutriologo-app
+  #   restart: unless-stopped
+  #   ports:
+  #     - '${APP_PORT:-3000}:3000'
+  #   environment:
+  #     - NODE_ENV=development
+  #     - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres123}@db:5432/${DB_NAME:-nutriologo_db}?schema=public
+  #     - REDIS_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379
+  #     - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+  #     - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+  #   volumes:
+  #     - ./src:/app/src
+  #     - ./public:/app/public
+  #     - ./prisma:/app/prisma
+  #     - /app/node_modules
+  #     - /app/.next
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   networks:
+  #     - nutriologo-network
+
+networks:
+  nutriologo-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
