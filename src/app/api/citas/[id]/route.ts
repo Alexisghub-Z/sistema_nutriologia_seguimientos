@@ -5,7 +5,6 @@ import { deleteCache, CacheKeys } from '@/lib/redis'
 
 // GET /api/citas/[id] - Obtener una cita específica
 export async function GET(
-  request: NextRequest,
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {

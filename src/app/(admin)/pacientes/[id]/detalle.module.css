@@ -53,7 +53,7 @@
 /* Grid Layout */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--spacing-lg);
 }
 
@@ -193,6 +193,29 @@
   display: block;
   font-size: var(--font-size-sm);
   color: var(--color-gray-600);
+}
+
+.citaInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  flex: 1;
+}
+
+.citaMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.citaCodigo {
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+  background-color: var(--color-primary-light);
+  padding: 2px var(--spacing-xs);
+  border-radius: var(--radius-sm);
 }
 
 .cardFooter {

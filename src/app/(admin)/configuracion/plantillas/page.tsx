@@ -116,14 +116,14 @@ export default function PlantillasPage() {
     }
   }
 
-  const getCategoriaColor = (categoria: string) => {
+  const getCategoriaColor = (categoria: string): string => {
     const colors: Record<string, string> = {
-      CONFIRMACION: styles.badgeBlue,
-      RECORDATORIO: styles.badgeOrange,
-      SEGUIMIENTO: styles.badgeGreen,
-      PERSONALIZADO: styles.badgePurple,
+      CONFIRMACION: styles.badgeBlue || '',
+      RECORDATORIO: styles.badgeOrange || '',
+      SEGUIMIENTO: styles.badgeGreen || '',
+      PERSONALIZADO: styles.badgePurple || '',
     }
-    return colors[categoria] || styles.badgeGray
+    return colors[categoria] || styles.badgeGray || ''
   }
 
   const getCategoriaLabel = (categoria: string) => {
@@ -164,8 +164,8 @@ export default function PlantillasPage() {
       </div>
 
       {/* Alerts */}
-      {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
-      {success && <Alert type="success" message={success} onClose={() => setSuccess(null)} />}
+      {error && <Alert variant="error">{error}</Alert>}
+      {success && <Alert variant="success">{success}</Alert>}
 
       {/* Formulario */}
       {showForm && (
@@ -251,7 +251,7 @@ export default function PlantillasPage() {
       {/* Lista de plantillas */}
       {loading ? (
         <div className={styles.loadingContainer}>
-          <Spinner size="lg" />
+          <Spinner size="large" />
           <p>Cargando plantillas...</p>
         </div>
       ) : (
