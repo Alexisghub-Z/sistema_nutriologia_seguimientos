@@ -2,9 +2,9 @@ import Queue from 'bull'
 
 // Crear conexion a Redis
 const redisConfig = {
-  host: 'localhost',
+  host: process.env.REDIS_HOST || 'localhost',
   port: parseInt(process.env.REDIS_PORT || '6380'),
-  password: process.env.REDIS_PASSWORD,
+  password: process.env.REDIS_PASSWORD || 'redis123',
 }
 
 // Cola para mensajes automaticos
@@ -30,7 +30,7 @@ export interface JobRecordatorio {
 }
 
 export interface JobSeguimiento {
-  citaId: string
+  consultaId: string
 }
 
 /**
@@ -109,13 +109,20 @@ export async function programarRecordatorio1h(citaId: string, fechaCita: Date) {
 
 /**
  * Programa el envio de seguimiento post-consulta
+ * Envia recordatorio 1 dia antes de la proxima cita sugerida
  */
-export async function programarSeguimiento(citaId: string, diasDespues: number = 2) {
-  const delay = diasDespues * 24 * 60 * 60 * 1000
+export async function programarSeguimiento(consultaId: string, fechaSugerida: Date) {
+  // Calcular delay: 1 día antes de la fecha sugerida
+  const delay = fechaSugerida.getTime() - Date.now() - 24 * 60 * 60 * 1000
+
+  if (delay <= 0) {
+    console.warn(`[Queue] La fecha sugerida para consulta ${consultaId} ya paso o es muy proxima, no se programara seguimiento`)
+    return
+  }
 
   await mensajesQueue.add(
     TipoJob.SEGUIMIENTO,
-    { citaId },
+    { consultaId },
     {
       delay,
       attempts: 3,
@@ -128,6 +135,7 @@ export async function programarSeguimiento(citaId: string, diasDespues: number =
 
   const fechaEnvio = new Date(Date.now() + delay)
   console.log(`[Queue] Seguimiento programado para: ${fechaEnvio.toLocaleString('es-MX')}`)
+  console.log(`[Queue] Fecha de cita sugerida: ${fechaSugerida.toLocaleString('es-MX')}`)
 }
 
 /**

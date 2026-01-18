@@ -21,7 +21,7 @@ const pacienteUpdateSchema = z.object({
 // GET /api/pacientes/[id] - Obtener un paciente específico (con caché)
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthUser()
@@ -29,8 +29,8 @@ export async function GET(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    // Await params si es una Promise (Next.js 15)
-    const { id } = params instanceof Promise ? await params : params
+    // Await params (Next.js 15)
+    const { id } = await context.params
 
     // Generar clave de caché
     const cacheKey = CacheKeys.patientDetail(id)
@@ -54,6 +54,12 @@ export async function GET(
         consultas: {
           orderBy: { fecha: 'desc' },
           take: 5,
+          select: {
+            id: true,
+            fecha: true,
+            motivo: true,
+            proxima_cita: true,
+          },
         },
         _count: {
           select: {
@@ -89,7 +95,7 @@ export async function GET(
 // PUT /api/pacientes/[id] - Actualizar paciente
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthUser()
@@ -97,8 +103,8 @@ export async function PUT(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    // Await params si es una Promise (Next.js 15)
-    const { id } = params instanceof Promise ? await params : params
+    // Await params (Next.js 15)
+    const { id } = await context.params
 
     const body = await request.json()
     const validatedData = pacienteUpdateSchema.parse(body)
@@ -187,7 +193,7 @@ export async function PUT(
 // DELETE /api/pacientes/[id] - Eliminar paciente
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthUser()
@@ -195,8 +201,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    // Await params si es una Promise (Next.js 15)
-    const { id } = params instanceof Promise ? await params : params
+    // Await params (Next.js 15)
+    const { id } = await context.params
 
     // Verificar que el paciente existe
     const paciente = await prisma.paciente.findUnique({

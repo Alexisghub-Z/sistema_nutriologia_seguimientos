@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma'
 import { z } from 'zod'
 import { randomBytes } from 'crypto'
 import { programarConfirmacion, programarRecordatorio24h, programarRecordatorio1h } from '@/lib/queue/messages'
+import { syncCitaWithGoogleCalendar, isGoogleCalendarConfigured } from '@/lib/services/google-calendar'
 
 // Schema de validación para crear cita pública
 const citaPublicaSchema = z.object({
@@ -202,6 +203,18 @@ export async function POST(request: NextRequest) {
     } catch (queueError) {
       console.error('Error al programar mensajes:', queueError)
       // No fallar la creación de la cita si hay error en los jobs
+    }
+
+    // Sincronizar con Google Calendar si está configurado
+    try {
+      const isConfigured = await isGoogleCalendarConfigured()
+      if (isConfigured) {
+        await syncCitaWithGoogleCalendar(cita.id)
+        console.log('📅 Cita sincronizada con Google Calendar:', cita.id)
+      }
+    } catch (calendarError) {
+      console.error('Error al sincronizar con Google Calendar:', calendarError)
+      // No fallar la creación de la cita si hay error en la sincronización
     }
 
     console.log(`✅ Cita creada desde portal público: ${cita.id} (${codigoCita})`)

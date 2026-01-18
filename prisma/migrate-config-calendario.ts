@@ -14,7 +14,7 @@ async function main() {
   }
 
   // Actualizar con los nuevos campos del calendario
-  const updated = await prisma.configuracionGeneral.update({
+  await prisma.configuracionGeneral.update({
     where: { id: config.id },
     data: {
       horario_inicio: '09:00',

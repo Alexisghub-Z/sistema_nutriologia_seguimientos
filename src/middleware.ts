@@ -7,9 +7,8 @@ export default auth((req) => {
 
   // Public routes that don't require authentication
   const publicRoutes = ['/', '/login', '/agendar']
-  const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith('/api/auth'))
-
-  // Admin routes that require authentication
+  publicRoutes.some((route) => pathname === route || pathname.startsWith('/api/auth'))
+// Admin routes that require authentication
   const isAdminRoute = pathname.startsWith('/dashboard') ||
                       pathname.startsWith('/citas') ||
                       pathname.startsWith('/pacientes') ||
