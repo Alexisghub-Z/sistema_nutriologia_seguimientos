@@ -138,6 +138,14 @@ export default function CalendarioCitas({
     )
   }
 
+  const formatearHora12h = (hora24: string): string => {
+    const [horas, minutos] = hora24.split(':')
+    const horasNum = parseInt(horas)
+    const periodo = horasNum >= 12 ? 'PM' : 'AM'
+    const horas12 = horasNum === 0 ? 12 : horasNum > 12 ? horasNum - 12 : horasNum
+    return `${horas12}:${minutos} ${periodo}`
+  }
+
   const dias = obtenerDiasDelMes()
 
   return (
@@ -224,7 +232,7 @@ export default function CalendarioCitas({
                   }`}
                   onClick={() => seleccionarHora(hora)}
                 >
-                  {hora}
+                  {formatearHora12h(hora)}
                 </button>
               ))}
             </div>

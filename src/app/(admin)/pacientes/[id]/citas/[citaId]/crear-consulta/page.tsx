@@ -46,11 +46,26 @@ export default function CrearConsultaPage() {
 
       const data = await response.json()
 
-      // Verificar si ya tiene consulta
-      if (data.consulta) {
-        setError('Esta cita ya tiene una consulta registrada')
+      // Verificar si la cita está cancelada
+      if (data.estado === 'CANCELADA') {
+        setError('No se puede crear una consulta para una cita cancelada')
         return
       }
+
+      // Verificar si el paciente no asistió
+      if (data.estado === 'NO_ASISTIO') {
+        setError('No se puede crear una consulta si el paciente no asistió')
+        return
+      }
+
+      // Verificar si ya tiene consulta (ya fue completada)
+      if (data.consulta) {
+        setError('Esta cita ya tiene una consulta registrada en el historial clínico')
+        return
+      }
+
+      // Si la cita está PENDIENTE o COMPLETADA sin consulta, permitir crear
+      // (PENDIENTE se cambiará a COMPLETADA al guardar la consulta)
 
       setCita(data)
     } catch (err) {

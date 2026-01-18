@@ -13,7 +13,7 @@ const plantillaSchema = z.object({
 // GET /api/plantillas/[id] - Obtener una plantilla
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthUser()
@@ -21,8 +21,10 @@ export async function GET(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
+    const { id } = await context.params
+
     const plantilla = await prisma.plantillaMensaje.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!plantilla) {
@@ -45,7 +47,7 @@ export async function GET(
 // PUT /api/plantillas/[id] - Actualizar plantilla
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthUser()
@@ -53,11 +55,12 @@ export async function PUT(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
+    const { id } = await context.params
     const body = await request.json()
     const validatedData = plantillaSchema.parse(body)
 
     const plantilla = await prisma.plantillaMensaje.update({
-      where: { id: params.id },
+      where: { id },
       data: validatedData,
     })
 
@@ -81,7 +84,7 @@ export async function PUT(
 // DELETE /api/plantillas/[id] - Eliminar plantilla
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthUser()
@@ -89,8 +92,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
+    const { id } = await context.params
+
     await prisma.plantillaMensaje.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     return NextResponse.json({ message: 'Plantilla eliminada' })

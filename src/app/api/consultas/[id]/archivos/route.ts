@@ -21,7 +21,7 @@ const ALLOWED_TYPES = [
 // POST /api/consultas/[id]/archivos - Subir archivo a una consulta
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthUser()
@@ -29,7 +29,7 @@ export async function POST(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const { id: consultaId } = params instanceof Promise ? await params : params
+    const { id: consultaId } = await context.params
 
     // Verificar que la consulta existe
     const consulta = await prisma.consulta.findUnique({
@@ -121,7 +121,7 @@ export async function POST(
 // GET /api/consultas/[id]/archivos - Obtener archivos de una consulta
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthUser()
@@ -129,7 +129,7 @@ export async function GET(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const { id: consultaId } = params instanceof Promise ? await params : params
+    const { id: consultaId } = await context.params
 
     const archivos = await prisma.archivoAdjunto.findMany({
       where: { consulta_id: consultaId },

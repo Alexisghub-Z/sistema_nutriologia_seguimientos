@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth-utils'
 import prisma from '@/lib/prisma'
 import { deleteCache, CacheKeys } from '@/lib/redis'
+import { syncCitaWithGoogleCalendar, unsyncCitaFromGoogleCalendar, isGoogleCalendarConfigured } from '@/lib/services/google-calendar'
+import { cancelarJobsCita } from '@/lib/queue/messages'
 
 // GET /api/citas/[id] - Obtener una cita específica
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthUser()
@@ -14,7 +16,7 @@ export async function GET(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const { id } = params instanceof Promise ? await params : params
+    const { id } = await context.params
 
     const cita = await prisma.cita.findUnique({
       where: { id },
@@ -43,7 +45,7 @@ export async function GET(
 // PATCH /api/citas/[id] - Actualizar estado de cita
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthUser()
@@ -51,7 +53,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const { id } = params instanceof Promise ? await params : params
+    const { id } = await context.params
     const body = await request.json()
 
     const cita = await prisma.cita.update({
@@ -71,6 +73,36 @@ export async function PATCH(
     // Invalidar caché del paciente
     await deleteCache(CacheKeys.patientDetail(cita.paciente_id))
     console.log('🗑️  Cache invalidated: patient detail after appointment updated', cita.paciente_id)
+
+    // Sincronizar con Google Calendar si está configurado
+    try {
+      const isConfigured = await isGoogleCalendarConfigured()
+      if (isConfigured) {
+        if (body.estado === 'CANCELADA') {
+          // Si la cita se canceló, eliminar del calendario
+          await unsyncCitaFromGoogleCalendar(id)
+          console.log('📅 Cita eliminada de Google Calendar:', id)
+        } else {
+          // De lo contrario, sincronizar
+          await syncCitaWithGoogleCalendar(id)
+          console.log('📅 Cita sincronizada con Google Calendar:', id)
+        }
+      }
+    } catch (calendarError) {
+      console.error('Error al sincronizar con Google Calendar:', calendarError)
+      // No fallar la actualización de la cita si hay error en la sincronización
+    }
+
+    // Cancelar jobs de mensajes programados si la cita fue cancelada
+    if (body.estado === 'CANCELADA') {
+      try {
+        await cancelarJobsCita(id)
+        console.log('🚫 Jobs de mensajería cancelados para cita:', id)
+      } catch (queueError) {
+        console.error('Error al cancelar jobs de mensajería:', queueError)
+        // No fallar la actualización de la cita si hay error en la cola
+      }
+    }
 
     return NextResponse.json(cita)
   } catch (error) {

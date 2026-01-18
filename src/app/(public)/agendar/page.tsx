@@ -91,6 +91,14 @@ export default function AgendarCitaPage() {
     }).format(date)
   }
 
+  const formatearHora12h = (hora24: string): string => {
+    const [horas, minutos] = hora24.split(':')
+    const horasNum = parseInt(horas)
+    const periodo = horasNum >= 12 ? 'PM' : 'AM'
+    const horas12 = horasNum === 0 ? 12 : horasNum > 12 ? horasNum - 12 : horasNum
+    return `${horas12}:${minutos} ${periodo}`
+  }
+
   return (
     <main className={styles.main}>
       <div className={styles.container}>
@@ -132,7 +140,7 @@ export default function AgendarCitaPage() {
               <div className={styles.resumen}>
                 <p>✅ Seleccionaste:</p>
                 <p className={styles.resumenFecha}>
-                  {formatearFecha(fechaSeleccionada)} a las {horaSeleccionada}
+                  {formatearFecha(fechaSeleccionada)} a las {formatearHora12h(horaSeleccionada)}
                 </p>
               </div>
             )}
@@ -164,7 +172,7 @@ export default function AgendarCitaPage() {
 
             <div className={styles.resumenCompacto}>
               <span>📅 {formatearFecha(fechaSeleccionada)}</span>
-              <span>🕐 {horaSeleccionada}</span>
+              <span>🕐 {formatearHora12h(horaSeleccionada)}</span>
             </div>
 
             <form onSubmit={agendarCita} className={styles.form}>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { listCalendarEvents, isGoogleCalendarConfigured } from '@/lib/services/google-calendar'
 
 /**
  * GET /api/citas/disponibilidad?fecha=YYYY-MM-DD
@@ -17,14 +18,17 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Parsear fecha
-    const fechaSolicitada = new Date(fechaParam)
-    if (isNaN(fechaSolicitada.getTime())) {
+    // Parsear fecha (YYYY-MM-DD)
+    const [year, month, day] = fechaParam.split('-').map(Number)
+    if (!year || !month || !day) {
       return NextResponse.json(
-        { error: 'Formato de fecha inválido' },
+        { error: 'Formato de fecha inválido (debe ser YYYY-MM-DD)' },
         { status: 400 }
       )
     }
+
+    // Crear fecha en hora local (no UTC)
+    const fechaSolicitada = new Date(year, month - 1, day, 0, 0, 0, 0)
 
     // Obtener configuración
     let config = await prisma.configuracionGeneral.findFirst()
@@ -32,8 +36,8 @@ export async function GET(request: NextRequest) {
       // Crear configuración por defecto si no existe
       config = await prisma.configuracionGeneral.create({
         data: {
-          horario_inicio: '09:00',
-          horario_fin: '18:00',
+          horario_inicio: '16:00',
+          horario_fin: '20:00',
           duracion_cita_default: 60,
           intervalo_entre_citas: 0,
           dias_laborales: '1,2,3,4,5', // Lun-Vie
@@ -101,10 +105,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Obtener citas existentes para esa fecha
-    const inicioDia = new Date(fechaSolicitada)
-    inicioDia.setHours(0, 0, 0, 0)
-    const finDia = new Date(fechaSolicitada)
-    finDia.setHours(23, 59, 59, 999)
+    // Crear fechas para inicio y fin del día en hora local
+    const inicioDia = new Date(year, month - 1, day, 0, 0, 0, 0)
+    const finDia = new Date(year, month - 1, day, 23, 59, 59, 999)
 
     const citasExistentes = await prisma.cita.findMany({
       where: {
@@ -122,36 +125,149 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    // Obtener eventos de Google Calendar si está configurado
+    let eventosCalendar: Array<{ inicio: Date; fin: Date }> = []
+    try {
+      const isConfigured = await isGoogleCalendarConfigured()
+      if (isConfigured) {
+        const eventos = await listCalendarEvents(inicioDia, finDia)
+        eventosCalendar = eventos
+          .filter((evento: any) => {
+            // Filtrar solo eventos con fecha/hora (no eventos de día completo)
+            return evento.start?.dateTime && evento.end?.dateTime
+          })
+          .map((evento: any) => {
+            // Convertir a Date (estos vienen en UTC)
+            const inicioUTC = new Date(evento.start.dateTime)
+            const finUTC = new Date(evento.end.dateTime)
+
+            return {
+              inicio: inicioUTC,
+              fin: finUTC,
+            }
+          })
+
+        console.log(`📅 ${eventosCalendar.length} eventos de Google Calendar para ${fechaParam}:`)
+        eventosCalendar.forEach((evento, i) => {
+          // Mostrar en hora local para debugging
+          const inicioLocal = new Date(evento.inicio.toLocaleString('en-US', { timeZone: 'America/Mexico_City' }))
+          const finLocal = new Date(evento.fin.toLocaleString('en-US', { timeZone: 'America/Mexico_City' }))
+          console.log(`  ${i + 1}. UTC: ${evento.inicio.toISOString()} - ${evento.fin.toISOString()}`)
+          console.log(`      Local: ${evento.inicio.toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })} - ${evento.fin.toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}`)
+        })
+      }
+    } catch (calendarError) {
+      console.error('Error al obtener eventos de Google Calendar:', calendarError)
+      // Continuar sin eventos de Google Calendar si hay error
+    }
+
     // Filtrar slots ocupados
     const horariosDisponibles = slots.filter((slot) => {
       const [hora, min] = slot.split(':').map(Number)
-      const fechaSlot = new Date(fechaSolicitada)
-      fechaSlot.setHours(hora, min, 0, 0)
+
+      // IMPORTANTE: Crear fechas en UTC para comparación consistente
+      // Los eventos de Google Calendar vienen en UTC, así que trabajamos todo en UTC
+
+      // Convertir hora local de México (UTC-6) a UTC
+      // Ejemplo: 17:00 hora local México = 23:00 UTC
+      const offsetMexico = 6 // UTC-6
+      const horaUTC = hora + offsetMexico
+
+      // Crear fecha del slot en UTC
+      const fechaSlotUTC = new Date(Date.UTC(year, month - 1, day, horaUTC, min, 0, 0))
+      const finSlotUTC = new Date(fechaSlotUTC.getTime() + config.duracion_cita_default * 60000)
+
+      // Para validaciones en hora local
+      const fechaSlotLocal = new Date(year, month - 1, day, hora, min, 0, 0)
 
       // Validar anticipación mínima (solo para hoy)
       if (fechaSolicitada.toDateString() === ahora.toDateString()) {
-        const horasHastaSlot = (fechaSlot.getTime() - ahora.getTime()) / (1000 * 60 * 60)
+        const horasHastaSlot = (fechaSlotLocal.getTime() - ahora.getTime()) / (1000 * 60 * 60)
         if (horasHastaSlot < config.horas_anticipacion_min) {
           return false
         }
       }
 
-      // Contar citas en este slot
+      // Log detallado para debugging
+      if (slot === '17:00') {
+        console.log(`\n🔍 DEBUG SLOT 17:00:`)
+        console.log(`   Slot Local: ${slot}`)
+        console.log(`   Hora UTC calculada: ${horaUTC}:${min}`)
+        console.log(`   Slot UTC: ${fechaSlotUTC.toISOString()} - ${finSlotUTC.toISOString()}`)
+        console.log(`   Eventos a verificar: ${eventosCalendar.length}`)
+        eventosCalendar.forEach((ev, i) => {
+          console.log(`   Evento ${i+1}: ${ev.inicio.toISOString()} - ${ev.fin.toISOString()}`)
+        })
+      }
+
+      // Verificar solapamiento con eventos de Google Calendar
+      const hayEventoEnSlot = eventosCalendar.some((evento) => {
+        // Comparar timestamps en UTC
+        const condicion1 = (fechaSlotUTC >= evento.inicio && fechaSlotUTC < evento.fin)
+        const condicion2 = (finSlotUTC > evento.inicio && finSlotUTC <= evento.fin)
+        const condicion3 = (fechaSlotUTC <= evento.inicio && finSlotUTC >= evento.fin)
+        const solapa = condicion1 || condicion2 || condicion3
+
+        // Log para slot 17:00
+        if (slot === '17:00' && solapa) {
+          console.log(`❌ Slot ${slot} bloqueado por evento:`)
+          console.log(`   Slot UTC: ${fechaSlotUTC.toISOString()} - ${finSlotUTC.toISOString()}`)
+          console.log(`   Evento UTC: ${evento.inicio.toISOString()} - ${evento.fin.toISOString()}`)
+          console.log(`   Condición 1: ${condicion1}`)
+          console.log(`   Condición 2: ${condicion2}`)
+          console.log(`   Condición 3: ${condicion3}`)
+        }
+
+        if (solapa && slot !== '17:00') {
+          console.log(`❌ Slot ${slot} (hora local) bloqueado por evento de Google Calendar:`)
+          console.log(`   Slot UTC: ${fechaSlotUTC.toISOString()} - ${finSlotUTC.toISOString()}`)
+          console.log(`   Evento UTC: ${evento.inicio.toISOString()} - ${evento.fin.toISOString()}`)
+        }
+
+        return solapa
+      })
+
+      if (slot === '17:00') {
+        console.log(`   Resultado final para 17:00: ${hayEventoEnSlot ? 'BLOQUEADO' : 'DISPONIBLE'}`)
+      }
+
+      // Si hay un evento de Google Calendar, el slot no está disponible
+      if (hayEventoEnSlot) {
+        return false
+      }
+
+      // Contar citas en este slot (usar fechaSlotLocal para citas del sistema)
       const citasEnSlot = citasExistentes.filter((cita) => {
         const inicioCita = new Date(cita.fecha_hora)
         const finCita = new Date(inicioCita.getTime() + cita.duracion_minutos * 60000)
-        const finSlot = new Date(fechaSlot.getTime() + config.duracion_cita_default * 60000)
 
-        // Verificar solapamiento
-        return (
-          (fechaSlot >= inicioCita && fechaSlot < finCita) ||
-          (finSlot > inicioCita && finSlot <= finCita) ||
-          (fechaSlot <= inicioCita && finSlot >= finCita)
+        // Verificar solapamiento (las citas del sistema están en hora local)
+        const solapaCita = (
+          (fechaSlotLocal >= inicioCita && fechaSlotLocal < finCita) ||
+          (fechaSlotLocal.getTime() + config.duracion_cita_default * 60000 > inicioCita.getTime() &&
+           fechaSlotLocal.getTime() + config.duracion_cita_default * 60000 <= finCita.getTime()) ||
+          (fechaSlotLocal <= inicioCita &&
+           new Date(fechaSlotLocal.getTime() + config.duracion_cita_default * 60000) >= finCita)
         )
+
+        if (slot === '17:00' && solapaCita) {
+          console.log(`   ⚠️ Slot 17:00 bloqueado por CITA del sistema:`)
+          console.log(`      Cita: ${inicioCita.toISOString()} - ${finCita.toISOString()}`)
+          console.log(`      Slot: ${fechaSlotLocal.toISOString()} - ${new Date(fechaSlotLocal.getTime() + config.duracion_cita_default * 60000).toISOString()}`)
+        }
+
+        return solapaCita
       })
+
+      if (slot === '17:00') {
+        console.log(`   Citas en slot 17:00: ${citasEnSlot.length} (máximo: ${config.citas_simultaneas_max})`)
+        console.log(`   DECISION FINAL: ${citasEnSlot.length < config.citas_simultaneas_max ? 'DISPONIBLE' : 'BLOQUEADO POR CITAS'}`)
+      }
 
       return citasEnSlot.length < config.citas_simultaneas_max
     })
+
+    console.log(`✅ Horarios disponibles para ${fechaParam}: ${horariosDisponibles.length} de ${slots.length} slots`)
 
     return NextResponse.json({
       fecha: fechaParam,
