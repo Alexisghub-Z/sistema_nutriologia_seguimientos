@@ -11,7 +11,7 @@ import { deleteCache, deleteCachePattern, CacheKeys } from '@/lib/redis'
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; archivoId: string }> | { id: string; archivoId: string } }
+  context: { params: Promise<{ id: string; archivoId: string }> }
 ) {
   try {
     const user = await getAuthUser()
@@ -19,7 +19,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const { id: consultaId, archivoId } = params instanceof Promise ? await params : params
+    const { id: consultaId, archivoId } = await context.params
 
     // Buscar el archivo
     const archivo = await prisma.archivoAdjunto.findUnique({

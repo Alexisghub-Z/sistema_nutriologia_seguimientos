@@ -6,7 +6,7 @@ import { deleteCachePattern } from '@/lib/redis'
 // PATCH /api/mensajes/[id] - Marcar mensaje como leído
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthUser()
@@ -14,7 +14,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const { id } = params instanceof Promise ? await params : params
+    const { id } = await context.params
     const body = await request.json()
 
     // Verificar que el mensaje existe

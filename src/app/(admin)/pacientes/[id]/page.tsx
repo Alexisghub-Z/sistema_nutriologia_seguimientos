@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import Spinner from '@/components/ui/Spinner'
 import Alert from '@/components/ui/Alert'
+import ModalDetalleCita from '@/components/citas/ModalDetalleCita'
 import styles from './detalle.module.css'
 
 interface Paciente {
@@ -30,6 +31,7 @@ interface Paciente {
     id: string
     fecha: string
     motivo: string
+    proxima_cita: string | null
   }>
   _count: {
     citas: number
@@ -46,6 +48,7 @@ export default function DetallePacientePage() {
   const [paciente, setPaciente] = useState<Paciente | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [citaSeleccionada, setCitaSeleccionada] = useState<any>(null)
 
   useEffect(() => {
     const fetchPaciente = async () => {
@@ -67,6 +70,33 @@ export default function DetallePacientePage() {
 
     fetchPaciente()
   }, [pacienteId])
+
+  const cargarDetalleCita = async (citaId: string) => {
+    try {
+      const response = await fetch(`/api/citas/${citaId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setCitaSeleccionada(data)
+      }
+    } catch (err) {
+      console.error('Error al cargar detalle de cita:', err)
+    }
+  }
+
+  const refrescarPaciente = () => {
+    const fetchPaciente = async () => {
+      try {
+        const response = await fetch(`/api/pacientes/${pacienteId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setPaciente(data)
+        }
+      } catch (err) {
+        console.error('Error al refrescar paciente:', err)
+      }
+    }
+    fetchPaciente()
+  }
 
   // Calcular edad
   const calcularEdad = (fechaNacimiento: string) => {
@@ -426,6 +456,41 @@ export default function DetallePacientePage() {
           </Card>
         </div>
 
+        {/* Próxima Cita Sugerida */}
+        {paciente.consultas.length > 0 && paciente.consultas[0].proxima_cita && (
+          <Card className={styles.proximaCitaCard}>
+            <CardHeader>
+              <CardTitle>Próxima Cita Sugerida</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={styles.proximaCitaContent}>
+                <div className={styles.proximaCitaInfo}>
+                  <div className={styles.proximaCitaFecha}>
+                    {formatearFecha(paciente.consultas[0].proxima_cita)}
+                  </div>
+                  <div className={styles.proximaCitaMeta}>
+                    {new Date(paciente.consultas[0].proxima_cita) < new Date() ? (
+                      <Badge variant="error">Fecha vencida</Badge>
+                    ) : new Date(paciente.consultas[0].proxima_cita).getTime() - Date.now() < 7 * 24 * 60 * 60 * 1000 ? (
+                      <Badge variant="warning">Próxima (esta semana)</Badge>
+                    ) : (
+                      <Badge variant="info">Pendiente agendar</Badge>
+                    )}
+                  </div>
+                </div>
+                <div className={styles.proximaCitaActions}>
+                  <Button
+                    size="small"
+                    onClick={() => router.push(`/pacientes/${pacienteId}/citas/nueva`)}
+                  >
+                    Agendar Cita
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Últimas Citas */}
         <Card>
           <CardHeader>
@@ -439,7 +504,12 @@ export default function DetallePacientePage() {
             ) : (
               <div className={styles.list}>
                 {paciente.citas.map((cita) => (
-                  <div key={cita.id} className={styles.listItem}>
+                  <div
+                    key={cita.id}
+                    className={styles.listItem}
+                    onClick={() => cargarDetalleCita(cita.id)}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <div className={styles.listItemContent}>
                       <div className={styles.citaInfo}>
                         <span className={styles.listItemTitle}>
@@ -456,7 +526,7 @@ export default function DetallePacientePage() {
                           )}
                         </div>
                       </div>
-                      <div className={styles.listItemActions}>
+                      <div className={styles.listItemActions} onClick={(e) => e.stopPropagation()}>
                         {getEstadoBadge(cita.estado, cita.estado_confirmacion, cita.confirmada_por_paciente)}
                         {cita.estado === 'PENDIENTE' && (
                           <Button
@@ -522,6 +592,13 @@ export default function DetallePacientePage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal de Detalles de Cita */}
+      <ModalDetalleCita
+        cita={citaSeleccionada}
+        onClose={() => setCitaSeleccionada(null)}
+        onActualizar={refrescarPaciente}
+      />
     </div>
   )
 }

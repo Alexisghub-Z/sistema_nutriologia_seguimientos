@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth-utils'
 import prisma from '@/lib/prisma'
 import { z } from 'zod'
 import { getCache, setCache, deleteCache, deleteCachePattern, CacheKeys } from '@/lib/redis'
+import { programarSeguimiento } from '@/lib/queue/messages'
 
 // Schema de validación para crear consulta
 const consultaSchema = z.object({
@@ -197,6 +198,18 @@ export async function POST(request: NextRequest) {
         archivos: true,
       },
     })
+
+    // Programar recordatorio de seguimiento si tiene próxima cita sugerida
+    if (validatedData.proxima_cita) {
+      try {
+        const fechaSugerida = new Date(validatedData.proxima_cita)
+        await programarSeguimiento(consulta.id, fechaSugerida)
+        console.log('📅 Recordatorio de seguimiento programado para:', fechaSugerida.toLocaleString('es-MX'))
+      } catch (queueError) {
+        console.error('Error al programar seguimiento:', queueError)
+        // No fallar la creación de la consulta si hay error en la programación
+      }
+    }
 
     // Invalidar caché de consultas del paciente y detalle del paciente
     await deleteCachePattern(`consultations:${validatedData.paciente_id}:*`)

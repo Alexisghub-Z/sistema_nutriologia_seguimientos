@@ -58,10 +58,17 @@ export function formatWhatsAppNumber(phoneNumber: string): string {
  * Envía un mensaje de WhatsApp a través de Twilio
  *
  * @param to - Número de teléfono del destinatario
- * @param body - Contenido del mensaje
+ * @param body - Contenido del mensaje (para sandbox)
+ * @param contentSid - ID de plantilla aprobada (para producción)
+ * @param contentVariables - Variables de la plantilla (para producción, JSON string)
  * @returns Información del mensaje enviado
  */
-export async function sendWhatsAppMessage(to: string, body: string) {
+export async function sendWhatsAppMessage(
+  to: string,
+  body: string,
+  contentSid?: string,
+  contentVariables?: string
+) {
   try {
     const client = getTwilioClient()
 
@@ -72,22 +79,47 @@ export async function sendWhatsAppMessage(to: string, body: string) {
     // Formatear número de destino
     const formattedTo = formatWhatsAppNumber(to)
 
-    console.log('📤 Sending WhatsApp message:', {
-      from: twilioNumber,
-      to: formattedTo,
-      body: body.substring(0, 50) + '...',
-    })
+    // Determinar modo de envío
+    const usarPlantillaAprobada = !!contentSid
 
-    const message = await client.messages.create({
+    if (usarPlantillaAprobada) {
+      console.log('📤 Sending WhatsApp message (Approved Template):', {
+        from: twilioNumber,
+        to: formattedTo,
+        contentSid,
+      })
+    } else {
+      console.log('📤 Sending WhatsApp message (Sandbox):', {
+        from: twilioNumber,
+        to: formattedTo,
+        body: body.substring(0, 50) + '...',
+      })
+    }
+
+    // Crear mensaje según el modo
+    const messageParams: any = {
       from: twilioNumber,
       to: formattedTo,
-      body,
-    })
+    }
+
+    if (usarPlantillaAprobada) {
+      // Modo producción: Usar plantilla aprobada
+      messageParams.contentSid = contentSid
+      if (contentVariables) {
+        messageParams.contentVariables = contentVariables
+      }
+    } else {
+      // Modo sandbox: Usar texto libre
+      messageParams.body = body
+    }
+
+    const message = await client.messages.create(messageParams)
 
     console.log('✅ WhatsApp message sent successfully:', {
       sid: message.sid,
       status: message.status,
       to: formattedTo,
+      mode: usarPlantillaAprobada ? 'production' : 'sandbox',
     })
 
     return {

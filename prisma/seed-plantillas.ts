@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, TipoMensaje } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
@@ -8,7 +8,7 @@ async function main() {
   const plantillas = [
     {
       nombre: 'Confirmación de Cita',
-      tipo: 'AUTOMATICO_CONFIRMACION',
+      tipo: 'AUTOMATICO_CONFIRMACION' as TipoMensaje,
       contenido: `✅ Cita confirmada
 
 Hola {nombre}, tu cita ha sido agendada exitosamente.
@@ -27,7 +27,7 @@ Recibirás un recordatorio 24 horas antes.`,
     },
     {
       nombre: 'Recordatorio 24 horas',
-      tipo: 'AUTOMATICO_RECORDATORIO',
+      tipo: 'AUTOMATICO_RECORDATORIO' as TipoMensaje,
       contenido: `🔔 Recordatorio de cita
 
 Hola {nombre}, te recordamos tu cita:
@@ -46,7 +46,7 @@ Si necesitas reagendar: {url_portal}/cita/{codigo_cita}`,
     },
     {
       nombre: 'Recordatorio 1 hora',
-      tipo: 'AUTOMATICO_RECORDATORIO',
+      tipo: 'AUTOMATICO_RECORDATORIO' as TipoMensaje,
       contenido: `⏰ Tu cita es en 1 hora
 
 Hola {nombre}, te esperamos en:
@@ -59,7 +59,7 @@ Nos vemos pronto!`,
     },
     {
       nombre: 'Seguimiento Post-Consulta',
-      tipo: 'AUTOMATICO_SEGUIMIENTO',
+      tipo: 'AUTOMATICO_SEGUIMIENTO' as TipoMensaje,
       contenido: `🌟 Gracias por tu visita
 
 Hola {nombre}, esperamos que hayas tenido una buena consulta.
@@ -73,7 +73,7 @@ Consultorio Dr. Paul`,
     },
     {
       nombre: 'Confirmación de Cancelación',
-      tipo: 'MANUAL',
+      tipo: 'MANUAL' as TipoMensaje,
       contenido: `❓ Confirmación de cancelación
 
 Hola {nombre}, ¿estás seguro que deseas cancelar tu cita?
@@ -86,7 +86,7 @@ Responde SÍ para confirmar la cancelación.`,
     },
     {
       nombre: 'Cita Cancelada',
-      tipo: 'MANUAL',
+      tipo: 'MANUAL' as TipoMensaje,
       contenido: `❌ Cita cancelada
 
 Hola {nombre}, tu cita del {fecha_cita} a las {hora_cita} ha sido cancelada.

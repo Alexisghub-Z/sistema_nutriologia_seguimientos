@@ -25,16 +25,18 @@ interface Cita {
   notas?: string | null
 }
 
-export default function CitaPage({ params }: { params: Promise<{ codigo: string }> | { codigo: string } }) {
+export default function CitaPage({ params }: { params: Promise<{ codigo: string }> }) {
   // Unwrap params usando React.use()
-  const resolvedParams = params instanceof Promise ? use(params) : params
+  const resolvedParams = use(params)
   const codigo = resolvedParams.codigo
 
   const [cita, setCita] = useState<Cita | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [cancelando, setCancelando] = useState(false)
+  const [confirmando, setConfirmando] = useState(false)
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false)
+  const [mostrarConfirmacionAsistencia, setMostrarConfirmacionAsistencia] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -60,6 +62,32 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
       setError('Error de conexión')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const confirmarAsistencia = async () => {
+    if (!cita) return
+
+    try {
+      setConfirmando(true)
+
+      const response = await fetch(`/api/citas/codigo/${codigo}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion: 'confirmar' }),
+      })
+
+      if (response.ok) {
+        await cargarCita() // Recargar para mostrar estado actualizado
+        setMostrarConfirmacionAsistencia(false)
+      } else {
+        const data = await response.json()
+        setError(data.error || 'Error al confirmar la cita')
+      }
+    } catch (err) {
+      setError('Error de conexión')
+    } finally {
+      setConfirmando(false)
     }
   }
 
@@ -266,6 +294,29 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
           {/* Acciones */}
           {!citaCancelada && !citaPasada && (
             <section className={styles.actions}>
+              {/* Botón de confirmar solo si no está confirmada */}
+              {!cita.confirmada_por_paciente && (
+                <button
+                  onClick={() => setMostrarConfirmacionAsistencia(true)}
+                  className={styles.confirmButton}
+                  disabled={confirmando}
+                >
+                  {confirmando ? 'Confirmando...' : '✓ Confirmar Asistencia'}
+                </button>
+              )}
+
+              {/* Mensaje si ya está confirmada */}
+              {cita.confirmada_por_paciente && (
+                <div className={styles.alertSuccess}>
+                  ✓ Asistencia confirmada
+                  {cita.fecha_confirmacion && (
+                    <span className={styles.confirmDate}>
+                      {' '}el {new Date(cita.fecha_confirmacion).toLocaleDateString('es-MX')}
+                    </span>
+                  )}
+                </div>
+              )}
+
               <button
                 onClick={() => setMostrarConfirmacion(true)}
                 className={styles.cancelButton}
@@ -299,7 +350,37 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
           ← Volver al inicio
         </button>
 
-        {/* Modal de confirmación */}
+        {/* Modal de confirmación de asistencia */}
+        {mostrarConfirmacionAsistencia && (
+          <div className={styles.modal}>
+            <div className={styles.modalContent}>
+              <h3>Confirmar Asistencia</h3>
+              <p>¿Confirmas que asistirás a esta cita?</p>
+              <div className={styles.citaResumen}>
+                <p><strong>Fecha:</strong> {formatearFecha(cita.fecha_hora)}</p>
+                <p><strong>Hora:</strong> {formatearHora(cita.fecha_hora)}</p>
+              </div>
+              <div className={styles.modalActions}>
+                <button
+                  onClick={() => setMostrarConfirmacionAsistencia(false)}
+                  className={styles.modalCancelButton}
+                  disabled={confirmando}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmarAsistencia}
+                  className={styles.modalConfirmButtonSuccess}
+                  disabled={confirmando}
+                >
+                  {confirmando ? 'Confirmando...' : '✓ Sí, confirmar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de cancelación */}
         {mostrarConfirmacion && (
           <div className={styles.modal}>
             <div className={styles.modalContent}>
