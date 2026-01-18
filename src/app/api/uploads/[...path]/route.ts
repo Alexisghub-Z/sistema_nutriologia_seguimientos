@@ -6,7 +6,7 @@ import path from 'path'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  context: { params: Promise<{ path: string[] }> }
 ) {
   try {
     // Verificar autenticación
@@ -14,6 +14,8 @@ export async function GET(
     if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
+
+    const params = await context.params
 
     // Construir ruta del archivo
     const filePath = path.join(process.cwd(), 'uploads', ...params.path)

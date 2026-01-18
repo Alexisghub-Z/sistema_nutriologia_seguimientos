@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import MessageInput from './MessageInput'
 import Spinner from '@/components/ui/Spinner'
 import Alert from '@/components/ui/Alert'
-import { procesarPlantilla, generarVariablesPaciente } from '@/lib/utils/plantillas'
+import { reemplazarVariables, VariablesPlantilla } from '@/lib/utils/plantillas'
 import styles from './ChatWindow.module.css'
 
 interface Paciente {
@@ -269,12 +269,15 @@ export default function ChatWindow({ pacienteId, onMessageSent }: ChatWindowProp
         onProcessTemplate={(contenido) => {
           // Procesar plantilla con variables del paciente
           if (paciente) {
-            const variables = generarVariablesPaciente({
+            const variables: VariablesPlantilla = {
               nombre: paciente.nombre,
               email: paciente.email,
               telefono: paciente.telefono,
-            })
-            return procesarPlantilla(contenido, variables)
+              fecha_cita: new Date(), // Valor placeholder
+              hora_cita: '00:00',
+              codigo_cita: '',
+            }
+            return reemplazarVariables(contenido, variables)
           }
           return contenido
         }}

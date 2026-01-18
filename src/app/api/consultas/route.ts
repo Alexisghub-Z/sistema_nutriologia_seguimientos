@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth-utils'
 import prisma from '@/lib/prisma'
 import { z } from 'zod'
 import { getCache, setCache, deleteCache, deleteCachePattern, CacheKeys } from '@/lib/redis'
+import { programarSeguimiento } from '@/lib/queue/messages'
 
 // Schema de validación para crear consulta
 const consultaSchema = z.object({
@@ -14,16 +15,32 @@ const consultaSchema = z.object({
   }, 'Fecha inválida'),
   motivo: z.string().optional(),
 
-  // Mediciones
+  // Mediciones básicas
   peso: z.number().positive().optional(),
   talla: z.number().positive().optional(),
-  cintura: z.number().positive().optional(),
-  cadera: z.number().positive().optional(),
-  brazo: z.number().positive().optional(),
-  muslo: z.number().positive().optional(),
+
+  // Composición corporal
   grasa_corporal: z.number().min(0).max(100).optional(),
-  presion_sistolica: z.number().positive().optional(),
-  presion_diastolica: z.number().positive().optional(),
+  porcentaje_agua: z.number().min(0).max(100).optional(),
+  masa_muscular_kg: z.number().positive().optional(),
+  grasa_visceral: z.number().int().min(0).optional(),
+
+  // Perímetros
+  brazo_relajado: z.number().positive().optional(),
+  brazo_flexionado: z.number().positive().optional(),
+  cintura: z.number().positive().optional(),
+  cadera_maximo: z.number().positive().optional(),
+  muslo_maximo: z.number().positive().optional(),
+  muslo_medio: z.number().positive().optional(),
+  pantorrilla_maximo: z.number().positive().optional(),
+
+  // Pliegues cutáneos
+  pliegue_tricipital: z.number().positive().optional(),
+  pliegue_subescapular: z.number().positive().optional(),
+  pliegue_bicipital: z.number().positive().optional(),
+  pliegue_cresta_iliaca: z.number().positive().optional(),
+  pliegue_supraespinal: z.number().positive().optional(),
+  pliegue_abdominal: z.number().positive().optional(),
 
   // Notas
   notas: z.string().optional(),
@@ -140,16 +157,36 @@ export async function POST(request: NextRequest) {
         paciente_id: validatedData.paciente_id,
         fecha: new Date(validatedData.fecha),
         motivo: validatedData.motivo,
+
+        // Mediciones básicas
         peso: validatedData.peso,
         talla: validatedData.talla,
         imc,
-        cintura: validatedData.cintura,
-        cadera: validatedData.cadera,
-        brazo: validatedData.brazo,
-        muslo: validatedData.muslo,
+
+        // Composición corporal
         grasa_corporal: validatedData.grasa_corporal,
-        presion_sistolica: validatedData.presion_sistolica,
-        presion_diastolica: validatedData.presion_diastolica,
+        porcentaje_agua: validatedData.porcentaje_agua,
+        masa_muscular_kg: validatedData.masa_muscular_kg,
+        grasa_visceral: validatedData.grasa_visceral,
+
+        // Perímetros
+        brazo_relajado: validatedData.brazo_relajado,
+        brazo_flexionado: validatedData.brazo_flexionado,
+        cintura: validatedData.cintura,
+        cadera_maximo: validatedData.cadera_maximo,
+        muslo_maximo: validatedData.muslo_maximo,
+        muslo_medio: validatedData.muslo_medio,
+        pantorrilla_maximo: validatedData.pantorrilla_maximo,
+
+        // Pliegues cutáneos
+        pliegue_tricipital: validatedData.pliegue_tricipital,
+        pliegue_subescapular: validatedData.pliegue_subescapular,
+        pliegue_bicipital: validatedData.pliegue_bicipital,
+        pliegue_cresta_iliaca: validatedData.pliegue_cresta_iliaca,
+        pliegue_supraespinal: validatedData.pliegue_supraespinal,
+        pliegue_abdominal: validatedData.pliegue_abdominal,
+
+        // Notas
         notas: validatedData.notas,
         diagnostico: validatedData.diagnostico,
         objetivo: validatedData.objetivo,
@@ -161,6 +198,18 @@ export async function POST(request: NextRequest) {
         archivos: true,
       },
     })
+
+    // Programar recordatorio de seguimiento si tiene próxima cita sugerida
+    if (validatedData.proxima_cita) {
+      try {
+        const fechaSugerida = new Date(validatedData.proxima_cita)
+        await programarSeguimiento(consulta.id, fechaSugerida)
+        console.log('📅 Recordatorio de seguimiento programado para:', fechaSugerida.toLocaleString('es-MX'))
+      } catch (queueError) {
+        console.error('Error al programar seguimiento:', queueError)
+        // No fallar la creación de la consulta si hay error en la programación
+      }
+    }
 
     // Invalidar caché de consultas del paciente y detalle del paciente
     await deleteCachePattern(`consultations:${validatedData.paciente_id}:*`)

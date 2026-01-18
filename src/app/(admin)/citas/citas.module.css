@@ -1,0 +1,367 @@
+.container {
+  padding: var(--spacing-xl);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-lg);
+}
+
+.headerActions {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.subtitle {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.btnPrimary {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.btnPrimary:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.selectPaciente {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  color: var(--color-text);
+  background: white;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-width: 200px;
+}
+
+.selectPaciente:hover {
+  border-color: var(--color-primary);
+}
+
+.selectPaciente:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(45, 159, 93, 0.1);
+}
+
+.filtroActivo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: linear-gradient(135deg, rgba(45, 159, 93, 0.1) 0%, rgba(45, 159, 93, 0.05) 100%);
+  border: 1px solid rgba(45, 159, 93, 0.2);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.filtroInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--color-primary-dark);
+  font-size: var(--font-size-md);
+}
+
+.filtroInfo svg {
+  flex-shrink: 0;
+}
+
+.filtroInfo strong {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+}
+
+.btnLimpiarFiltro {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btnLimpiarFiltro:hover {
+  background: var(--color-gray-50);
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+}
+
+.navegacion {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.btnNav {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 20px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btnNav:hover {
+  background: var(--color-gray-50);
+  border-color: var(--color-primary);
+}
+
+.mesTitle {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0;
+  min-width: 200px;
+  text-align: center;
+}
+
+.btnHoy {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btnHoy:hover {
+  background: var(--color-gray-50);
+  border-color: var(--color-primary);
+}
+
+.leyenda {
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+}
+
+.leyendaTitle {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.leyendaItems {
+  display: flex;
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+.leyendaItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.leyendaColor {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.calendario {
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.diasSemana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: var(--color-gray-50);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.diaSemana {
+  padding: var(--spacing-md);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+}
+
+.diasGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+}
+
+.diaVacio {
+  background: var(--color-gray-50);
+  min-height: 120px;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dia {
+  min-height: 120px;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--spacing-sm);
+  background: white;
+  transition: background-color var(--transition-fast);
+  cursor: pointer;
+}
+
+.dia:hover {
+  background: var(--color-gray-50);
+}
+
+.diaHoy {
+  background: rgba(45, 159, 93, 0.05);
+}
+
+.diaHoy .diaNumero {
+  background: var(--color-primary);
+  color: white;
+}
+
+.diaNumero {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  border-radius: var(--radius-full);
+  margin-bottom: var(--spacing-xs);
+}
+
+.citasDelDia {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.citaMini {
+  padding: 4px 6px;
+  background: white;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid;
+  border-radius: 3px;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.citaMini:hover {
+  box-shadow: var(--shadow-sm);
+  z-index: 10;
+  transform: scale(1.02);
+}
+
+.citaHora {
+  font-weight: var(--font-weight-semibold);
+  margin-right: 4px;
+  color: var(--color-text);
+}
+
+.citaPaciente {
+  color: var(--color-text-secondary);
+}
+
+.citasMas {
+  padding: 4px 6px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  text-align: center;
+  font-weight: var(--font-weight-medium);
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2xl);
+  gap: var(--spacing-md);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-gray-200);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error {
+  padding: var(--spacing-md);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-md);
+  color: var(--color-error);
+  margin-top: var(--spacing-md);
+}

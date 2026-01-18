@@ -225,6 +225,35 @@ Clases utilitarias disponibles globalmente:
 - `.mb-*`, `.mt-*`: Márgenes
 - `.gap-*`: Gaps para flexbox/grid
 
+## 🔗 Configurar Integraciones
+
+### Google Calendar
+
+Para sincronizar citas automáticamente con Google Calendar:
+
+1. **Guía Rápida**: Ver [docs/GOOGLE_CALENDAR_QUICKSTART.md](./docs/GOOGLE_CALENDAR_QUICKSTART.md)
+2. **Guía Completa**: Ver [docs/GOOGLE_CALENDAR_SETUP.md](./docs/GOOGLE_CALENDAR_SETUP.md)
+
+Resumen:
+- Crear proyecto en Google Cloud Console
+- Habilitar Google Calendar API
+- Obtener Client ID y Client Secret
+- Configurar variables de entorno
+- Conectar desde `/configuracion/google-calendar`
+
+### Twilio WhatsApp
+
+Para mensajería automática por WhatsApp:
+
+1. Crear cuenta en Twilio
+2. Activar WhatsApp Sandbox para desarrollo
+3. Configurar variables de entorno:
+   ```env
+   TWILIO_ACCOUNT_SID="tu-account-sid"
+   TWILIO_AUTH_TOKEN="tu-auth-token"
+   TWILIO_WHATSAPP_NUMBER="whatsapp:+14155238886"
+   ```
+
 ## 🗄️ Comandos Útiles
 
 ### Desarrollo

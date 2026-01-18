@@ -19,13 +19,18 @@ export default function NuevaCitaPage() {
     hora: '',
     duracion_minutos: '60',
     motivo_consulta: '',
+    confirmada_por_admin: true, // Por defecto, las citas del admin están pre-confirmadas
   })
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    const { name, value, type } = e.target
+    const checked = (e.target as HTMLInputElement).checked
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,6 +58,7 @@ export default function NuevaCitaPage() {
           fecha_hora,
           duracion_minutos: parseInt(formData.duracion_minutos),
           motivo_consulta: formData.motivo_consulta,
+          confirmada_por_admin: formData.confirmada_por_admin,
         }),
       })
 
@@ -188,6 +194,27 @@ export default function NuevaCitaPage() {
               required
               disabled={loading}
             />
+          </div>
+
+          {/* Confirmación */}
+          <div className={styles.formGroup}>
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                name="confirmada_por_admin"
+                checked={formData.confirmada_por_admin}
+                onChange={handleChange}
+                className={styles.checkbox}
+                disabled={loading}
+              />
+              <span className={styles.checkboxText}>
+                <strong>Cita ya confirmada</strong>
+                <small className={styles.checkboxHint}>
+                  Marca esta opción si ya confirmaste la cita con el paciente (por teléfono, presencial, etc.).
+                  Si no la marcas, el paciente recibirá un mensaje para confirmar su asistencia.
+                </small>
+              </span>
+            </label>
           </div>
 
           {/* Info */}
