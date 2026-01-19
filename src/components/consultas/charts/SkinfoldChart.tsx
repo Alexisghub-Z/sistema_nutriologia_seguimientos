@@ -97,7 +97,7 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
       </div>
 
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={dataConSuma.slice().reverse()}>
+        <LineChart data={dataConSuma}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis
             dataKey="fecha"
