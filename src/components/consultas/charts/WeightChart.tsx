@@ -33,15 +33,15 @@ export default function WeightChart({ data }: WeightChartProps) {
     })
   }
 
-  // Calcular estadísticas
+  // Calcular estadísticas (datos vienen ordenados de más antiguo a más reciente)
   const pesos = validData.filter(d => d.peso !== null).map(d => d.peso!)
-  const pesoInicial = pesos[pesos.length - 1]
-  const pesoActual = pesos[0]
+  const pesoInicial = pesos[0] // Primer elemento = más antiguo
+  const pesoActual = pesos[pesos.length - 1] // Último elemento = más reciente
   const diferenciaPeso = pesoActual - pesoInicial
 
   const imcs = validData.filter(d => d.imc !== null).map(d => d.imc!)
-  const imcInicial = imcs[imcs.length - 1]
-  const imcActual = imcs[0]
+  const imcInicial = imcs[0]
+  const imcActual = imcs[imcs.length - 1]
 
   return (
     <div className={styles.chartContainer}>
@@ -79,7 +79,7 @@ export default function WeightChart({ data }: WeightChartProps) {
       </div>
 
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={validData.slice().reverse()}>
+        <LineChart data={validData}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis
             dataKey="fecha"
