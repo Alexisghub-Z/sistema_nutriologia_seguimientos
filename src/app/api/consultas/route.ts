@@ -52,6 +52,7 @@ const consultaSchema = z.object({
 })
 
 // GET /api/consultas?paciente_id=xxx - Obtener consultas de un paciente con paginación (con caché)
+// GET /api/consultas?paciente_id=xxx&all=true - Obtener TODAS las consultas (para gráficas)
 export async function GET(request: NextRequest) {
   try {
     const user = await getAuthUser()
@@ -61,6 +62,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const paciente_id = searchParams.get('paciente_id')
+    const all = searchParams.get('all') === 'true'
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
 
@@ -71,7 +73,58 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Generar clave de caché
+    // Si se solicitan TODAS las consultas (para gráficas)
+    if (all) {
+      const cacheKey = `consultations:${paciente_id}:all`
+
+      // Intentar obtener del caché
+      const cached = await getCache<any>(cacheKey)
+      if (cached) {
+        console.log('✅ Cache HIT: all consultations', paciente_id)
+        return NextResponse.json(cached)
+      }
+
+      console.log('❌ Cache MISS: all consultations', paciente_id)
+
+      // Obtener todas las consultas (solo los datos necesarios para gráficas)
+      const consultas = await prisma.consulta.findMany({
+        where: { paciente_id },
+        orderBy: { fecha: 'desc' },
+        select: {
+          id: true,
+          fecha: true,
+          peso: true,
+          talla: true,
+          imc: true,
+          grasa_corporal: true,
+          porcentaje_agua: true,
+          masa_muscular_kg: true,
+          grasa_visceral: true,
+          brazo_relajado: true,
+          brazo_flexionado: true,
+          cintura: true,
+          cadera_maximo: true,
+          muslo_maximo: true,
+          muslo_medio: true,
+          pantorrilla_maximo: true,
+          pliegue_tricipital: true,
+          pliegue_subescapular: true,
+          pliegue_bicipital: true,
+          pliegue_cresta_iliaca: true,
+          pliegue_supraespinal: true,
+          pliegue_abdominal: true,
+        },
+      })
+
+      const response = { consultas }
+
+      // Guardar en caché (5 minutos para datos de gráficas)
+      await setCache(cacheKey, response, 300)
+
+      return NextResponse.json(response)
+    }
+
+    // Modo normal con paginación
     const cacheKey = CacheKeys.consultationsList(paciente_id, page, limit)
 
     // Intentar obtener del caché
