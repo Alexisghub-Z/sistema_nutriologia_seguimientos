@@ -105,9 +105,10 @@ export async function POST(request: NextRequest) {
     })
 
     if (paciente) {
-      // Actualizar teléfono si es diferente
+      // Paciente ya existe, verificar si hay cambios
+
+      // Verificar si el teléfono cambió y si está en uso por otro paciente
       if (paciente.telefono !== validatedData.telefono) {
-        // Verificar que el nuevo teléfono no esté en uso
         const telefonoEnUso = await prisma.paciente.findUnique({
           where: { telefono: validatedData.telefono },
         })
@@ -117,14 +118,32 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           )
         }
+      }
 
+      // Actualizar datos del paciente si hay cambios
+      const datosActualizados: any = {}
+
+      if (paciente.nombre !== validatedData.nombre) {
+        datosActualizados.nombre = validatedData.nombre
+      }
+
+      if (paciente.telefono !== validatedData.telefono) {
+        datosActualizados.telefono = validatedData.telefono
+      }
+
+      const fechaNacimientoNueva = new Date(validatedData.fecha_nacimiento)
+      const fechaNacimientoActual = new Date(paciente.fecha_nacimiento)
+      if (fechaNacimientoNueva.getTime() !== fechaNacimientoActual.getTime()) {
+        datosActualizados.fecha_nacimiento = fechaNacimientoNueva
+      }
+
+      // Si hay cambios, actualizar paciente
+      if (Object.keys(datosActualizados).length > 0) {
         paciente = await prisma.paciente.update({
           where: { id: paciente.id },
-          data: {
-            telefono: validatedData.telefono,
-            nombre: validatedData.nombre,
-          },
+          data: datosActualizados,
         })
+        console.log(`✏️  Datos del paciente actualizados: ${paciente.id}`, Object.keys(datosActualizados))
       }
     } else {
       // Verificar que el teléfono no esté en uso
