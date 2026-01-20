@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { deleteCache, deleteCachePattern, CacheKeys } from '@/lib/redis'
 import { cancelarJobsCita } from '@/lib/queue/messages'
+import { unsyncCitaFromGoogleCalendar, isGoogleCalendarConfigured } from '@/lib/services/google-calendar'
 
 // GET /api/citas/codigo/[codigo] - Buscar cita por código
 export async function GET(
@@ -21,18 +22,21 @@ export async function GET(
             nombre: true,
             email: true,
             telefono: true,
+            fecha_nacimiento: true,
           },
         },
       },
     })
 
     if (!cita) {
+      console.log(`❌ Cita no encontrada con código: ${codigo}`)
       return NextResponse.json(
-        { error: 'Cita no encontrada' },
+        { error: 'No se encontró ninguna cita con este código' },
         { status: 404 }
       )
     }
 
+    console.log(`✅ Cita encontrada: ${cita.id} (${codigo})`)
     return NextResponse.json(cita)
   } catch (error) {
     console.error('Error al buscar cita:', error)
@@ -130,6 +134,7 @@ export async function PUT(
               nombre: true,
               email: true,
               telefono: true,
+              fecha_nacimiento: true,
             },
           },
         },
@@ -151,6 +156,7 @@ export async function PUT(
               nombre: true,
               email: true,
               telefono: true,
+              fecha_nacimiento: true,
             },
           },
         },
@@ -163,6 +169,18 @@ export async function PUT(
       } catch (jobError) {
         console.error('Error al cancelar jobs:', jobError)
         // No fallar la operación si no se pueden cancelar los jobs
+      }
+
+      // Eliminar evento de Google Calendar si existe
+      try {
+        const isGoogleConfigured = await isGoogleCalendarConfigured()
+        if (isGoogleConfigured && cita.google_event_id) {
+          await unsyncCitaFromGoogleCalendar(cita.id)
+          console.log(`🗓️  Evento de Google Calendar eliminado: ${cita.google_event_id}`)
+        }
+      } catch (calendarError) {
+        console.error('Error al eliminar evento de Google Calendar:', calendarError)
+        // No fallar la operación si no se puede eliminar del calendario
       }
     }
 
