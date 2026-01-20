@@ -73,6 +73,39 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = citaSchema.parse(body)
 
+    // Verificar si el paciente ya tiene una cita activa (PENDIENTE y futura)
+    const citaActiva = await prisma.cita.findFirst({
+      where: {
+        paciente_id: validatedData.paciente_id,
+        estado: 'PENDIENTE',
+        fecha_hora: {
+          gte: new Date(), // Solo citas futuras
+        },
+      },
+      select: {
+        id: true,
+        codigo_cita: true,
+        fecha_hora: true,
+        motivo_consulta: true,
+      },
+    })
+
+    if (citaActiva) {
+      return NextResponse.json(
+        {
+          error: 'El paciente ya tiene una cita pendiente',
+          mensaje:
+            'Solo se permite una cita activa por paciente. Cancela o completa la cita actual antes de crear una nueva.',
+          cita_existente: {
+            codigo: citaActiva.codigo_cita,
+            fecha: citaActiva.fecha_hora,
+            motivo: citaActiva.motivo_consulta,
+          },
+        },
+        { status: 409 }
+      )
+    }
+
     // Crear cita
     const cita = await prisma.cita.create({
       data: {
