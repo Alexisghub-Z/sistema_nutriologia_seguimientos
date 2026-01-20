@@ -9,6 +9,7 @@ interface Paciente {
   nombre: string
   email: string | null
   telefono: string
+  fecha_nacimiento: string
 }
 
 interface Cita {
@@ -17,6 +18,7 @@ interface Cita {
   fecha_hora: string
   duracion_minutos: number
   motivo: string
+  motivo_consulta: string
   estado: string
   estado_confirmacion: string
   confirmada_por_paciente: boolean
@@ -26,7 +28,6 @@ interface Cita {
 }
 
 export default function CitaPage({ params }: { params: Promise<{ codigo: string }> }) {
-  // Unwrap params usando React.use()
   const resolvedParams = use(params)
   const codigo = resolvedParams.codigo
 
@@ -35,8 +36,10 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
   const [error, setError] = useState('')
   const [cancelando, setCancelando] = useState(false)
   const [confirmando, setConfirmando] = useState(false)
+  const [reagendando, setReagendando] = useState(false)
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false)
   const [mostrarConfirmacionAsistencia, setMostrarConfirmacionAsistencia] = useState(false)
+  const [mostrarConfirmacionReagendar, setMostrarConfirmacionReagendar] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -78,7 +81,7 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
       })
 
       if (response.ok) {
-        await cargarCita() // Recargar para mostrar estado actualizado
+        await cargarCita()
         setMostrarConfirmacionAsistencia(false)
       } else {
         const data = await response.json()
@@ -104,7 +107,7 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
       })
 
       if (response.ok) {
-        await cargarCita() // Recargar para mostrar estado actualizado
+        await cargarCita()
         setMostrarConfirmacion(false)
       } else {
         setError('Error al cancelar la cita')
@@ -113,6 +116,88 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
       setError('Error de conexión')
     } finally {
       setCancelando(false)
+    }
+  }
+
+  const validarReagendar = () => {
+    if (!cita) return false
+
+    // No se puede reagendar una cita cancelada
+    if (cita.estado === 'CANCELADA' || cita.estado_confirmacion === 'CANCELADA_PACIENTE') {
+      setError('No puedes reagendar una cita cancelada. Por favor, agenda una nueva cita.')
+      return false
+    }
+
+    // No se puede reagendar una cita completada
+    if (cita.estado === 'COMPLETADA') {
+      setError('No puedes reagendar una cita ya completada. Por favor, agenda una nueva cita.')
+      return false
+    }
+
+    // No se puede reagendar si el paciente no asistió
+    if (cita.estado === 'NO_ASISTIO') {
+      setError('No puedes reagendar esta cita. Por favor, agenda una nueva cita.')
+      return false
+    }
+
+    const fechaCita = new Date(cita.fecha_hora)
+    const ahora = new Date()
+
+    // No se puede reagendar una cita pasada (con margen de 2 horas)
+    const dosMasAtras = new Date(ahora.getTime() - 2 * 60 * 60 * 1000)
+    if (fechaCita < dosMasAtras) {
+      setError('No puedes reagendar una cita pasada. Por favor, agenda una nueva cita.')
+      return false
+    }
+
+    return true
+  }
+
+  const reagendarCita = async () => {
+    if (!cita) return
+
+    try {
+      setReagendando(true)
+      setError('')
+
+      // Cancelar la cita actual
+      const response = await fetch(`/api/citas/codigo/${codigo}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion: 'cancelar' }),
+      })
+
+      if (!response.ok) {
+        setError('Error al cancelar la cita actual')
+        return
+      }
+
+      // Guardar datos en localStorage para pre-llenar el formulario
+      const datosReagendar = {
+        nombre: cita.paciente.nombre,
+        email: cita.paciente.email || '',
+        telefono: cita.paciente.telefono,
+        fecha_nacimiento: cita.paciente.fecha_nacimiento,
+        motivo: cita.motivo_consulta || cita.motivo,
+        reagendando: true,
+        citaOriginal: codigo,
+      }
+
+      localStorage.setItem('datosReagendar', JSON.stringify(datosReagendar))
+
+      // Redirigir a agendar
+      router.push('/agendar?reagendar=true')
+    } catch (err) {
+      setError('Error de conexión al reagendar')
+    } finally {
+      setReagendando(false)
+      setMostrarConfirmacionReagendar(false)
+    }
+  }
+
+  const iniciarReagendar = () => {
+    if (validarReagendar()) {
+      setMostrarConfirmacionReagendar(true)
     }
   }
 
@@ -134,40 +219,15 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
     }).format(date)
   }
 
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'PENDIENTE':
-        return 'warning'
-      case 'CONFIRMADA':
-        return 'success'
-      case 'COMPLETADA':
-        return 'info'
-      case 'CANCELADA':
-        return 'danger'
-      default:
-        return 'default'
-    }
-  }
-
   const getEstadoTexto = (estado: string, estadoConfirmacion: string, confirmada: boolean) => {
-    // Estados de cancelación
-    if (estadoConfirmacion === 'CANCELADA_PACIENTE') return 'Cancelada por ti'
+    if (estadoConfirmacion === 'CANCELADA_PACIENTE') return 'Cancelada'
     if (estado === 'CANCELADA') return 'Cancelada'
-
-    // Estado completada
     if (estado === 'COMPLETADA') return 'Completada'
-
-    // Estado no asistió
     if (estado === 'NO_ASISTIO') return 'No asistió'
-
-    // Estados pendientes
     if (estado === 'PENDIENTE') {
       if (confirmada) return 'Confirmada'
-      if (estadoConfirmacion === 'RECORDATORIO_ENVIADO') return 'Recordatorio enviado'
-      if (estadoConfirmacion === 'NO_CONFIRMADA') return 'No confirmada'
-      return 'Pendiente de confirmación'
+      return 'Pendiente'
     }
-
     return estado
   }
 
@@ -176,7 +236,7 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
       <main className={styles.main}>
         <div className={styles.loader}>
           <div className={styles.spinner}></div>
-          <p>Cargando información de la cita...</p>
+          <p>Cargando información...</p>
         </div>
       </main>
     )
@@ -186,7 +246,6 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
     return (
       <main className={styles.main}>
         <div className={styles.errorCard}>
-          <span className={styles.errorIcon}>⚠️</span>
           <h2>Error</h2>
           <p>{error || 'No se pudo cargar la cita'}</p>
           <button onClick={() => router.push('/')} className={styles.backButton}>
@@ -204,211 +263,237 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
     <main className={styles.main}>
       <div className={styles.container}>
         <div className={styles.header}>
-          <h1>Detalles de tu Cita</h1>
-          <div className={`${styles.badge} ${styles[getEstadoColor(cita.estado)]}`}>
-            {getEstadoTexto(cita.estado, cita.estado_confirmacion, cita.confirmada_por_paciente)}
-          </div>
+          <button onClick={() => router.push('/')} className={styles.backButton}>
+            ← Volver
+          </button>
+          <h1>Dr. Paul</h1>
         </div>
 
         <div className={styles.citaCard}>
-          {/* Información del paciente */}
-          <section className={styles.section}>
-            <h2>Paciente</h2>
-            <div className={styles.info}>
-              <div className={styles.infoRow}>
-                <span className={styles.icon}>👤</span>
-                <div>
-                  <p className={styles.label}>Nombre</p>
-                  <p className={styles.value}>{cita.paciente.nombre}</p>
-                </div>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.icon}>📱</span>
-                <div>
-                  <p className={styles.label}>Teléfono</p>
-                  <p className={styles.value}>{cita.paciente.telefono}</p>
-                </div>
-              </div>
-              {cita.paciente.email && (
-                <div className={styles.infoRow}>
-                  <span className={styles.icon}>📧</span>
-                  <div>
-                    <p className={styles.label}>Email</p>
-                    <p className={styles.value}>{cita.paciente.email}</p>
-                  </div>
-                </div>
-              )}
+          <div className={styles.statusHeader}>
+            <h2>Tu Cita</h2>
+            <div className={styles.statusBadge}>
+              {getEstadoTexto(cita.estado, cita.estado_confirmacion, cita.confirmada_por_paciente)}
             </div>
-          </section>
+          </div>
 
-          {/* Información de la cita */}
-          <section className={styles.section}>
-            <h2>Información de la Cita</h2>
-            <div className={styles.info}>
-              <div className={styles.infoRow}>
-                <span className={styles.icon}>📅</span>
-                <div>
-                  <p className={styles.label}>Fecha</p>
-                  <p className={styles.value}>{formatearFecha(cita.fecha_hora)}</p>
-                </div>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.icon}>🕐</span>
-                <div>
-                  <p className={styles.label}>Hora</p>
-                  <p className={styles.value}>{formatearHora(cita.fecha_hora)}</p>
-                </div>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.icon}>⏱️</span>
-                <div>
-                  <p className={styles.label}>Duración</p>
-                  <p className={styles.value}>{cita.duracion_minutos} minutos</p>
-                </div>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.icon}>📝</span>
-                <div>
-                  <p className={styles.label}>Motivo</p>
-                  <p className={styles.value}>{cita.motivo}</p>
-                </div>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.icon}>🔑</span>
-                <div>
-                  <p className={styles.label}>Código de cita</p>
-                  <p className={styles.valueBold}>{cita.codigo_cita}</p>
-                </div>
-              </div>
+          {/* Información principal */}
+          <div className={styles.mainInfo}>
+            <div className={styles.infoBlock}>
+              <span className={styles.infoLabel}>Fecha</span>
+              <span className={styles.infoValue}>{formatearFecha(cita.fecha_hora)}</span>
             </div>
-          </section>
+            <div className={styles.infoDivider}></div>
+            <div className={styles.infoBlock}>
+              <span className={styles.infoLabel}>Hora</span>
+              <span className={styles.infoValue}>{formatearHora(cita.fecha_hora)}</span>
+            </div>
+            <div className={styles.infoDivider}></div>
+            <div className={styles.infoBlock}>
+              <span className={styles.infoLabel}>Duración</span>
+              <span className={styles.infoValue}>{cita.duracion_minutos} min</span>
+            </div>
+          </div>
 
-          {/* Notas adicionales */}
+          {/* Detalles */}
+          <div className={styles.details}>
+            <div className={styles.detailRow}>
+              <span className={styles.detailLabel}>Paciente</span>
+              <span className={styles.detailValue}>{cita.paciente.nombre}</span>
+            </div>
+            <div className={styles.detailRow}>
+              <span className={styles.detailLabel}>Teléfono</span>
+              <span className={styles.detailValue}>{cita.paciente.telefono}</span>
+            </div>
+            {cita.paciente.email && (
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>Email</span>
+                <span className={styles.detailValue}>{cita.paciente.email}</span>
+              </div>
+            )}
+            <div className={styles.detailRow}>
+              <span className={styles.detailLabel}>Motivo</span>
+              <span className={styles.detailValue}>{cita.motivo_consulta || cita.motivo}</span>
+            </div>
+            <div className={styles.detailRow}>
+              <span className={styles.detailLabel}>Código</span>
+              <span className={styles.detailValueBold}>{cita.codigo_cita}</span>
+            </div>
+          </div>
+
+          {/* Notas */}
           {cita.notas && (
-            <section className={styles.section}>
-              <h2>Notas</h2>
-              <p className={styles.notas}>{cita.notas}</p>
-            </section>
+            <div className={styles.notes}>
+              <span className={styles.notesLabel}>Notas</span>
+              <p>{cita.notas}</p>
+            </div>
           )}
 
           {/* Acciones */}
           {!citaCancelada && !citaPasada && (
-            <section className={styles.actions}>
-              {/* Botón de confirmar solo si no está confirmada */}
-              {!cita.confirmada_por_paciente && (
-                <button
-                  onClick={() => setMostrarConfirmacionAsistencia(true)}
-                  className={styles.confirmButton}
-                  disabled={confirmando}
-                >
-                  {confirmando ? 'Confirmando...' : '✓ Confirmar Asistencia'}
-                </button>
-              )}
+            <div className={styles.actions}>
+              {cita.confirmada_por_paciente ? (
+                <>
+                  <div className={styles.alertSuccess}>
+                    Asistencia confirmada
+                    {cita.fecha_confirmacion && (
+                      <span> el {new Date(cita.fecha_confirmacion).toLocaleDateString('es-MX')}</span>
+                    )}
+                  </div>
+                  <div className={styles.actionsConfirmada}>
+                    <button
+                      onClick={iniciarReagendar}
+                      className={styles.rescheduleButton}
+                      disabled={reagendando}
+                    >
+                      {reagendando ? 'Reagendando...' : 'Reagendar'}
+                    </button>
+                    <button
+                      onClick={() => setMostrarConfirmacion(true)}
+                      className={styles.cancelButton}
+                      disabled={cancelando}
+                    >
+                      {cancelando ? 'Cancelando...' : 'Cancelar Cita'}
+                    </button>
+                    <button
+                      onClick={() => router.push('/')}
+                      className={styles.doneButton}
+                    >
+                      Listo
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setMostrarConfirmacionAsistencia(true)}
+                    className={styles.confirmButton}
+                    disabled={confirmando}
+                  >
+                    {confirmando ? 'Confirmando...' : 'Confirmar Asistencia'}
+                  </button>
 
-              {/* Mensaje si ya está confirmada */}
-              {cita.confirmada_por_paciente && (
-                <div className={styles.alertSuccess}>
-                  ✓ Asistencia confirmada
-                  {cita.fecha_confirmacion && (
-                    <span className={styles.confirmDate}>
-                      {' '}el {new Date(cita.fecha_confirmacion).toLocaleDateString('es-MX')}
-                    </span>
-                  )}
-                </div>
-              )}
+                  <button
+                    onClick={iniciarReagendar}
+                    className={styles.rescheduleButton}
+                    disabled={reagendando}
+                  >
+                    {reagendando ? 'Reagendando...' : 'Reagendar'}
+                  </button>
 
-              <button
-                onClick={() => setMostrarConfirmacion(true)}
-                className={styles.cancelButton}
-                disabled={cancelando}
-              >
-                {cancelando ? 'Cancelando...' : 'Cancelar Cita'}
-              </button>
-              <button
-                onClick={() => router.push('/')}
-                className={styles.rescheduleButton}
-              >
-                Reagendar Cita
-              </button>
-            </section>
+                  <button
+                    onClick={() => setMostrarConfirmacion(true)}
+                    className={styles.cancelButton}
+                    disabled={cancelando}
+                  >
+                    {cancelando ? 'Cancelando...' : 'Cancelar Cita'}
+                  </button>
+                </>
+              )}
+            </div>
           )}
 
           {citaCancelada && (
-            <div className={styles.alertDanger}>
-              ⚠️ Esta cita ha sido cancelada
+            <div className={styles.alert}>
+              Esta cita ha sido cancelada
             </div>
           )}
 
           {citaPasada && !citaCancelada && (
-            <div className={styles.alertInfo}>
-              ℹ️ Esta cita ya fue realizada
+            <div className={styles.alert}>
+              Esta cita ya fue realizada
             </div>
           )}
         </div>
-
-        <button onClick={() => router.push('/')} className={styles.backLink}>
-          ← Volver al inicio
-        </button>
-
-        {/* Modal de confirmación de asistencia */}
-        {mostrarConfirmacionAsistencia && (
-          <div className={styles.modal}>
-            <div className={styles.modalContent}>
-              <h3>Confirmar Asistencia</h3>
-              <p>¿Confirmas que asistirás a esta cita?</p>
-              <div className={styles.citaResumen}>
-                <p><strong>Fecha:</strong> {formatearFecha(cita.fecha_hora)}</p>
-                <p><strong>Hora:</strong> {formatearHora(cita.fecha_hora)}</p>
-              </div>
-              <div className={styles.modalActions}>
-                <button
-                  onClick={() => setMostrarConfirmacionAsistencia(false)}
-                  className={styles.modalCancelButton}
-                  disabled={confirmando}
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={confirmarAsistencia}
-                  className={styles.modalConfirmButtonSuccess}
-                  disabled={confirmando}
-                >
-                  {confirmando ? 'Confirmando...' : '✓ Sí, confirmar'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Modal de cancelación */}
-        {mostrarConfirmacion && (
-          <div className={styles.modal}>
-            <div className={styles.modalContent}>
-              <h3>¿Estás seguro?</h3>
-              <p>¿Deseas cancelar esta cita?</p>
-              <p className={styles.modalWarning}>
-                Esta acción no se puede deshacer.
-              </p>
-              <div className={styles.modalActions}>
-                <button
-                  onClick={() => setMostrarConfirmacion(false)}
-                  className={styles.modalCancelButton}
-                  disabled={cancelando}
-                >
-                  No, mantener cita
-                </button>
-                <button
-                  onClick={cancelarCita}
-                  className={styles.modalConfirmButton}
-                  disabled={cancelando}
-                >
-                  {cancelando ? 'Cancelando...' : 'Sí, cancelar'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Modal confirmar asistencia */}
+      {mostrarConfirmacionAsistencia && (
+        <div className={styles.modal}>
+          <div className={styles.modalContent}>
+            <h3>Confirmar Asistencia</h3>
+            <p>¿Confirmas que asistirás a esta cita?</p>
+            <div className={styles.modalInfo}>
+              <p><strong>Fecha:</strong> {formatearFecha(cita.fecha_hora)}</p>
+              <p><strong>Hora:</strong> {formatearHora(cita.fecha_hora)}</p>
+            </div>
+            <div className={styles.modalActions}>
+              <button
+                onClick={() => setMostrarConfirmacionAsistencia(false)}
+                className={styles.modalCancelButton}
+                disabled={confirmando}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarAsistencia}
+                className={styles.modalConfirmButton}
+                disabled={confirmando}
+              >
+                {confirmando ? 'Confirmando...' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal reagendar */}
+      {mostrarConfirmacionReagendar && (
+        <div className={styles.modal}>
+          <div className={styles.modalContent}>
+            <h3>Reagendar Cita</h3>
+            <p>¿Deseas reagendar esta cita?</p>
+            <div className={styles.modalInfo}>
+              <p><strong>Cita actual:</strong></p>
+              <p>{formatearFecha(cita.fecha_hora)} a las {formatearHora(cita.fecha_hora)}</p>
+            </div>
+            <p>Tu cita actual será cancelada y podrás seleccionar una nueva fecha y hora.</p>
+            <div className={styles.modalActions}>
+              <button
+                onClick={() => setMostrarConfirmacionReagendar(false)}
+                className={styles.modalCancelButton}
+                disabled={reagendando}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={reagendarCita}
+                className={styles.modalConfirmButton}
+                disabled={reagendando}
+              >
+                {reagendando ? 'Reagendando...' : 'Sí, reagendar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal cancelar */}
+      {mostrarConfirmacion && (
+        <div className={styles.modal}>
+          <div className={styles.modalContent}>
+            <h3>Cancelar Cita</h3>
+            <p>¿Estás seguro de que deseas cancelar esta cita?</p>
+            <p className={styles.modalWarning}>Esta acción no se puede deshacer.</p>
+            <div className={styles.modalActions}>
+              <button
+                onClick={() => setMostrarConfirmacion(false)}
+                className={styles.modalCancelButton}
+                disabled={cancelando}
+              >
+                No, mantener
+              </button>
+              <button
+                onClick={cancelarCita}
+                className={styles.modalConfirmButton}
+                disabled={cancelando}
+              >
+                {cancelando ? 'Cancelando...' : 'Sí, cancelar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

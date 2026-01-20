@@ -1,0 +1,307 @@
+/* Mis Citas - Minimalista Blanco y Negro */
+.main {
+  min-height: 100vh;
+  background: #ffffff;
+}
+
+/* Header */
+.topHeader {
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e5e5e5;
+  background: #ffffff;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+}
+
+.logoText {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #000;
+  letter-spacing: -0.5px;
+}
+
+.backButton {
+  padding: 0.75rem 1.75rem;
+  background: white;
+  color: #000;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.backButton:hover {
+  border-color: #000;
+}
+
+/* Hero Section */
+.hero {
+  text-align: center;
+  padding: 4rem 2rem 3rem;
+  background: #fafafa;
+}
+
+.heroTitle {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #000;
+  margin: 0 0 1rem 0;
+  letter-spacing: -2px;
+}
+
+.heroSubtitle {
+  font-size: 1.1rem;
+  color: #666;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* Container */
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 4rem;
+}
+
+/* Card */
+.card {
+  background: white;
+  border: 1px solid #e5e5e5;
+  padding: 3rem;
+}
+
+.cardHeader {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.cardHeader h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #000;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.5px;
+}
+
+.cardHeader p {
+  font-size: 0.95rem;
+  color: #666;
+  margin: 0;
+}
+
+/* Form */
+.form {
+  margin-top: 2rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.formGroup label {
+  font-weight: 600;
+  color: #000;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.formGroup input {
+  padding: 1rem 1.25rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 0;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all 0.2s;
+  background: white;
+}
+
+.formGroup input:focus {
+  outline: none;
+  border-color: #000;
+}
+
+.formGroup small {
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.emailInput {
+  font-size: 1.1rem !important;
+  text-align: center;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2.5rem;
+  justify-content: flex-end;
+}
+
+.btnPrimary,
+.btnSecondary {
+  padding: 1rem 2.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btnPrimary {
+  background: #000;
+  color: white;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: #1a1a1a;
+}
+
+.btnPrimary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnSecondary {
+  background: white;
+  color: #000;
+  border: 1px solid #e5e5e5;
+}
+
+.btnSecondary:hover:not(:disabled) {
+  border-color: #000;
+}
+
+.btnSecondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnLink {
+  background: none;
+  border: none;
+  color: #000;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.95rem;
+  margin-top: 0.5rem;
+  padding: 0;
+}
+
+.btnLink:hover {
+  text-decoration: none;
+}
+
+/* Error */
+.error {
+  padding: 1rem 1.25rem;
+  background: #f5f5f5;
+  color: #000;
+  border-radius: 0;
+  border-left: 3px solid #000;
+  margin-top: 1rem;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.error p {
+  margin: 0 0 0.5rem 0;
+}
+
+.error p:last-child {
+  margin: 0;
+}
+
+/* Info */
+.info {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e5e5e5;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.infoItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #666;
+}
+
+.infoIcon {
+  font-size: 1rem;
+  color: #000;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .topHeader {
+    padding: 1rem 1.5rem;
+  }
+
+  .logoText {
+    font-size: 1.2rem;
+  }
+
+  .hero {
+    padding: 3rem 1.5rem 2rem;
+  }
+
+  .heroTitle {
+    font-size: 2.2rem;
+  }
+
+  .heroSubtitle {
+    font-size: 1rem;
+  }
+
+  .card {
+    padding: 2rem 1.5rem;
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+  }
+
+  .btnPrimary,
+  .btnSecondary {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .heroTitle {
+    font-size: 1.8rem;
+  }
+
+  .heroSubtitle {
+    font-size: 0.95rem;
+  }
+
+  .card {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .formGroup input {
+    padding: 0.875rem 1rem;
+  }
+}

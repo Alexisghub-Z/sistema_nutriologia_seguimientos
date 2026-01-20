@@ -1,10 +1,17 @@
 .container {
   max-width: 1400px;
   margin: 0 auto;
+  padding: var(--spacing-xl);
 }
 
+/* Header */
 .pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: var(--spacing-2xl);
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
 }
 
 .pageTitle {
@@ -19,6 +26,307 @@
   color: var(--color-text-secondary);
 }
 
+.quickActions {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+/* Stats Grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-2xl);
+}
+
+.statCard {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-xl);
+  background-color: var(--color-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.statIcon {
+  font-size: 3rem;
+  flex-shrink: 0;
+}
+
+.statContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.statLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.statValue {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  line-height: 1;
+  margin-bottom: var(--spacing-xs);
+}
+
+.statDetail {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* Content Grid */
+.contentGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: var(--spacing-xl);
+  margin-bottom: var(--spacing-2xl);
+}
+
+/* Section */
+.section {
+  background-color: var(--color-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg) var(--spacing-xl);
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.sectionContent {
+  padding: var(--spacing-lg) var(--spacing-xl);
+}
+
+/* Empty State */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2xl);
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.emptyState p {
+  margin-top: var(--spacing-md);
+  font-size: var(--font-size-sm);
+}
+
+/* Citas List */
+.citasList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.citaItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: var(--color-gray-50);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.citaItem:hover {
+  background-color: var(--color-gray-100);
+  transform: translateX(4px);
+}
+
+.citaTime {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  min-width: 70px;
+  flex-shrink: 0;
+}
+
+.citaInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.citaPaciente {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.citaTipo {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.citaNotas {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin: var(--spacing-xs) 0 0 0;
+  font-style: italic;
+}
+
+.citaEstado {
+  flex-shrink: 0;
+}
+
+/* Badges */
+.badgeSuccess,
+.badgeWarning,
+.badgeInfo,
+.badgeDanger,
+.badgeDefault {
+  display: inline-block;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badgeSuccess {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.badgeWarning {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.badgeInfo {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.badgeDanger {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.badgeDefault {
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-700);
+}
+
+/* Consultas List */
+.consultasList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.consultaItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: var(--color-gray-50);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.consultaItem:hover {
+  background-color: var(--color-gray-100);
+  transform: translateX(4px);
+}
+
+.consultaInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.consultaPaciente {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.consultaFecha {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.consultaStats {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-shrink: 0;
+}
+
+.consultaStat {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background-color: var(--color-white);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Alert Box */
+.alertBox {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  background-color: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.alertIcon {
+  color: #f59e0b;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.alertTitle {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-900);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.alertText {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-700);
+  margin: 0;
+}
+
+/* Legacy styles - keep for now to prevent breaking changes */
 .welcomeCard {
   display: flex;
   align-items: center;
@@ -128,15 +436,32 @@
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
   .container {
     padding: var(--spacing-lg);
   }
 
-  .header {
+  .pageHeader {
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--spacing-md);
+  }
+
+  .quickActions {
+    width: 100%;
+  }
+
+  .quickActions button {
+    flex: 1;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
   }
 
   .welcomeCard {
@@ -146,5 +471,34 @@
 
   .grid {
     grid-template-columns: 1fr;
+  }
+
+  .citaItem {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .citaTime {
+    min-width: auto;
+  }
+
+  .consultaItem {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .consultaStats {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .statValue {
+    font-size: var(--font-size-2xl);
+  }
+
+  .statIcon {
+    font-size: 2rem;
   }
 }

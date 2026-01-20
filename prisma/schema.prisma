@@ -127,7 +127,7 @@ enum EstadoConfirmacion {
 
 model Consulta {
   id            String   @id @default(cuid())
-  cita_id       String   @unique
+  cita_id       String?  @unique // Opcional para consultas históricas sin cita
   paciente_id   String
   fecha         DateTime
   motivo        String?  // Motivo de la consulta
@@ -174,7 +174,7 @@ model Consulta {
   updatedAt     DateTime @updatedAt
 
   // Relaciones
-  cita     Cita             @relation(fields: [cita_id], references: [id], onDelete: Cascade)
+  cita     Cita?            @relation(fields: [cita_id], references: [id], onDelete: Cascade)
   paciente Paciente         @relation(fields: [paciente_id], references: [id], onDelete: Cascade)
   archivos ArchivoAdjunto[]
 
