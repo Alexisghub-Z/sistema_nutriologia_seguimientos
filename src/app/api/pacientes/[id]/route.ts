@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth-utils'
 import prisma from '@/lib/prisma'
 import { z } from 'zod'
 import { getCache, setCache, deleteCache, deleteCachePattern, CacheKeys } from '@/lib/redis'
+import { normalizarTelefonoMexico } from '@/lib/utils/phone'
 
 // Schema de validación para actualizar paciente
 const pacienteUpdateSchema = z.object({
@@ -10,8 +11,8 @@ const pacienteUpdateSchema = z.object({
   email: z.string().email('Email inválido'),
   telefono: z
     .string()
-    .min(10, 'El teléfono debe tener al menos 10 dígitos')
-    .regex(/^[0-9+\-\s()]+$/, 'Formato de teléfono inválido'),
+    .regex(/^\d{10}$/, 'El teléfono debe tener exactamente 10 dígitos')
+    .transform((val) => normalizarTelefonoMexico(val)),
   fecha_nacimiento: z.string().refine((date) => {
     const parsed = new Date(date)
     return !isNaN(parsed.getTime()) && parsed < new Date()

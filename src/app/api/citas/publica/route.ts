@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { randomBytes } from 'crypto'
 import { programarConfirmacion, programarRecordatorio24h, programarRecordatorio1h } from '@/lib/queue/messages'
 import { syncCitaWithGoogleCalendar, isGoogleCalendarConfigured } from '@/lib/services/google-calendar'
+import { normalizarTelefonoMexico } from '@/lib/utils/phone'
 
 // Schema de validación para crear cita pública
 const citaPublicaSchema = z.object({
@@ -11,8 +12,8 @@ const citaPublicaSchema = z.object({
   email: z.string().email('Email inválido'),
   telefono: z
     .string()
-    .min(10, 'El teléfono debe tener al menos 10 dígitos')
-    .regex(/^[0-9+\-\s()]+$/, 'Formato de teléfono inválido'),
+    .regex(/^\d{10}$/, 'El teléfono debe tener exactamente 10 dígitos')
+    .transform((val) => normalizarTelefonoMexico(val)),
   fecha_nacimiento: z.string().refine(
     (date) => {
       const parsed = new Date(date)
@@ -105,6 +106,39 @@ export async function POST(request: NextRequest) {
     })
 
     if (paciente) {
+      // Verificar si el paciente ya tiene una cita activa (PENDIENTE y futura)
+      const citaActiva = await prisma.cita.findFirst({
+        where: {
+          paciente_id: paciente.id,
+          estado: 'PENDIENTE',
+          fecha_hora: {
+            gte: new Date(), // Solo citas futuras
+          },
+        },
+        select: {
+          id: true,
+          codigo_cita: true,
+          fecha_hora: true,
+          motivo_consulta: true,
+        },
+      })
+
+      if (citaActiva) {
+        return NextResponse.json(
+          {
+            error: 'Ya tienes una cita pendiente',
+            mensaje:
+              'Solo puedes tener una cita activa a la vez. Puedes cancelar o reagendar tu cita actual.',
+            cita_existente: {
+              codigo: citaActiva.codigo_cita,
+              fecha: citaActiva.fecha_hora,
+              motivo: citaActiva.motivo_consulta,
+            },
+          },
+          { status: 409 }
+        )
+      }
+
       // Paciente ya existe, verificar si hay cambios
 
       // Verificar si el teléfono cambió y si está en uso por otro paciente

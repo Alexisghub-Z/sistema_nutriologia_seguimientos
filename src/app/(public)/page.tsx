@@ -204,6 +204,20 @@ export default function Home() {
             </form>
 
             {error && <p className={styles.error}>{error}</p>}
+
+            <div className={styles.divider}>
+              <span>o</span>
+            </div>
+
+            <div className={styles.emailOption}>
+              <p className={styles.emailOptionText}>¿No tienes el código?</p>
+              <button
+                onClick={() => router.push('/mis-citas')}
+                className={styles.emailButton}
+              >
+                Ver mi cita con email
+              </button>
+            </div>
           </div>
         </div>
       </section>
