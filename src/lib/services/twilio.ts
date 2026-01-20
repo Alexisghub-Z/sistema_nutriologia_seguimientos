@@ -36,22 +36,19 @@ function getTwilioClient() {
 
 /**
  * Formatea un número de teléfono al formato de WhatsApp de Twilio
+ *
+ * NOTA: El número debe venir ya normalizado desde la BD (+5219515886761)
+ * Esta función solo agrega el prefijo 'whatsapp:' si no lo tiene
  */
 export function formatWhatsAppNumber(phoneNumber: string): string {
-  // Remover espacios, guiones y paréntesis
-  let cleaned = phoneNumber.replace(/[\s\-()]/g, '')
-
-  // Si no tiene el prefijo whatsapp:, agregarlo
-  if (!cleaned.startsWith('whatsapp:')) {
-    // Si no tiene el +, agregarlo
-    if (!cleaned.startsWith('+')) {
-      // Asumir que es México (+52) si no tiene código de país
-      cleaned = '+52' + cleaned
-    }
-    cleaned = 'whatsapp:' + cleaned
+  // Si ya tiene el prefijo whatsapp:, retornarlo tal cual
+  if (phoneNumber.startsWith('whatsapp:')) {
+    return phoneNumber
   }
 
-  return cleaned
+  // El número debe venir ya normalizado (+5219515886761)
+  // Solo agregar el prefijo whatsapp:
+  return 'whatsapp:' + phoneNumber
 }
 
 /**

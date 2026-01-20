@@ -453,6 +453,120 @@
   cursor: not-allowed !important;
 }
 
+/* Advertencia de Cita Activa */
+.citaActivaWarning {
+  background: #fff9e6;
+  border: 2px solid #f59e0b;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-top: 1.5rem;
+}
+
+.warningHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  color: #d97706;
+}
+
+.warningHeader svg {
+  flex-shrink: 0;
+}
+
+.warningHeader h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #000;
+}
+
+.warningMessage {
+  color: #666;
+  font-size: 1rem;
+  margin: 0 0 1.5rem 0;
+  line-height: 1.6;
+}
+
+.citaDetalles {
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.citaDetalle {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.citaDetalle:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.citaDetalle strong {
+  color: #000;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 100px;
+}
+
+.citaDetalle span {
+  color: #333;
+  font-size: 1rem;
+  text-align: right;
+  flex: 1;
+}
+
+.warningActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.btnVerCita,
+.btnVolver {
+  flex: 1;
+  padding: 1rem 2rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  text-align: center;
+}
+
+.btnVerCita {
+  background: #000;
+  color: white;
+}
+
+.btnVerCita:hover {
+  background: #1a1a1a;
+}
+
+.btnVolver {
+  background: white;
+  color: #000;
+  border: 1px solid #e5e5e5;
+}
+
+.btnVolver:hover {
+  border-color: #000;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .topHeader {
@@ -531,6 +645,29 @@
 
   .instruccionItem {
     font-size: 0.9rem;
+  }
+
+  .citaActivaWarning {
+    padding: 1.5rem;
+  }
+
+  .warningActions {
+    flex-direction: column;
+  }
+
+  .btnVerCita,
+  .btnVolver {
+    width: 100%;
+  }
+
+  .citaDetalle {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .citaDetalle span {
+    text-align: left;
   }
 }
 

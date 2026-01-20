@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import CalendarioCitas from '@/components/calendario/CalendarioCitas'
+import { extraerDigitosTelefono } from '@/lib/utils/phone'
 import styles from './agendar.module.css'
 
 interface PacienteExistente {
@@ -12,6 +13,14 @@ interface PacienteExistente {
   telefono: string
   fecha_nacimiento: string
   total_citas: number
+}
+
+interface CitaActiva {
+  id: string
+  codigo_cita: string
+  fecha_hora: string
+  duracion_minutos: number
+  motivo_consulta: string
 }
 
 export default function AgendarCitaPage() {
@@ -25,6 +34,7 @@ export default function AgendarCitaPage() {
   // Estado para paciente existente
   const [pacienteExistente, setPacienteExistente] = useState<PacienteExistente | null>(null)
   const [emailIngresado, setEmailIngresado] = useState('')
+  const [citaActiva, setCitaActiva] = useState<CitaActiva | null>(null)
 
   // Datos del formulario
   const [fechaSeleccionada, setFechaSeleccionada] = useState('')
@@ -54,7 +64,7 @@ export default function AgendarCitaPage() {
         setFormData({
           nombre: datos.nombre || '',
           email: datos.email || '',
-          telefono: datos.telefono || '',
+          telefono: datos.telefono ? extraerDigitosTelefono(datos.telefono) : '',
           fecha_nacimiento: fechaNacimientoFormateada,
           motivo: datos.motivo || '',
         })
@@ -114,44 +124,64 @@ export default function AgendarCitaPage() {
 
     setError('')
     setVerificandoEmail(true)
+    setCitaActiva(null)
 
     try {
-      const response = await fetch('/api/pacientes/verificar', {
+      // 1. Verificar si el paciente existe
+      const responseVerificar = await fetch('/api/pacientes/verificar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailIngresado }),
       })
 
-      const data = await response.json()
+      const dataVerificar = await responseVerificar.json()
 
-      if (response.ok) {
-        if (data.existe) {
-          // Paciente existe - pre-llenar datos
-          setPacienteExistente(data.paciente)
-
-          // Formatear fecha de nacimiento
-          const fechaNacimiento = new Date(data.paciente.fecha_nacimiento)
-          const fechaFormateada = fechaNacimiento.toISOString().split('T')[0]
-
-          setFormData({
-            nombre: data.paciente.nombre,
-            email: data.paciente.email,
-            telefono: data.paciente.telefono,
-            fecha_nacimiento: fechaFormateada,
-            motivo: '',
-          })
-        } else {
-          // Paciente nuevo - solo pre-llenar email
-          setPacienteExistente(null)
-          setFormData({
-            ...formData,
-            email: emailIngresado,
-          })
-        }
-        setPaso(3)
-      } else {
-        setError(data.error || 'Error al verificar email')
+      if (!responseVerificar.ok) {
+        setError(dataVerificar.error || 'Error al verificar email')
+        return
       }
+
+      // 2. Si el paciente existe, verificar si tiene una cita activa
+      if (dataVerificar.existe) {
+        const responseCitaActiva = await fetch('/api/pacientes/cita-activa', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: emailIngresado }),
+        })
+
+        const dataCitaActiva = await responseCitaActiva.json()
+
+        if (responseCitaActiva.ok && dataCitaActiva.existe && dataCitaActiva.cita) {
+          // Tiene cita activa - mostrar advertencia
+          setCitaActiva(dataCitaActiva.cita)
+          // No avanzar al paso 3, quedarse en paso 2 con advertencia
+          return
+        }
+
+        // No tiene cita activa - continuar normalmente
+        setPacienteExistente(dataVerificar.paciente)
+
+        // Formatear fecha de nacimiento
+        const fechaNacimiento = new Date(dataVerificar.paciente.fecha_nacimiento)
+        const fechaFormateada = fechaNacimiento.toISOString().split('T')[0]
+
+        setFormData({
+          nombre: dataVerificar.paciente.nombre,
+          email: dataVerificar.paciente.email,
+          telefono: extraerDigitosTelefono(dataVerificar.paciente.telefono),
+          fecha_nacimiento: fechaFormateada,
+          motivo: '',
+        })
+      } else {
+        // Paciente nuevo - solo pre-llenar email
+        setPacienteExistente(null)
+        setFormData({
+          ...formData,
+          email: emailIngresado,
+        })
+      }
+
+      setPaso(3)
     } catch (err) {
       setError('Error de conexión. Por favor, intenta de nuevo.')
     } finally {
@@ -340,23 +370,78 @@ export default function AgendarCitaPage() {
 
                 {error && <div className={styles.error}>{error}</div>}
 
-                <div className={styles.actions}>
-                  <button
-                    type="button"
-                    onClick={volverAPaso1}
-                    className={styles.btnSecondary}
-                    disabled={verificandoEmail}
-                  >
-                    Volver
-                  </button>
-                  <button
-                    type="submit"
-                    className={styles.btnPrimary}
-                    disabled={verificandoEmail || !emailIngresado}
-                  >
-                    {verificandoEmail ? 'Verificando...' : 'Continuar'}
-                  </button>
-                </div>
+                {/* Advertencia de cita activa */}
+                {citaActiva && (
+                  <div className={styles.citaActivaWarning}>
+                    <div className={styles.warningHeader}>
+                      <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <h3>Ya tienes una cita pendiente</h3>
+                    </div>
+                    <p className={styles.warningMessage}>
+                      Solo puedes tener una cita activa a la vez. Aquí están los detalles de tu cita actual:
+                    </p>
+                    <div className={styles.citaDetalles}>
+                      <div className={styles.citaDetalle}>
+                        <strong>Código:</strong>
+                        <span>{citaActiva.codigo_cita}</span>
+                      </div>
+                      <div className={styles.citaDetalle}>
+                        <strong>Fecha:</strong>
+                        <span>{new Date(citaActiva.fecha_hora).toLocaleDateString('es-MX', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}</span>
+                      </div>
+                      <div className={styles.citaDetalle}>
+                        <strong>Motivo:</strong>
+                        <span>{citaActiva.motivo_consulta}</span>
+                      </div>
+                    </div>
+                    <div className={styles.warningActions}>
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/cita/${citaActiva.codigo_cita}`)}
+                        className={styles.btnVerCita}
+                      >
+                        Ver mi cita
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => router.push('/')}
+                        className={styles.btnVolver}
+                      >
+                        Volver al inicio
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Solo mostrar botones si NO hay cita activa */}
+                {!citaActiva && (
+                  <div className={styles.actions}>
+                    <button
+                      type="button"
+                      onClick={volverAPaso1}
+                      className={styles.btnSecondary}
+                      disabled={verificandoEmail}
+                    >
+                      Volver
+                    </button>
+                    <button
+                      type="submit"
+                      className={styles.btnPrimary}
+                      disabled={verificandoEmail || !emailIngresado}
+                    >
+                      {verificandoEmail ? 'Verificando...' : 'Continuar'}
+                    </button>
+                  </div>
+                )}
               </form>
             </div>
           </div>
@@ -455,11 +540,11 @@ export default function AgendarCitaPage() {
                     value={formData.telefono}
                     onChange={handleInputChange}
                     required
-                    placeholder="9511234567"
-                    pattern="[0-9+\-\s()]+"
-                    minLength={10}
+                    placeholder="9515886761"
+                    pattern="[0-9]{10}"
+                    maxLength={10}
                   />
-                  <small>Recibirás confirmación por WhatsApp</small>
+                  <small>10 dígitos sin espacios (ej: 9515886761)</small>
                 </div>
 
                 <div className={styles.formGroup}>
