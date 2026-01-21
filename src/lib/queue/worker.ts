@@ -4,6 +4,10 @@ import {
   procesarRecordatorio24h,
   procesarRecordatorio1h,
   procesarSeguimiento,
+  procesarSeguimientoInicial,
+  procesarSeguimientoIntermedio,
+  procesarSeguimientoPrevioCita,
+  procesarRecordatorioAgendar,
 } from './jobs/procesadores'
 
 /**
@@ -68,19 +72,88 @@ mensajesQueue.process(TipoJob.RECORDATORIO_1H, async (job) => {
   }
 })
 
-// Registrar procesador para seguimiento
+// Registrar procesador para seguimiento (legacy)
 mensajesQueue.process(TipoJob.SEGUIMIENTO, async (job) => {
-  const { consultaId } = job.data
+  const { consultaId, tipoSeguimiento } = job.data
 
   console.log(`\n📧 [Worker] Procesando seguimiento`)
+  console.log(`📋 [Worker] Consulta ID: ${consultaId}`)
+  console.log(`📝 [Worker] Tipo: ${tipoSeguimiento || 'SOLO_RECORDATORIO'}`)
+  console.log(`🔄 [Worker] Intento: ${job.attemptsMade + 1}/${job.opts.attempts || 3}`)
+
+  try {
+    await procesarSeguimiento(consultaId, tipoSeguimiento)
+    console.log(`✅ [Worker] Seguimiento completado`)
+  } catch (error) {
+    console.error(`❌ [Worker] Error en seguimiento:`, error)
+    throw error
+  }
+})
+
+// Registrar procesador para seguimiento inicial (3-5 días después)
+mensajesQueue.process(TipoJob.SEGUIMIENTO_INICIAL, async (job) => {
+  const { consultaId } = job.data
+
+  console.log(`\n📧 [Worker] Procesando seguimiento inicial`)
   console.log(`📋 [Worker] Consulta ID: ${consultaId}`)
   console.log(`🔄 [Worker] Intento: ${job.attemptsMade + 1}/${job.opts.attempts || 3}`)
 
   try {
-    await procesarSeguimiento(consultaId)
-    console.log(`✅ [Worker] Seguimiento completado`)
+    await procesarSeguimientoInicial(consultaId)
+    console.log(`✅ [Worker] Seguimiento inicial completado`)
   } catch (error) {
-    console.error(`❌ [Worker] Error en seguimiento:`, error)
+    console.error(`❌ [Worker] Error en seguimiento inicial:`, error)
+    throw error
+  }
+})
+
+// Registrar procesador para seguimiento intermedio (mitad del periodo)
+mensajesQueue.process(TipoJob.SEGUIMIENTO_INTERMEDIO, async (job) => {
+  const { consultaId } = job.data
+
+  console.log(`\n📧 [Worker] Procesando seguimiento intermedio`)
+  console.log(`📋 [Worker] Consulta ID: ${consultaId}`)
+  console.log(`🔄 [Worker] Intento: ${job.attemptsMade + 1}/${job.opts.attempts || 3}`)
+
+  try {
+    await procesarSeguimientoIntermedio(consultaId)
+    console.log(`✅ [Worker] Seguimiento intermedio completado`)
+  } catch (error) {
+    console.error(`❌ [Worker] Error en seguimiento intermedio:`, error)
+    throw error
+  }
+})
+
+// Registrar procesador para seguimiento previo cita (7-10 días antes)
+mensajesQueue.process(TipoJob.SEGUIMIENTO_PREVIO_CITA, async (job) => {
+  const { consultaId } = job.data
+
+  console.log(`\n📧 [Worker] Procesando seguimiento previo cita`)
+  console.log(`📋 [Worker] Consulta ID: ${consultaId}`)
+  console.log(`🔄 [Worker] Intento: ${job.attemptsMade + 1}/${job.opts.attempts || 3}`)
+
+  try {
+    await procesarSeguimientoPrevioCita(consultaId)
+    console.log(`✅ [Worker] Seguimiento previo cita completado`)
+  } catch (error) {
+    console.error(`❌ [Worker] Error en seguimiento previo cita:`, error)
+    throw error
+  }
+})
+
+// Registrar procesador para recordatorio agendar (3-5 días antes)
+mensajesQueue.process(TipoJob.RECORDATORIO_AGENDAR, async (job) => {
+  const { consultaId } = job.data
+
+  console.log(`\n📧 [Worker] Procesando recordatorio agendar`)
+  console.log(`📋 [Worker] Consulta ID: ${consultaId}`)
+  console.log(`🔄 [Worker] Intento: ${job.attemptsMade + 1}/${job.opts.attempts || 3}`)
+
+  try {
+    await procesarRecordatorioAgendar(consultaId)
+    console.log(`✅ [Worker] Recordatorio agendar completado`)
+  } catch (error) {
+    console.error(`❌ [Worker] Error en recordatorio agendar:`, error)
     throw error
   }
 })

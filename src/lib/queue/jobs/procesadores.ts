@@ -244,8 +244,9 @@ export async function procesarRecordatorio1h(citaId: string): Promise<void> {
  * Procesa el env�o de seguimiento post-consulta
  * Envia recordatorio 1 dia antes de la proxima cita sugerida
  */
-export async function procesarSeguimiento(consultaId: string): Promise<void> {
+export async function procesarSeguimiento(consultaId: string, tipoSeguimiento: string = 'SOLO_RECORDATORIO'): Promise<void> {
   console.log(`[Job] Procesando seguimiento para consulta: ${consultaId}`)
+  console.log(`[Job] Tipo de seguimiento: ${tipoSeguimiento}`)
 
   try {
     // Buscar la consulta con datos del paciente y pr�xima cita
@@ -279,51 +280,352 @@ export async function procesarSeguimiento(consultaId: string): Promise<void> {
       return
     }
 
-    const hora = fechaSugerida.toTimeString().substring(0, 5)
+    const fechaFormateada = fechaSugerida.toLocaleDateString('es-MX', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
 
-    // Preparar variables para la plantilla
-    const variables: VariablesPlantilla = {
-      nombre: consulta.paciente.nombre,
-      email: consulta.paciente.email || undefined,
-      telefono: consulta.paciente.telefono,
-      fecha_cita: fechaSugerida,
-      hora_cita: hora,
-      codigo_cita: '', // No hay c�digo porque no es una cita agendada a�n
-      motivo: consulta.motivo || 'Seguimiento nutricional',
+    // Obtener configuración para URL del portal
+    const config = await prisma.configuracionGeneral.findFirst()
+    const urlPortal = config?.url_portal || 'https://portal.example.com'
+
+    // Generar mensaje según el tipo
+    let mensajeTexto: string
+    switch (tipoSeguimiento) {
+      case 'SOLO_SEGUIMIENTO':
+        mensajeTexto = `Hola ${consulta.paciente.nombre} 👋
+
+¿Cómo has estado desde tu última consulta?
+
+¿Has tenido alguna duda o dificultad con el plan nutricional que te asigné?
+
+Si necesitas orientación o tienes preguntas, puedes responder este mensaje.
+
+¡Estoy aquí para apoyarte! 💪`
+        break
+
+      case 'RECORDATORIO_Y_SEGUIMIENTO':
+        mensajeTexto = `Hola ${consulta.paciente.nombre} 👋
+
+¿Cómo has estado? Espero que estés siguiendo bien tu plan nutricional.
+
+Te recordamos que tu próxima cita de seguimiento está sugerida para el ${fechaFormateada}.
+
+Si tienes dudas sobre el plan o necesitas algo, responde este mensaje.
+
+Si aún no has agendado tu cita, puedes hacerlo aquí:
+${urlPortal}
+
+¡Te esperamos! 🥗`
+        break
+
+      case 'SOLO_RECORDATORIO':
+      default:
+        mensajeTexto = `Hola ${consulta.paciente.nombre} 👋
+
+Te recordamos que tu próxima cita de seguimiento nutricional está sugerida para el ${fechaFormateada}.
+
+Si aún no has agendado tu cita, puedes hacerlo aquí:
+${urlPortal}
+
+¡Te esperamos! 🥗`
+        break
     }
 
-    // Generar mensaje (sandbox o producci�n)
-    const mensaje = await generarMensaje(TipoPlantilla.SEGUIMIENTO, variables)
-
-    // Enviar mensaje
-    let messageSid: string
-    if (mensaje.modo === 'sandbox') {
-      const resultado = await sendWhatsAppMessage(consulta.paciente.telefono, mensaje.contenido!)
-      messageSid = resultado.messageSid
-    } else {
-      const resultado = await sendWhatsAppMessage(
-        consulta.paciente.telefono,
-        '',
-        mensaje.contentSid,
-        mensaje.contentVariables
-      )
-      messageSid = resultado.messageSid
-    }
+    // Enviar mensaje directamente
+    const resultado = await sendWhatsAppMessage(consulta.paciente.telefono, mensajeTexto)
+    const messageSid = resultado.messageSid
 
     await prisma.mensajeWhatsApp.create({
       data: {
         paciente_id: consulta.paciente.id,
         direccion: 'SALIENTE',
-        contenido: mensaje.contenido || `Seguimiento enviado (Template: ${mensaje.contentSid})`,
+        contenido: mensajeTexto,
         tipo: 'AUTOMATICO_SEGUIMIENTO',
         twilio_sid: messageSid,
         estado: 'ENVIADO',
       },
     })
 
-    console.log(` [Job] Seguimiento enviado para cita: ${consultaId}`)
+    console.log(`✅ [Job] Seguimiento enviado para consulta: ${consultaId} (Tipo: ${tipoSeguimiento})`)
   } catch (error) {
     console.error(`L [Job] Error al procesar seguimiento:`, error)
+    throw error
+  }
+}
+
+/**
+ * Procesa el envío de seguimiento inicial (3-5 días después de la consulta)
+ */
+export async function procesarSeguimientoInicial(consultaId: string): Promise<void> {
+  console.log(`[Job] Procesando seguimiento inicial para consulta: ${consultaId}`)
+
+  try {
+    const consulta = await prisma.consulta.findUnique({
+      where: { id: consultaId },
+      include: {
+        paciente: {
+          select: {
+            id: true,
+            nombre: true,
+            email: true,
+            telefono: true,
+          },
+        },
+      },
+    })
+
+    if (!consulta) {
+      throw new Error(`Consulta ${consultaId} no encontrada`)
+    }
+
+    // Verificar que el seguimiento siga activo
+    if (!consulta.seguimiento_programado) {
+      console.log(`[Job] El seguimiento para consulta ${consultaId} fue cancelado`)
+      return
+    }
+
+    // Preparar variables
+    const variables: VariablesPlantilla = {
+      nombre: consulta.paciente.nombre,
+      email: consulta.paciente.email || undefined,
+      telefono: consulta.paciente.telefono,
+      fecha_cita: consulta.proxima_cita || new Date(),
+      hora_cita: '',
+      codigo_cita: '',
+    }
+
+    // Generar mensaje usando el sistema de plantillas
+    const mensaje = await generarMensaje(TipoPlantilla.SEGUIMIENTO_INICIAL, variables)
+
+    // Enviar mensaje
+    const resultado = await sendWhatsAppMessage(
+      consulta.paciente.telefono,
+      mensaje.contenido || '',
+      mensaje.contentSid,
+      mensaje.contentVariables
+    )
+
+    // Registrar en BD
+    await prisma.mensajeWhatsApp.create({
+      data: {
+        paciente_id: consulta.paciente.id,
+        direccion: 'SALIENTE',
+        contenido: mensaje.contenido || `Seguimiento inicial programado`,
+        tipo: 'AUTOMATICO_SEGUIMIENTO',
+        twilio_sid: resultado.messageSid,
+        estado: 'ENVIADO',
+      },
+    })
+
+    console.log(`✅ [Job] Seguimiento inicial enviado para consulta: ${consultaId}`)
+  } catch (error) {
+    console.error(`❌ [Job] Error al procesar seguimiento inicial:`, error)
+    throw error
+  }
+}
+
+/**
+ * Procesa el envío de seguimiento intermedio (mitad del periodo)
+ */
+export async function procesarSeguimientoIntermedio(consultaId: string): Promise<void> {
+  console.log(`[Job] Procesando seguimiento intermedio para consulta: ${consultaId}`)
+
+  try {
+    const consulta = await prisma.consulta.findUnique({
+      where: { id: consultaId },
+      include: {
+        paciente: {
+          select: {
+            id: true,
+            nombre: true,
+            email: true,
+            telefono: true,
+          },
+        },
+      },
+    })
+
+    if (!consulta) {
+      throw new Error(`Consulta ${consultaId} no encontrada`)
+    }
+
+    if (!consulta.seguimiento_programado) {
+      console.log(`[Job] El seguimiento para consulta ${consultaId} fue cancelado`)
+      return
+    }
+
+    const variables: VariablesPlantilla = {
+      nombre: consulta.paciente.nombre,
+      email: consulta.paciente.email || undefined,
+      telefono: consulta.paciente.telefono,
+      fecha_cita: consulta.proxima_cita || new Date(),
+      hora_cita: '',
+      codigo_cita: '',
+    }
+
+    const mensaje = await generarMensaje(TipoPlantilla.SEGUIMIENTO_INTERMEDIO, variables)
+
+    const resultado = await sendWhatsAppMessage(
+      consulta.paciente.telefono,
+      mensaje.contenido || '',
+      mensaje.contentSid,
+      mensaje.contentVariables
+    )
+
+    await prisma.mensajeWhatsApp.create({
+      data: {
+        paciente_id: consulta.paciente.id,
+        direccion: 'SALIENTE',
+        contenido: mensaje.contenido || `Seguimiento intermedio programado`,
+        tipo: 'AUTOMATICO_SEGUIMIENTO',
+        twilio_sid: resultado.messageSid,
+        estado: 'ENVIADO',
+      },
+    })
+
+    console.log(`✅ [Job] Seguimiento intermedio enviado para consulta: ${consultaId}`)
+  } catch (error) {
+    console.error(`❌ [Job] Error al procesar seguimiento intermedio:`, error)
+    throw error
+  }
+}
+
+/**
+ * Procesa el envío de seguimiento previo a la cita (7-10 días antes)
+ */
+export async function procesarSeguimientoPrevioCita(consultaId: string): Promise<void> {
+  console.log(`[Job] Procesando seguimiento previo cita para consulta: ${consultaId}`)
+
+  try {
+    const consulta = await prisma.consulta.findUnique({
+      where: { id: consultaId },
+      include: {
+        paciente: {
+          select: {
+            id: true,
+            nombre: true,
+            email: true,
+            telefono: true,
+          },
+        },
+      },
+    })
+
+    if (!consulta) {
+      throw new Error(`Consulta ${consultaId} no encontrada`)
+    }
+
+    if (!consulta.seguimiento_programado) {
+      console.log(`[Job] El seguimiento para consulta ${consultaId} fue cancelado`)
+      return
+    }
+
+    const variables: VariablesPlantilla = {
+      nombre: consulta.paciente.nombre,
+      email: consulta.paciente.email || undefined,
+      telefono: consulta.paciente.telefono,
+      fecha_cita: consulta.proxima_cita || new Date(),
+      hora_cita: '',
+      codigo_cita: '',
+    }
+
+    const mensaje = await generarMensaje(TipoPlantilla.SEGUIMIENTO_PREVIO_CITA, variables)
+
+    const resultado = await sendWhatsAppMessage(
+      consulta.paciente.telefono,
+      mensaje.contenido || '',
+      mensaje.contentSid,
+      mensaje.contentVariables
+    )
+
+    await prisma.mensajeWhatsApp.create({
+      data: {
+        paciente_id: consulta.paciente.id,
+        direccion: 'SALIENTE',
+        contenido: mensaje.contenido || `Seguimiento previo cita programado`,
+        tipo: 'AUTOMATICO_SEGUIMIENTO',
+        twilio_sid: resultado.messageSid,
+        estado: 'ENVIADO',
+      },
+    })
+
+    console.log(`✅ [Job] Seguimiento previo cita enviado para consulta: ${consultaId}`)
+  } catch (error) {
+    console.error(`❌ [Job] Error al procesar seguimiento previo cita:`, error)
+    throw error
+  }
+}
+
+/**
+ * Procesa el envío de recordatorio para agendar cita (3-5 días antes)
+ */
+export async function procesarRecordatorioAgendar(consultaId: string): Promise<void> {
+  console.log(`[Job] Procesando recordatorio agendar para consulta: ${consultaId}`)
+
+  try {
+    const consulta = await prisma.consulta.findUnique({
+      where: { id: consultaId },
+      include: {
+        paciente: {
+          select: {
+            id: true,
+            nombre: true,
+            email: true,
+            telefono: true,
+          },
+        },
+      },
+    })
+
+    if (!consulta) {
+      throw new Error(`Consulta ${consultaId} no encontrada`)
+    }
+
+    if (!consulta.seguimiento_programado) {
+      console.log(`[Job] El seguimiento para consulta ${consultaId} fue cancelado`)
+      return
+    }
+
+    // Obtener URL del portal
+    const config = await prisma.configuracionGeneral.findFirst()
+    const urlPortal = config?.url_portal || process.env.NEXT_PUBLIC_APP_URL || 'https://portal.example.com'
+
+    const variables: VariablesPlantilla = {
+      nombre: consulta.paciente.nombre,
+      email: consulta.paciente.email || undefined,
+      telefono: consulta.paciente.telefono,
+      fecha_cita: consulta.proxima_cita || new Date(),
+      hora_cita: '',
+      codigo_cita: '',
+      url_portal: urlPortal,
+    }
+
+    const mensaje = await generarMensaje(TipoPlantilla.RECORDATORIO_AGENDAR, variables)
+
+    const resultado = await sendWhatsAppMessage(
+      consulta.paciente.telefono,
+      mensaje.contenido || '',
+      mensaje.contentSid,
+      mensaje.contentVariables
+    )
+
+    await prisma.mensajeWhatsApp.create({
+      data: {
+        paciente_id: consulta.paciente.id,
+        direccion: 'SALIENTE',
+        contenido: mensaje.contenido || `Recordatorio agendar programado`,
+        tipo: 'AUTOMATICO_RECORDATORIO',
+        twilio_sid: resultado.messageSid,
+        estado: 'ENVIADO',
+      },
+    })
+
+    console.log(`✅ [Job] Recordatorio agendar enviado para consulta: ${consultaId}`)
+  } catch (error) {
+    console.error(`❌ [Job] Error al procesar recordatorio agendar:`, error)
     throw error
   }
 }

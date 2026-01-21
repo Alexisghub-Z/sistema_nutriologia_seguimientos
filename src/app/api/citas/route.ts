@@ -135,6 +135,89 @@ export async function POST(request: NextRequest) {
     await deleteCache(CacheKeys.patientDetail(validatedData.paciente_id))
     console.log('🗑️  Cache invalidated: patient detail after appointment created', validatedData.paciente_id)
 
+    // Cancelar TODOS los recordatorios antiguos del paciente (citas anteriores)
+    try {
+      const { mensajesQueue } = await import('@/lib/queue/messages')
+      const jobs = await mensajesQueue.getJobs(['waiting', 'delayed'])
+
+      let recordatoriosCancelados = 0
+
+      // Buscar jobs de recordatorios de OTRAS citas del mismo paciente
+      for (const job of jobs) {
+        // Jobs de recordatorios tienen citaId
+        if (job.data.citaId && job.data.citaId !== cita.id) {
+          // Verificar si es del mismo paciente
+          const citaDelJob = await prisma.cita.findUnique({
+            where: { id: job.data.citaId },
+            select: { paciente_id: true },
+          })
+
+          if (citaDelJob && citaDelJob.paciente_id === validatedData.paciente_id) {
+            await job.remove()
+            recordatoriosCancelados++
+            console.log(`🗑️  Recordatorio cancelado de cita antigua: ${job.data.citaId}`)
+          }
+        }
+      }
+
+      if (recordatoriosCancelados > 0) {
+        console.log(`✅ ${recordatoriosCancelados} recordatorio(s) de citas antiguas cancelados`)
+      }
+    } catch (recordatoriosError) {
+      console.error('Error al cancelar recordatorios antiguos:', recordatoriosError)
+      // No fallar la creación de la cita si hay error
+    }
+
+    // Cancelar seguimientos programados si la fecha de la cita es cercana a alguna próxima cita sugerida
+    try {
+      const fechaCita = new Date(validatedData.fecha_hora)
+
+      // Buscar consultas del paciente que tengan próxima cita sugerida cercana (±3 días)
+      const inicioPeriodo = new Date(fechaCita)
+      inicioPeriodo.setDate(inicioPeriodo.getDate() - 3)
+
+      const finPeriodo = new Date(fechaCita)
+      finPeriodo.setDate(finPeriodo.getDate() + 3)
+
+      const consultasConSeguimiento = await prisma.consulta.findMany({
+        where: {
+          paciente_id: validatedData.paciente_id,
+          seguimiento_programado: true,
+          proxima_cita: {
+            gte: inicioPeriodo,
+            lte: finPeriodo,
+          },
+        },
+      })
+
+      if (consultasConSeguimiento.length > 0) {
+        // Cancelar jobs de seguimiento
+        const { mensajesQueue } = await import('@/lib/queue/messages')
+        const jobs = await mensajesQueue.getJobs(['waiting', 'delayed'])
+
+        for (const consulta of consultasConSeguimiento) {
+          // Buscar y cancelar jobs de esta consulta
+          for (const job of jobs) {
+            if (job.data.consultaId === consulta.id) {
+              await job.remove()
+              console.log(`🗑️  Job de seguimiento cancelado para consulta: ${consulta.id}`)
+            }
+          }
+
+          // Actualizar flag en BD
+          await prisma.consulta.update({
+            where: { id: consulta.id },
+            data: { seguimiento_programado: false },
+          })
+        }
+
+        console.log(`✅ ${consultasConSeguimiento.length} seguimiento(s) cancelado(s) automáticamente - paciente agendó cita`)
+      }
+    } catch (seguimientoError) {
+      console.error('Error al cancelar seguimientos:', seguimientoError)
+      // No fallar la creación de la cita si hay error al cancelar seguimientos
+    }
+
     // Sincronizar con Google Calendar si está configurado
     try {
       const isConfigured = await isGoogleCalendarConfigured()

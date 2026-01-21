@@ -7,7 +7,13 @@ export enum TipoPlantilla {
   CONFIRMACION = 'AUTOMATICO_CONFIRMACION',
   RECORDATORIO_24H = 'AUTOMATICO_RECORDATORIO',
   RECORDATORIO_1H = 'AUTOMATICO_RECORDATORIO',
-  SEGUIMIENTO = 'AUTOMATICO_SEGUIMIENTO',
+  SEGUIMIENTO = 'AUTOMATICO_SEGUIMIENTO', // Legacy - mantener por compatibilidad
+
+  // Nuevas plantillas de seguimiento post-consulta
+  SEGUIMIENTO_INICIAL = 'AUTOMATICO_SEGUIMIENTO',
+  SEGUIMIENTO_INTERMEDIO = 'AUTOMATICO_SEGUIMIENTO',
+  SEGUIMIENTO_PREVIO_CITA = 'AUTOMATICO_SEGUIMIENTO',
+  RECORDATORIO_AGENDAR = 'AUTOMATICO_RECORDATORIO',
 }
 
 /**
@@ -58,6 +64,32 @@ const PLANTILLAS_APROBADAS: Record<string, PlantillaAprobada | null> = {
     ? {
         contentSid: process.env.TEMPLATE_SEGUIMIENTO_SID,
         variables: ['nombre'],
+      }
+    : null,
+
+  // Nuevas plantillas de seguimiento post-consulta
+  [TipoPlantilla.SEGUIMIENTO_INICIAL]: process.env.TEMPLATE_SEGUIMIENTO_INICIAL_SID
+    ? {
+        contentSid: process.env.TEMPLATE_SEGUIMIENTO_INICIAL_SID,
+        variables: ['nombre'],
+      }
+    : null,
+  [TipoPlantilla.SEGUIMIENTO_INTERMEDIO]: process.env.TEMPLATE_SEGUIMIENTO_INTERMEDIO_SID
+    ? {
+        contentSid: process.env.TEMPLATE_SEGUIMIENTO_INTERMEDIO_SID,
+        variables: ['nombre'],
+      }
+    : null,
+  [TipoPlantilla.SEGUIMIENTO_PREVIO_CITA]: process.env.TEMPLATE_SEGUIMIENTO_PREVIO_CITA_SID
+    ? {
+        contentSid: process.env.TEMPLATE_SEGUIMIENTO_PREVIO_CITA_SID,
+        variables: ['nombre', 'fecha_cita'],
+      }
+    : null,
+  [TipoPlantilla.RECORDATORIO_AGENDAR]: process.env.TEMPLATE_RECORDATORIO_AGENDAR_SID
+    ? {
+        contentSid: process.env.TEMPLATE_RECORDATORIO_AGENDAR_SID,
+        variables: ['nombre', 'fecha_cita', 'url_portal'],
       }
     : null,
 }
