@@ -1,17 +1,40 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import ConversationList from '@/components/mensajes/ConversationList'
 import ChatWindow from '@/components/mensajes/ChatWindow'
 import styles from './mensajes.module.css'
 
 export default function MensajesPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [selectedPacienteId, setSelectedPacienteId] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
+
+  // Leer el paciente seleccionado de la URL
+  useEffect(() => {
+    const pacienteId = searchParams.get('chat')
+    if (pacienteId) {
+      setSelectedPacienteId(pacienteId)
+    } else {
+      setSelectedPacienteId(null)
+    }
+  }, [searchParams])
 
   // Función para refrescar la lista de conversaciones cuando se envía un mensaje
   const handleMessageSent = () => {
     setRefreshKey((prev) => prev + 1)
+  }
+
+  // Función para seleccionar una conversación
+  const handleSelectConversation = (pacienteId: string) => {
+    router.push(`/mensajes?chat=${pacienteId}`, { scroll: false })
+  }
+
+  // Función para volver a la lista (móvil)
+  const handleBackToList = () => {
+    router.back()
   }
 
   return (
@@ -24,19 +47,20 @@ export default function MensajesPage() {
       </div>
 
       <div className={styles.content}>
-        <div className={styles.conversationsPanel}>
+        <div className={`${styles.conversationsPanel} ${selectedPacienteId ? styles.hidden : ''}`}>
           <ConversationList
             selectedPacienteId={selectedPacienteId}
-            onSelectConversation={setSelectedPacienteId}
+            onSelectConversation={handleSelectConversation}
             refreshKey={refreshKey}
           />
         </div>
 
-        <div className={styles.chatPanel}>
+        <div className={`${styles.chatPanel} ${selectedPacienteId ? styles.active : ''}`}>
           {selectedPacienteId ? (
             <ChatWindow
               pacienteId={selectedPacienteId}
               onMessageSent={handleMessageSent}
+              onBack={handleBackToList}
             />
           ) : (
             <div className={styles.emptyState}>

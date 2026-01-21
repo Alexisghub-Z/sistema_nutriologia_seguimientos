@@ -5,6 +5,8 @@
   border-radius: var(--radius-lg);
   padding: var(--spacing-xl);
   margin-bottom: var(--spacing-lg);
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .chartHeader {
@@ -72,22 +74,35 @@
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .chartContainer {
-    padding: var(--spacing-md);
+    padding: var(--spacing-lg);
+  }
+
+  .chartHeader {
+    margin-bottom: var(--spacing-md);
   }
 
   .stats {
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
   }
 
   .chartTitle {
     font-size: var(--font-size-md);
+    word-break: break-word;
   }
 
-  .statLabel,
-  .statValue {
+  .statLabel {
     font-size: var(--font-size-sm);
+  }
+
+  .statValue {
+    font-size: var(--font-size-md);
+  }
+
+  .emptyChart {
+    min-height: 150px;
   }
 }
