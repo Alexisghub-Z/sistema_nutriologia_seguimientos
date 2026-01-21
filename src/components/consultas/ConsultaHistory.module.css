@@ -1,5 +1,6 @@
 .container {
   width: 100%;
+  overflow-x: hidden;
 }
 
 .loadingContainer,
@@ -372,9 +373,9 @@
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .timeline::before {
-    left: 10px;
+    left: 8px;
   }
 
   .consultaCard {
@@ -382,29 +383,59 @@
   }
 
   .consultaCard::before {
-    left: calc(-1 * var(--spacing-xl) - 6px);
+    left: calc(-1 * var(--spacing-xl) - 4px);
+    width: 10px;
+    height: 10px;
+  }
+
+  .consultaHeader {
+    padding: var(--spacing-lg);
   }
 
   .headerLeft {
     flex-direction: column;
     align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .consultaTitle {
+    word-break: break-word;
   }
 
   .headerRight {
     flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
   }
 
   .mediciones {
     grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+  }
+
+  .medicion {
+    padding: var(--spacing-md);
+  }
+
+  .texto {
+    font-size: var(--font-size-sm);
+    word-break: break-word;
   }
 
   .archivoItem {
     flex-wrap: wrap;
+    padding: var(--spacing-lg);
+  }
+
+  .archivoNombre {
+    word-break: break-word;
+    white-space: normal;
   }
 
   .pagination {
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
   }
 
   .pagination button {
@@ -413,6 +444,7 @@
   }
 
   .paginationInfo {
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-sm);
+    padding: var(--spacing-lg);
   }
 }
