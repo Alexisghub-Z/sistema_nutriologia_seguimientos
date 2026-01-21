@@ -388,6 +388,134 @@ export default function PacientesPage() {
               </table>
             </div>
 
+            {/* Vista de tarjetas para móvil */}
+            <div className={styles.mobileCards}>
+              {pacientes.map((paciente) => (
+                <div key={paciente.id} className={styles.patientCard}>
+                  <div className={styles.cardHeader}>
+                    <Link
+                      href={`/pacientes/${paciente.id}`}
+                      className={styles.cardName}
+                    >
+                      {paciente.nombre}
+                    </Link>
+                    <div className={styles.cardActions}>
+                      <button
+                        onClick={() => router.push(`/pacientes/${paciente.id}`)}
+                        className={styles.actionButton}
+                        title="Ver detalles"
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                          <path
+                            fillRule="evenodd"
+                            d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() =>
+                          router.push(`/pacientes/${paciente.id}/editar`)
+                        }
+                        className={styles.actionButton}
+                        title="Editar"
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(paciente.id, paciente.nombre)}
+                        className={`${styles.actionButton} ${styles.deleteButton}`}
+                        title="Eliminar"
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className={styles.cardBody}>
+                    <div className={styles.cardField}>
+                      <span className={styles.cardLabel}>Email</span>
+                      <span className={styles.cardValue}>{paciente.email}</span>
+                    </div>
+                    <div className={styles.cardField}>
+                      <span className={styles.cardLabel}>Teléfono</span>
+                      <span className={styles.cardValue}>{paciente.telefono}</span>
+                    </div>
+                    <div className={styles.cardField}>
+                      <span className={styles.cardLabel}>Edad</span>
+                      <span className={styles.cardValue}>
+                        {calcularEdad(paciente.fecha_nacimiento)} años
+                      </span>
+                    </div>
+                    <div className={styles.cardField}>
+                      <span className={styles.cardLabel}>Registro</span>
+                      <span className={styles.cardValue}>
+                        {formatearFecha(paciente.createdAt)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className={styles.cardFooter}>
+                    <div className={styles.cardStat}>
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span>{paciente._count.citas} citas</span>
+                    </div>
+                    <div className={styles.cardStat}>
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                        <path
+                          fillRule="evenodd"
+                          d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span>{paciente._count.consultas} consultas</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {/* Paginación */}
             <div className={styles.pagination}>
               <div className={styles.paginationInfo}>

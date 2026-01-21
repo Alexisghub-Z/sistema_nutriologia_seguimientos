@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useSidebar } from '@/contexts/SidebarContext'
 import styles from './Sidebar.module.css'
 
 const menuItems = [
@@ -66,39 +67,46 @@ const menuItems = [
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const { isOpen, closeSidebar } = useSidebar()
 
   return (
-    <aside className={styles.sidebar}>
-      <div className={styles.logo}>
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-          <circle cx="16" cy="16" r="16" fill="var(--color-primary)" />
-          <path
-            d="M16 8C12.686 8 10 10.686 10 14C10 17.314 12.686 20 16 20C19.314 20 22 17.314 22 14C22 10.686 19.314 8 16 8Z"
-            fill="white"
-          />
-        </svg>
-        <span className={styles.logoText}>NutriSys</span>
-      </div>
+    <>
+      {/* Overlay para cerrar el sidebar en mobile */}
+      {isOpen && <div className={styles.overlay} onClick={closeSidebar} />}
 
-      <nav className={styles.nav}>
-        {menuItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`${styles.navItem} ${isActive ? styles.active : ''}`}
-            >
-              <span className={styles.navIcon}>{item.icon}</span>
-              <span className={styles.navText}>{item.name}</span>
-            </Link>
-          )
-        })}
-      </nav>
+      <aside className={`${styles.sidebar} ${isOpen ? styles.open : ''}`}>
+        <div className={styles.logo}>
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="16" r="16" fill="var(--color-primary)" />
+            <path
+              d="M16 8C12.686 8 10 10.686 10 14C10 17.314 12.686 20 16 20C19.314 20 22 17.314 22 14C22 10.686 19.314 8 16 8Z"
+              fill="white"
+            />
+          </svg>
+          <span className={styles.logoText}>NutriSys</span>
+        </div>
 
-      <div className={styles.footer}>
-        <p className={styles.version}>v1.0.0</p>
-      </div>
-    </aside>
+        <nav className={styles.nav}>
+          {menuItems.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`${styles.navItem} ${isActive ? styles.active : ''}`}
+                onClick={closeSidebar}
+              >
+                <span className={styles.navIcon}>{item.icon}</span>
+                <span className={styles.navText}>{item.name}</span>
+              </Link>
+            )
+          })}
+        </nav>
+
+        <div className={styles.footer}>
+          <p className={styles.version}>v1.0.0</p>
+        </div>
+      </aside>
+    </>
   )
 }
