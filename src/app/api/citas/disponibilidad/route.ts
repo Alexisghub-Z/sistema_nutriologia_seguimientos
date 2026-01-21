@@ -50,14 +50,28 @@ export async function GET(request: NextRequest) {
 
     // Validar que la fecha no sea pasada
     const ahora = new Date()
+
+    // Validar que sea día laboral
+    const diaSemana = fechaSolicitada.getDay()
+    const diasLaborales = config.dias_laborales.split(',').map(d => parseInt(d))
+
+    // Determinar qué horarios usar según el día
+    let horarioInicio = config.horario_inicio
+    let horarioFin = config.horario_fin
+
+    if (diaSemana === 6 && config.horario_sabado_inicio && config.horario_sabado_fin) {
+      horarioInicio = config.horario_sabado_inicio
+      horarioFin = config.horario_sabado_fin
+    }
+
     if (fechaSolicitada < new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate())) {
       return NextResponse.json({
         fecha: fechaParam,
         horarios: [],
         configuracion: {
           duracion_minutos: config.duracion_cita_default,
-          horario_inicio: config.horario_inicio,
-          horario_fin: config.horario_fin,
+          horario_inicio: horarioInicio,
+          horario_fin: horarioFin,
         },
       })
     }
@@ -73,28 +87,25 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Validar que sea día laboral
-    const diaSemana = fechaSolicitada.getDay()
-    const diasLaborales = config.dias_laborales.split(',').map(d => parseInt(d))
     if (!diasLaborales.includes(diaSemana)) {
       return NextResponse.json({
         fecha: fechaParam,
         horarios: [],
         configuracion: {
           duracion_minutos: config.duracion_cita_default,
-          horario_inicio: config.horario_inicio,
-          horario_fin: config.horario_fin,
+          horario_inicio: horarioInicio,
+          horario_fin: horarioFin,
         },
       })
     }
 
     // Generar slots de tiempo
-    const [horaInicio, minInicio] = config.horario_inicio.split(':').map(Number)
-    const [horaFin, minFin] = config.horario_fin.split(':').map(Number)
+    const [horaInicio, minInicio] = horarioInicio.split(':').map(Number)
+    const [horaFin, minFin] = horarioFin.split(':').map(Number)
 
     const minutosInicio = horaInicio * 60 + minInicio
     const minutosFin = horaFin * 60 + minFin
-    const duracionTotal = config.duracion_cita_default + config.intervalo_entre_citas
+    const duracionTotal = config.duracion_cita_default // Sin intervalo entre citas (0 minutos)
 
     const slots: string[] = []
     for (let minutos = minutosInicio; minutos + config.duracion_cita_default <= minutosFin; minutos += duracionTotal) {
@@ -259,12 +270,14 @@ export async function GET(request: NextRequest) {
         return solapaCita
       })
 
+      const CITAS_SIMULTANEAS_MAX = 1 // Solo 1 cita a la vez
+
       if (slot === '17:00') {
-        console.log(`   Citas en slot 17:00: ${citasEnSlot.length} (máximo: ${config.citas_simultaneas_max})`)
-        console.log(`   DECISION FINAL: ${citasEnSlot.length < config.citas_simultaneas_max ? 'DISPONIBLE' : 'BLOQUEADO POR CITAS'}`)
+        console.log(`   Citas en slot 17:00: ${citasEnSlot.length} (máximo: ${CITAS_SIMULTANEAS_MAX})`)
+        console.log(`   DECISION FINAL: ${citasEnSlot.length < CITAS_SIMULTANEAS_MAX ? 'DISPONIBLE' : 'BLOQUEADO POR CITAS'}`)
       }
 
-      return citasEnSlot.length < config.citas_simultaneas_max
+      return citasEnSlot.length < CITAS_SIMULTANEAS_MAX
     })
 
     console.log(`✅ Horarios disponibles para ${fechaParam}: ${horariosDisponibles.length} de ${slots.length} slots`)
@@ -274,8 +287,8 @@ export async function GET(request: NextRequest) {
       horarios: horariosDisponibles,
       configuracion: {
         duracion_minutos: config.duracion_cita_default,
-        horario_inicio: config.horario_inicio,
-        horario_fin: config.horario_fin,
+        horario_inicio: horarioInicio,
+        horario_fin: horarioFin,
       },
     })
   } catch (error) {

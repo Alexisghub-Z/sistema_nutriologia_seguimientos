@@ -13,7 +13,10 @@ export default function MisCitasPage() {
   const buscarCita = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!email || !email.includes('@')) {
+    // Normalizar email: minúsculas y trim
+    const emailNormalizado = email.toLowerCase().trim()
+
+    if (!emailNormalizado || !emailNormalizado.includes('@')) {
       setError('Por favor, ingresa un email válido')
       return
     }
@@ -25,7 +28,7 @@ export default function MisCitasPage() {
       const response = await fetch('/api/pacientes/cita-activa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: emailNormalizado }),
       })
 
       const data = await response.json()
@@ -84,7 +87,7 @@ export default function MisCitasPage() {
                 type="email"
                 id="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value.toLowerCase().trim())}
                 placeholder="tu@email.com"
                 required
                 autoFocus

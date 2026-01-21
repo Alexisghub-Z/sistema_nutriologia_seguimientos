@@ -36,6 +36,11 @@ export default function AgendarCitaPage() {
   const [emailIngresado, setEmailIngresado] = useState('')
   const [citaActiva, setCitaActiva] = useState<CitaActiva | null>(null)
 
+  // Estado para validación de teléfono y fecha
+  const [telefonoValido, setTelefonoValido] = useState(false)
+  const [fechaNacimientoValida, setFechaNacimientoValida] = useState(false)
+  const [errorFechaNacimiento, setErrorFechaNacimiento] = useState('')
+
   // Datos del formulario
   const [fechaSeleccionada, setFechaSeleccionada] = useState('')
   const [horaSeleccionada, setHoraSeleccionada] = useState('')
@@ -61,13 +66,23 @@ export default function AgendarCitaPage() {
           fechaNacimientoFormateada = fecha.toISOString().split('T')[0]
         }
 
+        // Extraer teléfono y validar
+        const telefonoExtraido = datos.telefono ? extraerDigitosTelefono(datos.telefono) : ''
+
         setFormData({
           nombre: datos.nombre || '',
           email: datos.email || '',
-          telefono: datos.telefono ? extraerDigitosTelefono(datos.telefono) : '',
+          telefono: telefonoExtraido,
           fecha_nacimiento: fechaNacimientoFormateada,
           motivo: datos.motivo || '',
         })
+
+        // Marcar teléfono como válido si tiene 10 dígitos
+        setTelefonoValido(telefonoExtraido.length === 10)
+
+        // Validar fecha de nacimiento
+        validarFechaNacimiento(fechaNacimientoFormateada)
+
         setEmailIngresado(datos.email || '')
         setEsReagendado(true)
         // Limpiar localStorage después de cargar
@@ -90,6 +105,77 @@ export default function AgendarCitaPage() {
       ...formData,
       [e.target.name]: e.target.value,
     })
+  }
+
+  // Handler especial para teléfono con validación en tiempo real
+  const handleTelefonoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Eliminar todo lo que no sea número
+    const soloNumeros = e.target.value.replace(/\D/g, '')
+
+    // Limitar a 10 dígitos
+    const telefonoLimitado = soloNumeros.slice(0, 10)
+
+    // Actualizar el formulario
+    setFormData({
+      ...formData,
+      telefono: telefonoLimitado,
+    })
+
+    // Validar si tiene exactamente 10 dígitos
+    setTelefonoValido(telefonoLimitado.length === 10)
+  }
+
+  // Función helper para validar fecha de nacimiento
+  const validarFechaNacimiento = (fechaString: string) => {
+    if (!fechaString) {
+      setFechaNacimientoValida(false)
+      setErrorFechaNacimiento('')
+      return false
+    }
+
+    const fecha = new Date(fechaString)
+    const hoy = new Date()
+    const edad = Math.floor((hoy.getTime() - fecha.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+
+    // Validar que no sea fecha futura
+    if (fecha > hoy) {
+      setFechaNacimientoValida(false)
+      setErrorFechaNacimiento('La fecha de nacimiento no puede ser futura')
+      return false
+    }
+
+    // Validar edad mínima (5 años)
+    if (edad < 5) {
+      setFechaNacimientoValida(false)
+      setErrorFechaNacimiento('Edad mínima: 5 años')
+      return false
+    }
+
+    // Validar edad máxima (120 años)
+    if (edad > 120) {
+      setFechaNacimientoValida(false)
+      setErrorFechaNacimiento('Por favor verifica la fecha ingresada')
+      return false
+    }
+
+    // Fecha válida
+    setFechaNacimientoValida(true)
+    setErrorFechaNacimiento('')
+    return true
+  }
+
+  // Handler especial para fecha de nacimiento con validación
+  const handleFechaNacimientoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fechaIngresada = e.target.value
+
+    // Actualizar el formulario
+    setFormData({
+      ...formData,
+      fecha_nacimiento: fechaIngresada,
+    })
+
+    // Validar fecha
+    validarFechaNacimiento(fechaIngresada)
   }
 
   const continuarAPaso2 = () => {
@@ -117,7 +203,10 @@ export default function AgendarCitaPage() {
   const verificarEmail = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!emailIngresado || !emailIngresado.includes('@')) {
+    // Normalizar email: minúsculas y trim
+    const emailNormalizado = emailIngresado.toLowerCase().trim()
+
+    if (!emailNormalizado || !emailNormalizado.includes('@')) {
       setError('Por favor, ingresa un email válido')
       return
     }
@@ -131,7 +220,7 @@ export default function AgendarCitaPage() {
       const responseVerificar = await fetch('/api/pacientes/verificar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailIngresado }),
+        body: JSON.stringify({ email: emailNormalizado }),
       })
 
       const dataVerificar = await responseVerificar.json()
@@ -146,7 +235,7 @@ export default function AgendarCitaPage() {
         const responseCitaActiva = await fetch('/api/pacientes/cita-activa', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: emailIngresado }),
+          body: JSON.stringify({ email: emailNormalizado }),
         })
 
         const dataCitaActiva = await responseCitaActiva.json()
@@ -165,19 +254,28 @@ export default function AgendarCitaPage() {
         const fechaNacimiento = new Date(dataVerificar.paciente.fecha_nacimiento)
         const fechaFormateada = fechaNacimiento.toISOString().split('T')[0]
 
+        // Extraer teléfono y validar
+        const telefonoExtraido = extraerDigitosTelefono(dataVerificar.paciente.telefono)
+
         setFormData({
           nombre: dataVerificar.paciente.nombre,
           email: dataVerificar.paciente.email,
-          telefono: extraerDigitosTelefono(dataVerificar.paciente.telefono),
+          telefono: telefonoExtraido,
           fecha_nacimiento: fechaFormateada,
           motivo: '',
         })
+
+        // Marcar teléfono como válido si tiene 10 dígitos
+        setTelefonoValido(telefonoExtraido.length === 10)
+
+        // Validar fecha de nacimiento
+        validarFechaNacimiento(fechaFormateada)
       } else {
         // Paciente nuevo - solo pre-llenar email
         setPacienteExistente(null)
         setFormData({
           ...formData,
-          email: emailIngresado,
+          email: emailNormalizado,
         })
       }
 
@@ -191,6 +289,18 @@ export default function AgendarCitaPage() {
 
   const agendarCita = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Prevenir doble envío
+    if (loading) return
+
+    // Validar que el motivo no sea solo espacios
+    const motivoLimpio = formData.motivo.trim()
+    if (motivoLimpio.length < 10) {
+      setError('El motivo de consulta debe tener al menos 10 caracteres válidos')
+      setLoading(false)
+      return
+    }
+
     setError('')
     setLoading(true)
 
@@ -200,6 +310,7 @@ export default function AgendarCitaPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          motivo: motivoLimpio, // Enviar el motivo sin espacios extra
           fecha_cita: fechaSeleccionada,
           hora_cita: horaSeleccionada,
         }),
@@ -360,7 +471,7 @@ export default function AgendarCitaPage() {
                     type="email"
                     id="email_verificar"
                     value={emailIngresado}
-                    onChange={(e) => setEmailIngresado(e.target.value)}
+                    onChange={(e) => setEmailIngresado(e.target.value.toLowerCase().trim())}
                     required
                     placeholder="ejemplo@email.com"
                     className={styles.emailInput}
@@ -533,31 +644,69 @@ export default function AgendarCitaPage() {
 
                 <div className={styles.formGroup}>
                   <label htmlFor="telefono">Teléfono (WhatsApp)</label>
-                  <input
-                    type="tel"
-                    id="telefono"
-                    name="telefono"
-                    value={formData.telefono}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="9515886761"
-                    pattern="[0-9]{10}"
-                    maxLength={10}
-                  />
-                  <small>10 dígitos sin espacios (ej: 9515886761)</small>
+                  <div className={styles.inputWithValidation}>
+                    <input
+                      type="tel"
+                      id="telefono"
+                      name="telefono"
+                      value={formData.telefono}
+                      onChange={handleTelefonoChange}
+                      required
+                      placeholder="9515886761"
+                      className={
+                        formData.telefono.length > 0
+                          ? telefonoValido
+                            ? styles.inputValid
+                            : styles.inputInvalid
+                          : ''
+                      }
+                    />
+                    {formData.telefono.length > 0 && (
+                      <span className={styles.validationIcon}>
+                        {telefonoValido ? '✓' : '✗'}
+                      </span>
+                    )}
+                  </div>
+                  <small className={telefonoValido ? styles.textSuccess : styles.textMuted}>
+                    {formData.telefono.length === 0
+                      ? '10 dígitos sin espacios (ej: 9515886761)'
+                      : telefonoValido
+                      ? '✓ Teléfono válido'
+                      : `${formData.telefono.length}/10 dígitos`}
+                  </small>
                 </div>
 
                 <div className={styles.formGroup}>
                   <label htmlFor="fecha_nacimiento">Fecha de nacimiento</label>
-                  <input
-                    type="date"
-                    id="fecha_nacimiento"
-                    name="fecha_nacimiento"
-                    value={formData.fecha_nacimiento}
-                    onChange={handleInputChange}
-                    required
-                    max={new Date().toISOString().split('T')[0]}
-                  />
+                  <div className={styles.inputWithValidation}>
+                    <input
+                      type="date"
+                      id="fecha_nacimiento"
+                      name="fecha_nacimiento"
+                      value={formData.fecha_nacimiento}
+                      onChange={handleFechaNacimientoChange}
+                      required
+                      max={new Date().toISOString().split('T')[0]}
+                      className={
+                        formData.fecha_nacimiento
+                          ? fechaNacimientoValida
+                            ? styles.inputValid
+                            : styles.inputInvalid
+                          : ''
+                      }
+                    />
+                    {formData.fecha_nacimiento && (
+                      <span className={styles.validationIcon}>
+                        {fechaNacimientoValida ? '✓' : '✗'}
+                      </span>
+                    )}
+                  </div>
+                  {errorFechaNacimiento && (
+                    <small className={styles.textError}>{errorFechaNacimiento}</small>
+                  )}
+                  {!errorFechaNacimiento && fechaNacimientoValida && (
+                    <small className={styles.textSuccess}>✓ Fecha válida</small>
+                  )}
                 </div>
               </div>
 

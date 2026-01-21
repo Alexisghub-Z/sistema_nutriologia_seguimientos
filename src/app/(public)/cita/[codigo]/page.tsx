@@ -69,10 +69,11 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
   }
 
   const confirmarAsistencia = async () => {
-    if (!cita) return
+    if (!cita || confirmando) return // Prevenir doble envío
 
     try {
       setConfirmando(true)
+      setError('') // Limpiar errores previos
 
       const response = await fetch(`/api/citas/codigo/${codigo}`, {
         method: 'PUT',
@@ -95,10 +96,11 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
   }
 
   const cancelarCita = async () => {
-    if (!cita) return
+    if (!cita || cancelando) return // Prevenir doble envío
 
     try {
       setCancelando(true)
+      setError('') // Limpiar errores previos
 
       const response = await fetch(`/api/citas/codigo/${codigo}`, {
         method: 'PUT',
@@ -154,11 +156,11 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
   }
 
   const reagendarCita = async () => {
-    if (!cita) return
+    if (!cita || reagendando) return // Prevenir doble envío
 
     try {
       setReagendando(true)
-      setError('')
+      setError('') // Limpiar errores previos
 
       // Cancelar la cita actual
       const response = await fetch(`/api/citas/codigo/${codigo}`, {

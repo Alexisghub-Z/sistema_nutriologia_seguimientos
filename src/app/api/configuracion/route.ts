@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 // Schema de validación
 const configuracionSchema = z.object({
+  // Configuración de mensajería
   recordatorio_24h_activo: z.boolean().optional(),
   recordatorio_1h_activo: z.boolean().optional(),
   seguimiento_activo: z.boolean().optional(),
@@ -12,6 +13,16 @@ const configuracionSchema = z.object({
   confirmacion_automatica_activa: z.boolean().optional(),
   url_portal: z.string().url().optional().nullable(),
   nombre_consultorio: z.string().min(1).optional(),
+
+  // Configuración de calendario
+  horario_inicio: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  horario_fin: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  horario_sabado_inicio: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
+  horario_sabado_fin: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
+  duracion_cita_default: z.number().int().min(15).max(240).optional(),
+  dias_laborales: z.string().optional(),
+  dias_anticipacion_max: z.number().int().min(1).max(90).optional(),
+  horas_anticipacion_min: z.number().int().min(0).max(72).optional(),
 })
 
 // GET /api/configuracion - Obtener configuración general
@@ -29,6 +40,7 @@ export async function GET() {
     if (!config) {
       config = await prisma.configuracionGeneral.create({
         data: {
+          // Mensajería
           recordatorio_24h_activo: true,
           recordatorio_1h_activo: true,
           seguimiento_activo: true,
@@ -36,6 +48,16 @@ export async function GET() {
           confirmacion_automatica_activa: true,
           url_portal: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
           nombre_consultorio: 'Consultorio',
+
+          // Calendario
+          horario_inicio: '09:00',
+          horario_fin: '18:00',
+          duracion_cita_default: 60,
+          intervalo_entre_citas: 0,
+          dias_laborales: '1,2,3,4,5', // Lun-Vie
+          citas_simultaneas_max: 1,
+          dias_anticipacion_max: 30,
+          horas_anticipacion_min: 2,
         },
       })
     }
@@ -64,11 +86,18 @@ export async function PUT(request: NextRequest) {
     // Buscar configuración existente
     let config = await prisma.configuracionGeneral.findFirst()
 
+    // Agregar valores fijos para campos eliminados de la UI
+    const dataWithDefaults = {
+      ...validatedData,
+      intervalo_entre_citas: 0, // Sin intervalo entre citas
+      citas_simultaneas_max: 1, // Solo 1 cita a la vez
+    }
+
     if (!config) {
       // Si no existe, crear con los datos proporcionados
       config = await prisma.configuracionGeneral.create({
         data: {
-          ...validatedData,
+          ...dataWithDefaults,
           url_portal: validatedData.url_portal || process.env.NEXT_PUBLIC_APP_URL,
           nombre_consultorio: validatedData.nombre_consultorio || 'Consultorio',
         },
@@ -77,11 +106,17 @@ export async function PUT(request: NextRequest) {
       // Actualizar configuración existente
       config = await prisma.configuracionGeneral.update({
         where: { id: config.id },
-        data: validatedData,
+        data: dataWithDefaults,
       })
     }
 
     console.log('✅ Configuración actualizada:', config.id)
+    console.log('📋 Valores guardados:', {
+      horario_inicio: config.horario_inicio,
+      horario_fin: config.horario_fin,
+      horas_anticipacion_min: config.horas_anticipacion_min,
+      dias_laborales: config.dias_laborales,
+    })
 
     return NextResponse.json(config)
   } catch (error) {

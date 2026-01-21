@@ -30,9 +30,10 @@ interface Mensaje {
 interface ChatWindowProps {
   pacienteId: string
   onMessageSent: () => void
+  onBack?: () => void
 }
 
-export default function ChatWindow({ pacienteId, onMessageSent }: ChatWindowProps) {
+export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWindowProps) {
   const [mensajes, setMensajes] = useState<Mensaje[]>([])
   const [paciente, setPaciente] = useState<Paciente | null>(null)
   const [loading, setLoading] = useState(true)
@@ -172,6 +173,13 @@ export default function ChatWindow({ pacienteId, onMessageSent }: ChatWindowProp
     <div className={styles.container}>
       {/* Header */}
       <div className={styles.header}>
+        {onBack && (
+          <button className={styles.backButton} onClick={onBack} aria-label="Volver">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+          </button>
+        )}
         <div className={styles.avatar}>
           <span className={styles.avatarText}>
             {paciente.nombre

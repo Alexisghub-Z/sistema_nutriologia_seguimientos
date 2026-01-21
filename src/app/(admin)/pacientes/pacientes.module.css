@@ -1,7 +1,9 @@
 .container {
   padding: var(--spacing-xl);
-  max-width: 1400px;
+  max-width: 100%;
   margin: 0 auto;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 /* Header */
@@ -303,8 +305,101 @@
   padding: var(--spacing-3xl);
 }
 
+/* Vista de tarjetas para móvil */
+.mobileCards {
+  display: none;
+  margin: calc(var(--spacing-lg) * -1);
+}
+
+.patientCard {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--color-gray-100);
+  transition: background-color var(--transition-fast);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.patientCard:hover {
+  background-color: var(--color-gray-50);
+}
+
+.patientCard:last-child {
+  border-bottom: none;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-sm);
+}
+
+.cardName {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  text-decoration: none;
+  margin: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  flex: 1;
+  min-width: 0;
+}
+
+.cardName:hover {
+  text-decoration: underline;
+}
+
+.cardActions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.cardBody {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.cardField {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cardLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cardValue {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-900);
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.cardFooter {
+  display: flex;
+  gap: var(--spacing-md);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--color-gray-100);
+}
+
+.cardStat {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-600);
+}
+
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .container {
     padding: var(--spacing-lg);
   }
@@ -312,6 +407,15 @@
   .header {
     flex-direction: column;
     align-items: stretch;
+    gap: var(--spacing-md);
+  }
+
+  .title {
+    font-size: var(--font-size-xl);
+  }
+
+  .subtitle {
+    font-size: var(--font-size-sm);
   }
 
   .addButton {
@@ -319,34 +423,85 @@
     justify-content: center;
   }
 
-  .table {
-    font-size: var(--font-size-xs);
+  /* Ocultar tabla y mostrar cards en mobile */
+  .tableWrapper {
+    display: none;
+  }
+
+  .mobileCards {
+    display: block;
+  }
+
+  .patientCard {
+    padding: var(--spacing-lg);
+  }
+
+  .cardBody {
+    gap: var(--spacing-md);
+  }
+
+  .pagination {
+    padding: var(--spacing-lg);
+  }
+
+  .paginationControls {
+    gap: var(--spacing-sm);
+  }
+
+  .pageNumbers {
+    gap: var(--spacing-xs);
+  }
+
+  .pageButton {
+    min-width: 32px;
+    height: 32px;
+    font-size: var(--font-size-sm);
+  }
+
+  .paginationInfo {
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* Mobile Landscape */
+@media (max-width: 926px) and (max-height: 640px) and (orientation: landscape) {
+  .container {
+    padding: var(--spacing-md);
+  }
+
+  .header {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+  }
+
+  .addButton {
+    width: auto;
+  }
+
+  /* Mostrar tabla en landscape si hay espacio */
+  .tableWrapper {
+    display: block;
+  }
+
+  .mobileCards {
+    display: none;
   }
 
   .table th,
   .table td {
-    padding: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-xs);
   }
 
   .pagination {
     padding: var(--spacing-md);
   }
 
-  .paginationControls {
-    gap: var(--spacing-xs);
-  }
-
-  .pageNumbers {
-    gap: 2px;
-  }
-
   .pageButton {
     min-width: 28px;
     height: 28px;
-    font-size: var(--font-size-xs);
-  }
-
-  .paginationInfo {
     font-size: var(--font-size-xs);
   }
 }

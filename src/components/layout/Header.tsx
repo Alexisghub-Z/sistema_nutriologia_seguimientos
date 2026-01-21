@@ -2,12 +2,14 @@
 
 import { useSession, signOut } from 'next-auth/react'
 import { useState, useRef, useEffect } from 'react'
+import { useSidebar } from '@/contexts/SidebarContext'
 import styles from './Header.module.css'
 
 export default function Header() {
   const { data: session } = useSession()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const { toggleSidebar } = useSidebar()
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -35,6 +37,13 @@ export default function Header() {
 
   return (
     <header className={styles.header}>
+      {/* Botón hamburguesa solo visible en mobile */}
+      <button className={styles.menuButton} onClick={toggleSidebar}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
       <div className={styles.breadcrumb}>
         <h2 className={styles.pageTitle}>Panel de Administración</h2>
       </div>
