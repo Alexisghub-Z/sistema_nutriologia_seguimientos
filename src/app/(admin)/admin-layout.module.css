@@ -18,12 +18,12 @@
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .main {
-    margin-left: 70px;
+    margin-left: 0;
   }
 
   .content {
-    padding: var(--spacing-md);
+    padding: var(--spacing-lg);
   }
 }
