@@ -19,6 +19,13 @@
   width: 100%;
 }
 
+.contentNoPadding {
+  flex: 1;
+  padding: 0;
+  overflow-y: auto;
+  width: 100%;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .main {
@@ -28,6 +35,11 @@
 
   .content {
     padding: var(--spacing-lg);
+    width: 100%;
+  }
+
+  .contentNoPadding {
+    padding: 0;
     width: 100%;
   }
 }
@@ -40,5 +52,9 @@
 
   .content {
     padding: var(--spacing-md);
+  }
+
+  .contentNoPadding {
+    padding: 0;
   }
 }
