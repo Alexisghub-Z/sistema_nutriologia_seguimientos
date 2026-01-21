@@ -121,6 +121,12 @@ enum EstadoConfirmacion {
   CANCELADA_PACIENTE // Paciente canceló
 }
 
+enum TipoSeguimiento {
+  SOLO_RECORDATORIO    // Solo recordatorio para agendar cita
+  SOLO_SEGUIMIENTO     // Solo mensaje de seguimiento post-consulta
+  RECORDATORIO_Y_SEGUIMIENTO // Ambos mensajes combinados
+}
+
 // ============================================
 // CONSULTAS (EXPEDIENTE DIGITAL)
 // ============================================
@@ -168,7 +174,9 @@ model Consulta {
   observaciones String?  @db.Text // Observaciones adicionales
 
   // Seguimiento
-  proxima_cita  DateTime? // Próxima cita sugerida
+  proxima_cita           DateTime?         // Próxima cita sugerida
+  seguimiento_programado Boolean           @default(false) // Si hay recordatorio programado
+  tipo_seguimiento       TipoSeguimiento?  // Tipo de mensaje a enviar
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

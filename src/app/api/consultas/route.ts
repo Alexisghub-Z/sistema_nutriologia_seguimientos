@@ -3,7 +3,6 @@ import { getAuthUser } from '@/lib/auth-utils'
 import prisma from '@/lib/prisma'
 import { z } from 'zod'
 import { getCache, setCache, deleteCache, deleteCachePattern, CacheKeys } from '@/lib/redis'
-import { programarSeguimiento } from '@/lib/queue/messages'
 
 // Schema de validación para crear consulta
 const consultaSchema = z.object({
@@ -252,16 +251,49 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Programar recordatorio de seguimiento si tiene próxima cita sugerida
-    if (validatedData.proxima_cita) {
-      try {
-        const fechaSugerida = new Date(validatedData.proxima_cita)
-        await programarSeguimiento(consulta.id, fechaSugerida)
-        console.log('📅 Recordatorio de seguimiento programado para:', fechaSugerida.toLocaleString('es-MX'))
-      } catch (queueError) {
-        console.error('Error al programar seguimiento:', queueError)
-        // No fallar la creación de la consulta si hay error en la programación
+    // La programación de seguimiento ahora se hace manualmente desde el panel del paciente
+    // El nutriólogo decide cuándo enviar recordatorios para evitar duplicados
+
+    // Cancelar TODOS los seguimientos antiguos del paciente al crear nueva consulta
+    try {
+      const consultasAntiguasConSeguimiento = await prisma.consulta.findMany({
+        where: {
+          paciente_id: validatedData.paciente_id,
+          seguimiento_programado: true,
+          id: { not: consulta.id }, // Excluir la consulta actual
+        },
+      })
+
+      if (consultasAntiguasConSeguimiento.length > 0) {
+        console.log(`🧹 Limpiando ${consultasAntiguasConSeguimiento.length} seguimiento(s) antiguo(s) del paciente`)
+
+        // Cancelar jobs de la cola
+        const { mensajesQueue } = await import('@/lib/queue/messages')
+        const jobs = await mensajesQueue.getJobs(['waiting', 'delayed'])
+
+        for (const consultaAntigua of consultasAntiguasConSeguimiento) {
+          for (const job of jobs) {
+            if (job.data.consultaId === consultaAntigua.id) {
+              await job.remove()
+              console.log(`🗑️  Job cancelado para consulta antigua: ${consultaAntigua.id}`)
+            }
+          }
+
+          // Actualizar flag en BD
+          await prisma.consulta.update({
+            where: { id: consultaAntigua.id },
+            data: {
+              seguimiento_programado: false,
+              tipo_seguimiento: null,
+            },
+          })
+        }
+
+        console.log(`✅ Seguimientos antiguos limpiados correctamente`)
       }
+    } catch (limpiezaError) {
+      console.error('Error al limpiar seguimientos antiguos:', limpiezaError)
+      // No fallar la creación de la consulta si hay error en la limpieza
     }
 
     // Invalidar caché de consultas del paciente y detalle del paciente

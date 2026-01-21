@@ -59,12 +59,25 @@ export async function GET(
             id: true,
             fecha: true,
             motivo: true,
+            peso: true,
+            talla: true,
+            imc: true,
+            grasa_corporal: true,
+            masa_muscular_kg: true,
+            diagnostico: true,
+            objetivo: true,
             proxima_cita: true,
+            seguimiento_programado: true,
+            tipo_seguimiento: true,
           },
         },
         _count: {
           select: {
-            citas: true,
+            citas: {
+              where: {
+                estado: 'COMPLETADA'
+              }
+            },
             consultas: true,
             mensajes: true,
           },

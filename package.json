@@ -19,7 +19,8 @@
     "type-check": "tsc --noEmit",
     "worker:dev": "tsx watch src/lib/queue/worker.ts",
     "queue:status": "node scripts/ver-cola.js",
-    "queue:clean": "node scripts/limpiar-cola.js"
+    "queue:clean": "node scripts/limpiar-cola.js",
+    "queue:clean-seguimientos": "node scripts/limpiar-seguimientos.js"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",
