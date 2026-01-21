@@ -20,9 +20,7 @@ const configuracionSchema = z.object({
   horario_sabado_inicio: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
   horario_sabado_fin: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
   duracion_cita_default: z.number().int().min(15).max(240).optional(),
-  intervalo_entre_citas: z.number().int().min(0).max(60).optional(),
   dias_laborales: z.string().optional(),
-  citas_simultaneas_max: z.number().int().min(1).max(10).optional(),
   dias_anticipacion_max: z.number().int().min(1).max(90).optional(),
   horas_anticipacion_min: z.number().int().min(0).max(72).optional(),
 })
@@ -88,11 +86,18 @@ export async function PUT(request: NextRequest) {
     // Buscar configuración existente
     let config = await prisma.configuracionGeneral.findFirst()
 
+    // Agregar valores fijos para campos eliminados de la UI
+    const dataWithDefaults = {
+      ...validatedData,
+      intervalo_entre_citas: 0, // Sin intervalo entre citas
+      citas_simultaneas_max: 1, // Solo 1 cita a la vez
+    }
+
     if (!config) {
       // Si no existe, crear con los datos proporcionados
       config = await prisma.configuracionGeneral.create({
         data: {
-          ...validatedData,
+          ...dataWithDefaults,
           url_portal: validatedData.url_portal || process.env.NEXT_PUBLIC_APP_URL,
           nombre_consultorio: validatedData.nombre_consultorio || 'Consultorio',
         },
@@ -101,7 +106,7 @@ export async function PUT(request: NextRequest) {
       // Actualizar configuración existente
       config = await prisma.configuracionGeneral.update({
         where: { id: config.id },
-        data: validatedData,
+        data: dataWithDefaults,
       })
     }
 

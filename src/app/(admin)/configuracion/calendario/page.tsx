@@ -14,9 +14,7 @@ interface Configuracion {
   horario_sabado_inicio: string | null
   horario_sabado_fin: string | null
   duracion_cita_default: number
-  intervalo_entre_citas: number
   dias_laborales: string
-  citas_simultaneas_max: number
   dias_anticipacion_max: number
   horas_anticipacion_min: number
 }
@@ -100,9 +98,7 @@ export default function ConfiguracionCalendarioPage() {
           horario_sabado_inicio: config.horario_sabado_inicio || null,
           horario_sabado_fin: config.horario_sabado_fin || null,
           duracion_cita_default: parseInt(config.duracion_cita_default.toString()),
-          intervalo_entre_citas: parseInt(config.intervalo_entre_citas.toString()),
           dias_laborales: config.dias_laborales,
-          citas_simultaneas_max: parseInt(config.citas_simultaneas_max.toString()),
           dias_anticipacion_max: parseInt(config.dias_anticipacion_max.toString()),
           horas_anticipacion_min: parseInt(config.horas_anticipacion_min.toString()),
         }),
@@ -234,50 +230,26 @@ export default function ConfiguracionCalendarioPage() {
               <CardTitle>Duración de Citas</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={styles.formGrid}>
-                <div className={styles.formGroup}>
-                  <label htmlFor="duracion_cita_default">
-                    Duración por defecto (minutos)
-                  </label>
-                  <input
-                    type="number"
-                    id="duracion_cita_default"
-                    value={config.duracion_cita_default}
-                    onChange={(e) =>
-                      handleInputChange(
-                        'duracion_cita_default',
-                        parseInt(e.target.value)
-                      )
-                    }
-                    min={15}
-                    max={240}
-                    step={15}
-                    required
-                  />
-                  <small>Duración estándar de cada cita</small>
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label htmlFor="intervalo_entre_citas">
-                    Intervalo entre citas (minutos)
-                  </label>
-                  <input
-                    type="number"
-                    id="intervalo_entre_citas"
-                    value={config.intervalo_entre_citas}
-                    onChange={(e) =>
-                      handleInputChange(
-                        'intervalo_entre_citas',
-                        parseInt(e.target.value)
-                      )
-                    }
-                    min={0}
-                    max={60}
-                    step={5}
-                    required
-                  />
-                  <small>Tiempo de descanso entre consultas</small>
-                </div>
+              <div className={styles.formGroup}>
+                <label htmlFor="duracion_cita_default">
+                  Duración por defecto (minutos)
+                </label>
+                <input
+                  type="number"
+                  id="duracion_cita_default"
+                  value={config.duracion_cita_default}
+                  onChange={(e) =>
+                    handleInputChange(
+                      'duracion_cita_default',
+                      parseInt(e.target.value)
+                    )
+                  }
+                  min={15}
+                  max={240}
+                  step={15}
+                  required
+                />
+                <small>Duración estándar de cada cita</small>
               </div>
             </CardContent>
           </Card>
@@ -306,34 +278,13 @@ export default function ConfiguracionCalendarioPage() {
             </CardContent>
           </Card>
 
-          {/* Capacidad y anticipación */}
+          {/* Anticipación */}
           <Card>
             <CardHeader>
-              <CardTitle>Capacidad y Anticipación</CardTitle>
+              <CardTitle>Anticipación</CardTitle>
             </CardHeader>
             <CardContent>
               <div className={styles.formGrid}>
-                <div className={styles.formGroup}>
-                  <label htmlFor="citas_simultaneas_max">
-                    Citas simultáneas máximas
-                  </label>
-                  <input
-                    type="number"
-                    id="citas_simultaneas_max"
-                    value={config.citas_simultaneas_max}
-                    onChange={(e) =>
-                      handleInputChange(
-                        'citas_simultaneas_max',
-                        parseInt(e.target.value)
-                      )
-                    }
-                    min={1}
-                    max={10}
-                    required
-                  />
-                  <small>Cuántas citas pueden estar al mismo tiempo</small>
-                </div>
-
                 <div className={styles.formGroup}>
                   <label htmlFor="dias_anticipacion_max">
                     Días máximos de anticipación
