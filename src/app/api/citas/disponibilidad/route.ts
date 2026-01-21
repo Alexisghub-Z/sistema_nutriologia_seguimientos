@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
 
     const minutosInicio = horaInicio * 60 + minInicio
     const minutosFin = horaFin * 60 + minFin
-    const duracionTotal = config.duracion_cita_default + config.intervalo_entre_citas
+    const duracionTotal = config.duracion_cita_default // Sin intervalo entre citas (0 minutos)
 
     const slots: string[] = []
     for (let minutos = minutosInicio; minutos + config.duracion_cita_default <= minutosFin; minutos += duracionTotal) {
@@ -270,12 +270,14 @@ export async function GET(request: NextRequest) {
         return solapaCita
       })
 
+      const CITAS_SIMULTANEAS_MAX = 1 // Solo 1 cita a la vez
+
       if (slot === '17:00') {
-        console.log(`   Citas en slot 17:00: ${citasEnSlot.length} (máximo: ${config.citas_simultaneas_max})`)
-        console.log(`   DECISION FINAL: ${citasEnSlot.length < config.citas_simultaneas_max ? 'DISPONIBLE' : 'BLOQUEADO POR CITAS'}`)
+        console.log(`   Citas en slot 17:00: ${citasEnSlot.length} (máximo: ${CITAS_SIMULTANEAS_MAX})`)
+        console.log(`   DECISION FINAL: ${citasEnSlot.length < CITAS_SIMULTANEAS_MAX ? 'DISPONIBLE' : 'BLOQUEADO POR CITAS'}`)
       }
 
-      return citasEnSlot.length < config.citas_simultaneas_max
+      return citasEnSlot.length < CITAS_SIMULTANEAS_MAX
     })
 
     console.log(`✅ Horarios disponibles para ${fechaParam}: ${horariosDisponibles.length} de ${slots.length} slots`)
