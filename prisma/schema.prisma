@@ -315,8 +315,10 @@ model ConfiguracionGeneral {
   nombre_consultorio              String   @default("Consultorio")
 
   // Configuración del calendario
-  horario_inicio                  String   @default("16:00") // HH:mm
-  horario_fin                     String   @default("20:00") // HH:mm
+  horario_inicio                  String   @default("16:00") // HH:mm (Lunes-Viernes)
+  horario_fin                     String   @default("20:00") // HH:mm (Lunes-Viernes)
+  horario_sabado_inicio           String?  // HH:mm - Horario especial para sábado
+  horario_sabado_fin              String?  // HH:mm - Horario especial para sábado
   duracion_cita_default           Int      @default(60) // minutos
   intervalo_entre_citas           Int      @default(0) // minutos de descanso
   dias_laborales                  String   @default("1,2,3,4,5") // 0=Dom, 1=Lun, ..., 6=Sab

@@ -50,14 +50,28 @@ export async function GET(request: NextRequest) {
 
     // Validar que la fecha no sea pasada
     const ahora = new Date()
+
+    // Validar que sea día laboral
+    const diaSemana = fechaSolicitada.getDay()
+    const diasLaborales = config.dias_laborales.split(',').map(d => parseInt(d))
+
+    // Determinar qué horarios usar según el día
+    let horarioInicio = config.horario_inicio
+    let horarioFin = config.horario_fin
+
+    if (diaSemana === 6 && config.horario_sabado_inicio && config.horario_sabado_fin) {
+      horarioInicio = config.horario_sabado_inicio
+      horarioFin = config.horario_sabado_fin
+    }
+
     if (fechaSolicitada < new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate())) {
       return NextResponse.json({
         fecha: fechaParam,
         horarios: [],
         configuracion: {
           duracion_minutos: config.duracion_cita_default,
-          horario_inicio: config.horario_inicio,
-          horario_fin: config.horario_fin,
+          horario_inicio: horarioInicio,
+          horario_fin: horarioFin,
         },
       })
     }
@@ -73,24 +87,21 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Validar que sea día laboral
-    const diaSemana = fechaSolicitada.getDay()
-    const diasLaborales = config.dias_laborales.split(',').map(d => parseInt(d))
     if (!diasLaborales.includes(diaSemana)) {
       return NextResponse.json({
         fecha: fechaParam,
         horarios: [],
         configuracion: {
           duracion_minutos: config.duracion_cita_default,
-          horario_inicio: config.horario_inicio,
-          horario_fin: config.horario_fin,
+          horario_inicio: horarioInicio,
+          horario_fin: horarioFin,
         },
       })
     }
 
     // Generar slots de tiempo
-    const [horaInicio, minInicio] = config.horario_inicio.split(':').map(Number)
-    const [horaFin, minFin] = config.horario_fin.split(':').map(Number)
+    const [horaInicio, minInicio] = horarioInicio.split(':').map(Number)
+    const [horaFin, minFin] = horarioFin.split(':').map(Number)
 
     const minutosInicio = horaInicio * 60 + minInicio
     const minutosFin = horaFin * 60 + minFin
@@ -274,8 +285,8 @@ export async function GET(request: NextRequest) {
       horarios: horariosDisponibles,
       configuracion: {
         duracion_minutos: config.duracion_cita_default,
-        horario_inicio: config.horario_inicio,
-        horario_fin: config.horario_fin,
+        horario_inicio: horarioInicio,
+        horario_fin: horarioFin,
       },
     })
   } catch (error) {
