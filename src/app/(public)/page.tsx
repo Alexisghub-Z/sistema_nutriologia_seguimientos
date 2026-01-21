@@ -15,11 +15,14 @@ export default function Home() {
     setLoading(true)
     setError('')
 
+    // Normalizar código: mayúsculas y sin espacios
+    const codigoNormalizado = codigo.toUpperCase().trim().replace(/\s/g, '')
+
     try {
-      const response = await fetch(`/api/citas/codigo/${codigo}`)
+      const response = await fetch(`/api/citas/codigo/${codigoNormalizado}`)
 
       if (response.ok) {
-        router.push(`/cita/${codigo}`)
+        router.push(`/cita/${codigoNormalizado}`)
       } else {
         setError('Código de cita no encontrado')
       }
@@ -188,7 +191,7 @@ export default function Home() {
               <input
                 type="text"
                 value={codigo}
-                onChange={(e) => setCodigo(e.target.value.toUpperCase())}
+                onChange={(e) => setCodigo(e.target.value.toUpperCase().replace(/\s/g, ''))}
                 placeholder="ABC123DE"
                 className={styles.codigoInput}
                 maxLength={8}

@@ -689,3 +689,73 @@
     padding: 0.875rem 1rem;
   }
 }
+
+/* ===================================
+   VALIDACIÓN EN TIEMPO REAL
+   =================================== */
+
+/* Contenedor de input con validación */
+.inputWithValidation {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputWithValidation input {
+  flex: 1;
+  padding-right: 3rem;
+}
+
+/* Input válido */
+.inputValid {
+  border-color: #10b981 !important;
+  background-color: #f0fdf4;
+}
+
+.inputValid:focus {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
+/* Input inválido */
+.inputInvalid {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2;
+}
+
+.inputInvalid:focus {
+  outline: 2px solid #ef4444;
+  outline-offset: 2px;
+}
+
+/* Ícono de validación */
+.validationIcon {
+  position: absolute;
+  right: 1rem;
+  font-size: 1.25rem;
+  font-weight: bold;
+  pointer-events: none;
+}
+
+.inputValid + .validationIcon {
+  color: #10b981;
+}
+
+.inputInvalid + .validationIcon {
+  color: #ef4444;
+}
+
+/* Texto de ayuda */
+.textSuccess {
+  color: #10b981 !important;
+  font-weight: 500;
+}
+
+.textMuted {
+  color: #6b7280;
+}
+
+.textError {
+  color: #ef4444 !important;
+  font-weight: 500;
+}
