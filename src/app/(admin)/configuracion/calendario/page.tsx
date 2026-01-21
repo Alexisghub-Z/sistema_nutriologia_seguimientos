@@ -11,6 +11,8 @@ interface Configuracion {
   id: string
   horario_inicio: string
   horario_fin: string
+  horario_sabado_inicio: string | null
+  horario_sabado_fin: string | null
   duracion_cita_default: number
   intervalo_entre_citas: number
   dias_laborales: string
@@ -95,6 +97,8 @@ export default function ConfiguracionCalendarioPage() {
         body: JSON.stringify({
           horario_inicio: config.horario_inicio,
           horario_fin: config.horario_fin,
+          horario_sabado_inicio: config.horario_sabado_inicio || null,
+          horario_sabado_fin: config.horario_sabado_fin || null,
           duracion_cita_default: parseInt(config.duracion_cita_default.toString()),
           intervalo_entre_citas: parseInt(config.intervalo_entre_citas.toString()),
           dias_laborales: config.dias_laborales,
@@ -158,7 +162,7 @@ export default function ConfiguracionCalendarioPage() {
             <CardContent>
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}>
-                  <label htmlFor="horario_inicio">Hora de inicio</label>
+                  <label htmlFor="horario_inicio">Hora de inicio (Lunes-Viernes)</label>
                   <input
                     type="time"
                     id="horario_inicio"
@@ -168,11 +172,11 @@ export default function ConfiguracionCalendarioPage() {
                     }
                     required
                   />
-                  <small>Hora en que inician las consultas</small>
+                  <small>Hora en que inician las consultas entre semana</small>
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label htmlFor="horario_fin">Hora de fin</label>
+                  <label htmlFor="horario_fin">Hora de fin (Lunes-Viernes)</label>
                   <input
                     type="time"
                     id="horario_fin"
@@ -183,6 +187,42 @@ export default function ConfiguracionCalendarioPage() {
                     required
                   />
                   <small>Última hora disponible para iniciar una consulta</small>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Horarios Sábado */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Horarios de Sábado (Opcional)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={styles.formGrid}>
+                <div className={styles.formGroup}>
+                  <label htmlFor="horario_sabado_inicio">Hora de inicio (Sábado)</label>
+                  <input
+                    type="time"
+                    id="horario_sabado_inicio"
+                    value={config.horario_sabado_inicio || ''}
+                    onChange={(e) =>
+                      handleInputChange('horario_sabado_inicio', e.target.value || null)
+                    }
+                  />
+                  <small>Si no se especifica, usa el horario de Lunes-Viernes</small>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label htmlFor="horario_sabado_fin">Hora de fin (Sábado)</label>
+                  <input
+                    type="time"
+                    id="horario_sabado_fin"
+                    value={config.horario_sabado_fin || ''}
+                    onChange={(e) =>
+                      handleInputChange('horario_sabado_fin', e.target.value || null)
+                    }
+                  />
+                  <small>Última hora disponible para iniciar una consulta el sábado</small>
                 </div>
               </div>
             </CardContent>
@@ -322,18 +362,18 @@ export default function ConfiguracionCalendarioPage() {
                   <input
                     type="number"
                     id="horas_anticipacion_min"
-                    value={config.horas_anticipacion_min}
+                    value={config.horas_anticipacion_min ?? 0}
                     onChange={(e) =>
                       handleInputChange(
                         'horas_anticipacion_min',
-                        parseInt(e.target.value)
+                        e.target.value === '' ? 0 : parseInt(e.target.value)
                       )
                     }
                     min={0}
                     max={72}
                     required
                   />
-                  <small>Mínimo de horas de anticipación para agendar</small>
+                  <small>Mínimo de horas de anticipación para agendar (0 = sin mínimo)</small>
                 </div>
               </div>
             </CardContent>
