@@ -156,6 +156,27 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.list::-webkit-scrollbar-track {
+  background: var(--color-gray-100);
+  border-radius: 4px;
+}
+
+.list::-webkit-scrollbar-thumb {
+  background: var(--color-gray-300);
+  border-radius: 4px;
+}
+
+.list::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-400);
 }
 
 .listItem {
@@ -223,6 +244,15 @@
   color: var(--color-primary);
   font-weight: var(--font-weight-semibold);
   background-color: var(--color-primary-light);
+  padding: 2px var(--spacing-xs);
+  border-radius: var(--radius-sm);
+}
+
+.tipoCita {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-700);
+  font-weight: var(--font-weight-medium);
+  background-color: var(--color-gray-100);
   padding: 2px var(--spacing-xs);
   border-radius: var(--radius-sm);
 }
@@ -535,6 +565,33 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+  max-height: 600px; /* Altura máxima antes de activar scroll */
+  overflow-y: auto; /* Scroll vertical cuando exceda la altura */
+  padding-right: var(--spacing-xs); /* Espacio para el scrollbar */
+
+  /* Estilo del scrollbar (opcional - mejora visual) */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-primary-light) var(--color-gray-100);
+}
+
+/* Scrollbar para navegadores Webkit (Chrome, Safari, Edge) */
+.consultasList::-webkit-scrollbar {
+  width: 8px;
+}
+
+.consultasList::-webkit-scrollbar-track {
+  background: var(--color-gray-100);
+  border-radius: 4px;
+}
+
+.consultasList::-webkit-scrollbar-thumb {
+  background: var(--color-primary-light);
+  border-radius: 4px;
+  transition: background var(--transition-fast);
+}
+
+.consultasList::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
 }
 
 .consultaItem {

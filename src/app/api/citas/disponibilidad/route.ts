@@ -108,7 +108,8 @@ export async function GET(request: NextRequest) {
     const duracionTotal = config.duracion_cita_default // Sin intervalo entre citas (0 minutos)
 
     const slots: string[] = []
-    for (let minutos = minutosInicio; minutos + config.duracion_cita_default <= minutosFin; minutos += duracionTotal) {
+    // Permitir que la última cita inicie exactamente a la hora de fin
+    for (let minutos = minutosInicio; minutos <= minutosFin; minutos += duracionTotal) {
       const hora = Math.floor(minutos / 60)
       const min = minutos % 60
       const horaStr = `${hora.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`

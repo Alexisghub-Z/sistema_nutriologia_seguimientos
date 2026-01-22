@@ -43,6 +43,7 @@ export default function PacientesPage() {
   })
   const [sortBy, setSortBy] = useState('createdAt')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [activityFilter, setActivityFilter] = useState('todos')
 
   // Fetch pacientes
   const fetchPacientes = async () => {
@@ -56,6 +57,7 @@ export default function PacientesPage() {
         search,
         sortBy,
         sortOrder,
+        activityFilter,
       })
 
       const response = await fetch(`/api/pacientes?${params}`)
@@ -77,7 +79,7 @@ export default function PacientesPage() {
   // Effect para cargar pacientes
   useEffect(() => {
     fetchPacientes()
-  }, [pagination.page, pagination.limit, sortBy, sortOrder])
+  }, [pagination.page, pagination.limit, sortBy, sortOrder, activityFilter])
 
   // Búsqueda con debounce
   useEffect(() => {
@@ -192,7 +194,7 @@ export default function PacientesPage() {
         </Button>
       </div>
 
-      {/* Búsqueda */}
+      {/* Búsqueda y Filtros */}
       <Card className={styles.searchCard}>
         <div className={styles.searchContainer}>
           <svg
@@ -215,6 +217,16 @@ export default function PacientesPage() {
             onChange={(e) => setSearch(e.target.value)}
             className={styles.searchInput}
           />
+          <select
+            value={activityFilter}
+            onChange={(e) => setActivityFilter(e.target.value)}
+            className={styles.filterSelect}
+          >
+            <option value="todos">Todos los pacientes</option>
+            <option value="activos">Activos (últimos 30 días)</option>
+            <option value="inactivos">Inactivos (+30 días)</option>
+            <option value="nuevos">Nuevos (últimos 30 días)</option>
+          </select>
         </div>
       </Card>
 
