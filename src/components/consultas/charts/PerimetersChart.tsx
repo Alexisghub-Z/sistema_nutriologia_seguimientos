@@ -47,7 +47,7 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
     })
   }
 
-  // Calcular estadísticas de cintura y cadera
+  // Calcular estadísticas para todos los perímetros
   const cinturas = validData.filter(d => d.cintura !== null).map(d => d.cintura!)
   const cinturaInicial = cinturas.length > 0 ? cinturas[cinturas.length - 1] : null
   const cinturaActual = cinturas.length > 0 ? cinturas[0] : null
@@ -58,20 +58,87 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
   const caderaActual = caderas.length > 0 ? caderas[0] : null
   const diferenciaCadera = caderaActual && caderaInicial ? caderaActual - caderaInicial : null
 
+  const brazosRelajados = validData.filter(d => d.brazo_relajado !== null).map(d => d.brazo_relajado!)
+  const brazoRelajadoInicial = brazosRelajados.length > 0 ? brazosRelajados[brazosRelajados.length - 1] : null
+  const brazoRelajadoActual = brazosRelajados.length > 0 ? brazosRelajados[0] : null
+  const diferenciaBrazoRelajado = brazoRelajadoActual && brazoRelajadoInicial ? brazoRelajadoActual - brazoRelajadoInicial : null
+
+  const brazosFlexionados = validData.filter(d => d.brazo_flexionado !== null).map(d => d.brazo_flexionado!)
+  const brazoFlexionadoInicial = brazosFlexionados.length > 0 ? brazosFlexionados[brazosFlexionados.length - 1] : null
+  const brazoFlexionadoActual = brazosFlexionados.length > 0 ? brazosFlexionados[0] : null
+  const diferenciaBrazoFlexionado = brazoFlexionadoActual && brazoFlexionadoInicial ? brazoFlexionadoActual - brazoFlexionadoInicial : null
+
+  const muslosMaximos = validData.filter(d => d.muslo_maximo !== null).map(d => d.muslo_maximo!)
+  const musloMaximoInicial = muslosMaximos.length > 0 ? muslosMaximos[muslosMaximos.length - 1] : null
+  const musloMaximoActual = muslosMaximos.length > 0 ? muslosMaximos[0] : null
+  const diferenciaMusloMaximo = musloMaximoActual && musloMaximoInicial ? musloMaximoActual - musloMaximoInicial : null
+
+  const muslosMedios = validData.filter(d => d.muslo_medio !== null).map(d => d.muslo_medio!)
+  const musloMedioInicial = muslosMedios.length > 0 ? muslosMedios[muslosMedios.length - 1] : null
+  const musloMedioActual = muslosMedios.length > 0 ? muslosMedios[0] : null
+  const diferenciaMusloMedio = musloMedioActual && musloMedioInicial ? musloMedioActual - musloMedioInicial : null
+
+  const pantorrillasMaximas = validData.filter(d => d.pantorrilla_maximo !== null).map(d => d.pantorrilla_maximo!)
+  const pantorrillaMaximaInicial = pantorrillasMaximas.length > 0 ? pantorrillasMaximas[pantorrillasMaximas.length - 1] : null
+  const pantorrillaMaximaActual = pantorrillasMaximas.length > 0 ? pantorrillasMaximas[0] : null
+  const diferenciaPantorrillaMaxima = pantorrillaMaximaActual && pantorrillaMaximaInicial ? pantorrillaMaximaActual - pantorrillaMaximaInicial : null
+
   return (
     <div className={styles.chartContainer}>
       <div className={styles.chartHeader}>
         <h3 className={styles.chartTitle}>Perímetros Corporales (cm)</h3>
         <div className={styles.stats}>
+          {brazoRelajadoActual !== null && (
+            <>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Brazo relajado:</span>
+                <span className={styles.statValue}>{brazoRelajadoActual.toFixed(1)} cm</span>
+              </div>
+              {diferenciaBrazoRelajado !== null && (
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>Cambio brazo relaj.:</span>
+                  <span
+                    className={`${styles.statValue} ${
+                      diferenciaBrazoRelajado < 0 ? styles.positive : diferenciaBrazoRelajado > 0 ? styles.negative : ''
+                    }`}
+                  >
+                    {diferenciaBrazoRelajado > 0 ? '+' : ''}
+                    {diferenciaBrazoRelajado.toFixed(1)} cm
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+          {brazoFlexionadoActual !== null && (
+            <>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Brazo flexionado:</span>
+                <span className={styles.statValue}>{brazoFlexionadoActual.toFixed(1)} cm</span>
+              </div>
+              {diferenciaBrazoFlexionado !== null && (
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>Cambio brazo flex.:</span>
+                  <span
+                    className={`${styles.statValue} ${
+                      diferenciaBrazoFlexionado < 0 ? styles.positive : diferenciaBrazoFlexionado > 0 ? styles.negative : ''
+                    }`}
+                  >
+                    {diferenciaBrazoFlexionado > 0 ? '+' : ''}
+                    {diferenciaBrazoFlexionado.toFixed(1)} cm
+                  </span>
+                </div>
+              )}
+            </>
+          )}
           {cinturaActual !== null && (
             <>
               <div className={styles.statItem}>
-                <span className={styles.statLabel}>Cintura actual:</span>
+                <span className={styles.statLabel}>Cintura:</span>
                 <span className={styles.statValue}>{cinturaActual.toFixed(1)} cm</span>
               </div>
               {diferenciaCintura !== null && (
                 <div className={styles.statItem}>
-                  <span className={styles.statLabel}>Cambio:</span>
+                  <span className={styles.statLabel}>Cambio cintura:</span>
                   <span
                     className={`${styles.statValue} ${
                       diferenciaCintura < 0 ? styles.positive : diferenciaCintura > 0 ? styles.negative : ''
@@ -87,12 +154,12 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
           {caderaActual !== null && (
             <>
               <div className={styles.statItem}>
-                <span className={styles.statLabel}>Cadera actual:</span>
+                <span className={styles.statLabel}>Cadera:</span>
                 <span className={styles.statValue}>{caderaActual.toFixed(1)} cm</span>
               </div>
               {diferenciaCadera !== null && (
                 <div className={styles.statItem}>
-                  <span className={styles.statLabel}>Cambio:</span>
+                  <span className={styles.statLabel}>Cambio cadera:</span>
                   <span
                     className={`${styles.statValue} ${
                       diferenciaCadera < 0 ? styles.positive : diferenciaCadera > 0 ? styles.negative : ''
@@ -100,6 +167,69 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
                   >
                     {diferenciaCadera > 0 ? '+' : ''}
                     {diferenciaCadera.toFixed(1)} cm
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+          {musloMaximoActual !== null && (
+            <>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Muslo máximo:</span>
+                <span className={styles.statValue}>{musloMaximoActual.toFixed(1)} cm</span>
+              </div>
+              {diferenciaMusloMaximo !== null && (
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>Cambio muslo máx.:</span>
+                  <span
+                    className={`${styles.statValue} ${
+                      diferenciaMusloMaximo < 0 ? styles.positive : diferenciaMusloMaximo > 0 ? styles.negative : ''
+                    }`}
+                  >
+                    {diferenciaMusloMaximo > 0 ? '+' : ''}
+                    {diferenciaMusloMaximo.toFixed(1)} cm
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+          {musloMedioActual !== null && (
+            <>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Muslo medio:</span>
+                <span className={styles.statValue}>{musloMedioActual.toFixed(1)} cm</span>
+              </div>
+              {diferenciaMusloMedio !== null && (
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>Cambio muslo med.:</span>
+                  <span
+                    className={`${styles.statValue} ${
+                      diferenciaMusloMedio < 0 ? styles.positive : diferenciaMusloMedio > 0 ? styles.negative : ''
+                    }`}
+                  >
+                    {diferenciaMusloMedio > 0 ? '+' : ''}
+                    {diferenciaMusloMedio.toFixed(1)} cm
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+          {pantorrillaMaximaActual !== null && (
+            <>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Pantorrilla:</span>
+                <span className={styles.statValue}>{pantorrillaMaximaActual.toFixed(1)} cm</span>
+              </div>
+              {diferenciaPantorrillaMaxima !== null && (
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>Cambio pantorrilla:</span>
+                  <span
+                    className={`${styles.statValue} ${
+                      diferenciaPantorrillaMaxima < 0 ? styles.positive : diferenciaPantorrillaMaxima > 0 ? styles.negative : ''
+                    }`}
+                  >
+                    {diferenciaPantorrillaMaxima > 0 ? '+' : ''}
+                    {diferenciaPantorrillaMaxima.toFixed(1)} cm
                   </span>
                 </div>
               )}

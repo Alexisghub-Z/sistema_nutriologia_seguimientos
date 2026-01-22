@@ -50,6 +50,7 @@ export default function AgendarCitaPage() {
     telefono: '',
     fecha_nacimiento: '',
     motivo: '',
+    tipo_cita: 'PRESENCIAL',
   })
 
   // Cargar datos de reagendado si existen
@@ -708,6 +709,20 @@ export default function AgendarCitaPage() {
                     <small className={styles.textSuccess}>✓ Fecha válida</small>
                   )}
                 </div>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="tipo_cita">Tipo de cita</label>
+                <select
+                  id="tipo_cita"
+                  name="tipo_cita"
+                  value={formData.tipo_cita}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="PRESENCIAL">🏥 Presencial</option>
+                  <option value="EN_LINEA">💻 En línea</option>
+                </select>
               </div>
 
               <div className={styles.formGroup}>

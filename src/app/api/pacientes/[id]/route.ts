@@ -50,11 +50,9 @@ export async function GET(
       include: {
         citas: {
           orderBy: { fecha_hora: 'desc' },
-          take: 5,
         },
         consultas: {
           orderBy: { fecha: 'desc' },
-          take: 5,
           select: {
             id: true,
             fecha: true,

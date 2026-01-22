@@ -15,6 +15,7 @@ const citaSchema = z.object({
   }, 'Fecha y hora inválidas'),
   duracion_minutos: z.number().positive().default(60),
   motivo_consulta: z.string().min(3, 'El motivo debe tener al menos 3 caracteres'),
+  tipo_cita: z.enum(['PRESENCIAL', 'EN_LINEA']).optional().default('PRESENCIAL'),
   confirmada_por_admin: z.boolean().optional().default(false),
 })
 
@@ -113,6 +114,7 @@ export async function POST(request: NextRequest) {
         fecha_hora: new Date(validatedData.fecha_hora),
         duracion_minutos: validatedData.duracion_minutos,
         motivo_consulta: validatedData.motivo_consulta,
+        tipo_cita: validatedData.tipo_cita,
         estado: 'PENDIENTE',
         // Si fue confirmada por admin, marcarla como confirmada desde el inicio
         confirmada_por_paciente: validatedData.confirmada_por_admin,

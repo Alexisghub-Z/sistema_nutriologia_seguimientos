@@ -8,6 +8,7 @@ interface Cita {
   fecha_hora: string
   duracion_minutos: number
   motivo_consulta: string
+  tipo_cita: 'PRESENCIAL' | 'EN_LINEA'
   estado: 'PENDIENTE' | 'COMPLETADA' | 'CANCELADA' | 'NO_ASISTIO'
   estado_confirmacion: string
   confirmada_por_paciente: boolean
@@ -224,6 +225,18 @@ export default function ModalDetalleCita({ cita, onClose, onActualizar }: ModalD
                 <div>
                   <p className={styles.infoLabel}>Duración</p>
                   <p className={styles.infoValue}>{cita.duracion_minutos} minutos</p>
+                </div>
+              </div>
+
+              <div className={styles.infoItem}>
+                <span style={{ fontSize: '20px' }}>
+                  {cita.tipo_cita === 'PRESENCIAL' ? '🏥' : '💻'}
+                </span>
+                <div>
+                  <p className={styles.infoLabel}>Tipo de Cita</p>
+                  <p className={styles.infoValue}>
+                    {cita.tipo_cita === 'PRESENCIAL' ? 'Presencial' : 'En línea'}
+                  </p>
                 </div>
               </div>
             </div>
