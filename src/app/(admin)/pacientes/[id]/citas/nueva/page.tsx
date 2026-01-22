@@ -19,6 +19,7 @@ export default function NuevaCitaPage() {
     hora: '',
     duracion_minutos: '60',
     motivo_consulta: '',
+    tipo_cita: 'PRESENCIAL', // Por defecto, presencial
     confirmada_por_admin: true, // Por defecto, las citas del admin están pre-confirmadas
   })
 
@@ -58,6 +59,7 @@ export default function NuevaCitaPage() {
           fecha_hora,
           duracion_minutos: parseInt(formData.duracion_minutos),
           motivo_consulta: formData.motivo_consulta,
+          tipo_cita: formData.tipo_cita,
           confirmada_por_admin: formData.confirmada_por_admin,
         }),
       })
@@ -69,8 +71,8 @@ export default function NuevaCitaPage() {
 
       const cita = await response.json()
 
-      // Redirigir al detalle del paciente
-      router.push(`/pacientes/${pacienteId}`)
+      // Redirigir al detalle del paciente con timestamp para forzar recarga
+      router.push(`/pacientes/${pacienteId}?refresh=${Date.now()}`)
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
@@ -175,6 +177,25 @@ export default function NuevaCitaPage() {
               <option value="60">1 hora</option>
               <option value="90">1 hora 30 minutos</option>
               <option value="120">2 horas</option>
+            </select>
+          </div>
+
+          {/* Tipo de Cita */}
+          <div className={styles.formGroup}>
+            <label htmlFor="tipo_cita" className={styles.label}>
+              Tipo de Cita <span className={styles.required}>*</span>
+            </label>
+            <select
+              id="tipo_cita"
+              name="tipo_cita"
+              value={formData.tipo_cita}
+              onChange={handleChange}
+              className={styles.input}
+              required
+              disabled={loading}
+            >
+              <option value="PRESENCIAL">🏥 Presencial</option>
+              <option value="EN_LINEA">💻 En línea</option>
             </select>
           </div>
 

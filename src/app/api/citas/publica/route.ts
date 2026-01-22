@@ -24,6 +24,7 @@ const citaPublicaSchema = z.object({
   fecha_cita: z.string(), // YYYY-MM-DD
   hora_cita: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:mm)'),
   motivo: z.string().min(10, 'Describe el motivo de tu consulta (mínimo 10 caracteres)'),
+  tipo_cita: z.enum(['PRESENCIAL', 'EN_LINEA']).optional().default('PRESENCIAL'),
 })
 
 function generarCodigo(): string {
@@ -226,6 +227,7 @@ export async function POST(request: NextRequest) {
         fecha_hora: fechaHoraCita,
         duracion_minutos: config.duracion_cita_default,
         motivo_consulta: validatedData.motivo,
+        tipo_cita: validatedData.tipo_cita,
         codigo_cita: codigoCita,
         estado: 'PENDIENTE',
         estado_confirmacion: 'PENDIENTE',

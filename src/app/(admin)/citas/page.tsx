@@ -11,6 +11,7 @@ interface Cita {
   fecha_hora: string
   duracion_minutos: number
   motivo_consulta: string
+  tipo_cita: 'PRESENCIAL' | 'EN_LINEA'
   estado: 'PENDIENTE' | 'COMPLETADA' | 'CANCELADA' | 'NO_ASISTIO'
   estado_confirmacion: string
   confirmada_por_paciente: boolean
@@ -342,7 +343,7 @@ export default function CitasPage() {
                           })}
                         </span>
                         <span className={styles.citaPaciente}>
-                          {cita.paciente.nombre}
+                          {cita.tipo_cita === 'PRESENCIAL' ? '🏥' : '💻'} {cita.paciente.nombre}
                         </span>
                       </div>
                     ))}
