@@ -44,6 +44,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  gap: var(--spacing-md);
 }
 
 .searchIcon {
@@ -51,10 +52,11 @@
   left: var(--spacing-md);
   color: var(--color-gray-400);
   pointer-events: none;
+  z-index: 1;
 }
 
 .searchInput {
-  width: 100%;
+  flex: 1;
   padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm)
     calc(var(--spacing-md) + 24px);
   font-size: var(--font-size-md);
@@ -68,6 +70,28 @@
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(45, 159, 93, 0.1);
+}
+
+.filterSelect {
+  min-width: 220px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-md);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  background-color: var(--color-white);
+  cursor: pointer;
+  color: var(--color-gray-700);
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(45, 159, 93, 0.1);
+}
+
+.filterSelect:hover {
+  border-color: var(--color-gray-300);
 }
 
 /* Tabla */
@@ -421,6 +445,16 @@
   .addButton {
     width: 100%;
     justify-content: center;
+  }
+
+  .searchContainer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filterSelect {
+    min-width: auto;
+    width: 100%;
   }
 
   /* Ocultar tabla y mostrar cards en mobile */

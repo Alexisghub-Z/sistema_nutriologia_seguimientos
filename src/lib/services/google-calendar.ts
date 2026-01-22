@@ -320,6 +320,7 @@ export async function updateCalendarEvent(
  */
 export async function deleteCalendarEvent(eventId: string) {
   try {
+    console.log('🗑️  Iniciando eliminación de evento:', eventId)
     const calendar = await getAuthenticatedCalendar()
 
     await calendar.events.delete({
@@ -328,9 +329,21 @@ export async function deleteCalendarEvent(eventId: string) {
       sendUpdates: 'none', // NO enviar notificaciones
     })
 
+    console.log('✅ Evento eliminado exitosamente de Google Calendar API')
     return true
-  } catch (error) {
-    console.error('Error al eliminar evento de Google Calendar:', error)
+  } catch (error: any) {
+    // Si el evento no existe (404), no es un error crítico
+    if (error.code === 404 || error.status === 404) {
+      console.log('⚠️  Evento no encontrado en Google Calendar (ya fue eliminado):', eventId)
+      return true
+    }
+
+    console.error('❌ Error al eliminar evento de Google Calendar:', error)
+    console.error('Detalles del error:', {
+      message: error.message,
+      code: error.code,
+      status: error.status,
+    })
     throw error
   }
 }
@@ -368,7 +381,16 @@ export async function syncCitaWithGoogleCalendar(citaId: string) {
     const cita = await prisma.cita.findUnique({
       where: { id: citaId },
       include: {
-        paciente: true,
+        paciente: {
+          include: {
+            _count: {
+              select: {
+                consultas: true,
+                citas: true,
+              },
+            },
+          },
+        },
       },
     })
 
@@ -376,15 +398,53 @@ export async function syncCitaWithGoogleCalendar(citaId: string) {
       throw new Error('Cita no encontrada')
     }
 
-    // Calcular fecha de fin (asumiendo consultas de 1 hora)
+    // Calcular edad del paciente
+    const calcularEdad = (fechaNacimiento: Date) => {
+      const hoy = new Date()
+      const nacimiento = new Date(fechaNacimiento)
+      let edad = hoy.getFullYear() - nacimiento.getFullYear()
+      const mes = hoy.getMonth() - nacimiento.getMonth()
+      if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+        edad--
+      }
+      return edad
+    }
+
+    const edad = calcularEdad(cita.paciente.fecha_nacimiento)
+
+    // Determinar modalidad de la cita con icono
+    const modalidadIcono = cita.tipo_cita === 'PRESENCIAL' ? '🏥' : '💻'
+    const modalidadTexto = cita.tipo_cita === 'PRESENCIAL' ? 'Presencial' : 'En línea'
+
+    // Crear descripción detallada
+    const descripcion = `
+📋 MOTIVO: ${cita.motivo_consulta || 'Consulta nutricional'}
+
+${modalidadIcono} MODALIDAD: ${modalidadTexto}
+
+👤 INFORMACIÓN DEL PACIENTE:
+• Nombre: ${cita.paciente.nombre}
+• Edad: ${edad} años
+• Teléfono: ${cita.paciente.telefono}
+• Email: ${cita.paciente.email}
+
+📊 HISTORIAL:
+• Total de consultas: ${cita.paciente._count.consultas}
+• Total de citas: ${cita.paciente._count.citas}
+    `.trim()
+
+    // Calcular fecha de fin (usando duración de la cita)
     const fechaFin = new Date(cita.fecha_hora)
-    fechaFin.setHours(fechaFin.getHours() + 1)
+    fechaFin.setMinutes(fechaFin.getMinutes() + (cita.duracion_minutos || 60))
+
+    // Título con modalidad
+    const titulo = `${modalidadIcono} Consulta: ${cita.paciente.nombre}`
 
     // Si la cita ya tiene un google_event_id, actualizar
     if (cita.google_event_id) {
       const event = await updateCalendarEvent(cita.google_event_id, {
-        titulo: `Consulta: ${cita.paciente.nombre}`,
-        descripcion: cita.motivo_consulta || 'Consulta nutricional',
+        titulo: titulo,
+        descripcion: descripcion,
         fechaInicio: cita.fecha_hora,
         fechaFin: fechaFin,
         pacienteEmail: cita.paciente.email,
@@ -394,8 +454,8 @@ export async function syncCitaWithGoogleCalendar(citaId: string) {
     } else {
       // Crear nuevo evento
       const event = await createCalendarEvent({
-        titulo: `Consulta: ${cita.paciente.nombre}`,
-        descripcion: cita.motivo_consulta || 'Consulta nutricional',
+        titulo: titulo,
+        descripcion: descripcion,
         fechaInicio: cita.fecha_hora,
         fechaFin: fechaFin,
         pacienteEmail: cita.paciente.email,
@@ -425,18 +485,27 @@ export async function unsyncCitaFromGoogleCalendar(citaId: string) {
       where: { id: citaId },
     })
 
-    if (!cita || !cita.google_event_id) {
+    if (!cita) {
+      console.log('❌ Cita no encontrada para eliminar de Google Calendar:', citaId)
       return
     }
 
+    if (!cita.google_event_id) {
+      console.log('⚠️  Cita no tiene google_event_id, no hay nada que eliminar:', citaId)
+      return
+    }
+
+    console.log('🗑️  Eliminando evento de Google Calendar:', cita.google_event_id)
     await deleteCalendarEvent(cita.google_event_id)
+    console.log('✅ Evento eliminado exitosamente de Google Calendar')
 
     await prisma.cita.update({
       where: { id: citaId },
       data: { google_event_id: null },
     })
+    console.log('✅ google_event_id removido de la base de datos')
   } catch (error) {
-    console.error('Error al eliminar sincronización de cita:', error)
+    console.error('❌ Error al eliminar sincronización de cita:', error)
     throw error
   }
 }

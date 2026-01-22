@@ -47,6 +47,9 @@ export default function Home() {
             <span className={styles.logoText}>Dr. Paul</span>
           </div>
           <nav className={styles.nav}>
+            <button onClick={() => scrollToSection('sobre-mi')} className={styles.navLink}>
+              Sobre Mí
+            </button>
             <button onClick={() => scrollToSection('servicios')} className={styles.navLink}>
               Servicios
             </button>
@@ -113,6 +116,116 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Video Preview Section */}
+      <section className={styles.videoSection}>
+        <div className={styles.container}>
+          <div className={styles.videoGrid}>
+            <div className={styles.videoTextContent}>
+              <h2 className={styles.videoTitle}>Participación en Cortv Oaxaca</h2>
+              <p className={styles.videoDescription}>
+                Mira mi participación en el programa de cocina de Cortv Oaxaca, donde comparto recetas saludables y consejos nutricionales para cocinar de forma balanceada y deliciosa.
+              </p>
+              <p className={styles.videoDescription}>
+                Descubre cómo la buena alimentación no tiene que ser aburrida. Aprende técnicas y preparaciones que puedes aplicar en tu día a día para mantener una nutrición óptima sin sacrificar el sabor.
+              </p>
+              <button
+                onClick={() => router.push('/agendar')}
+                className={styles.videoCtaButton}
+              >
+                Agendar Primera Consulta
+              </button>
+            </div>
+            <div className={styles.videoContainer}>
+              <div className={styles.videoWrapper}>
+                <iframe
+                  className={styles.videoIframe}
+                  src="https://www.youtube-nocookie.com/embed/CWVptmWn31w?start=33&rel=0&modestbranding=1"
+                  title="Video de presentación"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  loading="lazy"
+                ></iframe>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Sobre Mí Section */}
+      <section id="sobre-mi" className={styles.sobreMiSection}>
+        <div className={styles.container}>
+          <div className={styles.sobreMiGrid}>
+            {/* Columna Izquierda - Información */}
+            <div className={styles.sobreMiContent}>
+              <h2 className={styles.sobreMiTitle}>Sobre Mí</h2>
+              <h3 className={styles.sobreMiSubtitle}>Dr. Paul - Nutriólogo Certificado</h3>
+
+              <p className={styles.sobreMiDescription}>
+                Con más de 10 años de experiencia ayudando a pacientes a alcanzar sus objetivos
+                de salud y bienestar a través de la nutrición personalizada y basada en evidencia científica.
+              </p>
+
+              {/* Credenciales */}
+              <div className={styles.credencialesContainer}>
+                <div className={styles.credencialItem}>
+                  <h4 className={styles.credencialTitulo}>Cédula Profesional</h4>
+                  <p className={styles.credencialDetalle}>12345678 - Nutrición Clínica</p>
+                </div>
+
+                <div className={styles.credencialItem}>
+                  <h4 className={styles.credencialTitulo}>Certificaciones</h4>
+                  <ul className={styles.credencialLista}>
+                    <li>Certificación en Nutrición Deportiva</li>
+                    <li>Especialista en Diabetes y Nutrición</li>
+                    <li>Certificación en Nutrición Pediátrica</li>
+                    <li>Terapia Nutricional Intensiva</li>
+                  </ul>
+                </div>
+
+                <div className={styles.credencialItem}>
+                  <h4 className={styles.credencialTitulo}>Formación Académica</h4>
+                  <ul className={styles.credencialLista}>
+                    <li>Licenciatura en Nutrición - UNAM</li>
+                    <li>Maestría en Ciencias de la Nutrición</li>
+                    <li>Diplomado en Obesidad y Síndrome Metabólico</li>
+                  </ul>
+                </div>
+
+                <div className={styles.credencialItem}>
+                  <h4 className={styles.credencialTitulo}>Experiencia Profesional</h4>
+                  <ul className={styles.credencialLista}>
+                    <li>Nutriólogo en Hospital Regional de Oaxaca (5 años)</li>
+                    <li>Consulta privada en Oaxaca (10+ años)</li>
+                    <li>Colaborador en medios de comunicación locales</li>
+                    <li>Más de 500 pacientes atendidos exitosamente</li>
+                  </ul>
+                </div>
+              </div>
+
+              <button
+                onClick={() => router.push('/agendar')}
+                className={styles.sobreMiCtaButton}
+              >
+                Agendar Consulta
+              </button>
+            </div>
+
+            {/* Columna Derecha - Foto */}
+            <div className={styles.sobreMiFotoContainer}>
+              <div className={styles.sobreMiFotoWrapper}>
+                <img
+                  src="/images/foto-perfil.jpg"
+                  alt="Dr. Paul - Nutriólogo Profesional"
+                  className={styles.sobreMiFoto}
+                />
+                <div className={styles.fotoDecoracion}></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Servicios Section */}
       <section id="servicios" className={styles.serviciosSection}>
         <div className={styles.container}>
@@ -124,10 +237,6 @@ export default function Home() {
             <div className={styles.servicioCard}>
               <h3>Control de Peso</h3>
               <p>Pérdida o ganancia de peso saludable con planes personalizados basados en tu metabolismo y estilo de vida.</p>
-            </div>
-            <div className={styles.servicioCard}>
-              <h3>Nutrición Deportiva</h3>
-              <p>Optimiza tu rendimiento físico con estrategias nutricionales diseñadas para atletas y deportistas.</p>
             </div>
             <div className={styles.servicioCard}>
               <h3>Nutrición Clínica</h3>
@@ -173,6 +282,60 @@ export default function Home() {
               <div className={styles.beneficioNumber}>04</div>
               <h3>Resultados Medibles</h3>
               <p>Cambios reales y cuantificables en tu salud, energía, composición corporal y bienestar general.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Medios y Presencia */}
+      <section className={styles.mediosSection}>
+        <div className={styles.mediosContainer}>
+          <h2 className={styles.sectionTitle}>Visto en los principales medios</h2>
+          <p className={styles.sectionDescription}>
+            Presencia en radio, televisión y medios digitales de Oaxaca
+          </p>
+
+          <div className={styles.sliderWrapper}>
+            <div className={styles.sliderContent}>
+              {/* Primera ronda de fotos */}
+              <div className={styles.logoItem}>
+                <img src="/logos/foto1.jpg" alt="Foto 1" />
+              </div>
+              <div className={styles.logoItem}>
+                <img src="/logos/foto2.jpg" alt="Foto 2" />
+              </div>
+              <div className={styles.logoItem}>
+                <img src="/logos/foto3.jpg" alt="Foto 3" />
+              </div>
+              <div className={styles.logoItem}>
+                <img src="/logos/foto4.jpg" alt="Foto 4" />
+              </div>
+              <div className={styles.logoItem}>
+                <img src="/logos/foto5.jpg" alt="Foto 5" />
+              </div>
+              <div className={styles.logoItem}>
+                <img src="/logos/foto6.jpg" alt="Foto 6" />
+              </div>
+
+              {/* Segunda ronda (duplicada para loop infinito) */}
+              <div className={styles.logoItem}>
+                <img src="/logos/foto1.jpg" alt="Foto 1" />
+              </div>
+              <div className={styles.logoItem}>
+                <img src="/logos/foto2.jpg" alt="Foto 2" />
+              </div>
+              <div className={styles.logoItem}>
+                <img src="/logos/foto3.jpg" alt="Foto 3" />
+              </div>
+              <div className={styles.logoItem}>
+                <img src="/logos/foto4.jpg" alt="Foto 4" />
+              </div>
+              <div className={styles.logoItem}>
+                <img src="/logos/foto5.jpg" alt="Foto 5" />
+              </div>
+              <div className={styles.logoItem}>
+                <img src="/logos/foto6.jpg" alt="Foto 6" />
+              </div>
             </div>
           </div>
         </div>

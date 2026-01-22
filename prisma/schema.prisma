@@ -70,6 +70,7 @@ model Cita {
   fecha_hora         DateTime
   duracion_minutos   Int        @default(60)
   motivo_consulta    String     @db.Text
+  tipo_cita          TipoCita   @default(PRESENCIAL)
   estado             EstadoCita @default(PENDIENTE)
   google_event_id    String?    @unique // ID del evento en Google Calendar
 
@@ -111,6 +112,11 @@ enum EstadoCita {
   COMPLETADA
   CANCELADA
   NO_ASISTIO
+}
+
+enum TipoCita {
+  PRESENCIAL
+  EN_LINEA
 }
 
 enum EstadoConfirmacion {

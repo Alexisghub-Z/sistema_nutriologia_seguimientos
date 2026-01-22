@@ -33,9 +33,10 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const sortBy = searchParams.get('sortBy') || 'createdAt'
     const sortOrder = searchParams.get('sortOrder') || 'desc'
+    const activityFilter = searchParams.get('activityFilter') || 'todos'
 
     // Generar clave de caché
-    const cacheKey = CacheKeys.patientsList(page, limit, search, sortBy, sortOrder)
+    const cacheKey = `${CacheKeys.patientsList(page, limit, search, sortBy, sortOrder)}:${activityFilter}`
 
     // Intentar obtener del caché
     const cached = await getCache<any>(cacheKey)
@@ -48,16 +49,94 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
+    // Calcular fecha de hace 30 días
+    const hace30Dias = new Date()
+    hace30Dias.setDate(hace30Dias.getDate() - 30)
+
     // Construir filtros de búsqueda
-    const where = search
-      ? {
-          OR: [
-            { nombre: { contains: search, mode: 'insensitive' as const } },
-            { email: { contains: search, mode: 'insensitive' as const } },
-            { telefono: { contains: search } },
-          ],
-        }
-      : {}
+    const where: any = {}
+    const conditions: any[] = []
+
+    // Filtro de búsqueda por texto
+    if (search) {
+      conditions.push({
+        OR: [
+          { nombre: { contains: search, mode: 'insensitive' as const } },
+          { email: { contains: search, mode: 'insensitive' as const } },
+          { telefono: { contains: search } },
+        ],
+      })
+    }
+
+    // Filtro por actividad
+    if (activityFilter === 'activos') {
+      conditions.push({
+        OR: [
+          {
+            citas: {
+              some: {
+                fecha_hora: {
+                  gte: hace30Dias,
+                },
+              },
+            },
+          },
+          {
+            consultas: {
+              some: {
+                createdAt: {
+                  gte: hace30Dias,
+                },
+              },
+            },
+          },
+        ],
+      })
+    } else if (activityFilter === 'inactivos') {
+      conditions.push({
+        AND: [
+          {
+            OR: [
+              { citas: { none: {} } },
+              {
+                citas: {
+                  every: {
+                    fecha_hora: {
+                      lt: hace30Dias,
+                    },
+                  },
+                },
+              },
+            ],
+          },
+          {
+            OR: [
+              { consultas: { none: {} } },
+              {
+                consultas: {
+                  every: {
+                    createdAt: {
+                      lt: hace30Dias,
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      })
+    } else if (activityFilter === 'nuevos') {
+      conditions.push({
+        createdAt: {
+          gte: hace30Dias,
+        },
+      })
+    }
+
+    // Combinar condiciones
+    if (conditions.length > 0) {
+      where.AND = conditions
+    }
 
     // Obtener pacientes con paginación
     const [pacientes, total] = await Promise.all([

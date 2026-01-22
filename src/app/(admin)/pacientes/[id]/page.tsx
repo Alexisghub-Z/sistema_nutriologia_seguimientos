@@ -23,6 +23,7 @@ interface Paciente {
     fecha_hora: string
     estado: string
     motivo_consulta: string
+    tipo_cita: string
     codigo_cita: string | null
     estado_confirmacion: string
     confirmada_por_paciente: boolean
@@ -729,11 +730,14 @@ export default function DetallePacientePage() {
                       <div className={styles.listItemContent}>
                         <div className={styles.citaInfo}>
                           <span className={styles.listItemTitle}>
-                            {cita.motivo_consulta}
+                            {cita.tipo_cita === 'PRESENCIAL' ? '🏥' : '💻'} {cita.motivo_consulta}
                           </span>
                           <div className={styles.citaMeta}>
                             <span className={styles.listItemDate}>
                               {formatearFechaCorta(cita.fecha_hora)}
+                            </span>
+                            <span className={styles.tipoCita}>
+                              {cita.tipo_cita === 'PRESENCIAL' ? 'Presencial' : 'En línea'}
                             </span>
                             {cita.codigo_cita && (
                               <span className={styles.citaCodigo}>
@@ -763,14 +767,6 @@ export default function DetallePacientePage() {
                 </div>
               )}
             </div>
-
-            {totalCitas > 5 && (
-              <div className={styles.cardFooter}>
-                <Link href={`/citas?paciente=${pacienteId}`}>
-                  Ver todas las citas ({totalCitas})
-                </Link>
-              </div>
-            )}
           </CardContent>
         </Card>
 
@@ -922,13 +918,6 @@ export default function DetallePacientePage() {
                     </div>
                   </div>
                 ))}
-              </div>
-            )}
-            {paciente._count.consultas > 5 && (
-              <div className={styles.cardFooter}>
-                <Link href={`/pacientes/${pacienteId}/consultas`}>
-                  Ver todas las consultas ({paciente._count.consultas})
-                </Link>
               </div>
             )}
           </CardContent>
