@@ -52,9 +52,7 @@ export default function ProgressCharts({ pacienteId }: ProgressChartsProps) {
 
   // Preparar datos ordenados por fecha (más antiguo a más reciente para las gráficas)
   const consultasOrdenadas = useMemo(() => {
-    return [...consultas].sort(
-      (a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
-    )
+    return [...consultas].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
   }, [consultas])
 
   // Obtener lista de fechas únicas para el filtro personalizado
@@ -218,7 +216,8 @@ export default function ProgressCharts({ pacienteId }: ProgressChartsProps) {
       <div className={styles.header}>
         <h2 className={styles.title}>Progreso Visual del Paciente</h2>
         <p className={styles.subtitle}>
-          {consultasFiltradas.length} de {consultasOrdenadas.length} consultas en el rango seleccionado
+          {consultasFiltradas.length} de {consultasOrdenadas.length} consultas en el rango
+          seleccionado
         </p>
       </div>
 
@@ -330,8 +329,8 @@ export default function ProgressCharts({ pacienteId }: ProgressChartsProps) {
 
       <div className={styles.footer}>
         <p className={styles.footerText}>
-          Las gráficas muestran la evolución de las mediciones a lo largo del tiempo.
-          Los cambios negativos en grasa corporal, perímetros y pliegues generalmente indican progreso positivo.
+          Las gráficas muestran la evolución de las mediciones a lo largo del tiempo. Los cambios
+          negativos en grasa corporal, perímetros y pliegues generalmente indican progreso positivo.
         </p>
       </div>
     </div>

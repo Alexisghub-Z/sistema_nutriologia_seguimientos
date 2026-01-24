@@ -44,9 +44,7 @@ export default function AgregarConsultaHistoricaPage() {
     proxima_cita: '',
   })
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
@@ -92,15 +90,22 @@ export default function AgregarConsultaHistoricaPage() {
       if (formData.cadera_maximo) data.cadera_maximo = parseFloat(formData.cadera_maximo)
       if (formData.muslo_maximo) data.muslo_maximo = parseFloat(formData.muslo_maximo)
       if (formData.muslo_medio) data.muslo_medio = parseFloat(formData.muslo_medio)
-      if (formData.pantorrilla_maximo) data.pantorrilla_maximo = parseFloat(formData.pantorrilla_maximo)
+      if (formData.pantorrilla_maximo)
+        data.pantorrilla_maximo = parseFloat(formData.pantorrilla_maximo)
 
       // Pliegues
-      if (formData.pliegue_tricipital) data.pliegue_tricipital = parseFloat(formData.pliegue_tricipital)
-      if (formData.pliegue_subescapular) data.pliegue_subescapular = parseFloat(formData.pliegue_subescapular)
-      if (formData.pliegue_bicipital) data.pliegue_bicipital = parseFloat(formData.pliegue_bicipital)
-      if (formData.pliegue_cresta_iliaca) data.pliegue_cresta_iliaca = parseFloat(formData.pliegue_cresta_iliaca)
-      if (formData.pliegue_supraespinal) data.pliegue_supraespinal = parseFloat(formData.pliegue_supraespinal)
-      if (formData.pliegue_abdominal) data.pliegue_abdominal = parseFloat(formData.pliegue_abdominal)
+      if (formData.pliegue_tricipital)
+        data.pliegue_tricipital = parseFloat(formData.pliegue_tricipital)
+      if (formData.pliegue_subescapular)
+        data.pliegue_subescapular = parseFloat(formData.pliegue_subescapular)
+      if (formData.pliegue_bicipital)
+        data.pliegue_bicipital = parseFloat(formData.pliegue_bicipital)
+      if (formData.pliegue_cresta_iliaca)
+        data.pliegue_cresta_iliaca = parseFloat(formData.pliegue_cresta_iliaca)
+      if (formData.pliegue_supraespinal)
+        data.pliegue_supraespinal = parseFloat(formData.pliegue_supraespinal)
+      if (formData.pliegue_abdominal)
+        data.pliegue_abdominal = parseFloat(formData.pliegue_abdominal)
 
       // Crear consulta histórica
       const response = await fetch('/api/consultas/historica', {
@@ -151,9 +156,7 @@ export default function AgregarConsultaHistoricaPage() {
           </Button>
           <div>
             <h1 className={styles.title}>Agregar Consulta del Historial Previo</h1>
-            <p className={styles.subtitle}>
-              Registro de consulta realizada anteriormente
-            </p>
+            <p className={styles.subtitle}>Registro de consulta realizada anteriormente</p>
           </div>
         </div>
       </div>
@@ -175,7 +178,10 @@ export default function AgregarConsultaHistoricaPage() {
         </svg>
         <div>
           <strong>Esta es una consulta de registro histórico</strong>
-          <p>No se enviarán recordatorios ni mensajes automáticos. Solo se agregará al historial del paciente.</p>
+          <p>
+            No se enviarán recordatorios ni mensajes automáticos. Solo se agregará al historial del
+            paciente.
+          </p>
         </div>
       </div>
 

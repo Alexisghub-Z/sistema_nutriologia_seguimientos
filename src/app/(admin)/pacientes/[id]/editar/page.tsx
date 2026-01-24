@@ -58,9 +58,7 @@ export default function EditarPacientePage() {
   if (error || !paciente) {
     return (
       <div className={styles.container}>
-        <Alert variant="error">
-          {error || 'No se pudo cargar el paciente'}
-        </Alert>
+        <Alert variant="error">{error || 'No se pudo cargar el paciente'}</Alert>
       </div>
     )
   }
@@ -69,9 +67,7 @@ export default function EditarPacientePage() {
     <div className={styles.container}>
       <div className={styles.header}>
         <h1 className={styles.title}>Editar Paciente</h1>
-        <p className={styles.subtitle}>
-          Actualiza la información de {paciente.nombre}
-        </p>
+        <p className={styles.subtitle}>Actualiza la información de {paciente.nombre}</p>
       </div>
 
       <PacienteForm pacienteId={pacienteId} initialData={paciente} />

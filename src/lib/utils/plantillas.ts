@@ -2,18 +2,41 @@ import prisma from '@/lib/prisma'
 
 /**
  * Tipos de plantillas disponibles
+ * Cada valor del enum es único y se usa como identificador interno
  */
 export enum TipoPlantilla {
-  CONFIRMACION = 'AUTOMATICO_CONFIRMACION',
-  RECORDATORIO_24H = 'AUTOMATICO_RECORDATORIO',
-  RECORDATORIO_1H = 'AUTOMATICO_RECORDATORIO',
-  SEGUIMIENTO = 'AUTOMATICO_SEGUIMIENTO', // Legacy - mantener por compatibilidad
+  CONFIRMACION = 'CONFIRMACION',
+  RECORDATORIO_24H = 'RECORDATORIO_24H',
+  RECORDATORIO_1H = 'RECORDATORIO_1H',
+  SEGUIMIENTO = 'SEGUIMIENTO', // Legacy - mantener por compatibilidad
 
   // Nuevas plantillas de seguimiento post-consulta
-  SEGUIMIENTO_INICIAL = 'AUTOMATICO_SEGUIMIENTO',
-  SEGUIMIENTO_INTERMEDIO = 'AUTOMATICO_SEGUIMIENTO',
-  SEGUIMIENTO_PREVIO_CITA = 'AUTOMATICO_SEGUIMIENTO',
-  RECORDATORIO_AGENDAR = 'AUTOMATICO_RECORDATORIO',
+  SEGUIMIENTO_INICIAL = 'SEGUIMIENTO_INICIAL',
+  SEGUIMIENTO_INTERMEDIO = 'SEGUIMIENTO_INTERMEDIO',
+  SEGUIMIENTO_PREVIO_CITA = 'SEGUIMIENTO_PREVIO_CITA',
+  RECORDATORIO_AGENDAR = 'RECORDATORIO_AGENDAR',
+}
+
+/**
+ * Mapeo de TipoPlantilla a categorías de base de datos
+ * Esto permite tener múltiples plantillas del mismo tipo general
+ */
+export function obtenerCategoriaBD(tipo: TipoPlantilla): string {
+  switch (tipo) {
+    case TipoPlantilla.CONFIRMACION:
+      return 'AUTOMATICO_CONFIRMACION'
+    case TipoPlantilla.RECORDATORIO_24H:
+    case TipoPlantilla.RECORDATORIO_1H:
+    case TipoPlantilla.RECORDATORIO_AGENDAR:
+      return 'AUTOMATICO_RECORDATORIO'
+    case TipoPlantilla.SEGUIMIENTO:
+    case TipoPlantilla.SEGUIMIENTO_INICIAL:
+    case TipoPlantilla.SEGUIMIENTO_INTERMEDIO:
+    case TipoPlantilla.SEGUIMIENTO_PREVIO_CITA:
+      return 'AUTOMATICO_SEGUIMIENTO'
+    default:
+      return 'MANUAL'
+  }
 }
 
 /**
@@ -25,7 +48,7 @@ export interface VariablesPlantilla {
   telefono?: string
   fecha_cita: Date
   hora_cita: string
-  codigo_cita: string
+  codigo_cita?: string // Opcional: solo se usa en confirmaciones/recordatorios de citas
   motivo?: string
   url_portal?: string
 }
@@ -159,10 +182,7 @@ export function formatearHora(hora: string): string {
 /**
  * Reemplaza variables en el contenido de una plantilla
  */
-export function reemplazarVariables(
-  contenido: string,
-  variables: VariablesPlantilla
-): string {
+export function reemplazarVariables(contenido: string, variables: VariablesPlantilla): string {
   let resultado = contenido
 
   // Reemplazar cada variable
@@ -171,9 +191,12 @@ export function reemplazarVariables(
   resultado = resultado.replace(/{telefono}/g, variables.telefono || '')
   resultado = resultado.replace(/{fecha_cita}/g, formatearFecha(variables.fecha_cita))
   resultado = resultado.replace(/{fecha_relativa}/g, formatearFechaRelativa(variables.fecha_cita))
-  resultado = resultado.replace(/{hora_cita}/g, variables.hora_cita)
-  resultado = resultado.replace(/{hora_formateada}/g, formatearHora(variables.hora_cita))
-  resultado = resultado.replace(/{codigo_cita}/g, variables.codigo_cita)
+  resultado = resultado.replace(/{hora_cita}/g, variables.hora_cita || '')
+  resultado = resultado.replace(
+    /{hora_formateada}/g,
+    variables.hora_cita ? formatearHora(variables.hora_cita) : ''
+  )
+  resultado = resultado.replace(/{codigo_cita}/g, variables.codigo_cita || '')
   resultado = resultado.replace(/{motivo}/g, variables.motivo || '')
   resultado = resultado.replace(
     /{url_portal}/g,
@@ -188,9 +211,11 @@ export function reemplazarVariables(
  */
 export async function obtenerPlantilla(tipo: TipoPlantilla): Promise<string | null> {
   try {
+    const categoriaBD = obtenerCategoriaBD(tipo)
+
     const plantilla = await prisma.plantillaMensaje.findFirst({
       where: {
-        tipo,
+        tipo: categoriaBD,
         activa: true,
       },
       orderBy: {
@@ -199,7 +224,9 @@ export async function obtenerPlantilla(tipo: TipoPlantilla): Promise<string | nu
     })
 
     if (!plantilla) {
-      console.warn(`⚠️  No se encontró plantilla activa para tipo: ${tipo}`)
+      console.warn(
+        `⚠️  No se encontró plantilla activa para tipo: ${tipo} (categoría: ${categoriaBD})`
+      )
       return null
     }
 
@@ -252,13 +279,13 @@ export function prepararVariablesAprobadas(
         resultado[numeroVar] = formatearFechaRelativa(variables.fecha_cita)
         break
       case 'hora_cita':
-        resultado[numeroVar] = variables.hora_cita
+        resultado[numeroVar] = variables.hora_cita || ''
         break
       case 'hora_formateada':
-        resultado[numeroVar] = formatearHora(variables.hora_cita)
+        resultado[numeroVar] = variables.hora_cita ? formatearHora(variables.hora_cita) : ''
         break
       case 'codigo_cita':
-        resultado[numeroVar] = variables.codigo_cita
+        resultado[numeroVar] = variables.codigo_cita || ''
         break
       case 'url_portal':
         resultado[numeroVar] =

@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
           },
           {
             email: {
-                contains: query,
-                mode: 'insensitive',
+              contains: query,
+              mode: 'insensitive',
             },
           },
         ],
@@ -54,8 +54,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ pacientes })
   } catch (error) {
     console.error('Error al buscar pacientes:', error)
-    const errorMessage =
-      error instanceof Error ? error.message : 'Error desconocido'
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido'
     return NextResponse.json(
       { error: 'Error al buscar pacientes', details: errorMessage },
       { status: 500 }

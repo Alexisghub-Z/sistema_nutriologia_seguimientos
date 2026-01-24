@@ -6,7 +6,7 @@ import ModalDetalleCita from '@/components/citas/ModalDetalleCita'
 import BuscadorPacientes from '@/components/citas/BuscadorPacientes'
 import styles from './citas.module.css'
 
-interface Cita {
+interface CitaConPaciente {
   id: string
   fecha_hora: string
   duracion_minutos: number
@@ -15,6 +15,7 @@ interface Cita {
   estado: 'PENDIENTE' | 'COMPLETADA' | 'CANCELADA' | 'NO_ASISTIO'
   estado_confirmacion: string
   confirmada_por_paciente: boolean
+  fecha_confirmacion: string | null
   google_event_id: string | null
   paciente: {
     id: string
@@ -38,16 +39,26 @@ export default function CitasPage() {
   const pacienteIdParam = searchParams.get('paciente')
 
   const [mesActual, setMesActual] = useState(new Date())
-  const [citas, setCitas] = useState<Cita[]>([])
+  const [citas, setCitas] = useState<CitaConPaciente[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [citaSeleccionada, setCitaSeleccionada] = useState<Cita | null>(null)
+  const [citaSeleccionada, setCitaSeleccionada] = useState<CitaConPaciente | null>(null)
   const [pacienteSeleccionado, setPacienteSeleccionado] = useState<string | null>(pacienteIdParam)
   const [pacienteInfo, setPacienteInfo] = useState<PacienteInfo | null>(null)
 
   const meses = [
-    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre',
   ]
 
   const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
@@ -154,7 +165,7 @@ export default function CitasPage() {
 
   // Obtener citas de un día específico
   const getCitasDelDia = (fecha: Date) => {
-    return citas.filter(cita => {
+    return citas.filter((cita) => {
       const citaFecha = new Date(cita.fecha_hora)
       return (
         citaFecha.getDate() === fecha.getDate() &&
@@ -208,18 +219,14 @@ export default function CitasPage() {
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Calendario de Citas</h1>
-          <p className={styles.subtitle}>
-            Gestiona y visualiza todas las citas de tus pacientes
-          </p>
+          <p className={styles.subtitle}>Gestiona y visualiza todas las citas de tus pacientes</p>
         </div>
         <div className={styles.headerActions}>
           <BuscadorPacientes
             pacienteSeleccionado={pacienteSeleccionado}
             onSeleccionar={cambiarFiltroPaciente}
           />
-          <button className={styles.btnPrimary}>
-            + Nueva Cita
-          </button>
+          <button className={styles.btnPrimary}>+ Nueva Cita</button>
         </div>
       </div>
 
@@ -228,18 +235,23 @@ export default function CitasPage() {
         <div className={styles.filtroActivo}>
           <div className={styles.filtroInfo}>
             <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clipRule="evenodd" />
+              <path
+                fillRule="evenodd"
+                d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z"
+                clipRule="evenodd"
+              />
             </svg>
             <span>
-              Mostrando citas de:{' '}
-              <strong>
-                {pacienteInfo.nombre}
-              </strong>
+              Mostrando citas de: <strong>{pacienteInfo.nombre}</strong>
             </span>
           </div>
           <button onClick={limpiarFiltro} className={styles.btnLimpiarFiltro}>
             <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              <path
+                fillRule="evenodd"
+                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
             </svg>
             Limpiar filtro
           </button>
@@ -269,19 +281,31 @@ export default function CitasPage() {
         <h3 className={styles.leyendaTitle}>Estado de citas:</h3>
         <div className={styles.leyendaItems}>
           <div className={styles.leyendaItem}>
-            <div className={styles.leyendaColor} style={{ backgroundColor: 'var(--color-warning)' }}></div>
+            <div
+              className={styles.leyendaColor}
+              style={{ backgroundColor: 'var(--color-warning)' }}
+            ></div>
             <span>Pendiente</span>
           </div>
           <div className={styles.leyendaItem}>
-            <div className={styles.leyendaColor} style={{ backgroundColor: 'var(--color-success)' }}></div>
+            <div
+              className={styles.leyendaColor}
+              style={{ backgroundColor: 'var(--color-success)' }}
+            ></div>
             <span>Completada</span>
           </div>
           <div className={styles.leyendaItem}>
-            <div className={styles.leyendaColor} style={{ backgroundColor: 'var(--color-error)' }}></div>
+            <div
+              className={styles.leyendaColor}
+              style={{ backgroundColor: 'var(--color-error)' }}
+            ></div>
             <span>Cancelada</span>
           </div>
           <div className={styles.leyendaItem}>
-            <div className={styles.leyendaColor} style={{ backgroundColor: 'var(--color-gray-500)' }}></div>
+            <div
+              className={styles.leyendaColor}
+              style={{ backgroundColor: 'var(--color-gray-500)' }}
+            ></div>
             <span>No asistió</span>
           </div>
         </div>
@@ -315,10 +339,7 @@ export default function CitasPage() {
               const esHoy = esFechaHoy(fecha)
 
               return (
-                <div
-                  key={index}
-                  className={`${styles.dia} ${esHoy ? styles.diaHoy : ''}`}
-                >
+                <div key={index} className={`${styles.dia} ${esHoy ? styles.diaHoy : ''}`}>
                   <div className={styles.diaNumero}>{fecha.getDate()}</div>
 
                   <div className={styles.citasDelDia}>
@@ -329,7 +350,7 @@ export default function CitasPage() {
                         style={{ borderLeftColor: getColorEstado(cita.estado) }}
                         title={`${new Date(cita.fecha_hora).toLocaleTimeString('es-MX', {
                           hour: '2-digit',
-                          minute: '2-digit'
+                          minute: '2-digit',
                         })} - ${cita.paciente.nombre}`}
                         onClick={(e) => {
                           e.stopPropagation()
@@ -339,7 +360,7 @@ export default function CitasPage() {
                         <span className={styles.citaHora}>
                           {new Date(cita.fecha_hora).toLocaleTimeString('es-MX', {
                             hour: '2-digit',
-                            minute: '2-digit'
+                            minute: '2-digit',
                           })}
                         </span>
                         <span className={styles.citaPaciente}>
@@ -348,9 +369,7 @@ export default function CitasPage() {
                       </div>
                     ))}
                     {citasDelDia.length > 3 && (
-                      <div className={styles.citasMas}>
-                        +{citasDelDia.length - 3} más
-                      </div>
+                      <div className={styles.citasMas}>+{citasDelDia.length - 3} más</div>
                     )}
                   </div>
                 </div>
@@ -360,11 +379,7 @@ export default function CitasPage() {
         </div>
       )}
 
-      {error && (
-        <div className={styles.error}>
-          {error}
-        </div>
-      )}
+      {error && <div className={styles.error}>{error}</div>}
 
       {/* Modal de Detalles */}
       <ModalDetalleCita

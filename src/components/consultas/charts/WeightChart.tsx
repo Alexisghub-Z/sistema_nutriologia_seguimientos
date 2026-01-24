@@ -1,6 +1,15 @@
 'use client'
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
 import styles from './Charts.module.css'
 
 interface DataPoint {
@@ -15,7 +24,7 @@ interface WeightChartProps {
 
 export default function WeightChart({ data }: WeightChartProps) {
   // Filtrar datos válidos
-  const validData = data.filter(d => d.peso !== null || d.imc !== null)
+  const validData = data.filter((d) => d.peso !== null || d.imc !== null)
 
   if (validData.length === 0) {
     return (
@@ -34,12 +43,12 @@ export default function WeightChart({ data }: WeightChartProps) {
   }
 
   // Calcular estadísticas (datos vienen ordenados de más antiguo a más reciente)
-  const pesos = validData.filter(d => d.peso !== null).map(d => d.peso!)
+  const pesos = validData.filter((d) => d.peso !== null).map((d) => d.peso!)
   const pesoInicial = pesos[0] // Primer elemento = más antiguo
   const pesoActual = pesos[pesos.length - 1] // Último elemento = más reciente
   const diferenciaPeso = pesoActual - pesoInicial
 
-  const imcs = validData.filter(d => d.imc !== null).map(d => d.imc!)
+  const imcs = validData.filter((d) => d.imc !== null).map((d) => d.imc!)
   const imcInicial = imcs[0]
   const imcActual = imcs[imcs.length - 1]
 

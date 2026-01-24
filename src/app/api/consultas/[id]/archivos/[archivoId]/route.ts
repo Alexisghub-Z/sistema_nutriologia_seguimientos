@@ -35,10 +35,7 @@ export async function DELETE(
     })
 
     if (!archivo) {
-      return NextResponse.json(
-        { error: 'Archivo no encontrado' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Archivo no encontrado' }, { status: 404 })
     }
 
     // Verificar que el archivo pertenece a la consulta especificada
@@ -66,12 +63,12 @@ export async function DELETE(
     // Invalidar caché de consultas del paciente
     await deleteCachePattern(`consultations:${archivo.consulta.paciente_id}:*`)
     await deleteCache(CacheKeys.patientDetail(archivo.consulta.paciente_id))
-    console.log('🗑️  Cache invalidated: consultations and patient detail', archivo.consulta.paciente_id)
-
-    return NextResponse.json(
-      { message: 'Archivo eliminado exitosamente' },
-      { status: 200 }
+    console.log(
+      '🗑️  Cache invalidated: consultations and patient detail',
+      archivo.consulta.paciente_id
     )
+
+    return NextResponse.json({ message: 'Archivo eliminado exitosamente' }, { status: 200 })
   } catch (error) {
     console.error('Error al eliminar archivo:', error)
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido'

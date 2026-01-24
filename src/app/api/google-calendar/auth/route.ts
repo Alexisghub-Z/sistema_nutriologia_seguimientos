@@ -17,9 +17,6 @@ export async function GET() {
     return NextResponse.json({ authUrl }, { status: 200 })
   } catch (error) {
     console.error('Error al generar URL de autenticación:', error)
-    return NextResponse.json(
-      { error: 'Error al generar URL de autenticación' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al generar URL de autenticación' }, { status: 500 })
   }
 }

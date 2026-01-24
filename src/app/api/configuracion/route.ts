@@ -15,10 +15,24 @@ const configuracionSchema = z.object({
   nombre_consultorio: z.string().min(1).optional(),
 
   // Configuración de calendario
-  horario_inicio: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-  horario_fin: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-  horario_sabado_inicio: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
-  horario_sabado_fin: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
+  horario_inicio: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .optional(),
+  horario_fin: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .optional(),
+  horario_sabado_inicio: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .optional()
+    .nullable(),
+  horario_sabado_fin: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .optional()
+    .nullable(),
   duracion_cita_default: z.number().int().min(15).max(240).optional(),
   dias_laborales: z.string().optional(),
   dias_anticipacion_max: z.number().int().min(1).max(90).optional(),
@@ -65,10 +79,7 @@ export async function GET() {
     return NextResponse.json(config)
   } catch (error) {
     console.error('Error al obtener configuración:', error)
-    return NextResponse.json(
-      { error: 'Error al obtener configuración' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al obtener configuración' }, { status: 500 })
   }
 }
 
@@ -121,16 +132,10 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(config)
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
     }
 
     console.error('Error al actualizar configuración:', error)
-    return NextResponse.json(
-      { error: 'Error al actualizar configuración' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al actualizar configuración' }, { status: 500 })
   }
 }

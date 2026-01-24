@@ -8,12 +8,13 @@ export default auth((req) => {
   // Public routes that don't require authentication
   const publicRoutes = ['/', '/login', '/agendar']
   publicRoutes.some((route) => pathname === route || pathname.startsWith('/api/auth'))
-// Admin routes that require authentication
-  const isAdminRoute = pathname.startsWith('/dashboard') ||
-                      pathname.startsWith('/citas') ||
-                      pathname.startsWith('/pacientes') ||
-                      pathname.startsWith('/mensajes') ||
-                      pathname.startsWith('/configuracion')
+  // Admin routes that require authentication
+  const isAdminRoute =
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/citas') ||
+    pathname.startsWith('/pacientes') ||
+    pathname.startsWith('/mensajes') ||
+    pathname.startsWith('/configuracion')
 
   // Redirect to login if trying to access admin route without auth
   if (isAdminRoute && !isLoggedIn) {

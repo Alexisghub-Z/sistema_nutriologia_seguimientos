@@ -43,9 +43,10 @@ export default function PlantillaSelector({ onSelectPlantilla, onClose }: Planti
     }
   }
 
-  const plantillasFiltradas = categoriaFiltro === 'all'
-    ? plantillas
-    : plantillas.filter(p => p.categoria === categoriaFiltro)
+  const plantillasFiltradas =
+    categoriaFiltro === 'all'
+      ? plantillas
+      : plantillas.filter((p) => p.categoria === categoriaFiltro)
 
   const categorias = [
     { value: 'all', label: 'Todas' },

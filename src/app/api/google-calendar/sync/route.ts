@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth-utils'
-import { syncCitaWithGoogleCalendar, unsyncCitaFromGoogleCalendar } from '@/lib/services/google-calendar'
+import {
+  syncCitaWithGoogleCalendar,
+  unsyncCitaFromGoogleCalendar,
+} from '@/lib/services/google-calendar'
 import { z } from 'zod'
 
 const syncSchema = z.object({
@@ -30,22 +33,13 @@ export async function POST(request: NextRequest) {
       )
     } else {
       await unsyncCitaFromGoogleCalendar(validatedData.citaId)
-      return NextResponse.json(
-        { message: 'Cita desincronizada exitosamente' },
-        { status: 200 }
-      )
+      return NextResponse.json({ message: 'Cita desincronizada exitosamente' }, { status: 200 })
     }
   } catch (error) {
     console.error('Error al sincronizar cita:', error)
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
     }
-    return NextResponse.json(
-      { error: 'Error al sincronizar cita' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al sincronizar cita' }, { status: 500 })
   }
 }

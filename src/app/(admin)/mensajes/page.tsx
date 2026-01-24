@@ -41,9 +41,7 @@ export default function MensajesPage() {
     <div className={styles.container}>
       <div className={styles.header}>
         <h1 className={styles.title}>Mensajería</h1>
-        <p className={styles.subtitle}>
-          Comunícate con tus pacientes de forma rápida y eficiente
-        </p>
+        <p className={styles.subtitle}>Comunícate con tus pacientes de forma rápida y eficiente</p>
       </div>
 
       <div className={styles.content}>

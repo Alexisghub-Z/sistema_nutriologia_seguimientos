@@ -11,9 +11,7 @@ const twilioNumber = process.env.TWILIO_WHATSAPP_NUMBER
 
 // Verificar que las credenciales estén configuradas
 if (!accountSid || !authToken || !twilioNumber) {
-  console.warn(
-    '⚠️  Twilio credentials not configured. WhatsApp messages will not be sent.'
-  )
+  console.warn('⚠️  Twilio credentials not configured. WhatsApp messages will not be sent.')
 }
 
 // Cliente de Twilio

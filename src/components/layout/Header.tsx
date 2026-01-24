@@ -40,7 +40,12 @@ export default function Header() {
       {/* Botón hamburguesa solo visible en mobile */}
       <button className={styles.menuButton} onClick={toggleSidebar}>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 6h16M4 12h16M4 18h16"
+          />
         </svg>
       </button>
 
@@ -57,10 +62,7 @@ export default function Header() {
         </button>
 
         <div className={styles.userMenu} ref={menuRef}>
-          <button
-            className={styles.userButton}
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
+          <button className={styles.userButton} onClick={() => setIsMenuOpen(!isMenuOpen)}>
             <div className={styles.avatar}>
               {session?.user?.name ? getInitials(session.user.name) : 'U'}
             </div>

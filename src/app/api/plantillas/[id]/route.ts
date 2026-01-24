@@ -5,16 +5,20 @@ import { z } from 'zod'
 
 const plantillaSchema = z.object({
   nombre: z.string().min(1, 'El nombre es requerido').optional(),
-  tipo: z.enum(['AUTOMATICO_CONFIRMACION', 'AUTOMATICO_RECORDATORIO', 'AUTOMATICO_SEGUIMIENTO', 'MANUAL']).optional(),
+  tipo: z
+    .enum([
+      'AUTOMATICO_CONFIRMACION',
+      'AUTOMATICO_RECORDATORIO',
+      'AUTOMATICO_SEGUIMIENTO',
+      'MANUAL',
+    ])
+    .optional(),
   contenido: z.string().min(1, 'El contenido es requerido').optional(),
   activa: z.boolean().optional(),
 })
 
 // GET /api/plantillas/[id] - Obtener una plantilla
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser()
     if (!user) {
@@ -28,27 +32,18 @@ export async function GET(
     })
 
     if (!plantilla) {
-      return NextResponse.json(
-        { error: 'Plantilla no encontrada' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Plantilla no encontrada' }, { status: 404 })
     }
 
     return NextResponse.json(plantilla)
   } catch (error) {
     console.error('Error al obtener plantilla:', error)
-    return NextResponse.json(
-      { error: 'Error al obtener plantilla' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al obtener plantilla' }, { status: 500 })
   }
 }
 
 // PUT /api/plantillas/[id] - Actualizar plantilla
-export async function PUT(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser()
     if (!user) {
@@ -67,25 +62,16 @@ export async function PUT(
     return NextResponse.json(plantilla)
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
     }
 
     console.error('Error al actualizar plantilla:', error)
-    return NextResponse.json(
-      { error: 'Error al actualizar plantilla' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al actualizar plantilla' }, { status: 500 })
   }
 }
 
 // DELETE /api/plantillas/[id] - Eliminar plantilla
-export async function DELETE(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser()
     if (!user) {
@@ -101,9 +87,6 @@ export async function DELETE(
     return NextResponse.json({ message: 'Plantilla eliminada' })
   } catch (error) {
     console.error('Error al eliminar plantilla:', error)
-    return NextResponse.json(
-      { error: 'Error al eliminar plantilla' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al eliminar plantilla' }, { status: 500 })
   }
 }
