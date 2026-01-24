@@ -112,7 +112,29 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* Mensajes */
+/* Sección de preguntas (arriba) */
+.preguntasSection {
+  padding: 1.25rem;
+  background: white;
+  border-bottom: 1px solid #e5e5e5;
+  max-height: 50%;
+  overflow-y: auto;
+}
+
+.preguntasSection::-webkit-scrollbar {
+  width: 6px;
+}
+
+.preguntasSection::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.preguntasSection::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 3px;
+}
+
+/* Mensajes (abajo) */
 .chatMessages {
   flex: 1;
   overflow-y: auto;
@@ -121,6 +143,7 @@
   flex-direction: column;
   gap: 1rem;
   background: #fafafa;
+  min-height: 200px;
 }
 
 .chatMessages::-webkit-scrollbar {
@@ -181,41 +204,40 @@
   border-bottom-right-radius: 4px;
 }
 
-/* Preguntas sugeridas */
-.preguntas {
-  margin-top: 1rem;
-}
-
+/* Título de preguntas */
 .preguntasTitulo {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: #666;
-  margin: 0 0 0.75rem 0;
+  color: #000;
+  margin: 0 0 1rem 0;
+  text-align: center;
 }
 
 .preguntasGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
 }
 
 .preguntaBoton {
-  background: white;
+  background: #fafafa;
   border: 1px solid #e5e5e5;
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1rem;
   border-radius: 8px;
   text-align: left;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   color: #000;
   cursor: pointer;
   transition: all 0.2s;
   line-height: 1.4;
+  font-weight: 500;
 }
 
 .preguntaBoton:hover {
-  background: #f5f5f5;
+  background: white;
   border-color: #000;
-  transform: translateY(-1px);
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* Footer */

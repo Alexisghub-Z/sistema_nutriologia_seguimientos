@@ -1,6 +1,15 @@
 'use client'
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
 import styles from './Charts.module.css'
 
 interface DataPoint {
@@ -20,7 +29,7 @@ interface SkinfoldChartProps {
 export default function SkinfoldChart({ data }: SkinfoldChartProps) {
   // Filtrar datos válidos
   const validData = data.filter(
-    d =>
+    (d) =>
       d.pliegue_tricipital !== null ||
       d.pliegue_subescapular !== null ||
       d.pliegue_bicipital !== null ||
@@ -46,7 +55,7 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
   }
 
   // Calcular suma de pliegues (útil para evaluación antropométrica)
-  const dataConSuma = validData.map(d => {
+  const dataConSuma = validData.map((d) => {
     const suma = [
       d.pliegue_tricipital,
       d.pliegue_subescapular,
@@ -55,7 +64,7 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
       d.pliegue_supraespinal,
       d.pliegue_abdominal,
     ]
-      .filter(v => v !== null)
+      .filter((v) => v !== null)
       .reduce((acc, val) => acc + (val || 0), 0)
 
     return {
@@ -64,7 +73,7 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
     }
   })
 
-  const sumas = dataConSuma.filter(d => d.suma_pliegues !== null).map(d => d.suma_pliegues!)
+  const sumas = dataConSuma.filter((d) => d.suma_pliegues !== null).map((d) => d.suma_pliegues!)
   const sumaInicial = sumas.length > 0 ? sumas[sumas.length - 1] : null
   const sumaActual = sumas.length > 0 ? sumas[0] : null
   const diferenciaSuma = sumaActual && sumaInicial ? sumaActual - sumaInicial : null
@@ -105,7 +114,11 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
             stroke="#6b7280"
             style={{ fontSize: '12px' }}
           />
-          <YAxis stroke="#6b7280" style={{ fontSize: '12px' }} label={{ value: 'mm', angle: -90, position: 'insideLeft' }} />
+          <YAxis
+            stroke="#6b7280"
+            style={{ fontSize: '12px' }}
+            label={{ value: 'mm', angle: -90, position: 'insideLeft' }}
+          />
           <Tooltip
             contentStyle={{
               backgroundColor: '#fff',

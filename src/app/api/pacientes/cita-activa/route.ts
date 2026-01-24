@@ -90,16 +90,10 @@ export async function POST(request: NextRequest) {
     )
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Email inválido', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Email inválido', details: error.errors }, { status: 400 })
     }
 
     console.error('Error al buscar cita activa:', error)
-    return NextResponse.json(
-      { error: 'Error al buscar cita activa' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al buscar cita activa' }, { status: 500 })
   }
 }

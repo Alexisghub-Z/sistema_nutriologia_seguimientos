@@ -1,6 +1,15 @@
 'use client'
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
 import styles from './Charts.module.css'
 
 interface DataPoint {
@@ -18,7 +27,7 @@ interface BodyCompositionChartProps {
 export default function BodyCompositionChart({ data }: BodyCompositionChartProps) {
   // Filtrar datos válidos
   const validData = data.filter(
-    d => d.grasa_corporal !== null || d.porcentaje_agua !== null || d.masa_muscular_kg !== null
+    (d) => d.grasa_corporal !== null || d.porcentaje_agua !== null || d.masa_muscular_kg !== null
   )
 
   if (validData.length === 0) {
@@ -38,12 +47,14 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
   }
 
   // Calcular estadísticas (datos vienen ordenados de más antiguo a más reciente)
-  const grasas = validData.filter(d => d.grasa_corporal !== null).map(d => d.grasa_corporal!)
+  const grasas = validData.filter((d) => d.grasa_corporal !== null).map((d) => d.grasa_corporal!)
   const grasaInicial = grasas.length > 0 ? grasas[0] : null // Primer elemento = más antiguo
   const grasaActual = grasas.length > 0 ? grasas[grasas.length - 1] : null // Último = más reciente
   const diferenciaGrasa = grasaActual && grasaInicial ? grasaActual - grasaInicial : null
 
-  const musculos = validData.filter(d => d.masa_muscular_kg !== null).map(d => d.masa_muscular_kg!)
+  const musculos = validData
+    .filter((d) => d.masa_muscular_kg !== null)
+    .map((d) => d.masa_muscular_kg!)
   const musculoInicial = musculos.length > 0 ? musculos[0] : null
   const musculoActual = musculos.length > 0 ? musculos[musculos.length - 1] : null
   const diferenciaMusculo = musculoActual && musculoInicial ? musculoActual - musculoInicial : null
@@ -64,7 +75,11 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
                   <span className={styles.statLabel}>Cambio:</span>
                   <span
                     className={`${styles.statValue} ${
-                      diferenciaGrasa < 0 ? styles.positive : diferenciaGrasa > 0 ? styles.negative : ''
+                      diferenciaGrasa < 0
+                        ? styles.positive
+                        : diferenciaGrasa > 0
+                          ? styles.negative
+                          : ''
                     }`}
                   >
                     {diferenciaGrasa > 0 ? '+' : ''}
@@ -85,7 +100,11 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
                   <span className={styles.statLabel}>Cambio:</span>
                   <span
                     className={`${styles.statValue} ${
-                      diferenciaMusculo > 0 ? styles.positive : diferenciaMusculo < 0 ? styles.negative : ''
+                      diferenciaMusculo > 0
+                        ? styles.positive
+                        : diferenciaMusculo < 0
+                          ? styles.negative
+                          : ''
                     }`}
                   >
                     {diferenciaMusculo > 0 ? '+' : ''}

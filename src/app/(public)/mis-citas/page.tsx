@@ -39,9 +39,7 @@ export default function MisCitasPage() {
           router.push(`/cita/${data.cita.codigo_cita}`)
         } else {
           // No tiene cita activa
-          setError(
-            'No tienes citas pendientes. ¿Quieres agendar una nueva cita?'
-          )
+          setError('No tienes citas pendientes. ¿Quieres agendar una nueva cita?')
         }
       } else {
         setError(data.mensaje || data.error || 'Error al buscar tu cita')
@@ -68,9 +66,7 @@ export default function MisCitasPage() {
       {/* Hero Section */}
       <div className={styles.hero}>
         <h1 className={styles.heroTitle}>Ver Mi Cita</h1>
-        <p className={styles.heroSubtitle}>
-          Ingresa tu email para acceder a tu cita pendiente
-        </p>
+        <p className={styles.heroSubtitle}>Ingresa tu email para acceder a tu cita pendiente</p>
       </div>
 
       <div className={styles.container}>
@@ -120,11 +116,7 @@ export default function MisCitasPage() {
               >
                 Cancelar
               </button>
-              <button
-                type="submit"
-                className={styles.btnPrimary}
-                disabled={loading || !email}
-              >
+              <button type="submit" className={styles.btnPrimary} disabled={loading || !email}>
                 {loading ? 'Buscando...' : 'Buscar Mi Cita'}
               </button>
             </div>

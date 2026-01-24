@@ -4,10 +4,7 @@ import prisma from '@/lib/prisma'
 import { deleteCachePattern } from '@/lib/redis'
 
 // PATCH /api/mensajes/[id] - Marcar mensaje como leído
-export async function PATCH(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser()
     if (!user) {
@@ -23,10 +20,7 @@ export async function PATCH(
     })
 
     if (!mensaje) {
-      return NextResponse.json(
-        { error: 'Mensaje no encontrado' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Mensaje no encontrado' }, { status: 404 })
     }
 
     // Actualizar mensaje

@@ -6,11 +6,7 @@ interface AlertProps {
   className?: string
 }
 
-export default function Alert({
-  children,
-  variant = 'info',
-  className = '',
-}: AlertProps) {
+export default function Alert({ children, variant = 'info', className = '' }: AlertProps) {
   const variantClass = {
     info: styles.alertInfo,
     success: styles.alertSuccess,

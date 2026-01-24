@@ -149,7 +149,8 @@ export async function procesarRecordatorio24h(citaId: string): Promise<void> {
       data: {
         paciente_id: cita.paciente.id,
         direccion: 'SALIENTE',
-        contenido: mensaje.contenido || `Recordatorio 24h enviado (Template: ${mensaje.contentSid})`,
+        contenido:
+          mensaje.contenido || `Recordatorio 24h enviado (Template: ${mensaje.contentSid})`,
         tipo: 'AUTOMATICO_RECORDATORIO',
         twilio_sid: messageSid,
         estado: 'ENVIADO',
@@ -244,7 +245,10 @@ export async function procesarRecordatorio1h(citaId: string): Promise<void> {
  * Procesa el env�o de seguimiento post-consulta
  * Envia recordatorio 1 dia antes de la proxima cita sugerida
  */
-export async function procesarSeguimiento(consultaId: string, tipoSeguimiento: string = 'SOLO_RECORDATORIO'): Promise<void> {
+export async function procesarSeguimiento(
+  consultaId: string,
+  tipoSeguimiento: string = 'SOLO_RECORDATORIO'
+): Promise<void> {
   console.log(`[Job] Procesando seguimiento para consulta: ${consultaId}`)
   console.log(`[Job] Tipo de seguimiento: ${tipoSeguimiento}`)
 
@@ -284,7 +288,7 @@ export async function procesarSeguimiento(consultaId: string, tipoSeguimiento: s
       weekday: 'long',
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     })
 
     // Obtener configuración para URL del portal
@@ -349,7 +353,9 @@ ${urlPortal}
       },
     })
 
-    console.log(`✅ [Job] Seguimiento enviado para consulta: ${consultaId} (Tipo: ${tipoSeguimiento})`)
+    console.log(
+      `✅ [Job] Seguimiento enviado para consulta: ${consultaId} (Tipo: ${tipoSeguimiento})`
+    )
   } catch (error) {
     console.error(`L [Job] Error al procesar seguimiento:`, error)
     throw error
@@ -589,9 +595,31 @@ export async function procesarRecordatorioAgendar(consultaId: string): Promise<v
       return
     }
 
+    // Verificar si el paciente ya tiene cita agendada cerca de la fecha sugerida
+    if (consulta.proxima_cita) {
+      const citaExistente = await prisma.cita.findFirst({
+        where: {
+          paciente_id: consulta.paciente.id,
+          estado: { in: ['PENDIENTE', 'COMPLETADA'] },
+          fecha_hora: {
+            gte: new Date(consulta.proxima_cita.getTime() - 3 * 24 * 60 * 60 * 1000), // 3 días antes
+            lte: new Date(consulta.proxima_cita.getTime() + 3 * 24 * 60 * 60 * 1000), // 3 días después
+          },
+        },
+      })
+
+      if (citaExistente) {
+        console.log(
+          `[Job] ✅ Paciente ya tiene cita agendada (${citaExistente.fecha_hora}), no se envía recordatorio`
+        )
+        return
+      }
+    }
+
     // Obtener URL del portal
     const config = await prisma.configuracionGeneral.findFirst()
-    const urlPortal = config?.url_portal || process.env.NEXT_PUBLIC_APP_URL || 'https://portal.example.com'
+    const urlPortal =
+      config?.url_portal || process.env.NEXT_PUBLIC_APP_URL || 'https://portal.example.com'
 
     const variables: VariablesPlantilla = {
       nombre: consulta.paciente.nombre,

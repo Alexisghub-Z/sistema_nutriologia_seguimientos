@@ -20,10 +20,7 @@ const pacienteUpdateSchema = z.object({
 })
 
 // GET /api/pacientes/[id] - Obtener un paciente específico (con caché)
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser()
     if (!user) {
@@ -73,8 +70,8 @@ export async function GET(
           select: {
             citas: {
               where: {
-                estado: 'COMPLETADA'
-              }
+                estado: 'COMPLETADA',
+              },
             },
             consultas: true,
             mensajes: true,
@@ -84,10 +81,7 @@ export async function GET(
     })
 
     if (!paciente) {
-      return NextResponse.json(
-        { error: 'Paciente no encontrado' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Paciente no encontrado' }, { status: 404 })
     }
 
     // Guardar en caché (5 minutos para detalles)
@@ -105,10 +99,7 @@ export async function GET(
 }
 
 // PUT /api/pacientes/[id] - Actualizar paciente
-export async function PUT(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser()
     if (!user) {
@@ -127,10 +118,7 @@ export async function PUT(
     })
 
     if (!existingPaciente) {
-      return NextResponse.json(
-        { error: 'Paciente no encontrado' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Paciente no encontrado' }, { status: 404 })
     }
 
     // Verificar que el email no esté en uso por otro paciente
@@ -140,10 +128,7 @@ export async function PUT(
       })
 
       if (emailInUse) {
-        return NextResponse.json(
-          { error: 'Ya existe un paciente con este email' },
-          { status: 400 }
-        )
+        return NextResponse.json({ error: 'Ya existe un paciente con este email' }, { status: 400 })
       }
     }
 
@@ -188,25 +173,16 @@ export async function PUT(
     return NextResponse.json(paciente)
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
     }
 
     console.error('Error al actualizar paciente:', error)
-    return NextResponse.json(
-      { error: 'Error al actualizar paciente' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al actualizar paciente' }, { status: 500 })
   }
 }
 
 // DELETE /api/pacientes/[id] - Eliminar paciente
-export async function DELETE(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser()
     if (!user) {
@@ -230,18 +206,14 @@ export async function DELETE(
     })
 
     if (!paciente) {
-      return NextResponse.json(
-        { error: 'Paciente no encontrado' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Paciente no encontrado' }, { status: 404 })
     }
 
     // Verificar si tiene citas o consultas
     if (paciente._count.citas > 0 || paciente._count.consultas > 0) {
       return NextResponse.json(
         {
-          error:
-            'No se puede eliminar un paciente con citas o consultas registradas',
+          error: 'No se puede eliminar un paciente con citas o consultas registradas',
         },
         { status: 400 }
       )
@@ -260,9 +232,6 @@ export async function DELETE(
     return NextResponse.json({ message: 'Paciente eliminado exitosamente' })
   } catch (error) {
     console.error('Error al eliminar paciente:', error)
-    return NextResponse.json(
-      { error: 'Error al eliminar paciente' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al eliminar paciente' }, { status: 500 })
   }
 }

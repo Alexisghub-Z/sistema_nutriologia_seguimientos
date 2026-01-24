@@ -14,7 +14,10 @@ interface BuscadorPacientesProps {
   onSeleccionar: (pacienteId: string | null) => void
 }
 
-export default function BuscadorPacientes({ pacienteSeleccionado, onSeleccionar }: BuscadorPacientesProps) {
+export default function BuscadorPacientes({
+  pacienteSeleccionado,
+  onSeleccionar,
+}: BuscadorPacientesProps) {
   const [busqueda, setBusqueda] = useState('')
   const [pacientes, setPacientes] = useState<Paciente[]>([])
   const [mostrarResultados, setMostrarResultados] = useState(false)
@@ -129,15 +132,29 @@ export default function BuscadorPacientes({ pacienteSeleccionado, onSeleccionar 
             title="Limpiar selección"
           >
             <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              <path
+                fillRule="evenodd"
+                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
             </svg>
           </button>
         </div>
       ) : (
         // Mostrar buscador
         <div className={styles.buscador}>
-          <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" className={styles.iconoBuscar}>
-            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className={styles.iconoBuscar}
+          >
+            <path
+              fillRule="evenodd"
+              d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+              clipRule="evenodd"
+            />
           </svg>
           <input
             type="text"
@@ -147,9 +164,7 @@ export default function BuscadorPacientes({ pacienteSeleccionado, onSeleccionar 
             onFocus={handleInputFocus}
             className={styles.input}
           />
-          {loading && (
-            <div className={styles.spinner}></div>
-          )}
+          {loading && <div className={styles.spinner}></div>}
         </div>
       )}
 
@@ -176,16 +191,12 @@ export default function BuscadorPacientes({ pacienteSeleccionado, onSeleccionar 
 
       {mostrarResultados && busqueda.length >= 2 && pacientes.length === 0 && !loading && (
         <div className={styles.resultados}>
-          <div className={styles.sinResultados}>
-            No se encontraron pacientes
-          </div>
+          <div className={styles.sinResultados}>No se encontraron pacientes</div>
         </div>
       )}
 
       {busqueda.length > 0 && busqueda.length < 2 && (
-        <div className={styles.hint}>
-          Escribe al menos 2 caracteres para buscar
-        </div>
+        <div className={styles.hint}>Escribe al menos 2 caracteres para buscar</div>
       )}
     </div>
   )

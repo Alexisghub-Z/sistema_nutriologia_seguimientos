@@ -6,11 +6,7 @@ import Header from '@/components/layout/Header'
 import { SidebarProvider } from '@/contexts/SidebarContext'
 import styles from './admin-layout.module.css'
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const isMensajesPage = pathname === '/mensajes'
 

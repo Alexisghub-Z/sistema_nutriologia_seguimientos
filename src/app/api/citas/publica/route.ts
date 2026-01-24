@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { z } from 'zod'
 import { randomBytes } from 'crypto'
-import { programarConfirmacion, programarRecordatorio24h, programarRecordatorio1h } from '@/lib/queue/messages'
-import { syncCitaWithGoogleCalendar, isGoogleCalendarConfigured } from '@/lib/services/google-calendar'
+import {
+  programarConfirmacion,
+  programarRecordatorio24h,
+  programarRecordatorio1h,
+} from '@/lib/queue/messages'
+import {
+  syncCitaWithGoogleCalendar,
+  isGoogleCalendarConfigured,
+} from '@/lib/services/google-calendar'
 import { normalizarTelefonoMexico } from '@/lib/utils/phone'
 
 // Schema de validación para crear cita pública
@@ -14,15 +21,14 @@ const citaPublicaSchema = z.object({
     .string()
     .regex(/^\d{10}$/, 'El teléfono debe tener exactamente 10 dígitos')
     .transform((val) => normalizarTelefonoMexico(val)),
-  fecha_nacimiento: z.string().refine(
-    (date) => {
-      const parsed = new Date(date)
-      return !isNaN(parsed.getTime()) && parsed < new Date()
-    },
-    'Fecha de nacimiento inválida'
-  ),
+  fecha_nacimiento: z.string().refine((date) => {
+    const parsed = new Date(date)
+    return !isNaN(parsed.getTime()) && parsed < new Date()
+  }, 'Fecha de nacimiento inválida'),
   fecha_cita: z.string(), // YYYY-MM-DD
-  hora_cita: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:mm)'),
+  hora_cita: z
+    .string()
+    .regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:mm)'),
   motivo: z.string().min(10, 'Describe el motivo de tu consulta (mínimo 10 caracteres)'),
   tipo_cita: z.enum(['PRESENCIAL', 'EN_LINEA']).optional().default('PRESENCIAL'),
 })
@@ -178,7 +184,10 @@ export async function POST(request: NextRequest) {
           where: { id: paciente.id },
           data: datosActualizados,
         })
-        console.log(`✏️  Datos del paciente actualizados: ${paciente.id}`, Object.keys(datosActualizados))
+        console.log(
+          `✏️  Datos del paciente actualizados: ${paciente.id}`,
+          Object.keys(datosActualizados)
+        )
       }
     } else {
       // Verificar que el teléfono no esté en uso
@@ -189,8 +198,7 @@ export async function POST(request: NextRequest) {
       if (telefonoExiste) {
         return NextResponse.json(
           {
-            error:
-              'Este teléfono ya está registrado. Si ya tienes una cuenta, usa el mismo email.',
+            error: 'Este teléfono ya está registrado. Si ya tienes una cuenta, usa el mismo email.',
           },
           { status: 400 }
         )
@@ -210,9 +218,7 @@ export async function POST(request: NextRequest) {
     // Generar código único
     let codigoCita = generarCodigo()
     let intentos = 0
-    while (
-      await prisma.cita.findUnique({ where: { codigo_cita: codigoCita } })
-    ) {
+    while (await prisma.cita.findUnique({ where: { codigo_cita: codigoCita } })) {
       codigoCita = generarCodigo()
       intentos++
       if (intentos > 10) {
@@ -272,6 +278,19 @@ export async function POST(request: NextRequest) {
       // No fallar la creación de la cita si hay error en la sincronización
     }
 
+    // Cancelar recordatorios de agendar si el paciente ya agendó
+    try {
+      const { cancelarRecordatoriosAgendar } = await import('@/lib/queue/messages')
+      await cancelarRecordatoriosAgendar(
+        datosValidados.paciente_id,
+        new Date(datosValidados.fecha_hora)
+      )
+      console.log('🗑️  Recordatorios de agendar cancelados (paciente agendó cita)')
+    } catch (cancelError) {
+      console.error('Error al cancelar recordatorios:', cancelError)
+      // No fallar la creación de la cita si hay error al cancelar
+    }
+
     console.log(`✅ Cita creada desde portal público: ${cita.id} (${codigoCita})`)
 
     return NextResponse.json(
@@ -288,16 +307,10 @@ export async function POST(request: NextRequest) {
     )
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
     }
 
     console.error('Error al crear cita pública:', error)
-    return NextResponse.json(
-      { error: 'Error al crear la cita' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al crear la cita' }, { status: 500 })
   }
 }

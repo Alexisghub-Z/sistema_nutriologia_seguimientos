@@ -66,10 +66,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10')
 
     if (!paciente_id) {
-      return NextResponse.json(
-        { error: 'ID de paciente requerido' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'ID de paciente requerido' }, { status: 400 })
     }
 
     // Si se solicitan TODAS las consultas (para gráficas)
@@ -265,7 +262,9 @@ export async function POST(request: NextRequest) {
       })
 
       if (consultasAntiguasConSeguimiento.length > 0) {
-        console.log(`🧹 Limpiando ${consultasAntiguasConSeguimiento.length} seguimiento(s) antiguo(s) del paciente`)
+        console.log(
+          `🧹 Limpiando ${consultasAntiguasConSeguimiento.length} seguimiento(s) antiguo(s) del paciente`
+        )
 
         // Cancelar jobs de la cola
         const { mensajesQueue } = await import('@/lib/queue/messages')
@@ -299,15 +298,15 @@ export async function POST(request: NextRequest) {
     // Invalidar caché de consultas del paciente y detalle del paciente
     await deleteCachePattern(`consultations:${validatedData.paciente_id}:*`)
     await deleteCache(CacheKeys.patientDetail(validatedData.paciente_id))
-    console.log('🗑️  Cache invalidated: consultations and patient detail', validatedData.paciente_id)
+    console.log(
+      '🗑️  Cache invalidated: consultations and patient detail',
+      validatedData.paciente_id
+    )
 
     return NextResponse.json(consulta, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
     }
 
     console.error('Error al crear consulta:', error)

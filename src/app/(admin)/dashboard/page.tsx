@@ -137,16 +137,10 @@ export default function DashboardPage() {
       <div className={styles.pageHeader}>
         <div>
           <h1 className={styles.pageTitle}>Dashboard</h1>
-          <p className={styles.pageSubtitle}>
-            Resumen general de tu práctica nutricional
-          </p>
+          <p className={styles.pageSubtitle}>Resumen general de tu práctica nutricional</p>
         </div>
         <div className={styles.quickActions}>
-          <Button
-            variant="primary"
-            size="small"
-            onClick={() => router.push('/agendar')}
-          >
+          <Button variant="primary" size="small" onClick={() => router.push('/agendar')}>
             <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
               <path
                 fillRule="evenodd"
@@ -156,11 +150,7 @@ export default function DashboardPage() {
             </svg>
             Nueva Cita
           </Button>
-          <Button
-            variant="outline"
-            size="small"
-            onClick={() => router.push('/pacientes/nuevo')}
-          >
+          <Button variant="outline" size="small" onClick={() => router.push('/pacientes/nuevo')}>
             <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
               <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
             </svg>
@@ -185,8 +175,7 @@ export default function DashboardPage() {
             <p className={styles.statLabel}>Citas Hoy</p>
             <p className={styles.statValue}>{stats.citasHoy.total}</p>
             <p className={styles.statDetail}>
-              {stats.citasHoy.confirmadas} confirmadas · {stats.citasHoy.pendientes}{' '}
-              pendientes
+              {stats.citasHoy.confirmadas} confirmadas · {stats.citasHoy.pendientes} pendientes
             </p>
           </div>
         </div>
@@ -215,24 +204,14 @@ export default function DashboardPage() {
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Citas de Hoy</h2>
-            <Button
-              variant="ghost"
-              size="small"
-              onClick={() => router.push('/citas')}
-            >
+            <Button variant="outline" size="small" onClick={() => router.push('/citas')}>
               Ver todas
             </Button>
           </div>
           <div className={styles.sectionContent}>
             {stats.citasHoy.detalles.length === 0 ? (
               <div className={styles.emptyState}>
-                <svg
-                  width="48"
-                  height="48"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  opacity="0.3"
-                >
+                <svg width="48" height="48" viewBox="0 0 20 20" fill="currentColor" opacity="0.3">
                   <path
                     fillRule="evenodd"
                     d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
@@ -249,17 +228,13 @@ export default function DashboardPage() {
                     className={styles.citaItem}
                     onClick={() => router.push(`/citas/${cita.id}`)}
                   >
-                    <div className={styles.citaTime}>
-                      {formatTime(cita.fecha_hora)}
-                    </div>
+                    <div className={styles.citaTime}>{formatTime(cita.fecha_hora)}</div>
                     <div className={styles.citaInfo}>
                       <p className={styles.citaPaciente}>{cita.paciente}</p>
                       <p className={styles.citaTipo}>{cita.motivo_consulta}</p>
                     </div>
                     <div className={styles.citaEstado}>
-                      <span className={getEstadoBadgeClass(cita)}>
-                        {getEstadoLabel(cita)}
-                      </span>
+                      <span className={getEstadoBadgeClass(cita)}>{getEstadoLabel(cita)}</span>
                     </div>
                   </div>
                 ))}
@@ -272,24 +247,14 @@ export default function DashboardPage() {
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Últimas Consultas</h2>
-            <Button
-              variant="ghost"
-              size="small"
-              onClick={() => router.push('/pacientes')}
-            >
+            <Button variant="outline" size="small" onClick={() => router.push('/pacientes')}>
               Ver pacientes
             </Button>
           </div>
           <div className={styles.sectionContent}>
             {stats.ultimasConsultas.length === 0 ? (
               <div className={styles.emptyState}>
-                <svg
-                  width="48"
-                  height="48"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  opacity="0.3"
-                >
+                <svg width="48" height="48" viewBox="0 0 20 20" fill="currentColor" opacity="0.3">
                   <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
                   <path
                     fillRule="evenodd"
@@ -305,28 +270,18 @@ export default function DashboardPage() {
                   <div
                     key={consulta.id}
                     className={styles.consultaItem}
-                    onClick={() =>
-                      router.push(`/pacientes/${consulta.paciente_id}`)
-                    }
+                    onClick={() => router.push(`/pacientes/${consulta.paciente_id}`)}
                   >
                     <div className={styles.consultaInfo}>
-                      <p className={styles.consultaPaciente}>
-                        {consulta.paciente}
-                      </p>
-                      <p className={styles.consultaFecha}>
-                        {formatDate(consulta.fecha)}
-                      </p>
+                      <p className={styles.consultaPaciente}>{consulta.paciente}</p>
+                      <p className={styles.consultaFecha}>{formatDate(consulta.fecha)}</p>
                     </div>
                     <div className={styles.consultaStats}>
                       {consulta.peso && (
-                        <span className={styles.consultaStat}>
-                          {consulta.peso} kg
-                        </span>
+                        <span className={styles.consultaStat}>{consulta.peso} kg</span>
                       )}
                       {consulta.imc && (
-                        <span className={styles.consultaStat}>
-                          IMC: {consulta.imc}
-                        </span>
+                        <span className={styles.consultaStat}>IMC: {consulta.imc}</span>
                       )}
                     </div>
                   </div>

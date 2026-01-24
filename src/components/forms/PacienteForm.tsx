@@ -17,10 +17,7 @@ interface PacienteFormProps {
   }
 }
 
-export default function PacienteForm({
-  pacienteId,
-  initialData,
-}: PacienteFormProps) {
+export default function PacienteForm({ pacienteId, initialData }: PacienteFormProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -62,8 +59,7 @@ export default function PacienteForm({
     } else {
       const fecha = new Date(formData.fecha_nacimiento)
       if (fecha >= new Date()) {
-        newErrors.fecha_nacimiento =
-          'La fecha de nacimiento debe ser anterior a hoy'
+        newErrors.fecha_nacimiento = 'La fecha de nacimiento debe ser anterior a hoy'
       }
       if (fecha < new Date('1900-01-01')) {
         newErrors.fecha_nacimiento = 'Fecha de nacimiento inválida'
@@ -100,9 +96,7 @@ export default function PacienteForm({
     setError(null)
 
     try {
-      const url = isEditing
-        ? `/api/pacientes/${pacienteId}`
-        : '/api/pacientes'
+      const url = isEditing ? `/api/pacientes/${pacienteId}` : '/api/pacientes'
       const method = isEditing ? 'PUT' : 'POST'
 
       const response = await fetch(url, {
@@ -139,9 +133,7 @@ export default function PacienteForm({
 
   return (
     <Card className={styles.formCard}>
-      <h2 className={styles.formTitle}>
-        {isEditing ? 'Editar Paciente' : 'Nuevo Paciente'}
-      </h2>
+      <h2 className={styles.formTitle}>{isEditing ? 'Editar Paciente' : 'Nuevo Paciente'}</h2>
 
       {error && (
         <Alert variant="error" className={styles.alert}>
@@ -165,9 +157,7 @@ export default function PacienteForm({
             placeholder="Ej: Juan Pérez García"
             disabled={loading}
           />
-          {errors.nombre && (
-            <span className={styles.errorMessage}>{errors.nombre}</span>
-          )}
+          {errors.nombre && <span className={styles.errorMessage}>{errors.nombre}</span>}
         </div>
 
         {/* Email */}
@@ -185,9 +175,7 @@ export default function PacienteForm({
             placeholder="ejemplo@correo.com"
             disabled={loading}
           />
-          {errors.email && (
-            <span className={styles.errorMessage}>{errors.email}</span>
-          )}
+          {errors.email && <span className={styles.errorMessage}>{errors.email}</span>}
         </div>
 
         {/* Teléfono */}
@@ -205,9 +193,7 @@ export default function PacienteForm({
             placeholder="5512345678 o +52 55 1234 5678"
             disabled={loading}
           />
-          {errors.telefono && (
-            <span className={styles.errorMessage}>{errors.telefono}</span>
-          )}
+          {errors.telefono && <span className={styles.errorMessage}>{errors.telefono}</span>}
         </div>
 
         {/* Fecha de Nacimiento */}
@@ -226,20 +212,13 @@ export default function PacienteForm({
             disabled={loading}
           />
           {errors.fecha_nacimiento && (
-            <span className={styles.errorMessage}>
-              {errors.fecha_nacimiento}
-            </span>
+            <span className={styles.errorMessage}>{errors.fecha_nacimiento}</span>
           )}
         </div>
 
         {/* Botones */}
         <div className={styles.formActions}>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleCancel}
-            disabled={loading}
-          >
+          <Button type="button" variant="outline" onClick={handleCancel} disabled={loading}>
             Cancelar
           </Button>
           <Button type="submit" disabled={loading}>

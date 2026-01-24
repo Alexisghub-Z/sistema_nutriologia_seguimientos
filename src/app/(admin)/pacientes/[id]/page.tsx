@@ -62,7 +62,8 @@ export default function DetallePacientePage() {
   const [tabActiva, setTabActiva] = useState<'activas' | 'completadas' | 'canceladas'>('activas')
   const [programandoSeguimiento, setProgramandoSeguimiento] = useState(false)
   const [cancelandoSeguimiento, setCancelandoSeguimiento] = useState(false)
-  const [tipoSeguimientoSeleccionado, setTipoSeguimientoSeleccionado] = useState<string>('SOLO_RECORDATORIO')
+  const [tipoSeguimientoSeleccionado, setTipoSeguimientoSeleccionado] =
+    useState<string>('SOLO_RECORDATORIO')
 
   useEffect(() => {
     const fetchPaciente = async () => {
@@ -276,12 +277,8 @@ export default function DetallePacientePage() {
   if (error || !paciente) {
     return (
       <div className={styles.container}>
-        <Alert variant="error">
-          {error || 'No se pudo cargar el paciente'}
-        </Alert>
-        <Button onClick={() => router.push('/pacientes')}>
-          Volver a la lista
-        </Button>
+        <Alert variant="error">{error || 'No se pudo cargar el paciente'}</Alert>
+        <Button onClick={() => router.push('/pacientes')}>Volver a la lista</Button>
       </div>
     )
   }
@@ -314,24 +311,15 @@ export default function DetallePacientePage() {
           </Button>
           <div>
             <h1 className={styles.title}>{paciente.nombre}</h1>
-            <p className={styles.subtitle}>
-              Registrado el {formatearFecha(paciente.createdAt)}
-            </p>
+            <p className={styles.subtitle}>Registrado el {formatearFecha(paciente.createdAt)}</p>
           </div>
         </div>
         <div className={styles.headerActions}>
           <Button
             variant="outline"
-            onClick={() =>
-              router.push(`/pacientes/${pacienteId}/consultas`)
-            }
+            onClick={() => router.push(`/pacientes/${pacienteId}/consultas`)}
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
               <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
               <path
                 fillRule="evenodd"
@@ -341,31 +329,14 @@ export default function DetallePacientePage() {
             </svg>
             Ver Historial
           </Button>
-          <Button
-            variant="outline"
-            onClick={() =>
-              router.push(`/pacientes/${pacienteId}/editar`)
-            }
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
+          <Button variant="outline" onClick={() => router.push(`/pacientes/${pacienteId}/editar`)}>
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
               <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
             </svg>
             Editar
           </Button>
-          <Button
-            onClick={() => router.push(`/pacientes/${pacienteId}/citas/nueva`)}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
+          <Button onClick={() => router.push(`/pacientes/${pacienteId}/citas/nueva`)}>
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
               <path
                 fillRule="evenodd"
                 d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
@@ -442,10 +413,7 @@ export default function DetallePacientePage() {
                 </svg>
                 <div>
                   <span className={styles.infoLabel}>Email</span>
-                  <a
-                    href={`mailto:${paciente.email}`}
-                    className={styles.infoLink}
-                  >
+                  <a href={`mailto:${paciente.email}`} className={styles.infoLink}>
                     {paciente.email}
                   </a>
                 </div>
@@ -463,10 +431,7 @@ export default function DetallePacientePage() {
                 </svg>
                 <div>
                   <span className={styles.infoLabel}>Teléfono</span>
-                  <a
-                    href={`tel:${paciente.telefono}`}
-                    className={styles.infoLink}
-                  >
+                  <a href={`tel:${paciente.telefono}`} className={styles.infoLink}>
                     {paciente.telefono}
                   </a>
                 </div>
@@ -521,9 +486,7 @@ export default function DetallePacientePage() {
               </div>
               <div>
                 <span className={styles.statLabel}>Consultas</span>
-                <span className={styles.statValue}>
-                  {paciente._count.consultas}
-                </span>
+                <span className={styles.statValue}>{paciente._count.consultas}</span>
               </div>
             </div>
           </Card>
@@ -547,138 +510,11 @@ export default function DetallePacientePage() {
               </div>
               <div>
                 <span className={styles.statLabel}>Mensajes</span>
-                <span className={styles.statValue}>
-                  {paciente._count.mensajes}
-                </span>
+                <span className={styles.statValue}>{paciente._count.mensajes}</span>
               </div>
             </div>
           </Card>
         </div>
-
-        {/* Panel de Seguimiento - Próxima Cita Sugerida */}
-        {paciente.consultas.length > 0 && paciente.consultas[0].proxima_cita && (
-          <Card className={styles.seguimientoCard}>
-            <CardHeader>
-              <CardTitle>Seguimiento Nutricional</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className={styles.seguimientoContent}>
-                <div className={styles.seguimientoInfo}>
-                  <div className={styles.seguimientoFecha}>
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      className={styles.seguimientoIcon}
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span>Próxima cita sugerida: <strong>{formatearFecha(paciente.consultas[0].proxima_cita)}</strong></span>
-                  </div>
-                  <div className={styles.seguimientoMeta}>
-                    {new Date(paciente.consultas[0].proxima_cita) < new Date() ? (
-                      <Badge variant="error">Fecha vencida</Badge>
-                    ) : paciente.consultas[0].seguimiento_programado ? (
-                      <>
-                        <Badge variant="success">Recordatorio programado</Badge>
-                        <span className={styles.seguimientoTexto}>
-                          Se enviará 1 día antes ({formatearFecha(new Date(new Date(paciente.consultas[0].proxima_cita).getTime() - 24 * 60 * 60 * 1000))})
-                        </span>
-                      </>
-                    ) : (
-                      <Badge variant="warning">Sin recordatorio</Badge>
-                    )}
-                  </div>
-                </div>
-
-                {/* Selector de tipo de seguimiento */}
-                {!paciente.consultas[0].seguimiento_programado && (
-                  <div className={styles.seguimientoTipo}>
-                    <label className={styles.tipoLabel}>Tipo de mensaje:</label>
-                    <div className={styles.tipoOpciones}>
-                      <label className={styles.radioOption}>
-                        <input
-                          type="radio"
-                          name="tipoSeguimiento"
-                          value="SOLO_RECORDATORIO"
-                          checked={tipoSeguimientoSeleccionado === 'SOLO_RECORDATORIO'}
-                          onChange={(e) => setTipoSeguimientoSeleccionado(e.target.value)}
-                        />
-                        <span>Solo recordatorio</span>
-                      </label>
-                      <label className={styles.radioOption}>
-                        <input
-                          type="radio"
-                          name="tipoSeguimiento"
-                          value="SOLO_SEGUIMIENTO"
-                          checked={tipoSeguimientoSeleccionado === 'SOLO_SEGUIMIENTO'}
-                          onChange={(e) => setTipoSeguimientoSeleccionado(e.target.value)}
-                        />
-                        <span>Solo seguimiento</span>
-                      </label>
-                      <label className={styles.radioOption}>
-                        <input
-                          type="radio"
-                          name="tipoSeguimiento"
-                          value="RECORDATORIO_Y_SEGUIMIENTO"
-                          checked={tipoSeguimientoSeleccionado === 'RECORDATORIO_Y_SEGUIMIENTO'}
-                          onChange={(e) => setTipoSeguimientoSeleccionado(e.target.value)}
-                        />
-                        <span>Ambos</span>
-                      </label>
-                    </div>
-                  </div>
-                )}
-
-                {/* Mostrar tipo actual si está programado */}
-                {paciente.consultas[0].seguimiento_programado && paciente.consultas[0].tipo_seguimiento && (
-                  <div className={styles.seguimientoTipoActual}>
-                    <span className={styles.tipoActualLabel}>Tipo programado:</span>
-                    <Badge variant="info">
-                      {paciente.consultas[0].tipo_seguimiento === 'SOLO_RECORDATORIO' && 'Solo recordatorio'}
-                      {paciente.consultas[0].tipo_seguimiento === 'SOLO_SEGUIMIENTO' && 'Solo seguimiento'}
-                      {paciente.consultas[0].tipo_seguimiento === 'RECORDATORIO_Y_SEGUIMIENTO' && 'Ambos'}
-                    </Badge>
-                  </div>
-                )}
-
-                <div className={styles.seguimientoActions}>
-                  {paciente.consultas[0].seguimiento_programado ? (
-                    <Button
-                      variant="outline"
-                      size="small"
-                      onClick={() => cancelarSeguimientoHandler(paciente.consultas[0].id)}
-                      disabled={cancelandoSeguimiento}
-                    >
-                      {cancelandoSeguimiento ? 'Cancelando...' : 'Cancelar Recordatorio'}
-                    </Button>
-                  ) : (
-                    <Button
-                      size="small"
-                      onClick={() => programarSeguimientoHandler(paciente.consultas[0].id)}
-                      disabled={programandoSeguimiento || new Date(paciente.consultas[0].proxima_cita) < new Date()}
-                    >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                      </svg>
-                      {programandoSeguimiento ? 'Programando...' : 'Programar Recordatorio'}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Citas */}
         <Card>
@@ -740,14 +576,19 @@ export default function DetallePacientePage() {
                               {cita.tipo_cita === 'PRESENCIAL' ? 'Presencial' : 'En línea'}
                             </span>
                             {cita.codigo_cita && (
-                              <span className={styles.citaCodigo}>
-                                Código: {cita.codigo_cita}
-                              </span>
+                              <span className={styles.citaCodigo}>Código: {cita.codigo_cita}</span>
                             )}
                           </div>
                         </div>
-                        <div className={styles.listItemActions} onClick={(e) => e.stopPropagation()}>
-                          {getEstadoBadge(cita.estado, cita.estado_confirmacion, cita.confirmada_por_paciente)}
+                        <div
+                          className={styles.listItemActions}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {getEstadoBadge(
+                            cita.estado,
+                            cita.estado_confirmacion,
+                            cita.confirmada_por_paciente
+                          )}
                           {cita.estado === 'PENDIENTE' && tabActiva === 'activas' && (
                             <Button
                               size="small"
@@ -790,12 +631,7 @@ export default function DetallePacientePage() {
                   >
                     <div className={styles.consultaHeader}>
                       <div className={styles.consultaFecha}>
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
+                        <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
                           <path
                             fillRule="evenodd"
                             d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
@@ -806,9 +642,7 @@ export default function DetallePacientePage() {
                         {index === 0 && <Badge variant="info">Más reciente</Badge>}
                       </div>
                       {consulta.motivo && (
-                        <div className={styles.consultaMotivo}>
-                          {consulta.motivo}
-                        </div>
+                        <div className={styles.consultaMotivo}>{consulta.motivo}</div>
                       )}
                     </div>
 
@@ -818,13 +652,12 @@ export default function DetallePacientePage() {
                         <div className={styles.consultaMediciones}>
                           {consulta.peso && (
                             <div className={styles.medicion}>
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                              >
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                              <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                                <path
+                                  fillRule="evenodd"
+                                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                                  clipRule="evenodd"
+                                />
                               </svg>
                               <span className={styles.medicionLabel}>Peso:</span>
                               <span className={styles.medicionValor}>{consulta.peso} kg</span>
@@ -832,45 +665,48 @@ export default function DetallePacientePage() {
                           )}
                           {consulta.imc && (
                             <div className={styles.medicion}>
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                              >
+                              <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
                                 <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                                <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                                <path
+                                  fillRule="evenodd"
+                                  d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
+                                  clipRule="evenodd"
+                                />
                               </svg>
                               <span className={styles.medicionLabel}>IMC:</span>
-                              <span className={styles.medicionValor}>{consulta.imc.toFixed(1)}</span>
+                              <span className={styles.medicionValor}>
+                                {consulta.imc.toFixed(1)}
+                              </span>
                             </div>
                           )}
                           {consulta.grasa_corporal && (
                             <div className={styles.medicion}>
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                              >
-                                <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                                <path
+                                  fillRule="evenodd"
+                                  d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z"
+                                  clipRule="evenodd"
+                                />
                               </svg>
                               <span className={styles.medicionLabel}>Grasa:</span>
-                              <span className={styles.medicionValor}>{consulta.grasa_corporal}%</span>
+                              <span className={styles.medicionValor}>
+                                {consulta.grasa_corporal}%
+                              </span>
                             </div>
                           )}
                           {consulta.masa_muscular_kg && (
                             <div className={styles.medicion}>
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                              >
-                                <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                                <path
+                                  fillRule="evenodd"
+                                  d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                  clipRule="evenodd"
+                                />
                               </svg>
                               <span className={styles.medicionLabel}>Músculo:</span>
-                              <span className={styles.medicionValor}>{consulta.masa_muscular_kg} kg</span>
+                              <span className={styles.medicionValor}>
+                                {consulta.masa_muscular_kg} kg
+                              </span>
                             </div>
                           )}
                         </div>
@@ -882,17 +718,13 @@ export default function DetallePacientePage() {
                           {consulta.diagnostico && (
                             <div className={styles.consultaTexto}>
                               <span className={styles.consultaLabel}>Dx:</span>
-                              <p className={styles.consultaDescripcion}>
-                                {consulta.diagnostico}
-                              </p>
+                              <p className={styles.consultaDescripcion}>{consulta.diagnostico}</p>
                             </div>
                           )}
                           {consulta.objetivo && (
                             <div className={styles.consultaTexto}>
                               <span className={styles.consultaLabel}>Obj:</span>
-                              <p className={styles.consultaDescripcion}>
-                                {consulta.objetivo}
-                              </p>
+                              <p className={styles.consultaDescripcion}>{consulta.objetivo}</p>
                             </div>
                           )}
                         </div>
@@ -902,12 +734,7 @@ export default function DetallePacientePage() {
                     <div className={styles.consultaFooter}>
                       <span className={styles.verMas}>
                         Ver detalles completos
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
+                        <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
                           <path
                             fillRule="evenodd"
                             d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
@@ -922,6 +749,158 @@ export default function DetallePacientePage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Panel de Seguimiento - Próxima Cita Sugerida */}
+        {paciente.consultas.length > 0 && paciente.consultas[0].proxima_cita && (
+          <Card className={styles.seguimientoCard}>
+            <CardHeader>
+              <CardTitle>Seguimiento Nutricional</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={styles.seguimientoContent}>
+                <div className={styles.seguimientoInfo}>
+                  <div className={styles.seguimientoFecha}>
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className={styles.seguimientoIcon}
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span>
+                      Próxima cita sugerida:{' '}
+                      <strong>{formatearFecha(paciente.consultas[0].proxima_cita)}</strong>
+                    </span>
+                  </div>
+                  <div className={styles.seguimientoMeta}>
+                    {new Date(paciente.consultas[0].proxima_cita) < new Date() ? (
+                      <Badge variant="error">Fecha vencida</Badge>
+                    ) : paciente.consultas[0].seguimiento_programado ? (
+                      <>
+                        <Badge variant="success">Recordatorio programado</Badge>
+                        <span className={styles.seguimientoTexto}>
+                          Se enviará 1 día antes (
+                          {formatearFecha(
+                            new Date(
+                              new Date(paciente.consultas[0].proxima_cita).getTime() -
+                                24 * 60 * 60 * 1000
+                            )
+                          )}
+                          )
+                        </span>
+                      </>
+                    ) : (
+                      <Badge variant="warning">Sin recordatorio</Badge>
+                    )}
+                  </div>
+                </div>
+
+                {/* Selector de tipo de seguimiento */}
+                {!paciente.consultas[0].seguimiento_programado && (
+                  <div className={styles.seguimientoTipo}>
+                    <label className={styles.tipoLabel}>Tipo de seguimiento:</label>
+                    <div className={styles.tipoOpciones}>
+                      <label className={styles.radioOption}>
+                        <input
+                          type="radio"
+                          name="tipoSeguimiento"
+                          value="SOLO_RECORDATORIO"
+                          checked={tipoSeguimientoSeleccionado === 'SOLO_RECORDATORIO'}
+                          onChange={(e) => setTipoSeguimientoSeleccionado(e.target.value)}
+                        />
+                        <div className={styles.radioContent}>
+                          <span className={styles.radioTitle}>Solo recordatorio</span>
+                          <span className={styles.radioDescription}>
+                            1 mensaje 4 días antes de la fecha sugerida
+                          </span>
+                        </div>
+                      </label>
+                      <label className={styles.radioOption}>
+                        <input
+                          type="radio"
+                          name="tipoSeguimiento"
+                          value="SOLO_SEGUIMIENTO"
+                          checked={tipoSeguimientoSeleccionado === 'SOLO_SEGUIMIENTO'}
+                          onChange={(e) => setTipoSeguimientoSeleccionado(e.target.value)}
+                        />
+                        <div className={styles.radioContent}>
+                          <span className={styles.radioTitle}>Solo seguimiento</span>
+                          <span className={styles.radioDescription}>
+                            Hasta 3 mensajes de apoyo durante el periodo
+                          </span>
+                        </div>
+                      </label>
+                      <label className={styles.radioOption}>
+                        <input
+                          type="radio"
+                          name="tipoSeguimiento"
+                          value="RECORDATORIO_Y_SEGUIMIENTO"
+                          checked={tipoSeguimientoSeleccionado === 'RECORDATORIO_Y_SEGUIMIENTO'}
+                          onChange={(e) => setTipoSeguimientoSeleccionado(e.target.value)}
+                        />
+                        <div className={styles.radioContent}>
+                          <span className={styles.radioTitle}>Seguimiento completo</span>
+                          <span className={styles.radioDescription}>
+                            Mensajes de apoyo + recordatorio (hasta 4 mensajes)
+                          </span>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                {/* Mostrar tipo actual si está programado */}
+                {paciente.consultas[0].seguimiento_programado &&
+                  paciente.consultas[0].tipo_seguimiento && (
+                    <div className={styles.seguimientoTipoActual}>
+                      <span className={styles.tipoActualLabel}>Tipo programado:</span>
+                      <Badge variant="info">
+                        {paciente.consultas[0].tipo_seguimiento === 'SOLO_RECORDATORIO' &&
+                          'Solo recordatorio'}
+                        {paciente.consultas[0].tipo_seguimiento === 'SOLO_SEGUIMIENTO' &&
+                          'Solo seguimiento'}
+                        {paciente.consultas[0].tipo_seguimiento === 'RECORDATORIO_Y_SEGUIMIENTO' &&
+                          'Ambos'}
+                      </Badge>
+                    </div>
+                  )}
+
+                <div className={styles.seguimientoActions}>
+                  {paciente.consultas[0].seguimiento_programado ? (
+                    <Button
+                      variant="outline"
+                      size="small"
+                      onClick={() => cancelarSeguimientoHandler(paciente.consultas[0].id)}
+                      disabled={cancelandoSeguimiento}
+                    >
+                      {cancelandoSeguimiento ? 'Cancelando...' : 'Cancelar Recordatorio'}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="small"
+                      onClick={() => programarSeguimientoHandler(paciente.consultas[0].id)}
+                      disabled={
+                        programandoSeguimiento ||
+                        new Date(paciente.consultas[0].proxima_cita) < new Date()
+                      }
+                    >
+                      <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                      </svg>
+                      {programandoSeguimiento ? 'Programando...' : 'Programar Recordatorio'}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Modal de Detalles de Cita */}

@@ -2,14 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth-utils'
 import prisma from '@/lib/prisma'
 import { deleteCache, CacheKeys } from '@/lib/redis'
-import { syncCitaWithGoogleCalendar, unsyncCitaFromGoogleCalendar, isGoogleCalendarConfigured } from '@/lib/services/google-calendar'
+import {
+  syncCitaWithGoogleCalendar,
+  unsyncCitaFromGoogleCalendar,
+  isGoogleCalendarConfigured,
+} from '@/lib/services/google-calendar'
 import { cancelarJobsCita } from '@/lib/queue/messages'
 
 // GET /api/citas/[id] - Obtener una cita específica
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser()
     if (!user) {
@@ -33,8 +34,7 @@ export async function GET(
     return NextResponse.json(cita)
   } catch (error) {
     console.error('Error al obtener cita:', error)
-    const errorMessage =
-      error instanceof Error ? error.message : 'Error desconocido'
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido'
     return NextResponse.json(
       { error: 'Error al obtener cita', details: errorMessage },
       { status: 500 }
@@ -43,10 +43,7 @@ export async function GET(
 }
 
 // PATCH /api/citas/[id] - Actualizar estado de cita
-export async function PATCH(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser()
     if (!user) {
@@ -107,8 +104,7 @@ export async function PATCH(
     return NextResponse.json(cita)
   } catch (error) {
     console.error('Error al actualizar cita:', error)
-    const errorMessage =
-      error instanceof Error ? error.message : 'Error desconocido'
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido'
     return NextResponse.json(
       { error: 'Error al actualizar cita', details: errorMessage },
       { status: 500 }
