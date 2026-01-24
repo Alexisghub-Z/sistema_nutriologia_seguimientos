@@ -25,10 +25,7 @@ export interface UploadedFile {
   tamanio_bytes: number
 }
 
-export default function FileUpload({
-  consultaId,
-  onUploadSuccess,
-}: FileUploadProps) {
+export default function FileUpload({ consultaId, onUploadSuccess }: FileUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [files, setFiles] = useState<FileWithPreview[]>([])
@@ -50,8 +47,7 @@ export default function FileUpload({
       'image/*': ['.jpg', '.jpeg', '.png', '.webp'],
       'application/pdf': ['.pdf'],
       'application/msword': ['.doc'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-        ['.docx'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
     },
     maxSize: 10 * 1024 * 1024, // 10MB
     maxFiles: 5,
@@ -133,12 +129,9 @@ export default function FileUpload({
         ) : (
           <>
             <p>
-              <strong>Arrastra archivos aquí</strong> o haz clic para
-              seleccionar
+              <strong>Arrastra archivos aquí</strong> o haz clic para seleccionar
             </p>
-            <p className={styles.hint}>
-              PDF, Word, Imágenes (máx. 10MB cada uno)
-            </p>
+            <p className={styles.hint}>PDF, Word, Imágenes (máx. 10MB cada uno)</p>
           </>
         )}
       </div>
@@ -149,19 +142,10 @@ export default function FileUpload({
           {files.map((file, index) => (
             <div key={index} className={styles.fileItem}>
               {file.type.startsWith('image/') ? (
-                <img
-                  src={file.preview}
-                  alt={file.name}
-                  className={styles.preview}
-                />
+                <img src={file.preview} alt={file.name} className={styles.preview} />
               ) : (
                 <div className={styles.fileIcon}>
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
                     <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
                   </svg>
@@ -169,9 +153,7 @@ export default function FileUpload({
               )}
               <div className={styles.fileInfo}>
                 <span className={styles.fileName}>{file.name}</span>
-                <span className={styles.fileSize}>
-                  {formatFileSize(file.size)}
-                </span>
+                <span className={styles.fileSize}>{formatFileSize(file.size)}</span>
               </div>
               <button
                 type="button"

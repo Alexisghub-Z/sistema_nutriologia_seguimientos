@@ -32,17 +32,11 @@ export async function POST(request: NextRequest) {
     const consultaId = formData.get('consultaId') as string
 
     if (!file) {
-      return NextResponse.json(
-        { error: 'No se proporcionó ningún archivo' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'No se proporcionó ningún archivo' }, { status: 400 })
     }
 
     if (!consultaId) {
-      return NextResponse.json(
-        { error: 'ID de consulta requerido' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'ID de consulta requerido' }, { status: 400 })
     }
 
     // Validar tipo de archivo
@@ -69,12 +63,7 @@ export async function POST(request: NextRequest) {
     const fileName = `${randomName}${extension}`
 
     // Crear carpeta si no existe
-    const uploadDir = path.join(
-      process.cwd(),
-      'uploads',
-      'consultas',
-      consultaId
-    )
+    const uploadDir = path.join(process.cwd(), 'uploads', 'consultas', consultaId)
 
     if (!existsSync(uploadDir)) {
       await mkdir(uploadDir, { recursive: true })
@@ -99,9 +88,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error al subir archivo:', error)
-    return NextResponse.json(
-      { error: 'Error al subir archivo' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al subir archivo' }, { status: 500 })
   }
 }

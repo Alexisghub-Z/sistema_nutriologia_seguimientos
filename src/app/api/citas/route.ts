@@ -3,8 +3,15 @@ import { getAuthUser } from '@/lib/auth-utils'
 import prisma from '@/lib/prisma'
 import { z } from 'zod'
 import { deleteCache, CacheKeys } from '@/lib/redis'
-import { syncCitaWithGoogleCalendar, isGoogleCalendarConfigured } from '@/lib/services/google-calendar'
-import { programarConfirmacion, programarRecordatorio24h, programarRecordatorio1h } from '@/lib/queue/messages'
+import {
+  syncCitaWithGoogleCalendar,
+  isGoogleCalendarConfigured,
+} from '@/lib/services/google-calendar'
+import {
+  programarConfirmacion,
+  programarRecordatorio24h,
+  programarRecordatorio1h,
+} from '@/lib/queue/messages'
 
 // Schema de validación para crear cita
 const citaSchema = z.object({
@@ -31,10 +38,7 @@ export async function GET(request: NextRequest) {
     const paciente_id = searchParams.get('paciente_id')
 
     if (!paciente_id) {
-      return NextResponse.json(
-        { error: 'ID de paciente requerido' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'ID de paciente requerido' }, { status: 400 })
     }
 
     const citas = await prisma.cita.findMany({
@@ -54,8 +58,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ citas })
   } catch (error) {
     console.error('Error al obtener citas:', error)
-    const errorMessage =
-      error instanceof Error ? error.message : 'Error desconocido'
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido'
     return NextResponse.json(
       { error: 'Error al obtener citas', details: errorMessage },
       { status: 500 }
@@ -135,7 +138,10 @@ export async function POST(request: NextRequest) {
 
     // Invalidar caché del paciente
     await deleteCache(CacheKeys.patientDetail(validatedData.paciente_id))
-    console.log('🗑️  Cache invalidated: patient detail after appointment created', validatedData.paciente_id)
+    console.log(
+      '🗑️  Cache invalidated: patient detail after appointment created',
+      validatedData.paciente_id
+    )
 
     // Cancelar TODOS los recordatorios antiguos del paciente (citas anteriores)
     try {
@@ -213,7 +219,9 @@ export async function POST(request: NextRequest) {
           })
         }
 
-        console.log(`✅ ${consultasConSeguimiento.length} seguimiento(s) cancelado(s) automáticamente - paciente agendó cita`)
+        console.log(
+          `✅ ${consultasConSeguimiento.length} seguimiento(s) cancelado(s) automáticamente - paciente agendó cita`
+        )
       }
     } catch (seguimientoError) {
       console.error('Error al cancelar seguimientos:', seguimientoError)
@@ -257,18 +265,24 @@ export async function POST(request: NextRequest) {
       // No fallar la creación de la cita si hay error en los jobs
     }
 
+    // Cancelar recordatorios de agendar si el paciente ya agendó
+    try {
+      const { cancelarRecordatoriosAgendar } = await import('@/lib/queue/messages')
+      await cancelarRecordatoriosAgendar(validatedData.paciente_id, fechaCita)
+      console.log('🗑️  Recordatorios de agendar cancelados (paciente agendó cita desde admin)')
+    } catch (cancelError) {
+      console.error('Error al cancelar recordatorios:', cancelError)
+      // No fallar la creación de la cita si hay error al cancelar
+    }
+
     return NextResponse.json(cita, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
     }
 
     console.error('Error al crear cita:', error)
-    const errorMessage =
-      error instanceof Error ? error.message : 'Error desconocido'
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido'
     return NextResponse.json(
       { error: 'Error al crear cita', details: errorMessage },
       { status: 500 }

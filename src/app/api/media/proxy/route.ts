@@ -23,10 +23,7 @@ export async function GET(request: NextRequest) {
     const authToken = process.env.TWILIO_AUTH_TOKEN
 
     if (!accountSid || !authToken) {
-      return NextResponse.json(
-        { error: 'Credenciales de Twilio no configuradas' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Credenciales de Twilio no configuradas' }, { status: 500 })
     }
 
     // Hacer la petición a Twilio con autenticación básica
@@ -39,10 +36,7 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       console.error('Error fetching media from Twilio:', response.statusText)
-      return NextResponse.json(
-        { error: 'Error al obtener archivo' },
-        { status: response.status }
-      )
+      return NextResponse.json({ error: 'Error al obtener archivo' }, { status: response.status })
     }
 
     // Obtener el contenido y tipo de archivo
@@ -58,9 +52,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error in media proxy:', error)
-    return NextResponse.json(
-      { error: 'Error al procesar archivo' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al procesar archivo' }, { status: 500 })
   }
 }

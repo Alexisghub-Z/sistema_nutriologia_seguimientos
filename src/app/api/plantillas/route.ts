@@ -6,7 +6,12 @@ import { z } from 'zod'
 // Schema de validación
 const plantillaSchema = z.object({
   nombre: z.string().min(1, 'El nombre es requerido'),
-  tipo: z.enum(['AUTOMATICO_CONFIRMACION', 'AUTOMATICO_RECORDATORIO', 'AUTOMATICO_SEGUIMIENTO', 'MANUAL']),
+  tipo: z.enum([
+    'AUTOMATICO_CONFIRMACION',
+    'AUTOMATICO_RECORDATORIO',
+    'AUTOMATICO_SEGUIMIENTO',
+    'MANUAL',
+  ]),
   contenido: z.string().min(1, 'El contenido es requerido'),
   activa: z.boolean().default(true),
 })
@@ -35,10 +40,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ plantillas })
   } catch (error) {
     console.error('Error al obtener plantillas:', error)
-    return NextResponse.json(
-      { error: 'Error al obtener plantillas' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al obtener plantillas' }, { status: 500 })
   }
 }
 
@@ -60,16 +62,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(plantilla, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
     }
 
     console.error('Error al crear plantilla:', error)
-    return NextResponse.json(
-      { error: 'Error al crear plantilla' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al crear plantilla' }, { status: 500 })
   }
 }

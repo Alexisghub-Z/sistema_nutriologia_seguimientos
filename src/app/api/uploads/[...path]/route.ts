@@ -4,10 +4,7 @@ import { readFile } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
 
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ path: string[] }> }
-) {
+export async function GET(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   try {
     // Verificar autenticación
     const user = await getAuthUser()
@@ -22,10 +19,7 @@ export async function GET(
 
     // Verificar que el archivo existe
     if (!existsSync(filePath)) {
-      return NextResponse.json(
-        { error: 'Archivo no encontrado' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Archivo no encontrado' }, { status: 404 })
     }
 
     // Leer el archivo
@@ -40,8 +34,7 @@ export async function GET(
       '.png': 'image/png',
       '.webp': 'image/webp',
       '.doc': 'application/msword',
-      '.docx':
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     }
 
     const mimeType = mimeTypes[ext] || 'application/octet-stream'
@@ -55,9 +48,6 @@ export async function GET(
     })
   } catch (error) {
     console.error('Error al descargar archivo:', error)
-    return NextResponse.json(
-      { error: 'Error al descargar archivo' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al descargar archivo' }, { status: 500 })
   }
 }

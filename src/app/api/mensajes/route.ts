@@ -9,7 +9,14 @@ import { sendWhatsAppMessage, isTwilioConfigured } from '@/lib/services/twilio'
 const mensajeSchema = z.object({
   paciente_id: z.string().min(1, 'ID de paciente requerido'),
   contenido: z.string().min(1, 'El contenido no puede estar vacío'),
-  tipo: z.enum(['AUTOMATICO_CONFIRMACION', 'AUTOMATICO_RECORDATORIO', 'AUTOMATICO_SEGUIMIENTO', 'MANUAL']).default('MANUAL'),
+  tipo: z
+    .enum([
+      'AUTOMATICO_CONFIRMACION',
+      'AUTOMATICO_RECORDATORIO',
+      'AUTOMATICO_SEGUIMIENTO',
+      'MANUAL',
+    ])
+    .default('MANUAL'),
 })
 
 // GET /api/mensajes - Listar conversaciones con el último mensaje de cada paciente
@@ -172,10 +179,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!paciente) {
-      return NextResponse.json(
-        { error: 'Paciente no encontrado' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Paciente no encontrado' }, { status: 404 })
     }
 
     // Intentar enviar mensaje por WhatsApp si Twilio está configurado
@@ -184,10 +188,7 @@ export async function POST(request: NextRequest) {
 
     if (isTwilioConfigured()) {
       try {
-        const resultado = await sendWhatsAppMessage(
-          paciente.telefono,
-          validatedData.contenido
-        )
+        const resultado = await sendWhatsAppMessage(paciente.telefono, validatedData.contenido)
         twilioSid = resultado.messageSid
         console.log('✅ WhatsApp sent via Twilio:', resultado.messageSid)
       } catch (error) {
@@ -229,10 +230,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(mensaje, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
     }
 
     console.error('Error al enviar mensaje:', error)

@@ -19,20 +19,14 @@ export async function GET(request: NextRequest) {
     const pacienteParam = searchParams.get('paciente')
 
     if (!inicioParam || !finParam) {
-      return NextResponse.json(
-        { error: 'Parámetros inicio y fin son requeridos' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Parámetros inicio y fin son requeridos' }, { status: 400 })
     }
 
     const inicio = new Date(inicioParam)
     const fin = new Date(finParam)
 
     if (isNaN(inicio.getTime()) || isNaN(fin.getTime())) {
-      return NextResponse.json(
-        { error: 'Fechas inválidas' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Fechas inválidas' }, { status: 400 })
     }
 
     // Construir condiciones de filtro
@@ -73,8 +67,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ citas })
   } catch (error) {
     console.error('Error al obtener citas por rango:', error)
-    const errorMessage =
-      error instanceof Error ? error.message : 'Error desconocido'
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido'
     return NextResponse.json(
       { error: 'Error al obtener citas', details: errorMessage },
       { status: 500 }

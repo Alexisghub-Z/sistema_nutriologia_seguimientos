@@ -19,10 +19,7 @@ const ALLOWED_TYPES = [
 ]
 
 // POST /api/consultas/[id]/archivos - Subir archivo a una consulta
-export async function POST(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser()
     if (!user) {
@@ -37,10 +34,7 @@ export async function POST(
     })
 
     if (!consulta) {
-      return NextResponse.json(
-        { error: 'Consulta no encontrada' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Consulta no encontrada' }, { status: 404 })
     }
 
     const formData = await request.formData()
@@ -49,18 +43,12 @@ export async function POST(
     const descripcion = (formData.get('descripcion') as string) || null
 
     if (!file) {
-      return NextResponse.json(
-        { error: 'No se proporcionó ningún archivo' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'No se proporcionó ningún archivo' }, { status: 400 })
     }
 
     // Validaciones
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: 'Tipo de archivo no permitido' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Tipo de archivo no permitido' }, { status: 400 })
     }
 
     if (file.size > MAX_FILE_SIZE) {
@@ -76,12 +64,7 @@ export async function POST(
     const fileName = `${randomName}${extension}`
 
     // Crear carpeta
-    const uploadDir = path.join(
-      process.cwd(),
-      'uploads',
-      'consultas',
-      consultaId
-    )
+    const uploadDir = path.join(process.cwd(), 'uploads', 'consultas', consultaId)
 
     if (!existsSync(uploadDir)) {
       await mkdir(uploadDir, { recursive: true })
@@ -119,10 +102,7 @@ export async function POST(
 }
 
 // GET /api/consultas/[id]/archivos - Obtener archivos de una consulta
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser()
     if (!user) {

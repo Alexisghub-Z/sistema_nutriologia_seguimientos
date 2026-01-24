@@ -191,9 +191,7 @@ export default function ConversationList({
               {/* Contenido */}
               <div className={styles.conversationContent}>
                 <div className={styles.conversationHeader}>
-                  <h3 className={styles.pacienteNombre}>
-                    {conv.paciente.nombre}
-                  </h3>
+                  <h3 className={styles.pacienteNombre}>{conv.paciente.nombre}</h3>
                   {conv.ultimoMensaje && (
                     <span className={styles.timestamp}>
                       {formatFechaRelativa(conv.ultimoMensaje.createdAt)}

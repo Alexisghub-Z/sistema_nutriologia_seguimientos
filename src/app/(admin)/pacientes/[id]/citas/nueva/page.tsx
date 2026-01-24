@@ -30,7 +30,7 @@ export default function NuevaCitaPage() {
     const checked = (e.target as HTMLInputElement).checked
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }))
   }
 
@@ -98,12 +98,7 @@ export default function NuevaCitaPage() {
             onClick={handleCancel}
             className={styles.backButton}
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
               <path
                 fillRule="evenodd"
                 d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
@@ -231,8 +226,9 @@ export default function NuevaCitaPage() {
               <span className={styles.checkboxText}>
                 <strong>Cita ya confirmada</strong>
                 <small className={styles.checkboxHint}>
-                  Marca esta opción si ya confirmaste la cita con el paciente (por teléfono, presencial, etc.).
-                  Si no la marcas, el paciente recibirá un mensaje para confirmar su asistencia.
+                  Marca esta opción si ya confirmaste la cita con el paciente (por teléfono,
+                  presencial, etc.). Si no la marcas, el paciente recibirá un mensaje para confirmar
+                  su asistencia.
                 </small>
               </span>
             </label>
@@ -254,20 +250,14 @@ export default function NuevaCitaPage() {
               />
             </svg>
             <p>
-              Después de crear la cita, podrás registrar la consulta cuando el
-              paciente asista. Usa el botón "Registrar Consulta" que aparecerá
-              en las citas pendientes.
+              Después de crear la cita, podrás registrar la consulta cuando el paciente asista. Usa
+              el botón &ldquo;Registrar Consulta&rdquo; que aparecerá en las citas pendientes.
             </p>
           </div>
 
           {/* Botones */}
           <div className={styles.formActions}>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCancel}
-              disabled={loading}
-            >
+            <Button type="button" variant="outline" onClick={handleCancel} disabled={loading}>
               Cancelar
             </Button>
             <Button type="submit" disabled={loading}>

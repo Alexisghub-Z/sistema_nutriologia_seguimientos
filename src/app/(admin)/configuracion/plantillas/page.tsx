@@ -170,9 +170,7 @@ export default function PlantillasPage() {
       {/* Formulario */}
       {showForm && (
         <Card className={styles.formCard}>
-          <h2 className={styles.formTitle}>
-            {editingId ? 'Editar Plantilla' : 'Nueva Plantilla'}
-          </h2>
+          <h2 className={styles.formTitle}>{editingId ? 'Editar Plantilla' : 'Nueva Plantilla'}</h2>
           <form onSubmit={handleSubmit} className={styles.form}>
             <div className={styles.formGrid}>
               <div className={styles.formGroup}>
@@ -240,9 +238,7 @@ export default function PlantillasPage() {
               >
                 Cancelar
               </Button>
-              <Button type="submit">
-                {editingId ? 'Actualizar' : 'Crear'}
-              </Button>
+              <Button type="submit">{editingId ? 'Actualizar' : 'Crear'}</Button>
             </div>
           </form>
         </Card>

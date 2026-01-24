@@ -35,10 +35,7 @@ export async function POST(request: NextRequest) {
 
     if (!paciente) {
       // Paciente no existe
-      return NextResponse.json(
-        { existe: false },
-        { status: 200 }
-      )
+      return NextResponse.json({ existe: false }, { status: 200 })
     }
 
     // Paciente existe - retornar sus datos
@@ -60,16 +57,10 @@ export async function POST(request: NextRequest) {
     )
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Email inválido', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Email inválido', details: error.errors }, { status: 400 })
     }
 
     console.error('Error al verificar paciente:', error)
-    return NextResponse.json(
-      { error: 'Error al verificar paciente' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al verificar paciente' }, { status: 500 })
   }
 }

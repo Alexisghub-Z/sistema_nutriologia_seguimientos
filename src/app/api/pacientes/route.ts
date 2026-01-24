@@ -173,10 +173,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response)
   } catch (error) {
     console.error('Error al obtener pacientes:', error)
-    return NextResponse.json(
-      { error: 'Error al obtener pacientes' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al obtener pacientes' }, { status: 500 })
   }
 }
 
@@ -197,10 +194,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingEmail) {
-      return NextResponse.json(
-        { error: 'Ya existe un paciente con este email' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Ya existe un paciente con este email' }, { status: 400 })
     }
 
     const existingPhone = await prisma.paciente.findUnique({
@@ -239,16 +233,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(paciente, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
     }
 
     console.error('Error al crear paciente:', error)
-    return NextResponse.json(
-      { error: 'Error al crear paciente' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al crear paciente' }, { status: 500 })
   }
 }

@@ -268,7 +268,7 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
           <button onClick={() => router.push('/')} className={styles.backButton}>
             ← Volver
           </button>
-          <h1>Dr. Paul</h1>
+          <h1>Nutriólogo Paul</h1>
         </div>
 
         <div className={styles.citaCard}>
@@ -339,7 +339,10 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
                   <div className={styles.alertSuccess}>
                     Asistencia confirmada
                     {cita.fecha_confirmacion && (
-                      <span> el {new Date(cita.fecha_confirmacion).toLocaleDateString('es-MX')}</span>
+                      <span>
+                        {' '}
+                        el {new Date(cita.fecha_confirmacion).toLocaleDateString('es-MX')}
+                      </span>
                     )}
                   </div>
                   <div className={styles.actionsConfirmada}>
@@ -357,10 +360,7 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
                     >
                       {cancelando ? 'Cancelando...' : 'Cancelar Cita'}
                     </button>
-                    <button
-                      onClick={() => router.push('/')}
-                      className={styles.doneButton}
-                    >
+                    <button onClick={() => router.push('/')} className={styles.doneButton}>
                       Listo
                     </button>
                   </div>
@@ -395,16 +395,10 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
             </div>
           )}
 
-          {citaCancelada && (
-            <div className={styles.alert}>
-              Esta cita ha sido cancelada
-            </div>
-          )}
+          {citaCancelada && <div className={styles.alert}>Esta cita ha sido cancelada</div>}
 
           {citaPasada && !citaCancelada && (
-            <div className={styles.alert}>
-              Esta cita ya fue realizada
-            </div>
+            <div className={styles.alert}>Esta cita ya fue realizada</div>
           )}
         </div>
       </div>
@@ -416,8 +410,12 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
             <h3>Confirmar Asistencia</h3>
             <p>¿Confirmas que asistirás a esta cita?</p>
             <div className={styles.modalInfo}>
-              <p><strong>Fecha:</strong> {formatearFecha(cita.fecha_hora)}</p>
-              <p><strong>Hora:</strong> {formatearHora(cita.fecha_hora)}</p>
+              <p>
+                <strong>Fecha:</strong> {formatearFecha(cita.fecha_hora)}
+              </p>
+              <p>
+                <strong>Hora:</strong> {formatearHora(cita.fecha_hora)}
+              </p>
             </div>
             <div className={styles.modalActions}>
               <button
@@ -446,8 +444,12 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
             <h3>Reagendar Cita</h3>
             <p>¿Deseas reagendar esta cita?</p>
             <div className={styles.modalInfo}>
-              <p><strong>Cita actual:</strong></p>
-              <p>{formatearFecha(cita.fecha_hora)} a las {formatearHora(cita.fecha_hora)}</p>
+              <p>
+                <strong>Cita actual:</strong>
+              </p>
+              <p>
+                {formatearFecha(cita.fecha_hora)} a las {formatearHora(cita.fecha_hora)}
+              </p>
             </div>
             <p>Tu cita actual será cancelada y podrás seleccionar una nueva fecha y hora.</p>
             <div className={styles.modalActions}>

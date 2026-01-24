@@ -6,11 +6,7 @@ interface BadgeProps {
   className?: string
 }
 
-export default function Badge({
-  children,
-  variant = 'primary',
-  className = '',
-}: BadgeProps) {
+export default function Badge({ children, variant = 'primary', className = '' }: BadgeProps) {
   const variantClass = {
     primary: styles.badgePrimary,
     secondary: styles.badgeSecondary,

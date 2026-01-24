@@ -163,9 +163,7 @@ export default function ConfiguracionCalendarioPage() {
                     type="time"
                     id="horario_inicio"
                     value={config.horario_inicio}
-                    onChange={(e) =>
-                      handleInputChange('horario_inicio', e.target.value)
-                    }
+                    onChange={(e) => handleInputChange('horario_inicio', e.target.value)}
                     required
                   />
                   <small>Hora en que inician las consultas entre semana</small>
@@ -177,9 +175,7 @@ export default function ConfiguracionCalendarioPage() {
                     type="time"
                     id="horario_fin"
                     value={config.horario_fin}
-                    onChange={(e) =>
-                      handleInputChange('horario_fin', e.target.value)
-                    }
+                    onChange={(e) => handleInputChange('horario_fin', e.target.value)}
                     required
                   />
                   <small>Última hora disponible para iniciar una consulta</small>
@@ -231,18 +227,13 @@ export default function ConfiguracionCalendarioPage() {
             </CardHeader>
             <CardContent>
               <div className={styles.formGroup}>
-                <label htmlFor="duracion_cita_default">
-                  Duración por defecto (minutos)
-                </label>
+                <label htmlFor="duracion_cita_default">Duración por defecto (minutos)</label>
                 <input
                   type="number"
                   id="duracion_cita_default"
                   value={config.duracion_cita_default}
                   onChange={(e) =>
-                    handleInputChange(
-                      'duracion_cita_default',
-                      parseInt(e.target.value)
-                    )
+                    handleInputChange('duracion_cita_default', parseInt(e.target.value))
                   }
                   min={15}
                   max={240}
@@ -286,18 +277,13 @@ export default function ConfiguracionCalendarioPage() {
             <CardContent>
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}>
-                  <label htmlFor="dias_anticipacion_max">
-                    Días máximos de anticipación
-                  </label>
+                  <label htmlFor="dias_anticipacion_max">Días máximos de anticipación</label>
                   <input
                     type="number"
                     id="dias_anticipacion_max"
                     value={config.dias_anticipacion_max}
                     onChange={(e) =>
-                      handleInputChange(
-                        'dias_anticipacion_max',
-                        parseInt(e.target.value)
-                      )
+                      handleInputChange('dias_anticipacion_max', parseInt(e.target.value))
                     }
                     min={1}
                     max={90}
@@ -307,9 +293,7 @@ export default function ConfiguracionCalendarioPage() {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label htmlFor="horas_anticipacion_min">
-                    Horas mínimas de anticipación
-                  </label>
+                  <label htmlFor="horas_anticipacion_min">Horas mínimas de anticipación</label>
                   <input
                     type="number"
                     id="horas_anticipacion_min"
@@ -332,9 +316,7 @@ export default function ConfiguracionCalendarioPage() {
         </div>
 
         {error && <Alert variant="error">{error}</Alert>}
-        {success && (
-          <Alert variant="success">Configuración guardada exitosamente</Alert>
-        )}
+        {success && <Alert variant="success">Configuración guardada exitosamente</Alert>}
 
         <div className={styles.actions}>
           <Button type="submit" loading={saving} disabled={saving}>

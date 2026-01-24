@@ -181,7 +181,9 @@ export async function getConnectedAccountInfo() {
       }
     } catch (userInfoError: any) {
       // Si no tiene permisos para userinfo (tokens antiguos), devolver info limitada
-      console.warn('No se pudo obtener info del usuario, probablemente tokens sin scopes de userinfo')
+      console.warn(
+        'No se pudo obtener info del usuario, probablemente tokens sin scopes de userinfo'
+      )
       return {
         email: 'Cuenta conectada (reconecta para ver detalles)',
         name: null,
@@ -351,10 +353,7 @@ export async function deleteCalendarEvent(eventId: string) {
 /**
  * Lista eventos del calendario en un rango de fechas
  */
-export async function listCalendarEvents(
-  startDate: Date,
-  endDate: Date
-) {
+export async function listCalendarEvents(startDate: Date, endDate: Date) {
   try {
     const calendar = await getAuthenticatedCalendar()
 

@@ -21,9 +21,6 @@ export async function POST() {
     )
   } catch (error) {
     console.error('Error al desconectar Google Calendar:', error)
-    return NextResponse.json(
-      { error: 'Error al desconectar Google Calendar' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al desconectar Google Calendar' }, { status: 500 })
   }
 }

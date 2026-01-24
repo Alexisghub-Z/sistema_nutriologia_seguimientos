@@ -124,15 +124,15 @@ export async function POST(request: NextRequest) {
     // Solo invalidar caché de consultas del paciente y detalle del paciente
     await deleteCachePattern(`consultations:${validatedData.paciente_id}:*`)
     await deleteCache(CacheKeys.patientDetail(validatedData.paciente_id))
-    console.log('🗑️  Cache invalidated: consultations and patient detail', validatedData.paciente_id)
+    console.log(
+      '🗑️  Cache invalidated: consultations and patient detail',
+      validatedData.paciente_id
+    )
 
     return NextResponse.json(consulta, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
     }
 
     console.error('Error al crear consulta histórica:', error)

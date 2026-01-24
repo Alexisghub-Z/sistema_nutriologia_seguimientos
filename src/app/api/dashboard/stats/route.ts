@@ -107,7 +107,8 @@ export async function GET() {
     // Calcular estadísticas de citas de hoy
     const citasConfirmadas = citasHoy.filter((c) => c.estado_confirmacion === 'CONFIRMADA').length
     const citasPendientes = citasHoy.filter(
-      (c) => c.estado_confirmacion === 'PENDIENTE' || c.estado_confirmacion === 'RECORDATORIO_ENVIADO'
+      (c) =>
+        c.estado_confirmacion === 'PENDIENTE' || c.estado_confirmacion === 'RECORDATORIO_ENVIADO'
     ).length
     const citasCompletadas = citasHoy.filter((c) => c.estado === 'COMPLETADA').length
     const citasCanceladas = citasHoy.filter(
@@ -116,9 +117,7 @@ export async function GET() {
 
     // Calcular tasa de asistencia (últimos 30 días)
     const totalCitasPasadas = citasUltimos30Dias.length
-    const citasAsistidas = citasUltimos30Dias.filter(
-      (c) => c.estado === 'COMPLETADA'
-    ).length
+    const citasAsistidas = citasUltimos30Dias.filter((c) => c.estado === 'COMPLETADA').length
     const tasaAsistencia =
       totalCitasPasadas > 0 ? Math.round((citasAsistidas / totalCitasPasadas) * 100) : 0
 
@@ -160,9 +159,6 @@ export async function GET() {
     })
   } catch (error) {
     console.error('Error al obtener estadísticas del dashboard:', error)
-    return NextResponse.json(
-      { error: 'Error al obtener estadísticas' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al obtener estadísticas' }, { status: 500 })
   }
 }
