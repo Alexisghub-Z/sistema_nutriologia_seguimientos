@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
 
     // Validar que sea día laboral
     const diaSemana = fechaSolicitada.getDay()
-    const diasLaborales = config.dias_laborales.split(',').map(d => parseInt(d))
+    const diasLaborales = config.dias_laborales.split(',').map((d) => parseInt(d))
 
     // Determinar qué horarios usar según el día
     let horarioInicio = config.horario_inicio
@@ -82,7 +82,9 @@ export async function GET(request: NextRequest) {
     )
     if (diasAnticipacion > config.dias_anticipacion_max) {
       return NextResponse.json(
-        { error: `Solo se pueden agendar citas con máximo ${config.dias_anticipacion_max} días de anticipación` },
+        {
+          error: `Solo se pueden agendar citas con máximo ${config.dias_anticipacion_max} días de anticipación`,
+        },
         { status: 400 }
       )
     }
@@ -162,10 +164,18 @@ export async function GET(request: NextRequest) {
         console.log(`📅 ${eventosCalendar.length} eventos de Google Calendar para ${fechaParam}:`)
         eventosCalendar.forEach((evento, i) => {
           // Mostrar en hora local para debugging
-          const inicioLocal = new Date(evento.inicio.toLocaleString('en-US', { timeZone: 'America/Mexico_City' }))
-          const finLocal = new Date(evento.fin.toLocaleString('en-US', { timeZone: 'America/Mexico_City' }))
-          console.log(`  ${i + 1}. UTC: ${evento.inicio.toISOString()} - ${evento.fin.toISOString()}`)
-          console.log(`      Local: ${evento.inicio.toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })} - ${evento.fin.toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}`)
+          const inicioLocal = new Date(
+            evento.inicio.toLocaleString('en-US', { timeZone: 'America/Mexico_City' })
+          )
+          const finLocal = new Date(
+            evento.fin.toLocaleString('en-US', { timeZone: 'America/Mexico_City' })
+          )
+          console.log(
+            `  ${i + 1}. UTC: ${evento.inicio.toISOString()} - ${evento.fin.toISOString()}`
+          )
+          console.log(
+            `      Local: ${evento.inicio.toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })} - ${evento.fin.toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}`
+          )
         })
       }
     } catch (calendarError) {
@@ -208,16 +218,16 @@ export async function GET(request: NextRequest) {
         console.log(`   Slot UTC: ${fechaSlotUTC.toISOString()} - ${finSlotUTC.toISOString()}`)
         console.log(`   Eventos a verificar: ${eventosCalendar.length}`)
         eventosCalendar.forEach((ev, i) => {
-          console.log(`   Evento ${i+1}: ${ev.inicio.toISOString()} - ${ev.fin.toISOString()}`)
+          console.log(`   Evento ${i + 1}: ${ev.inicio.toISOString()} - ${ev.fin.toISOString()}`)
         })
       }
 
       // Verificar solapamiento con eventos de Google Calendar
       const hayEventoEnSlot = eventosCalendar.some((evento) => {
         // Comparar timestamps en UTC
-        const condicion1 = (fechaSlotUTC >= evento.inicio && fechaSlotUTC < evento.fin)
-        const condicion2 = (finSlotUTC > evento.inicio && finSlotUTC <= evento.fin)
-        const condicion3 = (fechaSlotUTC <= evento.inicio && finSlotUTC >= evento.fin)
+        const condicion1 = fechaSlotUTC >= evento.inicio && fechaSlotUTC < evento.fin
+        const condicion2 = finSlotUTC > evento.inicio && finSlotUTC <= evento.fin
+        const condicion3 = fechaSlotUTC <= evento.inicio && finSlotUTC >= evento.fin
         const solapa = condicion1 || condicion2 || condicion3
 
         // Log para slot 17:00
@@ -240,7 +250,9 @@ export async function GET(request: NextRequest) {
       })
 
       if (slot === '17:00') {
-        console.log(`   Resultado final para 17:00: ${hayEventoEnSlot ? 'BLOQUEADO' : 'DISPONIBLE'}`)
+        console.log(
+          `   Resultado final para 17:00: ${hayEventoEnSlot ? 'BLOQUEADO' : 'DISPONIBLE'}`
+        )
       }
 
       // Si hay un evento de Google Calendar, el slot no está disponible
@@ -254,18 +266,19 @@ export async function GET(request: NextRequest) {
         const finCita = new Date(inicioCita.getTime() + cita.duracion_minutos * 60000)
 
         // Verificar solapamiento (las citas del sistema están en hora local)
-        const solapaCita = (
+        const solapaCita =
           (fechaSlotLocal >= inicioCita && fechaSlotLocal < finCita) ||
           (fechaSlotLocal.getTime() + config.duracion_cita_default * 60000 > inicioCita.getTime() &&
-           fechaSlotLocal.getTime() + config.duracion_cita_default * 60000 <= finCita.getTime()) ||
+            fechaSlotLocal.getTime() + config.duracion_cita_default * 60000 <= finCita.getTime()) ||
           (fechaSlotLocal <= inicioCita &&
-           new Date(fechaSlotLocal.getTime() + config.duracion_cita_default * 60000) >= finCita)
-        )
+            new Date(fechaSlotLocal.getTime() + config.duracion_cita_default * 60000) >= finCita)
 
         if (slot === '17:00' && solapaCita) {
           console.log(`   ⚠️ Slot 17:00 bloqueado por CITA del sistema:`)
           console.log(`      Cita: ${inicioCita.toISOString()} - ${finCita.toISOString()}`)
-          console.log(`      Slot: ${fechaSlotLocal.toISOString()} - ${new Date(fechaSlotLocal.getTime() + config.duracion_cita_default * 60000).toISOString()}`)
+          console.log(
+            `      Slot: ${fechaSlotLocal.toISOString()} - ${new Date(fechaSlotLocal.getTime() + config.duracion_cita_default * 60000).toISOString()}`
+          )
         }
 
         return solapaCita
@@ -274,14 +287,20 @@ export async function GET(request: NextRequest) {
       const CITAS_SIMULTANEAS_MAX = 1 // Solo 1 cita a la vez
 
       if (slot === '17:00') {
-        console.log(`   Citas en slot 17:00: ${citasEnSlot.length} (máximo: ${CITAS_SIMULTANEAS_MAX})`)
-        console.log(`   DECISION FINAL: ${citasEnSlot.length < CITAS_SIMULTANEAS_MAX ? 'DISPONIBLE' : 'BLOQUEADO POR CITAS'}`)
+        console.log(
+          `   Citas en slot 17:00: ${citasEnSlot.length} (máximo: ${CITAS_SIMULTANEAS_MAX})`
+        )
+        console.log(
+          `   DECISION FINAL: ${citasEnSlot.length < CITAS_SIMULTANEAS_MAX ? 'DISPONIBLE' : 'BLOQUEADO POR CITAS'}`
+        )
       }
 
       return citasEnSlot.length < CITAS_SIMULTANEAS_MAX
     })
 
-    console.log(`✅ Horarios disponibles para ${fechaParam}: ${horariosDisponibles.length} de ${slots.length} slots`)
+    console.log(
+      `✅ Horarios disponibles para ${fechaParam}: ${horariosDisponibles.length} de ${slots.length} slots`
+    )
 
     return NextResponse.json({
       fecha: fechaParam,
@@ -294,9 +313,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error al obtener disponibilidad:', error)
-    return NextResponse.json(
-      { error: 'Error al obtener disponibilidad' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al obtener disponibilidad' }, { status: 500 })
   }
 }

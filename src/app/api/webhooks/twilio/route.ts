@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const from = formData.get('From') as string // whatsapp:+521234567890
     const to = formData.get('To') as string
     const body = formData.get('Body') as string
-    const numMedia = parseInt(formData.get('NumMedia') as string || '0')
+    const numMedia = parseInt((formData.get('NumMedia') as string) || '0')
 
     // Capturar archivos multimedia si existen
     let mediaUrl: string | null = null
@@ -54,10 +54,7 @@ export async function POST(request: NextRequest) {
 
       if (!isValid) {
         console.error('❌ Invalid Twilio signature')
-        return NextResponse.json(
-          { error: 'Invalid signature' },
-          { status: 403 }
-        )
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 403 })
       }
     }
 
@@ -139,7 +136,11 @@ export async function POST(request: NextRequest) {
 
       if (citaPendiente) {
         // OPCIÓN 1: CONFIRMAR ASISTENCIA
-        if (mensajeNormalizado === '1' || mensajeNormalizado.includes('confirmar') || mensajeNormalizado.includes('confirmo')) {
+        if (
+          mensajeNormalizado === '1' ||
+          mensajeNormalizado.includes('confirmar') ||
+          mensajeNormalizado.includes('confirmo')
+        ) {
           await prisma.cita.update({
             where: { id: citaPendiente.id },
             data: {
@@ -162,9 +163,18 @@ Te esperamos! 🌟`
         }
 
         // OPCIÓN 2: CANCELAR CITA
-        else if (mensajeNormalizado === '2' || mensajeNormalizado.includes('cancelar') || mensajeNormalizado.includes('no puedo')) {
+        else if (
+          mensajeNormalizado === '2' ||
+          mensajeNormalizado.includes('cancelar') ||
+          mensajeNormalizado.includes('no puedo')
+        ) {
           // Si ya había solicitado cancelar y responde "sí", cancelar definitivamente
-          if (citaPendiente.solicitud_cancelacion && (mensajeNormalizado === 'si' || mensajeNormalizado === 'sí' || mensajeNormalizado === 'yes')) {
+          if (
+            citaPendiente.solicitud_cancelacion &&
+            (mensajeNormalizado === 'si' ||
+              mensajeNormalizado === 'sí' ||
+              mensajeNormalizado === 'yes')
+          ) {
             await prisma.cita.update({
               where: { id: citaPendiente.id },
               data: {
@@ -173,8 +183,15 @@ Te esperamos! 🌟`
               },
             })
 
-            const fechaCita = new Date(citaPendiente.fecha_hora).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })
-            const horaCita = new Date(citaPendiente.fecha_hora).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+            const fechaCita = new Date(citaPendiente.fecha_hora).toLocaleDateString('es-MX', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+            })
+            const horaCita = new Date(citaPendiente.fecha_hora).toLocaleTimeString('es-MX', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })
 
             respuestaAutomatica = `❌ Cita cancelada
 
@@ -198,8 +215,15 @@ ${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}
               },
             })
 
-            const fechaCita = new Date(citaPendiente.fecha_hora).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })
-            const horaCita = new Date(citaPendiente.fecha_hora).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+            const fechaCita = new Date(citaPendiente.fecha_hora).toLocaleDateString('es-MX', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+            })
+            const horaCita = new Date(citaPendiente.fecha_hora).toLocaleTimeString('es-MX', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })
 
             respuestaAutomatica = `❓ Confirmación de cancelación
 
@@ -237,10 +261,7 @@ ${process.env.NEXT_PUBLIC_APP_URL}/cita/${citaPendiente.codigo_cita}`
   } catch (error) {
     console.error('❌ Error processing webhook:', error)
 
-    return NextResponse.json(
-      { error: 'Error processing webhook' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error processing webhook' }, { status: 500 })
   }
 }
 

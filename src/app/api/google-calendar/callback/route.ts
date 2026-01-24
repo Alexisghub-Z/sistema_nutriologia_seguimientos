@@ -36,8 +36,6 @@ export async function GET(request: NextRequest) {
     )
   } catch (error) {
     console.error('Error en callback de Google Calendar:', error)
-    return NextResponse.redirect(
-      new URL('/configuracion?error=token_exchange_failed', request.url)
-    )
+    return NextResponse.redirect(new URL('/configuracion?error=token_exchange_failed', request.url))
   }
 }

@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { deleteCache, deleteCachePattern, CacheKeys } from '@/lib/redis'
 import { cancelarJobsCita } from '@/lib/queue/messages'
-import { unsyncCitaFromGoogleCalendar, isGoogleCalendarConfigured } from '@/lib/services/google-calendar'
+import {
+  unsyncCitaFromGoogleCalendar,
+  isGoogleCalendarConfigured,
+} from '@/lib/services/google-calendar'
 
 // GET /api/citas/codigo/[codigo] - Buscar cita por código
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ codigo: string }> }
-) {
+export async function GET(request: NextRequest, context: { params: Promise<{ codigo: string }> }) {
   try {
     // Await params (Next.js 15)
     const { codigo } = await context.params
@@ -40,18 +40,12 @@ export async function GET(
     return NextResponse.json(cita)
   } catch (error) {
     console.error('Error al buscar cita:', error)
-    return NextResponse.json(
-      { error: 'Error al buscar cita' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al buscar cita' }, { status: 500 })
   }
 }
 
 // PUT /api/citas/codigo/[codigo] - Confirmar o cancelar cita
-export async function PUT(
-  request: NextRequest,
-  context: { params: Promise<{ codigo: string }> }
-) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ codigo: string }> }) {
   try {
     // Await params (Next.js 15)
     const { codigo } = await context.params
@@ -71,32 +65,23 @@ export async function PUT(
       where: { codigo_cita: codigo },
       include: {
         paciente: {
-          select: { id: true }
-        }
-      }
+          select: { id: true },
+        },
+      },
     })
 
     if (!citaExistente) {
-      return NextResponse.json(
-        { error: 'Cita no encontrada' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Cita no encontrada' }, { status: 404 })
     }
 
     // Verificar que no esté ya cancelada
     if (citaExistente.estado === 'CANCELADA') {
-      return NextResponse.json(
-        { error: 'Esta cita ya fue cancelada' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Esta cita ya fue cancelada' }, { status: 400 })
     }
 
     // Verificar que no sea una cita pasada para cancelación
     if (accion === 'cancelar' && new Date(citaExistente.fecha_hora) < new Date()) {
-      return NextResponse.json(
-        { error: 'No se puede cancelar una cita pasada' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'No se puede cancelar una cita pasada' }, { status: 400 })
     }
 
     // Procesar según la acción
@@ -113,10 +98,7 @@ export async function PUT(
 
       // Verificar que no esté ya confirmada
       if (citaExistente.confirmada_por_paciente) {
-        return NextResponse.json(
-          { error: 'Esta cita ya fue confirmada' },
-          { status: 400 }
-        )
+        return NextResponse.json({ error: 'Esta cita ya fue confirmada' }, { status: 400 })
       }
 
       // Confirmar la cita
@@ -192,9 +174,6 @@ export async function PUT(
     return NextResponse.json(cita)
   } catch (error) {
     console.error('Error al actualizar cita:', error)
-    return NextResponse.json(
-      { error: 'Error al actualizar cita' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al actualizar cita' }, { status: 500 })
   }
 }

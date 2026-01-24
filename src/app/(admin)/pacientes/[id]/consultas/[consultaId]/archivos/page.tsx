@@ -130,7 +130,8 @@ export default function ArchivosConsultaPage() {
   }
 
   const handleEliminar = async (archivoId: string) => {
-    if (!confirm('¿Estás seguro de eliminar este archivo? Esta acción no se puede deshacer.')) return
+    if (!confirm('¿Estás seguro de eliminar este archivo? Esta acción no se puede deshacer.'))
+      return
 
     try {
       setError(null)
@@ -159,17 +160,10 @@ export default function ArchivosConsultaPage() {
           <Button
             variant="outline"
             size="small"
-            onClick={() =>
-              router.push(`/pacientes/${pacienteId}/consultas`)
-            }
+            onClick={() => router.push(`/pacientes/${pacienteId}/consultas`)}
             className={styles.backButton}
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
               <path
                 fillRule="evenodd"
                 d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
@@ -180,9 +174,7 @@ export default function ArchivosConsultaPage() {
           </Button>
           <div>
             <h1 className={styles.title}>Archivos de la Consulta</h1>
-            <p className={styles.subtitle}>
-              Sube y gestiona los archivos adjuntos
-            </p>
+            <p className={styles.subtitle}>Sube y gestiona los archivos adjuntos</p>
           </div>
         </div>
       </div>
@@ -263,9 +255,7 @@ export default function ArchivosConsultaPage() {
 
       {/* Lista de Archivos */}
       <Card className={styles.archivosCard}>
-        <h3 className={styles.cardTitle}>
-          Archivos Adjuntos ({archivos.length})
-        </h3>
+        <h3 className={styles.cardTitle}>Archivos Adjuntos ({archivos.length})</h3>
 
         {loading ? (
           <div className={styles.loadingContainer}>
@@ -294,64 +284,36 @@ export default function ArchivosConsultaPage() {
                 <div className={styles.archivoHeader}>
                   <div className={styles.archivoIcon}>
                     {archivo.tipo_mime.startsWith('image/') ? (
-                      <svg
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                     ) : (
-                      <svg
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                       </svg>
                     )}
                   </div>
-                  <Badge variant="primary">
-                    {getCategoriaLabel(archivo.categoria)}
-                  </Badge>
+                  <Badge variant="primary">{getCategoriaLabel(archivo.categoria)}</Badge>
                 </div>
 
-                <h4 className={styles.archivoNombre}>
-                  {archivo.nombre_original}
-                </h4>
+                <h4 className={styles.archivoNombre}>{archivo.nombre_original}</h4>
 
                 {archivo.descripcion && (
-                  <p className={styles.archivoDescripcion}>
-                    {archivo.descripcion}
-                  </p>
+                  <p className={styles.archivoDescripcion}>{archivo.descripcion}</p>
                 )}
 
                 <div className={styles.archivoMeta}>
                   <span>{formatearTamanio(archivo.tamanio_bytes)}</span>
-                  <span>
-                    {new Date(archivo.createdAt).toLocaleDateString('es-MX')}
-                  </span>
+                  <span>{new Date(archivo.createdAt).toLocaleDateString('es-MX')}</span>
                 </div>
 
                 <div className={styles.archivoActions}>
                   <Button
                     variant="outline"
                     size="small"
-                    onClick={() =>
-                      handleDescargar(
-                        archivo.ruta_archivo,
-                        archivo.nombre_original
-                      )
-                    }
+                    onClick={() => handleDescargar(archivo.ruta_archivo, archivo.nombre_original)}
                   >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
                       <path
                         fillRule="evenodd"
                         d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
@@ -366,12 +328,7 @@ export default function ArchivosConsultaPage() {
                     onClick={() => handleEliminar(archivo.id)}
                     className={styles.deleteButton}
                   >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
                       <path
                         fillRule="evenodd"
                         d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"

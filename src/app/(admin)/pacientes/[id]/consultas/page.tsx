@@ -26,12 +26,7 @@ export default function ConsultasPage() {
             onClick={() => router.push(`/pacientes/${pacienteId}`)}
             className={styles.backButton}
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
               <path
                 fillRule="evenodd"
                 d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
@@ -42,9 +37,7 @@ export default function ConsultasPage() {
           </Button>
           <div>
             <h1 className={styles.title}>Historial de Consultas</h1>
-            <p className={styles.subtitle}>
-              Consultas registradas y progreso del paciente
-            </p>
+            <p className={styles.subtitle}>Consultas registradas y progreso del paciente</p>
           </div>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import Queue from 'bull'
+import prisma from '@/lib/prisma'
 
 // Crear conexion a Redis
 const redisConfig = {
@@ -153,13 +154,16 @@ export async function programarSeguimiento(
         }
       )
       const fechaEnvio1 = new Date(ahora + delay1)
-      console.log(`   ✅ Seguimiento inicial: ${fechaEnvio1.toLocaleString('es-MX')} (4 días después)`)
+      console.log(
+        `   ✅ Seguimiento inicial: ${fechaEnvio1.toLocaleString('es-MX')} (4 días después)`
+      )
       jobsProgramados++
     }
 
     // 2. SEGUIMIENTO_INTERMEDIO: A la mitad del periodo
     const delayMitad = periodoTotal / 2
-    if (delayMitad > 0 && diasTotales >= 10) { // Solo si hay al menos 10 días
+    if (delayMitad > 0 && diasTotales >= 10) {
+      // Solo si hay al menos 10 días
       await mensajesQueue.add(
         TipoJob.SEGUIMIENTO_INTERMEDIO,
         { consultaId },
@@ -170,13 +174,16 @@ export async function programarSeguimiento(
         }
       )
       const fechaEnvioMitad = new Date(ahora + delayMitad)
-      console.log(`   ✅ Seguimiento intermedio: ${fechaEnvioMitad.toLocaleString('es-MX')} (mitad del periodo)`)
+      console.log(
+        `   ✅ Seguimiento intermedio: ${fechaEnvioMitad.toLocaleString('es-MX')} (mitad del periodo)`
+      )
       jobsProgramados++
     }
 
     // 3. SEGUIMIENTO_PREVIO_CITA: 7-10 días antes de la fecha sugerida (usamos 8 días)
-    const delay3 = periodoTotal - (8 * 24 * 60 * 60 * 1000)
-    if (delay3 > 0 && diasTotales >= 10) { // Solo si hay suficiente tiempo
+    const delay3 = periodoTotal - 8 * 24 * 60 * 60 * 1000
+    if (delay3 > 0 && diasTotales >= 10) {
+      // Solo si hay suficiente tiempo
       await mensajesQueue.add(
         TipoJob.SEGUIMIENTO_PREVIO_CITA,
         { consultaId },
@@ -187,7 +194,9 @@ export async function programarSeguimiento(
         }
       )
       const fechaEnvio3 = new Date(ahora + delay3)
-      console.log(`   ✅ Seguimiento previo cita: ${fechaEnvio3.toLocaleString('es-MX')} (8 días antes)`)
+      console.log(
+        `   ✅ Seguimiento previo cita: ${fechaEnvio3.toLocaleString('es-MX')} (8 días antes)`
+      )
       jobsProgramados++
     }
   }
@@ -195,7 +204,7 @@ export async function programarSeguimiento(
   // RECORDATORIO PARA AGENDAR CITA
   if (tipoSeguimiento === 'SOLO_RECORDATORIO' || tipoSeguimiento === 'RECORDATORIO_Y_SEGUIMIENTO') {
     // RECORDATORIO_AGENDAR: 3-5 días antes de la fecha sugerida (usamos 4 días)
-    const delayRecordatorio = periodoTotal - (4 * 24 * 60 * 60 * 1000)
+    const delayRecordatorio = periodoTotal - 4 * 24 * 60 * 60 * 1000
 
     if (delayRecordatorio <= 0) {
       console.warn(`   ⚠️  La fecha sugerida es muy cercana, no se programará recordatorio`)
@@ -210,7 +219,9 @@ export async function programarSeguimiento(
         }
       )
       const fechaEnvioRecordatorio = new Date(ahora + delayRecordatorio)
-      console.log(`   ✅ Recordatorio agendar: ${fechaEnvioRecordatorio.toLocaleString('es-MX')} (4 días antes)`)
+      console.log(
+        `   ✅ Recordatorio agendar: ${fechaEnvioRecordatorio.toLocaleString('es-MX')} (4 días antes)`
+      )
       jobsProgramados++
     }
   }
@@ -228,6 +239,38 @@ export async function cancelarJobsCita(citaId: string) {
     if (job.data.citaId === citaId) {
       await job.remove()
       console.log(`[Queue] Job ${job.name} cancelado para cita: ${citaId}`)
+    }
+  }
+}
+
+/**
+ * Cancela SOLO los recordatorios de agendar (NO los seguimientos de apoyo)
+ * Se usa cuando el paciente agenda una cita y ya no necesita recordatorios
+ */
+export async function cancelarRecordatoriosAgendar(pacienteId: string, fechaCitaAgendada: Date) {
+  const jobs = await mensajesQueue.getJobs(['waiting', 'delayed'])
+
+  for (const job of jobs) {
+    // Solo cancelar jobs de tipo RECORDATORIO_AGENDAR
+    if (job.name === TipoJob.RECORDATORIO_AGENDAR && job.data.consultaId) {
+      // Verificar que pertenezca al paciente correcto
+      const consulta = await prisma.consulta.findUnique({
+        where: { id: job.data.consultaId },
+        select: { paciente_id: true, proxima_cita: true },
+      })
+
+      if (consulta?.paciente_id === pacienteId) {
+        // Verificar que la cita agendada esté cerca de la fecha sugerida (±7 días)
+        if (consulta.proxima_cita) {
+          const diff = Math.abs(fechaCitaAgendada.getTime() - consulta.proxima_cita.getTime())
+          const diffDays = diff / (1000 * 60 * 60 * 24)
+
+          if (diffDays <= 7) {
+            await job.remove()
+            console.log(`✅ [Queue] Recordatorio agendar cancelado (paciente ya agendó cita)`)
+          }
+        }
+      }
     }
   }
 }

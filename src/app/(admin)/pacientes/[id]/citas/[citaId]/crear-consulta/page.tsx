@@ -109,9 +109,7 @@ export default function CrearConsultaPage() {
     return (
       <div className={styles.container}>
         <Alert variant="error">{error}</Alert>
-        <Button onClick={() => router.push(`/pacientes/${pacienteId}`)}>
-          Volver al paciente
-        </Button>
+        <Button onClick={() => router.push(`/pacientes/${pacienteId}`)}>Volver al paciente</Button>
       </div>
     )
   }
@@ -120,9 +118,7 @@ export default function CrearConsultaPage() {
     return (
       <div className={styles.container}>
         <Alert variant="error">No se encontró la cita</Alert>
-        <Button onClick={() => router.push(`/pacientes/${pacienteId}`)}>
-          Volver al paciente
-        </Button>
+        <Button onClick={() => router.push(`/pacientes/${pacienteId}`)}>Volver al paciente</Button>
       </div>
     )
   }
@@ -137,7 +133,8 @@ export default function CrearConsultaPage() {
             Paciente: <strong>{cita.paciente.nombre}</strong>
           </p>
           <p className={styles.citaInfo}>
-            Cita: {new Date(cita.fecha_hora).toLocaleString('es-MX', {
+            Cita:{' '}
+            {new Date(cita.fecha_hora).toLocaleString('es-MX', {
               dateStyle: 'long',
               timeStyle: 'short',
             })}
@@ -161,9 +158,8 @@ export default function CrearConsultaPage() {
           />
         </svg>
         <p>
-          Completa los datos de la consulta. Puedes agregar mediciones, notas
-          clínicas y archivos adjuntos. Todos los datos se guardarán en el
-          historial del paciente.
+          Completa los datos de la consulta. Puedes agregar mediciones, notas clínicas y archivos
+          adjuntos. Todos los datos se guardarán en el historial del paciente.
         </p>
       </div>
 

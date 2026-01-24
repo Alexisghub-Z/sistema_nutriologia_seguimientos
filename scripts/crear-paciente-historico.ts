@@ -241,11 +241,12 @@ async function main() {
   // Crear consultas históricas
   for (let i = 0; i < consultas.length; i++) {
     const consultaData = consultas[i]
+    if (!consultaData) continue
 
     // Calcular IMC
     const imc = consultaData.peso / (talla * talla)
 
-    const consulta = await prisma.consulta.create({
+    await prisma.consulta.create({
       data: {
         paciente_id: paciente.id,
         fecha: consultaData.fecha,
@@ -285,14 +286,16 @@ async function main() {
   console.log(`   - Email: ${paciente.email}`)
   console.log(`   - Consultas registradas: ${consultas.length}`)
   console.log(
-    `   - Rango de fechas: ${consultas[0].fecha.toLocaleDateString('es-MX')} - ${consultas[consultas.length - 1].fecha.toLocaleDateString('es-MX')}`
+    `   - Rango de fechas: ${consultas[0]?.fecha.toLocaleDateString('es-MX')} - ${consultas[consultas.length - 1]?.fecha.toLocaleDateString('es-MX')}`
   )
   console.log(
-    `   - Peso inicial: ${consultas[0].peso}kg → Peso final: ${consultas[consultas.length - 1].peso}kg`
+    `   - Peso inicial: ${consultas[0]?.peso}kg → Peso final: ${consultas[consultas.length - 1]?.peso}kg`
   )
-  console.log(
-    `   - Cambio: ${(consultas[consultas.length - 1].peso - consultas[0].peso).toFixed(1)}kg`
-  )
+  const pesoFinal = consultas[consultas.length - 1]?.peso
+  const pesoInicial = consultas[0]?.peso
+  if (pesoFinal && pesoInicial) {
+    console.log(`   - Cambio: ${(pesoFinal - pesoInicial).toFixed(1)}kg`)
+  }
 }
 
 main()

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useScrollReveal } from '@/hooks/useScrollReveal'
 import CalendarioCitas from '@/components/calendario/CalendarioCitas'
 import { extraerDigitosTelefono } from '@/lib/utils/phone'
 import styles from './agendar.module.css'
@@ -30,6 +31,9 @@ export default function AgendarCitaPage() {
   const [verificandoEmail, setVerificandoEmail] = useState(false)
   const [error, setError] = useState('')
   const [esReagendado, setEsReagendado] = useState(false)
+
+  // Activar animaciones de scroll
+  useScrollReveal()
 
   // Estado para paciente existente
   const [pacienteExistente, setPacienteExistente] = useState<PacienteExistente | null>(null)
@@ -99,9 +103,7 @@ export default function AgendarCitaPage() {
     setHoraSeleccionada(hora)
   }
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -356,7 +358,7 @@ export default function AgendarCitaPage() {
       {/* Top Header */}
       <div className={styles.topHeader}>
         <div className={styles.logo}>
-          <span className={styles.logoText}>Dr. Paul</span>
+          <span className={styles.logoText}>Nutriólogo Paul</span>
         </div>
         <button onClick={() => router.push('/')} className={styles.backButton}>
           Volver
@@ -366,10 +368,10 @@ export default function AgendarCitaPage() {
       {/* Hero Section - Solo paso 1 */}
       {paso === 1 && (
         <div className={styles.hero}>
-          <h1 className={styles.heroTitle}>
+          <h1 className={`${styles.heroTitle} fade-in`} data-scroll-reveal>
             {esReagendado ? 'Reagenda tu Consulta' : 'Agenda tu Consulta'}
           </h1>
-          <p className={styles.heroSubtitle}>
+          <p className={`${styles.heroSubtitle} fade-in`} data-scroll-reveal>
             {esReagendado
               ? 'Selecciona una nueva fecha y hora para tu consulta'
               : 'Selecciona el día y hora que mejor te convenga'}
@@ -398,7 +400,7 @@ export default function AgendarCitaPage() {
 
         {/* Paso 1: Seleccionar fecha y hora */}
         {paso === 1 && (
-          <div className={styles.paso}>
+          <div className={`${styles.paso} fade-in`} data-scroll-reveal>
             <h2 className={styles.pasoTitle}>Selecciona fecha y hora</h2>
 
             <CalendarioCitas
@@ -440,7 +442,7 @@ export default function AgendarCitaPage() {
 
         {/* Paso 2: Verificar email */}
         {paso === 2 && (
-          <div className={styles.paso}>
+          <div className={`${styles.paso} fade-in`} data-scroll-reveal>
             <h2 className={styles.pasoTitle}>Ingresa tu email</h2>
 
             <div className={styles.resumenCompacto}>
@@ -450,18 +452,22 @@ export default function AgendarCitaPage() {
             </div>
 
             <div className={styles.emailVerificacion}>
-              <p className={styles.emailVerificacionTexto}>
-                Ingresa tu email para continuar:
-              </p>
+              <p className={styles.emailVerificacionTexto}>Ingresa tu email para continuar:</p>
 
               <div className={styles.emailInstrucciones}>
                 <div className={styles.instruccionItem}>
                   <span className={styles.instruccionIcono}>✓</span>
-                  <span>Si es tu <strong>primera cita</strong>, usa tu email personal y lo recordaremos para futuras consultas</span>
+                  <span>
+                    Si es tu <strong>primera cita</strong>, usa tu email personal y lo recordaremos
+                    para futuras consultas
+                  </span>
                 </div>
                 <div className={styles.instruccionItem}>
                   <span className={styles.instruccionIcono}>✓</span>
-                  <span>Si <strong>ya agendaste antes</strong>, usa el mismo email y cargaremos tus datos automáticamente</span>
+                  <span>
+                    Si <strong>ya agendaste antes</strong>, usa el mismo email y cargaremos tus
+                    datos automáticamente
+                  </span>
                 </div>
               </div>
 
@@ -487,12 +493,17 @@ export default function AgendarCitaPage() {
                   <div className={styles.citaActivaWarning}>
                     <div className={styles.warningHeader}>
                       <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        <path
+                          fillRule="evenodd"
+                          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                       <h3>Ya tienes una cita pendiente</h3>
                     </div>
                     <p className={styles.warningMessage}>
-                      Solo puedes tener una cita activa a la vez. Aquí están los detalles de tu cita actual:
+                      Solo puedes tener una cita activa a la vez. Aquí están los detalles de tu cita
+                      actual:
                     </p>
                     <div className={styles.citaDetalles}>
                       <div className={styles.citaDetalle}>
@@ -501,14 +512,16 @@ export default function AgendarCitaPage() {
                       </div>
                       <div className={styles.citaDetalle}>
                         <strong>Fecha:</strong>
-                        <span>{new Date(citaActiva.fecha_hora).toLocaleDateString('es-MX', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}</span>
+                        <span>
+                          {new Date(citaActiva.fecha_hora).toLocaleDateString('es-MX', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
                       </div>
                       <div className={styles.citaDetalle}>
                         <strong>Motivo:</strong>
@@ -561,7 +574,7 @@ export default function AgendarCitaPage() {
 
         {/* Paso 3: Formulario de datos (confirmación o completar) */}
         {paso === 3 && (
-          <div className={styles.paso}>
+          <div className={`${styles.paso} fade-in`} data-scroll-reveal>
             {pacienteExistente ? (
               <>
                 <h2 className={styles.pasoTitle}>¡Te reconocemos!</h2>
@@ -663,17 +676,15 @@ export default function AgendarCitaPage() {
                       }
                     />
                     {formData.telefono.length > 0 && (
-                      <span className={styles.validationIcon}>
-                        {telefonoValido ? '✓' : '✗'}
-                      </span>
+                      <span className={styles.validationIcon}>{telefonoValido ? '✓' : '✗'}</span>
                     )}
                   </div>
                   <small className={telefonoValido ? styles.textSuccess : styles.textMuted}>
                     {formData.telefono.length === 0
                       ? '10 dígitos sin espacios (ej: 9515886761)'
                       : telefonoValido
-                      ? '✓ Teléfono válido'
-                      : `${formData.telefono.length}/10 dígitos`}
+                        ? '✓ Teléfono válido'
+                        : `${formData.telefono.length}/10 dígitos`}
                   </small>
                 </div>
 
@@ -751,14 +762,14 @@ export default function AgendarCitaPage() {
                 >
                   Volver
                 </button>
-                <button
-                  type="submit"
-                  className={styles.btnPrimary}
-                  disabled={loading}
-                >
+                <button type="submit" className={styles.btnPrimary} disabled={loading}>
                   {loading
-                    ? (esReagendado ? 'Reagendando...' : 'Agendando...')
-                    : (esReagendado ? 'Confirmar Reagendado' : 'Agendar Cita')}
+                    ? esReagendado
+                      ? 'Reagendando...'
+                      : 'Agendando...'
+                    : esReagendado
+                      ? 'Confirmar Reagendado'
+                      : 'Agendar Cita'}
                 </button>
               </div>
             </form>

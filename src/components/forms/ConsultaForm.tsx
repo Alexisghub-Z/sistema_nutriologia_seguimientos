@@ -53,9 +53,7 @@ export default function ConsultaForm({
     proxima_cita: '',
   })
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
@@ -104,13 +102,20 @@ export default function ConsultaForm({
       if (formData.cadera_maximo) data.cadera_maximo = parseFloat(formData.cadera_maximo)
       if (formData.muslo_maximo) data.muslo_maximo = parseFloat(formData.muslo_maximo)
       if (formData.muslo_medio) data.muslo_medio = parseFloat(formData.muslo_medio)
-      if (formData.pantorrilla_maximo) data.pantorrilla_maximo = parseFloat(formData.pantorrilla_maximo)
-      if (formData.pliegue_tricipital) data.pliegue_tricipital = parseFloat(formData.pliegue_tricipital)
-      if (formData.pliegue_subescapular) data.pliegue_subescapular = parseFloat(formData.pliegue_subescapular)
-      if (formData.pliegue_bicipital) data.pliegue_bicipital = parseFloat(formData.pliegue_bicipital)
-      if (formData.pliegue_cresta_iliaca) data.pliegue_cresta_iliaca = parseFloat(formData.pliegue_cresta_iliaca)
-      if (formData.pliegue_supraespinal) data.pliegue_supraespinal = parseFloat(formData.pliegue_supraespinal)
-      if (formData.pliegue_abdominal) data.pliegue_abdominal = parseFloat(formData.pliegue_abdominal)
+      if (formData.pantorrilla_maximo)
+        data.pantorrilla_maximo = parseFloat(formData.pantorrilla_maximo)
+      if (formData.pliegue_tricipital)
+        data.pliegue_tricipital = parseFloat(formData.pliegue_tricipital)
+      if (formData.pliegue_subescapular)
+        data.pliegue_subescapular = parseFloat(formData.pliegue_subescapular)
+      if (formData.pliegue_bicipital)
+        data.pliegue_bicipital = parseFloat(formData.pliegue_bicipital)
+      if (formData.pliegue_cresta_iliaca)
+        data.pliegue_cresta_iliaca = parseFloat(formData.pliegue_cresta_iliaca)
+      if (formData.pliegue_supraespinal)
+        data.pliegue_supraespinal = parseFloat(formData.pliegue_supraespinal)
+      if (formData.pliegue_abdominal)
+        data.pliegue_abdominal = parseFloat(formData.pliegue_abdominal)
 
       // Crear consulta
       const response = await fetch('/api/consultas', {
@@ -664,20 +669,14 @@ export default function ConsultaForm({
             />
           </svg>
           <p>
-            Puedes adjuntar análisis de laboratorio, fotos de progreso,
-            estudios médicos, etc. Los archivos se subirán al guardar la
-            consulta.
+            Puedes adjuntar análisis de laboratorio, fotos de progreso, estudios médicos, etc. Los
+            archivos se subirán al guardar la consulta.
           </p>
         </div>
 
         <div className={styles.fileInputContainer}>
           <label htmlFor="archivos" className={styles.fileInputLabel}>
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
               <path
                 fillRule="evenodd"
                 d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z"
@@ -719,9 +718,7 @@ export default function ConsultaForm({
                     />
                   </svg>
                   <span className={styles.fileName}>{file.name}</span>
-                  <span className={styles.fileSize}>
-                    {(file.size / 1024 / 1024).toFixed(2)} MB
-                  </span>
+                  <span className={styles.fileSize}>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
                 </div>
                 <button
                   type="button"
@@ -729,12 +726,7 @@ export default function ConsultaForm({
                   className={styles.fileRemoveButton}
                   disabled={loading}
                 >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
                     <path
                       fillRule="evenodd"
                       d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
@@ -751,12 +743,7 @@ export default function ConsultaForm({
       {/* Botones */}
       <div className={styles.formActions}>
         {onCancel && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={loading}
-          >
+          <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
             Cancelar
           </Button>
         )}

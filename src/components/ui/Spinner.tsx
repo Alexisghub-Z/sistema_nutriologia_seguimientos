@@ -12,10 +12,5 @@ export default function Spinner({ size = 'medium', className = '' }: SpinnerProp
     large: { width: '40px', height: '40px' },
   }[size]
 
-  return (
-    <div
-      className={`${styles.spinner} ${className}`}
-      style={sizeStyle}
-    />
-  )
+  return <div className={`${styles.spinner} ${className}`} style={sizeStyle} />
 }

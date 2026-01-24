@@ -20,15 +20,15 @@ export async function GET() {
       accountInfo = await getConnectedAccountInfo()
     }
 
-    return NextResponse.json({
-      configured,
-      account: accountInfo
-    }, { status: 200 })
+    return NextResponse.json(
+      {
+        configured,
+        account: accountInfo,
+      },
+      { status: 200 }
+    )
   } catch (error) {
     console.error('Error al verificar estado de Google Calendar:', error)
-    return NextResponse.json(
-      { error: 'Error al verificar estado' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al verificar estado' }, { status: 500 })
   }
 }

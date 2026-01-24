@@ -8,7 +8,8 @@ import { deleteCache, deleteCachePattern, CacheKeys } from '@/lib/redis'
 // Schema de validación
 const programarSeguimientoSchema = z.object({
   consultaId: z.string().min(1, 'ID de consulta requerido'),
-  tipoSeguimiento: z.enum(['SOLO_RECORDATORIO', 'SOLO_SEGUIMIENTO', 'RECORDATORIO_Y_SEGUIMIENTO'])
+  tipoSeguimiento: z
+    .enum(['SOLO_RECORDATORIO', 'SOLO_SEGUIMIENTO', 'RECORDATORIO_Y_SEGUIMIENTO'])
     .default('SOLO_RECORDATORIO'),
 })
 
@@ -37,10 +38,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!consulta) {
-      return NextResponse.json(
-        { error: 'Consulta no encontrada' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Consulta no encontrada' }, { status: 404 })
     }
 
     if (!consulta.proxima_cita) {
@@ -53,10 +51,7 @@ export async function POST(request: NextRequest) {
     // Verificar que la fecha no haya pasado
     const fechaSugerida = new Date(consulta.proxima_cita)
     if (fechaSugerida < new Date()) {
-      return NextResponse.json(
-        { error: 'La fecha sugerida ya ha pasado' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'La fecha sugerida ya ha pasado' }, { status: 400 })
     }
 
     // Verificar si ya tiene un seguimiento programado
@@ -77,7 +72,9 @@ export async function POST(request: NextRequest) {
     })
 
     if (consultasAntiguasConSeguimiento.length > 0) {
-      console.log(`🧹 Cancelando ${consultasAntiguasConSeguimiento.length} seguimiento(s) antiguo(s) antes de programar nuevo`)
+      console.log(
+        `🧹 Cancelando ${consultasAntiguasConSeguimiento.length} seguimiento(s) antiguo(s) antes de programar nuevo`
+      )
 
       const { mensajesQueue } = await import('@/lib/queue/messages')
       const jobs = await mensajesQueue.getJobs(['waiting', 'delayed'])
@@ -100,38 +97,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Verificar si el paciente ya tiene una cita agendada para esa fecha (±3 días)
-    const inicioPeriodo = new Date(fechaSugerida)
-    inicioPeriodo.setDate(inicioPeriodo.getDate() - 3)
-
-    const finPeriodo = new Date(fechaSugerida)
-    finPeriodo.setDate(finPeriodo.getDate() + 3)
-
-    const citaExistente = await prisma.cita.findFirst({
-      where: {
-        paciente_id: consulta.paciente_id,
-        fecha_hora: {
-          gte: inicioPeriodo,
-          lte: finPeriodo,
-        },
-        estado: {
-          in: ['PENDIENTE', 'COMPLETADA'],
-        },
-      },
-    })
-
-    if (citaExistente) {
-      return NextResponse.json(
-        {
-          error: 'El paciente ya tiene una cita agendada cercana a la fecha sugerida',
-          citaId: citaExistente.id,
-          fechaCita: citaExistente.fecha_hora,
-        },
-        { status: 400 }
-      )
-    }
-
     // Programar el seguimiento
+    // Nota: NO validamos si ya tiene cita agendada aquí porque:
+    // - Mensajes de SEGUIMIENTO (apoyo/motivación) deben enviarse siempre
+    // - Solo RECORDATORIO_AGENDAR valida si ya tiene cita (al ejecutarse el job)
     await programarSeguimiento(consultaId, fechaSugerida, tipoSeguimiento)
 
     // Actualizar el flag en la base de datos
@@ -146,7 +115,10 @@ export async function POST(request: NextRequest) {
     // Invalidar caché del paciente y sus consultas
     await deleteCache(CacheKeys.patientDetail(consulta.paciente_id))
     await deleteCachePattern(`consultations:${consulta.paciente_id}:*`)
-    console.log('🗑️  Cache invalidated: patient detail and consultations after programming follow-up', consulta.paciente_id)
+    console.log(
+      '🗑️  Cache invalidated: patient detail and consultations after programming follow-up',
+      consulta.paciente_id
+    )
 
     const fechaEnvio = new Date(fechaSugerida.getTime() - 24 * 60 * 60 * 1000)
 
@@ -159,10 +131,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
     }
 
     console.error('Error al programar seguimiento:', error)
@@ -186,10 +155,7 @@ export async function DELETE(request: NextRequest) {
     const consultaId = searchParams.get('consultaId')
 
     if (!consultaId) {
-      return NextResponse.json(
-        { error: 'ID de consulta requerido' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'ID de consulta requerido' }, { status: 400 })
     }
 
     // Buscar la consulta
@@ -198,10 +164,7 @@ export async function DELETE(request: NextRequest) {
     })
 
     if (!consulta) {
-      return NextResponse.json(
-        { error: 'Consulta no encontrada' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Consulta no encontrada' }, { status: 404 })
     }
 
     if (!consulta.seguimiento_programado) {
@@ -236,7 +199,10 @@ export async function DELETE(request: NextRequest) {
     // Invalidar caché del paciente y sus consultas
     await deleteCache(CacheKeys.patientDetail(consulta.paciente_id))
     await deleteCachePattern(`consultations:${consulta.paciente_id}:*`)
-    console.log('🗑️  Cache invalidated: patient detail and consultations after canceling follow-up', consulta.paciente_id)
+    console.log(
+      '🗑️  Cache invalidated: patient detail and consultations after canceling follow-up',
+      consulta.paciente_id
+    )
 
     return NextResponse.json({
       success: true,

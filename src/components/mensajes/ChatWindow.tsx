@@ -175,7 +175,14 @@ export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWi
       <div className={styles.header}>
         {onBack && (
           <button className={styles.backButton} onClick={onBack} aria-label="Volver">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
           </button>
@@ -208,7 +215,9 @@ export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWi
         {mensajes.length === 0 ? (
           <div className={styles.emptyState}>
             <p>No hay mensajes aún</p>
-            <p className={styles.emptySubtext}>Envía el primer mensaje para iniciar la conversación</p>
+            <p className={styles.emptySubtext}>
+              Envía el primer mensaje para iniciar la conversación
+            </p>
           </div>
         ) : (
           <>
@@ -216,9 +225,7 @@ export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWi
               <div
                 key={mensaje.id}
                 className={`${styles.messageWrapper} ${
-                  mensaje.direccion === 'SALIENTE'
-                    ? styles.messageSent
-                    : styles.messageReceived
+                  mensaje.direccion === 'SALIENTE' ? styles.messageSent : styles.messageReceived
                 }`}
               >
                 <div className={styles.messageBubble}>
@@ -228,7 +235,12 @@ export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWi
                         src={`/api/media/proxy?url=${encodeURIComponent(mensaje.media_url)}`}
                         alt="Imagen adjunta"
                         className={styles.mediaImage}
-                        onClick={() => window.open(`/api/media/proxy?url=${encodeURIComponent(mensaje.media_url)}`, '_blank')}
+                        onClick={() =>
+                          window.open(
+                            `/api/media/proxy?url=${encodeURIComponent(mensaje.media_url)}`,
+                            '_blank'
+                          )
+                        }
                       />
                     </div>
                   )}
@@ -239,10 +251,14 @@ export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWi
                         download
                         className={styles.mediaLink}
                       >
-                        📎 {mensaje.media_type === 'video/mp4' ? 'Video' :
-                            mensaje.media_type === 'audio/ogg' ? 'Audio' :
-                            mensaje.media_type?.includes('pdf') ? 'Documento PDF' :
-                            'Descargar archivo'}
+                        📎{' '}
+                        {mensaje.media_type === 'video/mp4'
+                          ? 'Video'
+                          : mensaje.media_type === 'audio/ogg'
+                            ? 'Audio'
+                            : mensaje.media_type?.includes('pdf')
+                              ? 'Documento PDF'
+                              : 'Descargar archivo'}
                       </a>
                     </div>
                   )}
@@ -250,9 +266,7 @@ export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWi
                     <p className={styles.messageContent}>{mensaje.contenido}</p>
                   )}
                   <div className={styles.messageFooter}>
-                    <span className={styles.messageTime}>
-                      {formatFecha(mensaje.createdAt)}
-                    </span>
+                    <span className={styles.messageTime}>{formatFecha(mensaje.createdAt)}</span>
                     {mensaje.direccion === 'SALIENTE' && (
                       <span className={styles.messageStatus}>
                         {mensaje.estado === 'ENVIADO' && '✓'}
