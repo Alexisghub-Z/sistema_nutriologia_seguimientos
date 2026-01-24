@@ -58,7 +58,7 @@ export default function MisCitasPage() {
       {/* Top Header */}
       <div className={styles.topHeader}>
         <div className={styles.logo}>
-          <span className={styles.logoText}>Dr. Paul</span>
+          <span className={styles.logoText}>Nutriólogo Paul</span>
         </div>
         <button onClick={() => router.push('/')} className={styles.backButton}>
           Volver

@@ -2,8 +2,10 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden; /* Prevenir scroll horizontal en toda la página */
 }
 
 .main {
   flex: 1;
+  overflow-x: hidden; /* Prevenir scroll horizontal en el contenido principal */
 }

@@ -268,7 +268,7 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
           <button onClick={() => router.push('/')} className={styles.backButton}>
             ← Volver
           </button>
-          <h1>Dr. Paul</h1>
+          <h1>Nutriólogo Paul</h1>
         </div>
 
         <div className={styles.citaCard}>

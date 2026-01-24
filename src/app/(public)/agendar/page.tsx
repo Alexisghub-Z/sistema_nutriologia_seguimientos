@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useScrollReveal } from '@/hooks/useScrollReveal'
 import CalendarioCitas from '@/components/calendario/CalendarioCitas'
 import { extraerDigitosTelefono } from '@/lib/utils/phone'
 import styles from './agendar.module.css'
@@ -30,6 +31,9 @@ export default function AgendarCitaPage() {
   const [verificandoEmail, setVerificandoEmail] = useState(false)
   const [error, setError] = useState('')
   const [esReagendado, setEsReagendado] = useState(false)
+
+  // Activar animaciones de scroll
+  useScrollReveal()
 
   // Estado para paciente existente
   const [pacienteExistente, setPacienteExistente] = useState<PacienteExistente | null>(null)
@@ -356,7 +360,7 @@ export default function AgendarCitaPage() {
       {/* Top Header */}
       <div className={styles.topHeader}>
         <div className={styles.logo}>
-          <span className={styles.logoText}>Dr. Paul</span>
+          <span className={styles.logoText}>Nutriólogo Paul</span>
         </div>
         <button onClick={() => router.push('/')} className={styles.backButton}>
           Volver
@@ -366,10 +370,10 @@ export default function AgendarCitaPage() {
       {/* Hero Section - Solo paso 1 */}
       {paso === 1 && (
         <div className={styles.hero}>
-          <h1 className={styles.heroTitle}>
+          <h1 className={`${styles.heroTitle} fade-in`} data-scroll-reveal>
             {esReagendado ? 'Reagenda tu Consulta' : 'Agenda tu Consulta'}
           </h1>
-          <p className={styles.heroSubtitle}>
+          <p className={`${styles.heroSubtitle} fade-in`} data-scroll-reveal>
             {esReagendado
               ? 'Selecciona una nueva fecha y hora para tu consulta'
               : 'Selecciona el día y hora que mejor te convenga'}
@@ -398,7 +402,7 @@ export default function AgendarCitaPage() {
 
         {/* Paso 1: Seleccionar fecha y hora */}
         {paso === 1 && (
-          <div className={styles.paso}>
+          <div className={`${styles.paso} fade-in`} data-scroll-reveal>
             <h2 className={styles.pasoTitle}>Selecciona fecha y hora</h2>
 
             <CalendarioCitas
@@ -440,7 +444,7 @@ export default function AgendarCitaPage() {
 
         {/* Paso 2: Verificar email */}
         {paso === 2 && (
-          <div className={styles.paso}>
+          <div className={`${styles.paso} fade-in`} data-scroll-reveal>
             <h2 className={styles.pasoTitle}>Ingresa tu email</h2>
 
             <div className={styles.resumenCompacto}>
@@ -561,7 +565,7 @@ export default function AgendarCitaPage() {
 
         {/* Paso 3: Formulario de datos (confirmación o completar) */}
         {paso === 3 && (
-          <div className={styles.paso}>
+          <div className={`${styles.paso} fade-in`} data-scroll-reveal>
             {pacienteExistente ? (
               <>
                 <h2 className={styles.pasoTitle}>¡Te reconocemos!</h2>

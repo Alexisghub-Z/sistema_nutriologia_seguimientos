@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useScrollReveal } from '@/hooks/useScrollReveal'
+import ChatFAQ from '@/components/chat/ChatFAQ'
+import WhatsAppButton from '@/components/chat/WhatsAppButton'
 import styles from './page.module.css'
 
 export default function Home() {
@@ -9,6 +12,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
+
+  // Activar animaciones de scroll
+  useScrollReveal()
 
   const buscarCita = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,7 +50,7 @@ export default function Home() {
       <header className={styles.header}>
         <div className={styles.headerContainer}>
           <div className={styles.logo}>
-            <span className={styles.logoText}>Dr. Paul</span>
+            <span className={styles.logoText}>Nutriólogo Paul</span>
           </div>
           <nav className={styles.nav}>
             <button onClick={() => scrollToSection('sobre-mi')} className={styles.navLink}>
@@ -116,50 +122,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Video Preview Section */}
-      <section className={styles.videoSection}>
-        <div className={styles.container}>
-          <div className={styles.videoGrid}>
-            <div className={styles.videoTextContent}>
-              <h2 className={styles.videoTitle}>Participación en Cortv Oaxaca</h2>
-              <p className={styles.videoDescription}>
-                Mira mi participación en el programa de cocina de Cortv Oaxaca, donde comparto recetas saludables y consejos nutricionales para cocinar de forma balanceada y deliciosa.
-              </p>
-              <p className={styles.videoDescription}>
-                Descubre cómo la buena alimentación no tiene que ser aburrida. Aprende técnicas y preparaciones que puedes aplicar en tu día a día para mantener una nutrición óptima sin sacrificar el sabor.
-              </p>
-              <button
-                onClick={() => router.push('/agendar')}
-                className={styles.videoCtaButton}
-              >
-                Agendar Primera Consulta
-              </button>
-            </div>
-            <div className={styles.videoContainer}>
-              <div className={styles.videoWrapper}>
-                <iframe
-                  className={styles.videoIframe}
-                  src="https://www.youtube-nocookie.com/embed/CWVptmWn31w?start=33&rel=0&modestbranding=1"
-                  title="Video de presentación"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  loading="lazy"
-                ></iframe>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Sobre Mí Section */}
       <section id="sobre-mi" className={styles.sobreMiSection}>
-        <div className={styles.container}>
           <div className={styles.sobreMiGrid}>
             {/* Columna Izquierda - Información */}
-            <div className={styles.sobreMiContent}>
+            <div className={`${styles.sobreMiContent} fade-in-left`} data-scroll-reveal>
               <h2 className={styles.sobreMiTitle}>Sobre Mí</h2>
-              <h3 className={styles.sobreMiSubtitle}>Dr. Paul - Nutriólogo Certificado</h3>
+              <h3 className={styles.sobreMiSubtitle}>Nutriólogo Paul Certificado</h3>
 
               <p className={styles.sobreMiDescription}>
                 Con más de 10 años de experiencia ayudando a pacientes a alcanzar sus objetivos
@@ -212,14 +181,51 @@ export default function Home() {
             </div>
 
             {/* Columna Derecha - Foto */}
-            <div className={styles.sobreMiFotoContainer}>
+            <div className={`${styles.sobreMiFotoContainer} fade-in-right`} data-scroll-reveal>
               <div className={styles.sobreMiFotoWrapper}>
-                <img
-                  src="/images/foto-perfil.jpg"
-                  alt="Dr. Paul - Nutriólogo Profesional"
-                  className={styles.sobreMiFoto}
-                />
-                <div className={styles.fotoDecoracion}></div>
+                <div className={styles.sobreMiFotoInner}>
+                  <div className={styles.fotoDecoracion}></div>
+                  <img
+                    src="/images/foto-perfil.png"
+                    alt="Nutriólogo Paul - Nutriólogo Profesional"
+                    className={styles.sobreMiFoto}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+      </section>
+
+      {/* Video Preview Section */}
+      <section className={styles.videoSection}>
+        <div className={styles.container}>
+          <div className={styles.videoGrid}>
+            <div className={`${styles.videoTextContent} fade-in-left`} data-scroll-reveal>
+              <h2 className={styles.videoTitle}>Participación en Cortv Oaxaca</h2>
+              <p className={styles.videoDescription}>
+                Mira mi participación en el programa de cocina de Cortv Oaxaca, donde comparto recetas saludables y consejos nutricionales para cocinar de forma balanceada y deliciosa.
+              </p>
+              <p className={styles.videoDescription}>
+                Descubre cómo la buena alimentación no tiene que ser aburrida. Aprende técnicas y preparaciones que puedes aplicar en tu día a día para mantener una nutrición óptima sin sacrificar el sabor.
+              </p>
+              <button
+                onClick={() => router.push('/agendar')}
+                className={styles.videoCtaButton}
+              >
+                Agendar Primera Consulta
+              </button>
+            </div>
+            <div className={`${styles.videoContainer} scale-in`} data-scroll-reveal>
+              <div className={styles.videoWrapper}>
+                <iframe
+                  className={styles.videoIframe}
+                  src="https://www.youtube-nocookie.com/embed/CWVptmWn31w?start=33&rel=0&modestbranding=1"
+                  title="Video de presentación"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  loading="lazy"
+                ></iframe>
               </div>
             </div>
           </div>
@@ -229,28 +235,58 @@ export default function Home() {
       {/* Servicios Section */}
       <section id="servicios" className={styles.serviciosSection}>
         <div className={styles.container}>
-          <h2 className={styles.sectionTitle}>Servicios Especializados</h2>
-          <p className={styles.sectionDescription}>
+          <h2 className={`${styles.sectionTitle} fade-in`} data-scroll-reveal>Servicios Especializados</h2>
+          <p className={`${styles.sectionDescription} fade-in`} data-scroll-reveal>
             Programas nutricionales diseñados para tus objetivos específicos
           </p>
           <div className={styles.serviciosGrid}>
-            <div className={styles.servicioCard}>
+            <div className={`${styles.servicioCard} slide-up`} data-scroll-reveal>
+              <div className={styles.servicioIcono}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+              </div>
               <h3>Control de Peso</h3>
               <p>Pérdida o ganancia de peso saludable con planes personalizados basados en tu metabolismo y estilo de vida.</p>
             </div>
-            <div className={styles.servicioCard}>
+            <div className={`${styles.servicioCard} slide-up`} data-scroll-reveal>
+              <div className={styles.servicioIcono}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                </svg>
+              </div>
               <h3>Nutrición Clínica</h3>
               <p>Manejo nutricional de diabetes, hipertensión, colesterol alto y otras condiciones médicas crónicas.</p>
             </div>
-            <div className={styles.servicioCard}>
+            <div className={`${styles.servicioCard} slide-up`} data-scroll-reveal>
+              <div className={styles.servicioIcono}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="8" r="7" />
+                  <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
+                </svg>
+              </div>
               <h3>Embarazo y Lactancia</h3>
               <p>Nutrición especializada para mamás, asegurando una alimentación óptima para ti y tu bebé.</p>
             </div>
-            <div className={styles.servicioCard}>
+            <div className={`${styles.servicioCard} slide-up`} data-scroll-reveal>
+              <div className={styles.servicioIcono}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </div>
               <h3>Nutrición Infantil</h3>
               <p>Alimentación balanceada para el crecimiento y desarrollo óptimo de niños y adolescentes.</p>
             </div>
-            <div className={styles.servicioCard}>
+            <div className={`${styles.servicioCard} slide-up`} data-scroll-reveal>
+              <div className={styles.servicioIcono}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                </svg>
+              </div>
               <h3>Reeducación Alimentaria</h3>
               <p>Aprende a comer bien sin dietas restrictivas, creando hábitos alimenticios sostenibles a largo plazo.</p>
             </div>
@@ -261,27 +297,74 @@ export default function Home() {
       {/* Beneficios Section */}
       <section id="beneficios" className={styles.beneficiosSection}>
         <div className={styles.container}>
-          <h2 className={styles.sectionTitle}>¿Por qué elegir Dr. Paul?</h2>
+          <h2 className={`${styles.sectionTitle} fade-in`} data-scroll-reveal>¿Por qué elegir a Nutriólogo Paul?</h2>
           <div className={styles.beneficiosGrid}>
-            <div className={styles.beneficioCard}>
+            <div className={`${styles.beneficioCard} fade-in`} data-scroll-reveal>
               <div className={styles.beneficioNumber}>01</div>
               <h3>Atención Personalizada</h3>
               <p>Cada plan nutricional es único, diseñado específicamente para tus necesidades, objetivos y estilo de vida.</p>
             </div>
-            <div className={styles.beneficioCard}>
+            <div className={`${styles.beneficioCard} fade-in`} data-scroll-reveal>
               <div className={styles.beneficioNumber}>02</div>
               <h3>Seguimiento Continuo</h3>
               <p>Monitoreo constante de tu progreso con ajustes en tiempo real para garantizar resultados sostenibles.</p>
             </div>
-            <div className={styles.beneficioCard}>
+            <div className={`${styles.beneficioCard} fade-in`} data-scroll-reveal>
               <div className={styles.beneficioNumber}>03</div>
               <h3>Enfoque Científico</h3>
               <p>Estrategias basadas en evidencia científica y las últimas investigaciones en nutrición y salud.</p>
             </div>
-            <div className={styles.beneficioCard}>
+            <div className={`${styles.beneficioCard} fade-in`} data-scroll-reveal>
               <div className={styles.beneficioNumber}>04</div>
               <h3>Resultados Medibles</h3>
               <p>Cambios reales y cuantificables en tu salud, energía, composición corporal y bienestar general.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Buscar Cita por Código */}
+      <section id="buscar-cita" className={styles.buscarSection}>
+        <div className={styles.container}>
+          <h2 className={`${styles.sectionTitle} fade-in`} data-scroll-reveal>Consultar mi Cita</h2>
+          <p className={`${styles.sectionDescription} fade-in`} data-scroll-reveal>
+            Ingresa tu código único para ver detalles, cancelar o reagendar
+          </p>
+
+          <div className={`${styles.codigoCard} scale-in`} data-scroll-reveal>
+            <form onSubmit={buscarCita} className={styles.codigoForm}>
+              <input
+                type="text"
+                value={codigo}
+                onChange={(e) => setCodigo(e.target.value.toUpperCase().replace(/\s/g, ''))}
+                placeholder="ABC123DE"
+                className={styles.codigoInput}
+                maxLength={8}
+                required
+              />
+              <button
+                type="submit"
+                className={styles.codigoButton}
+                disabled={loading || codigo.length < 6}
+              >
+                {loading ? 'Buscando...' : 'Buscar'}
+              </button>
+            </form>
+
+            {error && <p className={styles.error}>{error}</p>}
+
+            <div className={styles.divider}>
+              <span>o</span>
+            </div>
+
+            <div className={styles.emailOption}>
+              <p className={styles.emailOptionText}>¿No tienes el código?</p>
+              <button
+                onClick={() => router.push('/mis-citas')}
+                className={styles.emailButton}
+              >
+                Ver mi cita con email
+              </button>
             </div>
           </div>
         </div>
@@ -341,56 +424,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Buscar Cita por Código */}
-      <section id="buscar-cita" className={styles.buscarSection}>
-        <div className={styles.container}>
-          <h2 className={styles.sectionTitle}>Consultar mi Cita</h2>
-          <p className={styles.sectionDescription}>
-            Ingresa tu código único para ver detalles, cancelar o reagendar
-          </p>
-
-          <div className={styles.codigoCard}>
-            <form onSubmit={buscarCita} className={styles.codigoForm}>
-              <input
-                type="text"
-                value={codigo}
-                onChange={(e) => setCodigo(e.target.value.toUpperCase().replace(/\s/g, ''))}
-                placeholder="ABC123DE"
-                className={styles.codigoInput}
-                maxLength={8}
-                required
-              />
-              <button
-                type="submit"
-                className={styles.codigoButton}
-                disabled={loading || codigo.length < 6}
-              >
-                {loading ? 'Buscando...' : 'Buscar'}
-              </button>
-            </form>
-
-            {error && <p className={styles.error}>{error}</p>}
-
-            <div className={styles.divider}>
-              <span>o</span>
-            </div>
-
-            <div className={styles.emailOption}>
-              <p className={styles.emailOptionText}>¿No tienes el código?</p>
-              <button
-                onClick={() => router.push('/mis-citas')}
-                className={styles.emailButton}
-              >
-                Ver mi cita con email
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className={styles.ctaSection}>
-        <div className={styles.ctaContent}>
+        <div className={`${styles.ctaContent} scale-in`} data-scroll-reveal>
           <h2 className={styles.ctaSectionTitle}>Comienza tu transformación hoy</h2>
           <p className={styles.ctaSectionSubtitle}>
             Agenda tu primera consulta y recibe un plan nutricional personalizado
@@ -407,7 +443,25 @@ export default function Home() {
       {/* Contacto Section */}
       <section id="contacto" className={styles.contactoSection}>
         <div className={styles.container}>
-          <h2 className={styles.sectionTitle}>Contacto</h2>
+          <h2 className={`${styles.sectionTitle} fade-in`} data-scroll-reveal>Contacto</h2>
+          <p className={`${styles.sectionDescription} fade-in`} data-scroll-reveal>
+            Visítanos en nuestro consultorio o contáctanos por teléfono y email
+          </p>
+
+          {/* Mapa */}
+          <div className={`${styles.mapaContainer} fade-in`} data-scroll-reveal>
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d30559.437524935!2d-96.72633484999999!3d17.0731842!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85c7220a2b7e0d85%3A0x3c0f3e2b7e0d85c7!2sOaxaca%20de%20Ju%C3%A1rez%2C%20Oax.!5e0!3m2!1ses!2smx!4v1234567890123!5m2!1ses!2smx"
+              width="100%"
+              height="450"
+              style={{ border: 0 }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              className={styles.mapa}
+            ></iframe>
+          </div>
+
           <div className={styles.contactoGrid}>
             <div className={styles.contactoCard}>
               <h3>Ubicación</h3>
@@ -430,7 +484,7 @@ export default function Home() {
         <div className={styles.footerContainer}>
           <div className={styles.footerGrid}>
             <div className={styles.footerColumn}>
-              <div className={styles.footerLogo}>Dr. Paul</div>
+              <div className={styles.footerLogo}>Nutriólogo Paul</div>
               <p className={styles.footerDescription}>
                 Consultorio de nutrición profesional dedicado a mejorar tu salud y bienestar.
               </p>
@@ -468,7 +522,7 @@ export default function Home() {
           </div>
 
           <div className={styles.footerBottom}>
-            <p>© 2026 Dr. Paul. Todos los derechos reservados.</p>
+            <p>© 2026 Nutriólogo Paul. Todos los derechos reservados.</p>
             <div className={styles.footerLinks}>
               <a href="#">Privacidad</a>
               <span>·</span>
@@ -477,6 +531,12 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Chat FAQ flotante */}
+      <ChatFAQ />
+
+      {/* Botón de WhatsApp */}
+      <WhatsAppButton />
     </main>
   )
 }
