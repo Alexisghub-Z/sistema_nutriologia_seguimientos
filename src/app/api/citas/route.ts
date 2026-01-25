@@ -282,34 +282,6 @@ export async function POST(request: NextRequest) {
       // No fallar la creación de la cita si hay error al cancelar
     }
 
-    // Enviar notificación por email al nutriólogo (INSTANTÁNEA) - solo si NO fue confirmada por admin
-    if (!validatedData.confirmada_por_admin) {
-      try {
-        const { notificarNuevaCita } = await import('@/lib/services/email-notifications')
-        const fechaCita = new Date(validatedData.fecha_hora)
-        const horaCita = fechaCita.toLocaleTimeString('es-MX', {
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-
-        await notificarNuevaCita({
-          pacienteNombre: cita.paciente.nombre,
-          pacienteEmail: cita.paciente.email,
-          pacienteTelefono: cita.paciente.telefono,
-          fechaCita: fechaCita,
-          horaCita: horaCita,
-          motivoConsulta: cita.motivo_consulta,
-          tipoCita: cita.tipo_cita,
-          codigoCita: cita.codigo_cita || '',
-          totalCitas: (await prisma.cita.count({ where: { paciente_id: validatedData.paciente_id } })) || 1,
-        })
-        console.log('📧 Email de notificación enviado al nutriólogo')
-      } catch (emailError) {
-        console.error('Error al enviar email de notificación:', emailError)
-        // No fallar la creación de la cita si hay error en el email
-      }
-    }
-
     return NextResponse.json(cita, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
