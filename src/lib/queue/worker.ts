@@ -22,8 +22,8 @@ console.log('🔌 Conectando a Redis:', {
   port: process.env.REDIS_PORT || 6380,
 })
 
-// Registrar procesador para confirmaciones
-mensajesQueue.process(TipoJob.CONFIRMACION, async (job) => {
+// Registrar procesador para confirmaciones (concurrencia: 5)
+mensajesQueue.process(TipoJob.CONFIRMACION, 5, async (job) => {
   const { citaId } = job.data
 
   console.log(`\n📧 [Worker] Procesando confirmación`)
@@ -39,8 +39,8 @@ mensajesQueue.process(TipoJob.CONFIRMACION, async (job) => {
   }
 })
 
-// Registrar procesador para recordatorio 24h
-mensajesQueue.process(TipoJob.RECORDATORIO_24H, async (job) => {
+// Registrar procesador para recordatorio 24h (concurrencia: 5)
+mensajesQueue.process(TipoJob.RECORDATORIO_24H, 5, async (job) => {
   const { citaId } = job.data
 
   console.log(`\n📧 [Worker] Procesando recordatorio 24h`)
@@ -56,8 +56,8 @@ mensajesQueue.process(TipoJob.RECORDATORIO_24H, async (job) => {
   }
 })
 
-// Registrar procesador para recordatorio 1h
-mensajesQueue.process(TipoJob.RECORDATORIO_1H, async (job) => {
+// Registrar procesador para recordatorio 1h (concurrencia: 5)
+mensajesQueue.process(TipoJob.RECORDATORIO_1H, 5, async (job) => {
   const { citaId } = job.data
 
   console.log(`\n📧 [Worker] Procesando recordatorio 1h`)
@@ -73,8 +73,8 @@ mensajesQueue.process(TipoJob.RECORDATORIO_1H, async (job) => {
   }
 })
 
-// Registrar procesador para seguimiento (legacy)
-mensajesQueue.process(TipoJob.SEGUIMIENTO, async (job) => {
+// Registrar procesador para seguimiento (legacy) (concurrencia: 3)
+mensajesQueue.process(TipoJob.SEGUIMIENTO, 3, async (job) => {
   const { consultaId, tipoSeguimiento } = job.data
 
   console.log(`\n📧 [Worker] Procesando seguimiento`)
@@ -91,8 +91,8 @@ mensajesQueue.process(TipoJob.SEGUIMIENTO, async (job) => {
   }
 })
 
-// Registrar procesador para seguimiento inicial (3-5 días después)
-mensajesQueue.process(TipoJob.SEGUIMIENTO_INICIAL, async (job) => {
+// Registrar procesador para seguimiento inicial (3-5 días después) (concurrencia: 3)
+mensajesQueue.process(TipoJob.SEGUIMIENTO_INICIAL, 3, async (job) => {
   const { consultaId } = job.data
 
   console.log(`\n📧 [Worker] Procesando seguimiento inicial`)
@@ -108,8 +108,8 @@ mensajesQueue.process(TipoJob.SEGUIMIENTO_INICIAL, async (job) => {
   }
 })
 
-// Registrar procesador para seguimiento intermedio (mitad del periodo)
-mensajesQueue.process(TipoJob.SEGUIMIENTO_INTERMEDIO, async (job) => {
+// Registrar procesador para seguimiento intermedio (mitad del periodo) (concurrencia: 3)
+mensajesQueue.process(TipoJob.SEGUIMIENTO_INTERMEDIO, 3, async (job) => {
   const { consultaId } = job.data
 
   console.log(`\n📧 [Worker] Procesando seguimiento intermedio`)
@@ -125,8 +125,8 @@ mensajesQueue.process(TipoJob.SEGUIMIENTO_INTERMEDIO, async (job) => {
   }
 })
 
-// Registrar procesador para seguimiento previo cita (7-10 días antes)
-mensajesQueue.process(TipoJob.SEGUIMIENTO_PREVIO_CITA, async (job) => {
+// Registrar procesador para seguimiento previo cita (7-10 días antes) (concurrencia: 3)
+mensajesQueue.process(TipoJob.SEGUIMIENTO_PREVIO_CITA, 3, async (job) => {
   const { consultaId } = job.data
 
   console.log(`\n📧 [Worker] Procesando seguimiento previo cita`)
@@ -142,8 +142,8 @@ mensajesQueue.process(TipoJob.SEGUIMIENTO_PREVIO_CITA, async (job) => {
   }
 })
 
-// Registrar procesador para recordatorio agendar (3-5 días antes)
-mensajesQueue.process(TipoJob.RECORDATORIO_AGENDAR, async (job) => {
+// Registrar procesador para recordatorio agendar (3-5 días antes) (concurrencia: 3)
+mensajesQueue.process(TipoJob.RECORDATORIO_AGENDAR, 3, async (job) => {
   const { consultaId } = job.data
 
   console.log(`\n📧 [Worker] Procesando recordatorio agendar`)
@@ -159,8 +159,8 @@ mensajesQueue.process(TipoJob.RECORDATORIO_AGENDAR, async (job) => {
   }
 })
 
-// Registrar procesador para marcar automáticamente como NO_ASISTIO
-mensajesQueue.process(TipoJob.MARCAR_NO_ASISTIO, async (job) => {
+// Registrar procesador para marcar automáticamente como NO_ASISTIO (concurrencia: 5)
+mensajesQueue.process(TipoJob.MARCAR_NO_ASISTIO, 5, async (job) => {
   const { citaId } = job.data
 
   console.log(`\n⏰ [Worker] Procesando auto-marcar NO_ASISTIO`)
