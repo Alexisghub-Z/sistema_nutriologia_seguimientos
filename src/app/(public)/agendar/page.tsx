@@ -642,7 +642,14 @@ export default function AgendarCitaPage() {
                     required
                     minLength={3}
                     placeholder="Ej: Juan Pérez García"
+                    disabled={!!pacienteExistente}
+                    className={pacienteExistente ? styles.inputDisabled : ''}
                   />
+                  {pacienteExistente && (
+                    <small className={styles.textMuted}>
+                      Este dato no se puede modificar desde aquí
+                    </small>
+                  )}
                 </div>
 
                 <div className={styles.formGroup}>
@@ -658,6 +665,7 @@ export default function AgendarCitaPage() {
                     disabled
                     className={styles.inputDisabled}
                   />
+                  <small className={styles.textMuted}>Este dato no se puede modificar</small>
                 </div>
 
                 <div className={styles.formGroup}>
@@ -703,25 +711,36 @@ export default function AgendarCitaPage() {
                       onChange={handleFechaNacimientoChange}
                       required
                       max={new Date().toISOString().split('T')[0]}
+                      disabled={!!pacienteExistente}
                       className={
-                        formData.fecha_nacimiento
-                          ? fechaNacimientoValida
-                            ? styles.inputValid
-                            : styles.inputInvalid
-                          : ''
+                        pacienteExistente
+                          ? styles.inputDisabled
+                          : formData.fecha_nacimiento
+                            ? fechaNacimientoValida
+                              ? styles.inputValid
+                              : styles.inputInvalid
+                            : ''
                       }
                     />
-                    {formData.fecha_nacimiento && (
+                    {formData.fecha_nacimiento && !pacienteExistente && (
                       <span className={styles.validationIcon}>
                         {fechaNacimientoValida ? '✓' : '✗'}
                       </span>
                     )}
                   </div>
-                  {errorFechaNacimiento && (
-                    <small className={styles.textError}>{errorFechaNacimiento}</small>
-                  )}
-                  {!errorFechaNacimiento && fechaNacimientoValida && (
-                    <small className={styles.textSuccess}>✓ Fecha válida</small>
+                  {pacienteExistente ? (
+                    <small className={styles.textMuted}>
+                      Este dato no se puede modificar desde aquí
+                    </small>
+                  ) : (
+                    <>
+                      {errorFechaNacimiento && (
+                        <small className={styles.textError}>{errorFechaNacimiento}</small>
+                      )}
+                      {!errorFechaNacimiento && fechaNacimientoValida && (
+                        <small className={styles.textSuccess}>✓ Fecha válida</small>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
