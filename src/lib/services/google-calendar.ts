@@ -247,8 +247,10 @@ export async function createCalendarEvent(data: {
       reminders: {
         useDefault: false,
         overrides: [
-          { method: 'popup', minutes: 24 * 60 }, // 1 día antes (solo notificación)
-          { method: 'popup', minutes: 60 }, // 1 hora antes (solo notificación)
+          { method: 'popup', minutes: 1 }, // Notificación inmediata (1 minuto después de crear)
+          { method: 'email', minutes: 1 }, // Email inmediato (1 minuto después de crear)
+          { method: 'popup', minutes: 24 * 60 }, // 1 día antes
+          { method: 'popup', minutes: 60 }, // 1 hora antes
         ],
       },
     }
