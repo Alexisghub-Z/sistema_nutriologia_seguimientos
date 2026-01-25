@@ -11,6 +11,7 @@ import {
   programarConfirmacion,
   programarRecordatorio24h,
   programarRecordatorio1h,
+  programarMarcarNoAsistio,
 } from '@/lib/queue/messages'
 
 // Schema de validación para crear cita
@@ -260,6 +261,9 @@ export async function POST(request: NextRequest) {
       if (config?.recordatorio_1h_activo) {
         await programarRecordatorio1h(cita.id, fechaCita)
       }
+
+      // Programar auto-marcar como NO_ASISTIO 2h después de la cita
+      await programarMarcarNoAsistio(cita.id, fechaCita)
     } catch (queueError) {
       console.error('Error al programar mensajes:', queueError)
       // No fallar la creación de la cita si hay error en los jobs

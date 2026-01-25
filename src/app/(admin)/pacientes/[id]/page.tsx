@@ -112,6 +112,30 @@ export default function DetallePacientePage() {
     fetchPaciente()
   }
 
+  const cancelarCita = async (citaId: string) => {
+    if (!confirm('¿Cancelar esta cita? Se eliminará del calendario de Google.')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/citas/${citaId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: 'CANCELADA' }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Error al cancelar cita')
+      }
+
+      // Refrescar datos del paciente
+      refrescarPaciente()
+    } catch (err) {
+      console.error('Error al cancelar cita:', err)
+      alert('Error al cancelar la cita')
+    }
+  }
+
   // Calcular edad
   const calcularEdad = (fechaNacimiento: string) => {
     const hoy = new Date()
@@ -586,16 +610,25 @@ export default function DetallePacientePage() {
                             cita.confirmada_por_paciente
                           )}
                           {cita.estado === 'PENDIENTE' && tabActiva === 'activas' && (
-                            <Button
-                              size="small"
-                              onClick={() =>
-                                router.push(
-                                  `/pacientes/${pacienteId}/citas/${cita.id}/crear-consulta`
-                                )
-                              }
-                            >
-                              Registrar
-                            </Button>
+                            <>
+                              <Button
+                                size="small"
+                                onClick={() =>
+                                  router.push(
+                                    `/pacientes/${pacienteId}/citas/${cita.id}/crear-consulta`
+                                  )
+                                }
+                              >
+                                Registrar
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="danger"
+                                onClick={() => cancelarCita(cita.id)}
+                              >
+                                Cancelar
+                              </Button>
+                            </>
                           )}
                         </div>
                       </div>

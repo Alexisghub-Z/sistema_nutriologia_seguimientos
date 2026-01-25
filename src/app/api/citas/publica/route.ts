@@ -6,12 +6,14 @@ import {
   programarConfirmacion,
   programarRecordatorio24h,
   programarRecordatorio1h,
+  programarMarcarNoAsistio,
 } from '@/lib/queue/messages'
 import {
   syncCitaWithGoogleCalendar,
   isGoogleCalendarConfigured,
 } from '@/lib/services/google-calendar'
 import { normalizarTelefonoMexico } from '@/lib/utils/phone'
+import { deleteCache, CacheKeys } from '@/lib/redis'
 
 // Schema de validación para crear cita pública
 const citaPublicaSchema = z.object({
@@ -250,6 +252,10 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Invalidar caché del paciente
+    await deleteCache(CacheKeys.patientDetail(paciente.id))
+    console.log('🗑️  Cache invalidated: patient detail after public appointment created', paciente.id)
+
     // Programar mensajes automáticos
     try {
       if (config.confirmacion_automatica_activa) {
@@ -261,6 +267,9 @@ export async function POST(request: NextRequest) {
       if (config.recordatorio_1h_activo) {
         await programarRecordatorio1h(cita.id, fechaHoraCita)
       }
+
+      // Programar auto-marcar como NO_ASISTIO 2h después de la cita
+      await programarMarcarNoAsistio(cita.id, fechaHoraCita)
     } catch (queueError) {
       console.error('Error al programar mensajes:', queueError)
       // No fallar la creación de la cita si hay error en los jobs
