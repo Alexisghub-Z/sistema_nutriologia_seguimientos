@@ -297,26 +297,6 @@ export async function POST(request: NextRequest) {
       // No fallar la creación de la cita si hay error al cancelar
     }
 
-    // Enviar notificación por email al nutriólogo (INSTANTÁNEA)
-    try {
-      const { notificarNuevaCita } = await import('@/lib/services/email-notifications')
-      await notificarNuevaCita({
-        pacienteNombre: cita.paciente.nombre,
-        pacienteEmail: cita.paciente.email,
-        pacienteTelefono: cita.paciente.telefono,
-        fechaCita: fechaHoraCita,
-        horaCita: horaSeleccionada,
-        motivoConsulta: cita.motivo_consulta,
-        tipoCita: cita.tipo_cita,
-        codigoCita: codigoCita,
-        totalCitas: (await prisma.cita.count({ where: { paciente_id: paciente.id } })) || 1,
-      })
-      console.log('📧 Email de notificación enviado al nutriólogo')
-    } catch (emailError) {
-      console.error('Error al enviar email de notificación:', emailError)
-      // No fallar la creación de la cita si hay error en el email
-    }
-
     console.log(`✅ Cita creada desde portal público: ${cita.id} (${codigoCita})`)
 
     return NextResponse.json(
