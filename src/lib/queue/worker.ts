@@ -8,6 +8,7 @@ import {
   procesarSeguimientoIntermedio,
   procesarSeguimientoPrevioCita,
   procesarRecordatorioAgendar,
+  procesarMarcarNoAsistio,
 } from './jobs/procesadores'
 
 /**
@@ -154,6 +155,23 @@ mensajesQueue.process(TipoJob.RECORDATORIO_AGENDAR, async (job) => {
     console.log(`✅ [Worker] Recordatorio agendar completado`)
   } catch (error) {
     console.error(`❌ [Worker] Error en recordatorio agendar:`, error)
+    throw error
+  }
+})
+
+// Registrar procesador para marcar automáticamente como NO_ASISTIO
+mensajesQueue.process(TipoJob.MARCAR_NO_ASISTIO, async (job) => {
+  const { citaId } = job.data
+
+  console.log(`\n⏰ [Worker] Procesando auto-marcar NO_ASISTIO`)
+  console.log(`📋 [Worker] Cita ID: ${citaId}`)
+  console.log(`🔄 [Worker] Intento: ${job.attemptsMade + 1}/${job.opts.attempts || 3}`)
+
+  try {
+    await procesarMarcarNoAsistio(citaId)
+    console.log(`✅ [Worker] Auto-marcar NO_ASISTIO completado`)
+  } catch (error) {
+    console.error(`❌ [Worker] Error en auto-marcar NO_ASISTIO:`, error)
     throw error
   }
 })

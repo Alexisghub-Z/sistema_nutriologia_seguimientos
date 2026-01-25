@@ -25,6 +25,9 @@ export enum TipoJob {
   SEGUIMIENTO_INTERMEDIO = 'seguimiento_intermedio',
   SEGUIMIENTO_PREVIO_CITA = 'seguimiento_previo_cita',
   RECORDATORIO_AGENDAR = 'recordatorio_agendar',
+
+  // Marcar automáticamente como no asistió
+  MARCAR_NO_ASISTIO = 'marcar_no_asistio',
 }
 
 // Interfaces para los datos de cada job
@@ -38,6 +41,10 @@ export interface JobRecordatorio {
 
 export interface JobSeguimiento {
   consultaId: string
+}
+
+export interface JobMarcarNoAsistio {
+  citaId: string
 }
 
 /**
@@ -112,6 +119,39 @@ export async function programarRecordatorio1h(citaId: string, fechaCita: Date) {
 
   const fechaEnvio = new Date(Date.now() + delay)
   console.log(`[Queue] Recordatorio 1h programado para: ${fechaEnvio.toLocaleString('es-MX')}`)
+}
+
+/**
+ * Programa marcar cita como NO_ASISTIO 2 horas después de la hora programada
+ */
+export async function programarMarcarNoAsistio(citaId: string, fechaCita: Date) {
+  // Calcular delay: 2 horas DESPUÉS de la hora de la cita
+  const delay = fechaCita.getTime() - Date.now() + 2 * 60 * 60 * 1000
+
+  if (delay <= 0) {
+    console.warn(
+      `[Queue] La cita ${citaId} ya pasó hace más de 2h, no se programará auto-marcar`
+    )
+    return
+  }
+
+  await mensajesQueue.add(
+    TipoJob.MARCAR_NO_ASISTIO,
+    { citaId },
+    {
+      delay,
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 5000,
+      },
+    }
+  )
+
+  const fechaEjecucion = new Date(Date.now() + delay)
+  console.log(
+    `[Queue] Auto-marcar NO_ASISTIO programado para: ${fechaEjecucion.toLocaleString('es-MX')}`
+  )
 }
 
 /**

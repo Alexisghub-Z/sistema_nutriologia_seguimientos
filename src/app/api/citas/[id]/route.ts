@@ -51,7 +51,25 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     }
 
     const { id } = await context.params
-    const body = await request.json()
+
+    // Leer body con manejo de errores
+    let body
+    try {
+      const text = await request.text()
+      body = text ? JSON.parse(text) : {}
+    } catch (parseError) {
+      return NextResponse.json(
+        { error: 'Body JSON inválido o vacío' },
+        { status: 400 }
+      )
+    }
+
+    if (!body.estado) {
+      return NextResponse.json(
+        { error: 'El campo "estado" es requerido' },
+        { status: 400 }
+      )
+    }
 
     const cita = await prisma.cita.update({
       where: { id },
@@ -90,11 +108,12 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
       // No fallar la actualización de la cita si hay error en la sincronización
     }
 
-    // Cancelar jobs de mensajes programados si la cita fue cancelada
-    if (body.estado === 'CANCELADA') {
+    // Cancelar jobs de mensajes programados si la cita ya no está PENDIENTE
+    // Esto incluye: CANCELADA, COMPLETADA, NO_ASISTIO
+    if (body.estado !== 'PENDIENTE') {
       try {
         await cancelarJobsCita(id)
-        console.log('🚫 Jobs de mensajería cancelados para cita:', id)
+        console.log('🚫 Jobs de mensajería cancelados para cita:', id, `(Estado: ${body.estado})`)
       } catch (queueError) {
         console.error('Error al cancelar jobs de mensajería:', queueError)
         // No fallar la actualización de la cita si hay error en la cola

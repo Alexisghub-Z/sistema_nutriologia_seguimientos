@@ -657,3 +657,73 @@ export async function procesarRecordatorioAgendar(consultaId: string): Promise<v
     throw error
   }
 }
+
+/**
+ * Marca automáticamente una cita como NO_ASISTIO si sigue en estado PENDIENTE
+ * Se ejecuta 2 horas después de la hora programada
+ */
+export async function procesarMarcarNoAsistio(citaId: string): Promise<void> {
+  console.log(`[Job] Verificando estado de cita para auto-marcar: ${citaId}`)
+
+  try {
+    const cita = await prisma.cita.findUnique({
+      where: { id: citaId },
+      include: {
+        paciente: {
+          select: {
+            id: true,
+            nombre: true,
+          },
+        },
+      },
+    })
+
+    if (!cita) {
+      console.warn(`⚠️  [Job] Cita ${citaId} no encontrada, posiblemente eliminada`)
+      return
+    }
+
+    // Solo marcar como NO_ASISTIO si la cita sigue en estado PENDIENTE
+    if (cita.estado !== 'PENDIENTE') {
+      console.log(
+        `ℹ️  [Job] Cita ${citaId} ya tiene estado ${cita.estado}, no se marca como NO_ASISTIO`
+      )
+      return
+    }
+
+    // Actualizar estado a NO_ASISTIO
+    await prisma.cita.update({
+      where: { id: citaId },
+      data: {
+        estado: 'NO_ASISTIO',
+      },
+    })
+
+    console.log(
+      `✅ [Job] Cita ${citaId} marcada automáticamente como NO_ASISTIO (Paciente: ${cita.paciente.nombre})`
+    )
+
+    // Invalidar caché del paciente
+    const { deleteCache, CacheKeys } = await import('@/lib/redis')
+    await deleteCache(CacheKeys.patientDetail(cita.paciente_id))
+    console.log(`🗑️  [Job] Cache invalidado para paciente ${cita.paciente_id}`)
+
+    // Actualizar en Google Calendar si está configurado
+    try {
+      const { syncCitaWithGoogleCalendar, isGoogleCalendarConfigured } = await import(
+        '@/lib/services/google-calendar'
+      )
+      const isConfigured = await isGoogleCalendarConfigured()
+      if (isConfigured && cita.google_event_id) {
+        await syncCitaWithGoogleCalendar(citaId)
+        console.log(`📅 [Job] Cita actualizada en Google Calendar`)
+      }
+    } catch (calendarError) {
+      console.error(`⚠️  [Job] Error al actualizar Google Calendar:`, calendarError)
+      // No fallar el job si hay error en Google Calendar
+    }
+  } catch (error) {
+    console.error(`❌ [Job] Error al procesar marcar NO_ASISTIO:`, error)
+    throw error
+  }
+}
