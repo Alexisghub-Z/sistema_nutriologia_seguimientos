@@ -1,0 +1,83 @@
+# Test de Carga con Artillery
+# Herramienta: https://www.artillery.io/
+#
+# Instalación:
+#   npm install -g artillery
+#
+# Uso:
+#   artillery run tests/artillery-load-test.yml
+#   artillery run --output report.json tests/artillery-load-test.yml
+#   artillery report report.json  # Genera reporte HTML
+
+config:
+  target: "http://localhost:3000"
+  phases:
+    # Fase 1: Calentamiento (10 usuarios por segundo durante 30 segundos)
+    - duration: 30
+      arrivalRate: 10
+      name: "Warm up"
+
+    # Fase 2: Carga sostenida (20 usuarios por segundo durante 60 segundos)
+    - duration: 60
+      arrivalRate: 20
+      name: "Sustained load"
+
+    # Fase 3: Pico de tráfico (50 usuarios por segundo durante 30 segundos)
+    - duration: 30
+      arrivalRate: 50
+      name: "Spike"
+
+  # Plugins para métricas avanzadas
+  plugins:
+    expect: {}
+
+  # Variables de entorno
+  variables:
+    nombre: "Test Artillery"
+    motivo: "Consulta de prueba con Artillery"
+
+scenarios:
+  # Escenario 1: Flujo completo de creación de cita pública
+  - name: "Crear cita pública"
+    weight: 70  # 70% del tráfico
+    flow:
+      - post:
+          url: "/api/citas/publica"
+          json:
+            nombre: "{{ $randomString() }}"
+            email: "test{{ $randomNumber(1, 999999) }}@example.com"
+            telefono: "{{ $randomNumber(1000000000, 9999999999) }}"
+            fecha_nacimiento: "1990-01-01"
+            fecha_cita: "{{ $randomISOTimestamp(7, 30, 'YYYY-MM-DD') }}"
+            hora_cita: "{{ $randomChoice(['09:00', '10:00', '11:00', '14:00', '15:00', '16:00']) }}"
+            motivo: "{{ motivo }}"
+            tipo_cita: "{{ $randomChoice(['PRESENCIAL', 'EN_LINEA']) }}"
+          expect:
+            - statusCode: 201
+            - contentType: json
+            - hasProperty: cita.codigo_cita
+          capture:
+            - json: "$.cita.id"
+              as: "citaId"
+            - json: "$.cita.codigo_cita"
+              as: "codigoCita"
+
+  # Escenario 2: Consultar disponibilidad (simulado)
+  - name: "Listar pacientes (admin)"
+    weight: 30  # 30% del tráfico
+    flow:
+      - get:
+          url: "/api/pacientes"
+          expect:
+            - statusCode: [200, 401]  # Puede requerir auth
+
+  # Escenario 3: Cancelar cita (requiere autenticación)
+  # - name: "Cancelar cita"
+  #   weight: 10
+  #   flow:
+  #     - post:
+  #         url: "/api/citas/{{ citaId }}"
+  #         json:
+  #           estado: "CANCELADA"
+  #         expect:
+  #           - statusCode: [200, 401]

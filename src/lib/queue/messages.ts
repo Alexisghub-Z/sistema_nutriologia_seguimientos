@@ -8,9 +8,18 @@ const redisConfig = {
   password: process.env.REDIS_PASSWORD || 'redis123',
 }
 
-// Cola para mensajes automaticos
+// Cola para mensajes automaticos con configuración de auto-limpieza
 export const mensajesQueue = new Queue('mensajes-automaticos', {
   redis: redisConfig,
+  defaultJobOptions: {
+    removeOnComplete: {
+      age: 24 * 3600, // Eliminar jobs exitosos después de 24 horas
+      count: 1000, // Mantener máximo 1000 jobs completados
+    },
+    removeOnFail: {
+      age: 7 * 24 * 3600, // Mantener jobs fallidos 7 días para debugging
+    },
+  },
 })
 
 // Tipos de jobs
@@ -55,6 +64,7 @@ export async function programarConfirmacion(citaId: string) {
     TipoJob.CONFIRMACION,
     { citaId },
     {
+      jobId: `confirmacion-${citaId}`, // ID único para búsqueda O(1)
       attempts: 3,
       backoff: {
         type: 'exponential',
@@ -80,6 +90,7 @@ export async function programarRecordatorio24h(citaId: string, fechaCita: Date) 
     TipoJob.RECORDATORIO_24H,
     { citaId },
     {
+      jobId: `recordatorio-24h-${citaId}`, // ID único para búsqueda O(1)
       delay,
       attempts: 3,
       backoff: {
@@ -108,6 +119,7 @@ export async function programarRecordatorio1h(citaId: string, fechaCita: Date) {
     TipoJob.RECORDATORIO_1H,
     { citaId },
     {
+      jobId: `recordatorio-1h-${citaId}`, // ID único para búsqueda O(1)
       delay,
       attempts: 3,
       backoff: {
@@ -139,6 +151,7 @@ export async function programarMarcarNoAsistio(citaId: string, fechaCita: Date) 
     TipoJob.MARCAR_NO_ASISTIO,
     { citaId },
     {
+      jobId: `marcar-no-asistio-${citaId}`, // ID único para búsqueda O(1)
       delay,
       attempts: 3,
       backoff: {
@@ -270,17 +283,34 @@ export async function programarSeguimiento(
 }
 
 /**
- * Cancela todos los jobs pendientes de una cita
+ * Cancela todos los jobs pendientes de una cita usando jobIds predecibles (O(1))
+ * Mucho más eficiente que escanear todos los jobs
  */
 export async function cancelarJobsCita(citaId: string) {
-  const jobs = await mensajesQueue.getJobs(['waiting', 'delayed'])
+  const jobIds = [
+    `confirmacion-${citaId}`,
+    `recordatorio-24h-${citaId}`,
+    `recordatorio-1h-${citaId}`,
+    `marcar-no-asistio-${citaId}`,
+  ]
 
-  for (const job of jobs) {
-    if (job.data.citaId === citaId) {
-      await job.remove()
-      console.log(`[Queue] Job ${job.name} cancelado para cita: ${citaId}`)
+  let cancelados = 0
+
+  for (const jobId of jobIds) {
+    try {
+      const job = await mensajesQueue.getJob(jobId)
+      if (job) {
+        await job.remove()
+        console.log(`[Queue] Job ${jobId} cancelado`)
+        cancelados++
+      }
+    } catch (error) {
+      // Job ya no existe o ya fue procesado, continuar
+      console.log(`[Queue] Job ${jobId} no encontrado (ya procesado o no existe)`)
     }
   }
+
+  console.log(`[Queue] ${cancelados} job(s) cancelado(s) para cita: ${citaId}`)
 }
 
 /**
