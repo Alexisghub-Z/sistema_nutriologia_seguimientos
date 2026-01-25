@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import ModalDetalleCita from '@/components/citas/ModalDetalleCita'
 import BuscadorPacientes from '@/components/citas/BuscadorPacientes'
@@ -33,7 +33,7 @@ interface PacienteInfo {
   nombre: string
 }
 
-export default function CitasPage() {
+function CitasContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pacienteIdParam = searchParams.get('paciente')
@@ -388,5 +388,13 @@ export default function CitasPage() {
         onActualizar={cargarCitas}
       />
     </div>
+  )
+}
+
+export default function CitasPage() {
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <CitasContent />
+    </Suspense>
   )
 }

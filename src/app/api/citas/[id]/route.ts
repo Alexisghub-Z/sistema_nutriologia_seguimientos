@@ -10,7 +10,7 @@ import {
 import { cancelarJobsCita } from '@/lib/queue/messages'
 
 // GET /api/citas/[id] - Obtener una cita específica
-export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function GET(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser()
     if (!user) {

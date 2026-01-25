@@ -130,8 +130,8 @@ export default function ProgressCharts({ pacienteId }: ProgressChartsProps) {
   // Inicializar fechas personalizadas con la primera y última consulta
   useEffect(() => {
     if (consultasOrdenadas.length > 0 && !customStartDate && !customEndDate) {
-      setCustomStartDate(consultasOrdenadas[0].fecha)
-      setCustomEndDate(consultasOrdenadas[consultasOrdenadas.length - 1].fecha)
+      setCustomStartDate(consultasOrdenadas[0]!.fecha)
+      setCustomEndDate(consultasOrdenadas[consultasOrdenadas.length - 1]!.fecha)
     }
   }, [consultasOrdenadas, customStartDate, customEndDate])
 

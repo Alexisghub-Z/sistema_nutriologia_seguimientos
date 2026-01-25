@@ -68,7 +68,7 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
             <>
               <div className={styles.statItem}>
                 <span className={styles.statLabel}>% Grasa actual:</span>
-                <span className={styles.statValue}>{grasaActual.toFixed(1)}%</span>
+                <span className={styles.statValue}>{grasaActual!.toFixed(1)}%</span>
               </div>
               {diferenciaGrasa !== null && (
                 <div className={styles.statItem}>
@@ -93,7 +93,7 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
             <>
               <div className={styles.statItem}>
                 <span className={styles.statLabel}>Masa muscular:</span>
-                <span className={styles.statValue}>{musculoActual.toFixed(1)} kg</span>
+                <span className={styles.statValue}>{musculoActual!.toFixed(1)} kg</span>
               </div>
               {diferenciaMusculo !== null && (
                 <div className={styles.statItem}>

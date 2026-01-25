@@ -18,7 +18,7 @@ const plantillaSchema = z.object({
 })
 
 // GET /api/plantillas/[id] - Obtener una plantilla
-export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function GET(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser()
     if (!user) {
@@ -71,7 +71,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
 }
 
 // DELETE /api/plantillas/[id] - Eliminar plantilla
-export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser()
     if (!user) {

@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma'
+import { TipoMensaje } from '@prisma/client'
 
 /**
  * Tipos de plantillas disponibles
@@ -21,21 +22,21 @@ export enum TipoPlantilla {
  * Mapeo de TipoPlantilla a categorías de base de datos
  * Esto permite tener múltiples plantillas del mismo tipo general
  */
-export function obtenerCategoriaBD(tipo: TipoPlantilla): string {
+export function obtenerCategoriaBD(tipo: TipoPlantilla): TipoMensaje {
   switch (tipo) {
     case TipoPlantilla.CONFIRMACION:
-      return 'AUTOMATICO_CONFIRMACION'
+      return TipoMensaje.AUTOMATICO_CONFIRMACION
     case TipoPlantilla.RECORDATORIO_24H:
     case TipoPlantilla.RECORDATORIO_1H:
     case TipoPlantilla.RECORDATORIO_AGENDAR:
-      return 'AUTOMATICO_RECORDATORIO'
+      return TipoMensaje.AUTOMATICO_RECORDATORIO
     case TipoPlantilla.SEGUIMIENTO:
     case TipoPlantilla.SEGUIMIENTO_INICIAL:
     case TipoPlantilla.SEGUIMIENTO_INTERMEDIO:
     case TipoPlantilla.SEGUIMIENTO_PREVIO_CITA:
-      return 'AUTOMATICO_SEGUIMIENTO'
+      return TipoMensaje.AUTOMATICO_SEGUIMIENTO
     default:
-      return 'MANUAL'
+      return TipoMensaje.MANUAL
   }
 }
 
@@ -173,10 +174,10 @@ export function formatearFechaRelativa(fecha: Date): string {
  */
 export function formatearHora(hora: string): string {
   const [hours, minutes] = hora.split(':').map(Number)
-  const period = hours >= 12 ? 'PM' : 'AM'
-  const hours12 = hours % 12 || 12
+  const period = hours! >= 12 ? 'PM' : 'AM'
+  const hours12 = hours! % 12 || 12
 
-  return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`
+  return `${hours12}:${minutes!.toString().padStart(2, '0')} ${period}`
 }
 
 /**

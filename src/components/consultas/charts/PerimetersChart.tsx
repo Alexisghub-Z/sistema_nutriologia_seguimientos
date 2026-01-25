@@ -120,7 +120,7 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
             <>
               <div className={styles.statItem}>
                 <span className={styles.statLabel}>Brazo relajado:</span>
-                <span className={styles.statValue}>{brazoRelajadoActual.toFixed(1)} cm</span>
+                <span className={styles.statValue}>{brazoRelajadoActual!.toFixed(1)} cm</span>
               </div>
               {diferenciaBrazoRelajado !== null && (
                 <div className={styles.statItem}>
@@ -145,7 +145,7 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
             <>
               <div className={styles.statItem}>
                 <span className={styles.statLabel}>Brazo flexionado:</span>
-                <span className={styles.statValue}>{brazoFlexionadoActual.toFixed(1)} cm</span>
+                <span className={styles.statValue}>{brazoFlexionadoActual!.toFixed(1)} cm</span>
               </div>
               {diferenciaBrazoFlexionado !== null && (
                 <div className={styles.statItem}>
@@ -170,7 +170,7 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
             <>
               <div className={styles.statItem}>
                 <span className={styles.statLabel}>Cintura:</span>
-                <span className={styles.statValue}>{cinturaActual.toFixed(1)} cm</span>
+                <span className={styles.statValue}>{cinturaActual!.toFixed(1)} cm</span>
               </div>
               {diferenciaCintura !== null && (
                 <div className={styles.statItem}>
@@ -195,7 +195,7 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
             <>
               <div className={styles.statItem}>
                 <span className={styles.statLabel}>Cadera:</span>
-                <span className={styles.statValue}>{caderaActual.toFixed(1)} cm</span>
+                <span className={styles.statValue}>{caderaActual!.toFixed(1)} cm</span>
               </div>
               {diferenciaCadera !== null && (
                 <div className={styles.statItem}>
@@ -220,7 +220,7 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
             <>
               <div className={styles.statItem}>
                 <span className={styles.statLabel}>Muslo máximo:</span>
-                <span className={styles.statValue}>{musloMaximoActual.toFixed(1)} cm</span>
+                <span className={styles.statValue}>{musloMaximoActual!.toFixed(1)} cm</span>
               </div>
               {diferenciaMusloMaximo !== null && (
                 <div className={styles.statItem}>
@@ -245,7 +245,7 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
             <>
               <div className={styles.statItem}>
                 <span className={styles.statLabel}>Muslo medio:</span>
-                <span className={styles.statValue}>{musloMedioActual.toFixed(1)} cm</span>
+                <span className={styles.statValue}>{musloMedioActual!.toFixed(1)} cm</span>
               </div>
               {diferenciaMusloMedio !== null && (
                 <div className={styles.statItem}>
@@ -270,7 +270,7 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
             <>
               <div className={styles.statItem}>
                 <span className={styles.statLabel}>Pantorrilla:</span>
-                <span className={styles.statValue}>{pantorrillaMaximaActual.toFixed(1)} cm</span>
+                <span className={styles.statValue}>{pantorrillaMaximaActual!.toFixed(1)} cm</span>
               </div>
               {diferenciaPantorrillaMaxima !== null && (
                 <div className={styles.statItem}>

@@ -69,7 +69,7 @@ export default function NuevaCitaPage() {
         throw new Error(errorData.error || 'Error al crear cita')
       }
 
-      const cita = await response.json()
+      await response.json()
 
       // Redirigir al detalle del paciente con timestamp para forzar recarga
       router.push(`/pacientes/${pacienteId}?refresh=${Date.now()}`)

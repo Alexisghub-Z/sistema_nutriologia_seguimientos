@@ -155,7 +155,7 @@ export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWi
   if (loading) {
     return (
       <div className={styles.loadingContainer}>
-        <Spinner size="md" />
+        <Spinner size="medium" />
         <p>Cargando mensajes...</p>
       </div>
     )
@@ -164,7 +164,7 @@ export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWi
   if (!paciente) {
     return (
       <div className={styles.errorContainer}>
-        <Alert type="error" message="No se pudo cargar la información del paciente" />
+        <Alert variant="error">No se pudo cargar la información del paciente</Alert>
       </div>
     )
   }
@@ -206,7 +206,7 @@ export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWi
       {/* Error */}
       {error && (
         <div className={styles.errorAlert}>
-          <Alert type="error" message={error} onClose={() => setError(null)} />
+          <Alert variant="error">{error}</Alert>
         </div>
       )}
 
@@ -237,7 +237,7 @@ export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWi
                         className={styles.mediaImage}
                         onClick={() =>
                           window.open(
-                            `/api/media/proxy?url=${encodeURIComponent(mensaje.media_url)}`,
+                            `/api/media/proxy?url=${encodeURIComponent(mensaje.media_url!)}`,
                             '_blank'
                           )
                         }

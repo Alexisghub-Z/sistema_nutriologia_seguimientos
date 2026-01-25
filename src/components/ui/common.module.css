@@ -216,6 +216,11 @@
   color: var(--color-white);
 }
 
+.badgeInfo {
+  background-color: var(--color-info);
+  color: var(--color-white);
+}
+
 /* ============================================
    TABLES
    ============================================ */

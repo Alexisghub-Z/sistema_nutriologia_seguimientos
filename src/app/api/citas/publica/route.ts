@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     // Combinar fecha y hora
     const [year, month, day] = validatedData.fecha_cita.split('-').map(Number)
     const [hour, minute] = validatedData.hora_cita.split(':').map(Number)
-    const fechaHoraCita = new Date(year, month - 1, day, hour, minute)
+    const fechaHoraCita = new Date(year!, month! - 1, day!, hour!, minute!)
 
     // Validar que la fecha/hora no sea pasada
     if (fechaHoraCita < new Date()) {
@@ -69,8 +69,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar que el horario esté disponible
-    const inicioDia = new Date(year, month - 1, day, 0, 0, 0)
-    const finDia = new Date(year, month - 1, day, 23, 59, 59)
+    const inicioDia = new Date(year!, month! - 1, day!, 0, 0, 0)
+    const finDia = new Date(year!, month! - 1, day!, 23, 59, 59)
 
     const citasExistentes = await prisma.cita.findMany({
       where: {
@@ -281,10 +281,7 @@ export async function POST(request: NextRequest) {
     // Cancelar recordatorios de agendar si el paciente ya agendó
     try {
       const { cancelarRecordatoriosAgendar } = await import('@/lib/queue/messages')
-      await cancelarRecordatoriosAgendar(
-        datosValidados.paciente_id,
-        new Date(datosValidados.fecha_hora)
-      )
+      await cancelarRecordatoriosAgendar(cita.paciente_id, fechaHoraCita)
       console.log('🗑️  Recordatorios de agendar cancelados (paciente agendó cita)')
     } catch (cancelError) {
       console.error('Error al cancelar recordatorios:', cancelError)

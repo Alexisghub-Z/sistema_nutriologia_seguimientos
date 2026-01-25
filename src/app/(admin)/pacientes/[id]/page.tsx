@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
 import Button from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
@@ -141,9 +140,6 @@ export default function DetallePacientePage() {
       day: 'numeric',
     })
   }
-
-  // Calcular total de citas (todas las citas del array)
-  const totalCitas = paciente?.citas.length || 0
 
   // Filtrar citas según tab activa
   const filtrarCitas = () => {
@@ -751,156 +747,158 @@ export default function DetallePacientePage() {
         </Card>
 
         {/* Panel de Seguimiento - Próxima Cita Sugerida */}
-        {paciente.consultas.length > 0 && paciente.consultas[0].proxima_cita && (
-          <Card className={styles.seguimientoCard}>
-            <CardHeader>
-              <CardTitle>Seguimiento Nutricional</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className={styles.seguimientoContent}>
-                <div className={styles.seguimientoInfo}>
-                  <div className={styles.seguimientoFecha}>
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      className={styles.seguimientoIcon}
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span>
-                      Próxima cita sugerida:{' '}
-                      <strong>{formatearFecha(paciente.consultas[0].proxima_cita)}</strong>
-                    </span>
-                  </div>
-                  <div className={styles.seguimientoMeta}>
-                    {new Date(paciente.consultas[0].proxima_cita) < new Date() ? (
-                      <Badge variant="error">Fecha vencida</Badge>
-                    ) : paciente.consultas[0].seguimiento_programado ? (
-                      <>
-                        <Badge variant="success">Recordatorio programado</Badge>
-                        <span className={styles.seguimientoTexto}>
-                          Se enviará 1 día antes (
-                          {formatearFecha(
-                            new Date(
-                              new Date(paciente.consultas[0].proxima_cita).getTime() -
-                                24 * 60 * 60 * 1000
-                            )
-                          )}
-                          )
+        {paciente.consultas.length > 0 &&
+          paciente.consultas[0] &&
+          paciente.consultas[0].proxima_cita &&
+          (() => {
+            const ultimaConsulta = paciente.consultas[0]!
+            const proximaCita = ultimaConsulta.proxima_cita!
+            return (
+              <Card className={styles.seguimientoCard}>
+                <CardHeader>
+                  <CardTitle>Seguimiento Nutricional</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className={styles.seguimientoContent}>
+                    <div className={styles.seguimientoInfo}>
+                      <div className={styles.seguimientoFecha}>
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                          className={styles.seguimientoIcon}
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        <span>
+                          Próxima cita sugerida:{' '}
+                          <strong>{formatearFecha(proximaCita)}</strong>
                         </span>
-                      </>
-                    ) : (
-                      <Badge variant="warning">Sin recordatorio</Badge>
+                      </div>
+                      <div className={styles.seguimientoMeta}>
+                        {new Date(proximaCita) < new Date() ? (
+                          <Badge variant="error">Fecha vencida</Badge>
+                        ) : ultimaConsulta.seguimiento_programado ? (
+                          <>
+                            <Badge variant="success">Recordatorio programado</Badge>
+                            <span className={styles.seguimientoTexto}>
+                              Se enviará 1 día antes (
+                              {formatearFecha(
+                                new Date(
+                                  new Date(proximaCita).getTime() - 24 * 60 * 60 * 1000
+                                ).toISOString()
+                              )}
+                              )
+                            </span>
+                          </>
+                        ) : (
+                          <Badge variant="warning">Sin recordatorio</Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Selector de tipo de seguimiento */}
+                    {!ultimaConsulta.seguimiento_programado && (
+                      <div className={styles.seguimientoTipo}>
+                        <label className={styles.tipoLabel}>Tipo de seguimiento:</label>
+                        <div className={styles.tipoOpciones}>
+                          <label className={styles.radioOption}>
+                            <input
+                              type="radio"
+                              name="tipoSeguimiento"
+                              value="SOLO_RECORDATORIO"
+                              checked={tipoSeguimientoSeleccionado === 'SOLO_RECORDATORIO'}
+                              onChange={(e) => setTipoSeguimientoSeleccionado(e.target.value)}
+                            />
+                            <div className={styles.radioContent}>
+                              <span className={styles.radioTitle}>Solo recordatorio</span>
+                              <span className={styles.radioDescription}>
+                                1 mensaje 4 días antes de la fecha sugerida
+                              </span>
+                            </div>
+                          </label>
+                          <label className={styles.radioOption}>
+                            <input
+                              type="radio"
+                              name="tipoSeguimiento"
+                              value="SOLO_SEGUIMIENTO"
+                              checked={tipoSeguimientoSeleccionado === 'SOLO_SEGUIMIENTO'}
+                              onChange={(e) => setTipoSeguimientoSeleccionado(e.target.value)}
+                            />
+                            <div className={styles.radioContent}>
+                              <span className={styles.radioTitle}>Solo seguimiento</span>
+                              <span className={styles.radioDescription}>
+                                Hasta 3 mensajes de apoyo durante el periodo
+                              </span>
+                            </div>
+                          </label>
+                          <label className={styles.radioOption}>
+                            <input
+                              type="radio"
+                              name="tipoSeguimiento"
+                              value="RECORDATORIO_Y_SEGUIMIENTO"
+                              checked={tipoSeguimientoSeleccionado === 'RECORDATORIO_Y_SEGUIMIENTO'}
+                              onChange={(e) => setTipoSeguimientoSeleccionado(e.target.value)}
+                            />
+                            <div className={styles.radioContent}>
+                              <span className={styles.radioTitle}>Seguimiento completo</span>
+                              <span className={styles.radioDescription}>
+                                Mensajes de apoyo + recordatorio (hasta 4 mensajes)
+                              </span>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
                     )}
-                  </div>
-                </div>
 
-                {/* Selector de tipo de seguimiento */}
-                {!paciente.consultas[0].seguimiento_programado && (
-                  <div className={styles.seguimientoTipo}>
-                    <label className={styles.tipoLabel}>Tipo de seguimiento:</label>
-                    <div className={styles.tipoOpciones}>
-                      <label className={styles.radioOption}>
-                        <input
-                          type="radio"
-                          name="tipoSeguimiento"
-                          value="SOLO_RECORDATORIO"
-                          checked={tipoSeguimientoSeleccionado === 'SOLO_RECORDATORIO'}
-                          onChange={(e) => setTipoSeguimientoSeleccionado(e.target.value)}
-                        />
-                        <div className={styles.radioContent}>
-                          <span className={styles.radioTitle}>Solo recordatorio</span>
-                          <span className={styles.radioDescription}>
-                            1 mensaje 4 días antes de la fecha sugerida
-                          </span>
-                        </div>
-                      </label>
-                      <label className={styles.radioOption}>
-                        <input
-                          type="radio"
-                          name="tipoSeguimiento"
-                          value="SOLO_SEGUIMIENTO"
-                          checked={tipoSeguimientoSeleccionado === 'SOLO_SEGUIMIENTO'}
-                          onChange={(e) => setTipoSeguimientoSeleccionado(e.target.value)}
-                        />
-                        <div className={styles.radioContent}>
-                          <span className={styles.radioTitle}>Solo seguimiento</span>
-                          <span className={styles.radioDescription}>
-                            Hasta 3 mensajes de apoyo durante el periodo
-                          </span>
-                        </div>
-                      </label>
-                      <label className={styles.radioOption}>
-                        <input
-                          type="radio"
-                          name="tipoSeguimiento"
-                          value="RECORDATORIO_Y_SEGUIMIENTO"
-                          checked={tipoSeguimientoSeleccionado === 'RECORDATORIO_Y_SEGUIMIENTO'}
-                          onChange={(e) => setTipoSeguimientoSeleccionado(e.target.value)}
-                        />
-                        <div className={styles.radioContent}>
-                          <span className={styles.radioTitle}>Seguimiento completo</span>
-                          <span className={styles.radioDescription}>
-                            Mensajes de apoyo + recordatorio (hasta 4 mensajes)
-                          </span>
-                        </div>
-                      </label>
+                    {/* Mostrar tipo actual si está programado */}
+                    {ultimaConsulta.seguimiento_programado && ultimaConsulta.tipo_seguimiento && (
+                      <div className={styles.seguimientoTipoActual}>
+                        <span className={styles.tipoActualLabel}>Tipo programado:</span>
+                        <Badge variant="info">
+                          {ultimaConsulta.tipo_seguimiento === 'SOLO_RECORDATORIO' &&
+                            'Solo recordatorio'}
+                          {ultimaConsulta.tipo_seguimiento === 'SOLO_SEGUIMIENTO' &&
+                            'Solo seguimiento'}
+                          {ultimaConsulta.tipo_seguimiento === 'RECORDATORIO_Y_SEGUIMIENTO' &&
+                            'Ambos'}
+                        </Badge>
+                      </div>
+                    )}
+
+                    <div className={styles.seguimientoActions}>
+                      {ultimaConsulta.seguimiento_programado ? (
+                        <Button
+                          variant="outline"
+                          size="small"
+                          onClick={() => cancelarSeguimientoHandler(ultimaConsulta.id)}
+                          disabled={cancelandoSeguimiento}
+                        >
+                          {cancelandoSeguimiento ? 'Cancelando...' : 'Cancelar Recordatorio'}
+                        </Button>
+                      ) : (
+                        <Button
+                          size="small"
+                          onClick={() => programarSeguimientoHandler(ultimaConsulta.id)}
+                          disabled={programandoSeguimiento || new Date(proximaCita) < new Date()}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                          </svg>
+                          {programandoSeguimiento ? 'Programando...' : 'Programar Recordatorio'}
+                        </Button>
+                      )}
                     </div>
                   </div>
-                )}
-
-                {/* Mostrar tipo actual si está programado */}
-                {paciente.consultas[0].seguimiento_programado &&
-                  paciente.consultas[0].tipo_seguimiento && (
-                    <div className={styles.seguimientoTipoActual}>
-                      <span className={styles.tipoActualLabel}>Tipo programado:</span>
-                      <Badge variant="info">
-                        {paciente.consultas[0].tipo_seguimiento === 'SOLO_RECORDATORIO' &&
-                          'Solo recordatorio'}
-                        {paciente.consultas[0].tipo_seguimiento === 'SOLO_SEGUIMIENTO' &&
-                          'Solo seguimiento'}
-                        {paciente.consultas[0].tipo_seguimiento === 'RECORDATORIO_Y_SEGUIMIENTO' &&
-                          'Ambos'}
-                      </Badge>
-                    </div>
-                  )}
-
-                <div className={styles.seguimientoActions}>
-                  {paciente.consultas[0].seguimiento_programado ? (
-                    <Button
-                      variant="outline"
-                      size="small"
-                      onClick={() => cancelarSeguimientoHandler(paciente.consultas[0].id)}
-                      disabled={cancelandoSeguimiento}
-                    >
-                      {cancelandoSeguimiento ? 'Cancelando...' : 'Cancelar Recordatorio'}
-                    </Button>
-                  ) : (
-                    <Button
-                      size="small"
-                      onClick={() => programarSeguimientoHandler(paciente.consultas[0].id)}
-                      disabled={
-                        programandoSeguimiento ||
-                        new Date(paciente.consultas[0].proxima_cita) < new Date()
-                      }
-                    >
-                      <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                      </svg>
-                      {programandoSeguimiento ? 'Programando...' : 'Programar Recordatorio'}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                </CardContent>
+              </Card>
+            )
+          })()}
       </div>
 
       {/* Modal de Detalles de Cita */}
