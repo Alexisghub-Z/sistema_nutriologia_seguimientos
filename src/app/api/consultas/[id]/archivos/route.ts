@@ -102,7 +102,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
 }
 
 // GET /api/consultas/[id]/archivos - Obtener archivos de una consulta
-export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function GET(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser()
     if (!user) {

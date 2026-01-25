@@ -113,7 +113,7 @@ export default function CalendarioCitas({
   }
 
   const seleccionarFecha = (fecha: Date) => {
-    const fechaStr = fecha.toISOString().split('T')[0]
+    const fechaStr = fecha.toISOString().split('T')[0] || null
     setFechaActiva(fechaStr)
   }
 
@@ -140,7 +140,7 @@ export default function CalendarioCitas({
 
   const formatearHora12h = (hora24: string): string => {
     const [horas, minutos] = hora24.split(':')
-    const horasNum = parseInt(horas)
+    const horasNum = parseInt(horas!)
     const periodo = horasNum >= 12 ? 'PM' : 'AM'
     const horas12 = horasNum === 0 ? 12 : horasNum > 12 ? horasNum - 12 : horasNum
     return `${horas12}:${minutos} ${periodo}`

@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import ConversationList from '@/components/mensajes/ConversationList'
 import ChatWindow from '@/components/mensajes/ChatWindow'
 import styles from './mensajes.module.css'
 
-export default function MensajesPage() {
+function MensajesContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [selectedPacienteId, setSelectedPacienteId] = useState<string | null>(null)
@@ -79,5 +79,13 @@ export default function MensajesPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function MensajesPage() {
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <MensajesContent />
+    </Suspense>
   )
 }

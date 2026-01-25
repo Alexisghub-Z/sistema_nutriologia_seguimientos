@@ -44,7 +44,7 @@ export async function procesarConfirmacion(citaId: string): Promise<void> {
       telefono: cita.paciente.telefono,
       fecha_cita: fechaCita,
       hora_cita: hora,
-      codigo_cita: cita.codigo_cita,
+      codigo_cita: cita.codigo_cita || undefined,
       motivo: cita.motivo_consulta || undefined,
     }
 
@@ -125,7 +125,7 @@ export async function procesarRecordatorio24h(citaId: string): Promise<void> {
       telefono: cita.paciente.telefono,
       fecha_cita: fechaCita,
       hora_cita: hora,
-      codigo_cita: cita.codigo_cita,
+      codigo_cita: cita.codigo_cita || undefined,
       motivo: cita.motivo_consulta || undefined,
     }
 
@@ -203,7 +203,7 @@ export async function procesarRecordatorio1h(citaId: string): Promise<void> {
       telefono: cita.paciente.telefono,
       fecha_cita: fechaCita,
       hora_cita: hora,
-      codigo_cita: cita.codigo_cita,
+      codigo_cita: cita.codigo_cita || undefined,
       motivo: cita.motivo_consulta || undefined,
     }
 

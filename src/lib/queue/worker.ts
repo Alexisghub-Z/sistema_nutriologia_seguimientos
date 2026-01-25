@@ -159,7 +159,7 @@ mensajesQueue.process(TipoJob.RECORDATORIO_AGENDAR, async (job) => {
 })
 
 // Eventos del worker
-mensajesQueue.on('completed', (job, result) => {
+mensajesQueue.on('completed', (job, _result) => {
   console.log(`\n✅ [Queue] Job ${job.id} completado`)
   console.log(`📝 [Queue] Tipo: ${job.name}`)
 })

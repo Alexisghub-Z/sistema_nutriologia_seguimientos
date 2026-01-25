@@ -2,7 +2,7 @@ import styles from './common.module.css'
 
 interface BadgeProps {
   children: React.ReactNode
-  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'error'
+  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info'
   className?: string
 }
 
@@ -13,6 +13,7 @@ export default function Badge({ children, variant = 'primary', className = '' }:
     success: styles.badgeSuccess,
     warning: styles.badgeWarning,
     error: styles.badgeError,
+    info: styles.badgeInfo,
   }[variant]
 
   return <span className={`${styles.badge} ${variantClass} ${className}`}>{children}</span>

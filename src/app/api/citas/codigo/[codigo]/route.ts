@@ -8,7 +8,7 @@ import {
 } from '@/lib/services/google-calendar'
 
 // GET /api/citas/codigo/[codigo] - Buscar cita por código
-export async function GET(request: NextRequest, context: { params: Promise<{ codigo: string }> }) {
+export async function GET(_request: NextRequest, context: { params: Promise<{ codigo: string }> }) {
   try {
     // Await params (Next.js 15)
     const { codigo } = await context.params

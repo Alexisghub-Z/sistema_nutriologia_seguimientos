@@ -68,7 +68,7 @@ export default function AgendarCitaPage() {
         let fechaNacimientoFormateada = ''
         if (datos.fecha_nacimiento) {
           const fecha = new Date(datos.fecha_nacimiento)
-          fechaNacimientoFormateada = fecha.toISOString().split('T')[0]
+          fechaNacimientoFormateada = fecha.toISOString().split('T')[0] || ''
         }
 
         // Extraer teléfono y validar
@@ -80,6 +80,7 @@ export default function AgendarCitaPage() {
           telefono: telefonoExtraido,
           fecha_nacimiento: fechaNacimientoFormateada,
           motivo: datos.motivo || '',
+          tipo_cita: datos.tipo_cita || 'PRESENCIAL',
         })
 
         // Marcar teléfono como válido si tiene 10 dígitos
@@ -103,7 +104,9 @@ export default function AgendarCitaPage() {
     setHoraSeleccionada(hora)
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -255,7 +258,7 @@ export default function AgendarCitaPage() {
 
         // Formatear fecha de nacimiento
         const fechaNacimiento = new Date(dataVerificar.paciente.fecha_nacimiento)
-        const fechaFormateada = fechaNacimiento.toISOString().split('T')[0]
+        const fechaFormateada = fechaNacimiento.toISOString().split('T')[0] || ''
 
         // Extraer teléfono y validar
         const telefonoExtraido = extraerDigitosTelefono(dataVerificar.paciente.telefono)
@@ -266,6 +269,7 @@ export default function AgendarCitaPage() {
           telefono: telefonoExtraido,
           fecha_nacimiento: fechaFormateada,
           motivo: '',
+          tipo_cita: 'PRESENCIAL',
         })
 
         // Marcar teléfono como válido si tiene 10 dígitos
@@ -336,7 +340,7 @@ export default function AgendarCitaPage() {
   const formatearFecha = (fecha: string) => {
     // Parsear fecha manualmente para evitar problemas de zona horaria
     const [year, month, day] = fecha.split('-').map(Number)
-    const date = new Date(year, month - 1, day)
+    const date = new Date(year!, month! - 1, day!)
     return new Intl.DateTimeFormat('es-MX', {
       weekday: 'long',
       year: 'numeric',
@@ -347,7 +351,7 @@ export default function AgendarCitaPage() {
 
   const formatearHora12h = (hora24: string): string => {
     const [horas, minutos] = hora24.split(':')
-    const horasNum = parseInt(horas)
+    const horasNum = parseInt(horas!)
     const periodo = horasNum >= 12 ? 'PM' : 'AM'
     const horas12 = horasNum === 0 ? 12 : horasNum > 12 ? horasNum - 12 : horasNum
     return `${horas12}:${minutos} ${periodo}`

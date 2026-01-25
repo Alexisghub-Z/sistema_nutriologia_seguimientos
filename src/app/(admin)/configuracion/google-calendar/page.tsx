@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Button from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
@@ -14,7 +14,7 @@ interface AccountInfo {
   picture: string | null
 }
 
-export default function GoogleCalendarConfigPage() {
+function GoogleCalendarContent() {
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState(false)
@@ -340,5 +340,13 @@ export default function GoogleCalendarConfigPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function GoogleCalendarConfigPage() {
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <GoogleCalendarContent />
+    </Suspense>
   )
 }

@@ -105,8 +105,8 @@ export async function GET(request: NextRequest) {
     const [horaInicio, minInicio] = horarioInicio.split(':').map(Number)
     const [horaFin, minFin] = horarioFin.split(':').map(Number)
 
-    const minutosInicio = horaInicio * 60 + minInicio
-    const minutosFin = horaFin * 60 + minFin
+    const minutosInicio = horaInicio! * 60 + minInicio!
+    const minutosFin = horaFin! * 60 + minFin!
     const duracionTotal = config.duracion_cita_default // Sin intervalo entre citas (0 minutos)
 
     const slots: string[] = []
@@ -163,13 +163,6 @@ export async function GET(request: NextRequest) {
 
         console.log(`📅 ${eventosCalendar.length} eventos de Google Calendar para ${fechaParam}:`)
         eventosCalendar.forEach((evento, i) => {
-          // Mostrar en hora local para debugging
-          const inicioLocal = new Date(
-            evento.inicio.toLocaleString('en-US', { timeZone: 'America/Mexico_City' })
-          )
-          const finLocal = new Date(
-            evento.fin.toLocaleString('en-US', { timeZone: 'America/Mexico_City' })
-          )
           console.log(
             `  ${i + 1}. UTC: ${evento.inicio.toISOString()} - ${evento.fin.toISOString()}`
           )
@@ -193,10 +186,10 @@ export async function GET(request: NextRequest) {
       // Convertir hora local de México (UTC-6) a UTC
       // Ejemplo: 17:00 hora local México = 23:00 UTC
       const offsetMexico = 6 // UTC-6
-      const horaUTC = hora + offsetMexico
+      const horaUTC = hora! + offsetMexico
 
       // Crear fecha del slot en UTC
-      const fechaSlotUTC = new Date(Date.UTC(year, month - 1, day, horaUTC, min, 0, 0))
+      const fechaSlotUTC = new Date(Date.UTC(year!, month! - 1, day!, horaUTC, min!, 0, 0))
       const finSlotUTC = new Date(fechaSlotUTC.getTime() + config.duracion_cita_default * 60000)
 
       // Para validaciones en hora local

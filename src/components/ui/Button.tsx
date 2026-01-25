@@ -39,7 +39,7 @@ export default function Button({
     >
       {loading ? (
         <>
-          <Spinner size="sm" />
+          <Spinner size="small" />
           <span style={{ marginLeft: '8px' }}>{children}</span>
         </>
       ) : (

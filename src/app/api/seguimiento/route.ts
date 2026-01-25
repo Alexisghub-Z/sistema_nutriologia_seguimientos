@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth-utils'
 import prisma from '@/lib/prisma'
-import { programarSeguimiento, cancelarJobsCita } from '@/lib/queue/messages'
+import { programarSeguimiento } from '@/lib/queue/messages'
 import { z } from 'zod'
 import { deleteCache, deleteCachePattern, CacheKeys } from '@/lib/redis'
 

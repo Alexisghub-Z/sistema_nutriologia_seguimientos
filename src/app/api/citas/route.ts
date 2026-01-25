@@ -268,7 +268,10 @@ export async function POST(request: NextRequest) {
     // Cancelar recordatorios de agendar si el paciente ya agendó
     try {
       const { cancelarRecordatoriosAgendar } = await import('@/lib/queue/messages')
-      await cancelarRecordatoriosAgendar(validatedData.paciente_id, fechaCita)
+      await cancelarRecordatoriosAgendar(
+        validatedData.paciente_id,
+        new Date(validatedData.fecha_hora)
+      )
       console.log('🗑️  Recordatorios de agendar cancelados (paciente agendó cita desde admin)')
     } catch (cancelError) {
       console.error('Error al cancelar recordatorios:', cancelError)

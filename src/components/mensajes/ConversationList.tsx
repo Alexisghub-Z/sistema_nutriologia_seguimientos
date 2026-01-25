@@ -122,7 +122,7 @@ export default function ConversationList({
   if (loading && conversaciones.length === 0) {
     return (
       <div className={styles.loadingContainer}>
-        <Spinner size="md" />
+        <Spinner size="medium" />
         <p>Cargando conversaciones...</p>
       </div>
     )
@@ -157,7 +157,7 @@ export default function ConversationList({
       {/* Error */}
       {error && (
         <div className={styles.errorContainer}>
-          <Alert type="error" message={error} />
+          <Alert variant="error">{error}</Alert>
         </div>
       )}
 

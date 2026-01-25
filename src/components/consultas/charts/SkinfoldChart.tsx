@@ -86,7 +86,7 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
           <div className={styles.stats}>
             <div className={styles.statItem}>
               <span className={styles.statLabel}>Suma actual:</span>
-              <span className={styles.statValue}>{sumaActual.toFixed(1)} mm</span>
+              <span className={styles.statValue}>{sumaActual!.toFixed(1)} mm</span>
             </div>
             {diferenciaSuma !== null && (
               <div className={styles.statItem}>

@@ -44,13 +44,12 @@ export default function WeightChart({ data }: WeightChartProps) {
 
   // Calcular estadísticas (datos vienen ordenados de más antiguo a más reciente)
   const pesos = validData.filter((d) => d.peso !== null).map((d) => d.peso!)
-  const pesoInicial = pesos[0] // Primer elemento = más antiguo
-  const pesoActual = pesos[pesos.length - 1] // Último elemento = más reciente
+  const pesoInicial = pesos[0]! // Primer elemento = más antiguo
+  const pesoActual = pesos[pesos.length - 1]! // Último elemento = más reciente
   const diferenciaPeso = pesoActual - pesoInicial
 
   const imcs = validData.filter((d) => d.imc !== null).map((d) => d.imc!)
-  const imcInicial = imcs[0]
-  const imcActual = imcs[imcs.length - 1]
+  const imcActual = imcs[imcs.length - 1]!
 
   return (
     <div className={styles.chartContainer}>

@@ -10,7 +10,7 @@ import { deleteCache, deleteCachePattern, CacheKeys } from '@/lib/redis'
  * Elimina un archivo adjunto de una consulta
  */
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   context: { params: Promise<{ id: string; archivoId: string }> }
 ) {
   try {

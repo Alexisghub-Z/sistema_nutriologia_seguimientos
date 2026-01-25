@@ -4,7 +4,7 @@ import { readFile } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
 
-export async function GET(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
+export async function GET(_request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   try {
     // Verificar autenticación
     const user = await getAuthUser()

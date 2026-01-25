@@ -20,7 +20,7 @@ const pacienteUpdateSchema = z.object({
 })
 
 // GET /api/pacientes/[id] - Obtener un paciente específico (con caché)
-export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function GET(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser()
     if (!user) {
@@ -182,7 +182,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
 }
 
 // DELETE /api/pacientes/[id] - Eliminar paciente
-export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser()
     if (!user) {
