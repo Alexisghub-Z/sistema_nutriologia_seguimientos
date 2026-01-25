@@ -232,6 +232,31 @@ export async function createCalendarEvent(data: {
   try {
     const calendar = await getAuthenticatedCalendar()
 
+    // Calcular minutos desde ahora hasta la cita
+    const ahora = new Date()
+    const minutosHastaCita = Math.floor((data.fechaInicio.getTime() - ahora.getTime()) / (1000 * 60))
+
+    // Calcular recordatorio para 1 minuto después de crear (si la cita es en más de 2 minutos)
+    const recordatorioInmediato = minutosHastaCita > 2 ? minutosHastaCita - 1 : null
+
+    const reminders: any[] = [
+      { method: 'popup', minutes: 24 * 60 }, // 1 día antes
+      { method: 'popup', minutes: 60 }, // 1 hora antes
+    ]
+
+    // Solo agregar recordatorio inmediato si la cita es dentro de 28 días (límite de Google)
+    if (recordatorioInmediato && recordatorioInmediato <= 40320) {
+      reminders.unshift({ method: 'popup', minutes: recordatorioInmediato })
+      reminders.unshift({ method: 'email', minutes: recordatorioInmediato })
+      console.log(
+        `📅 Recordatorio inmediato configurado: ${recordatorioInmediato} minutos antes de la cita (≈1 min después de crear)`
+      )
+    } else if (recordatorioInmediato && recordatorioInmediato > 40320) {
+      console.warn(
+        `⚠️  Cita muy lejana (${Math.floor(recordatorioInmediato / 1440)} días), no se puede configurar recordatorio inmediato`
+      )
+    }
+
     const event = {
       summary: data.titulo,
       description: data.descripcion,
@@ -246,12 +271,7 @@ export async function createCalendarEvent(data: {
       // NO se agregan asistentes para evitar enviar invitaciones
       reminders: {
         useDefault: false,
-        overrides: [
-          { method: 'popup', minutes: 1 }, // Notificación inmediata (1 minuto después de crear)
-          { method: 'email', minutes: 1 }, // Email inmediato (1 minuto después de crear)
-          { method: 'popup', minutes: 24 * 60 }, // 1 día antes
-          { method: 'popup', minutes: 60 }, // 1 hora antes
-        ],
+        overrides: reminders,
       },
     }
 
