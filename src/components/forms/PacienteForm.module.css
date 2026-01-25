@@ -76,6 +76,13 @@
   margin-top: var(--spacing-xs);
 }
 
+.helpText {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+  margin-top: var(--spacing-xs);
+  font-style: italic;
+}
+
 .formActions {
   display: flex;
   justify-content: flex-end;
