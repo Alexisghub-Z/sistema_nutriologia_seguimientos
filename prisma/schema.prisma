@@ -184,6 +184,12 @@ model Consulta {
   seguimiento_programado Boolean           @default(false) // Si hay recordatorio programado
   tipo_seguimiento       TipoSeguimiento?  // Tipo de mensaje a enviar
 
+  // Información financiera
+  monto_consulta  Decimal?     @db.Decimal(10,2) // null = usa precio_consulta_default
+  metodo_pago     MetodoPago?  @default(EFECTIVO)
+  estado_pago     EstadoPago   @default(PAGADO)
+  notas_pago      String?      // Opcional: "Pagó con cambio de $500"
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -340,6 +346,9 @@ model ConfiguracionGeneral {
   dias_anticipacion_max           Int      @default(30) // Máximo días para agendar
   horas_anticipacion_min          Int      @default(24) // Mínimo horas de anticipación
 
+  // Configuración financiera
+  precio_consulta_default         Decimal  @default(350.00) @db.Decimal(10,2)
+
   createdAt                       DateTime @default(now())
   updatedAt                       DateTime @updatedAt
 
@@ -416,6 +425,19 @@ enum CategoriaPlantilla {
   RECORDATORIO
   SEGUIMIENTO
   PERSONALIZADO
+}
+
+enum MetodoPago {
+  EFECTIVO
+  TARJETA
+  TRANSFERENCIA
+  OTRO
+}
+
+enum EstadoPago {
+  PAGADO
+  PENDIENTE
+  PARCIAL
 }
 
 // ============================================

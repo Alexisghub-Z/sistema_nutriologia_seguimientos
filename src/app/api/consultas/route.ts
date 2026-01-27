@@ -48,6 +48,12 @@ const consultaSchema = z.object({
   plan: z.string().optional(),
   observaciones: z.string().optional(),
   proxima_cita: z.string().optional(),
+
+  // Información financiera
+  monto_consulta: z.number().positive().optional(),
+  metodo_pago: z.enum(['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'OTRO']).optional(),
+  estado_pago: z.enum(['PAGADO', 'PENDIENTE', 'PARCIAL']).optional(),
+  notas_pago: z.string().optional(),
 })
 
 // GET /api/consultas?paciente_id=xxx - Obtener consultas de un paciente con paginación (con caché)
@@ -82,7 +88,7 @@ export async function GET(request: NextRequest) {
 
       console.log('❌ Cache MISS: all consultations', paciente_id)
 
-      // Obtener todas las consultas (solo los datos necesarios para gráficas)
+      // Obtener todas las consultas (solo los datos necesarios para gráficas y estadísticas)
       const consultas = await prisma.consulta.findMany({
         where: { paciente_id },
         orderBy: { fecha: 'desc' },
@@ -98,6 +104,9 @@ export async function GET(request: NextRequest) {
           grasa_visceral: true,
           brazo_relajado: true,
           brazo_flexionado: true,
+          monto_consulta: true,
+          metodo_pago: true,
+          estado_pago: true,
           cintura: true,
           cadera_maximo: true,
           muslo_maximo: true,
@@ -242,6 +251,12 @@ export async function POST(request: NextRequest) {
         plan: validatedData.plan,
         observaciones: validatedData.observaciones,
         proxima_cita: validatedData.proxima_cita ? new Date(validatedData.proxima_cita) : null,
+
+        // Información financiera
+        monto_consulta: validatedData.monto_consulta,
+        metodo_pago: validatedData.metodo_pago,
+        estado_pago: validatedData.estado_pago,
+        notas_pago: validatedData.notas_pago,
       },
       include: {
         archivos: true,
