@@ -5,6 +5,7 @@ import { writeFile, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
 import { randomBytes } from 'crypto'
+import { deleteCachePattern, deleteCache, CacheKeys } from '@/lib/redis'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
@@ -89,6 +90,14 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
         descripcion,
       },
     })
+
+    // Invalidar caché de consultas del paciente para que se muestren los archivos adjuntos
+    await deleteCachePattern(`consultations:${consulta.paciente_id}:*`)
+    await deleteCache(CacheKeys.patientDetail(consulta.paciente_id))
+    console.log(
+      '🗑️  Cache invalidated after file upload: consultations and patient detail',
+      consulta.paciente_id
+    )
 
     return NextResponse.json(archivo, { status: 201 })
   } catch (error) {

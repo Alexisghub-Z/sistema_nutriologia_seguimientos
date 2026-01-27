@@ -1,13 +1,19 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth-utils'
 import prisma from '@/lib/prisma'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const user = await getAuthUser()
     if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
+
+    // Obtener parámetros de fecha del query string
+    const { searchParams } = new URL(request.url)
+    const rangoParam = searchParams.get('rango') || 'mes' // mes, semana, hoy, personalizado
+    const fechaInicioParam = searchParams.get('fechaInicio')
+    const fechaFinParam = searchParams.get('fechaFin')
 
     // Fecha de hoy (inicio y fin del día)
     const hoy = new Date()
@@ -15,7 +21,48 @@ export async function GET() {
     const mañana = new Date(hoy)
     mañana.setDate(mañana.getDate() + 1)
 
-    // Inicio del mes
+    // Determinar el rango de fechas según el parámetro
+    let fechaInicio: Date
+    let fechaFin: Date = new Date() // Fin es siempre ahora
+    fechaFin.setHours(23, 59, 59, 999)
+
+    switch (rangoParam) {
+      case 'hoy':
+        fechaInicio = new Date(hoy)
+        fechaFin = new Date(mañana)
+        fechaFin.setMilliseconds(-1)
+        break
+      case 'semana':
+        fechaInicio = new Date()
+        fechaInicio.setDate(fechaInicio.getDate() - 7)
+        fechaInicio.setHours(0, 0, 0, 0)
+        break
+      case 'mes':
+        fechaInicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+        break
+      case 'trimestre':
+        fechaInicio = new Date()
+        fechaInicio.setMonth(fechaInicio.getMonth() - 3)
+        fechaInicio.setHours(0, 0, 0, 0)
+        break
+      case 'anio':
+        fechaInicio = new Date(hoy.getFullYear(), 0, 1)
+        break
+      case 'personalizado':
+        if (fechaInicioParam && fechaFinParam) {
+          fechaInicio = new Date(fechaInicioParam)
+          fechaInicio.setHours(0, 0, 0, 0)
+          fechaFin = new Date(fechaFinParam)
+          fechaFin.setHours(23, 59, 59, 999)
+        } else {
+          fechaInicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+        }
+        break
+      default:
+        fechaInicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+    }
+
+    // Inicio del mes (para estadísticas que siempre son del mes)
     const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
 
     // Hace 30 días para tasa de asistencia
@@ -30,6 +77,9 @@ export async function GET() {
       citasUltimos30Dias,
       mensajesPendientes,
       ultimasConsultas,
+      configuracionGeneral,
+      consultasEsteMesCompletas,
+      consultasHoyCompletas,
     ] = await Promise.all([
       // Total de pacientes
       prisma.paciente.count(),
@@ -102,6 +152,40 @@ export async function GET() {
           },
         },
       }),
+
+      // Configuración general (para obtener precio default)
+      prisma.configuracionGeneral.findFirst(),
+
+      // Consultas del rango seleccionado con datos financieros
+      prisma.consulta.findMany({
+        where: {
+          fecha: {
+            gte: fechaInicio,
+            lte: fechaFin,
+          },
+        },
+        select: {
+          id: true,
+          monto_consulta: true,
+          estado_pago: true,
+          fecha: true,
+        },
+      }),
+
+      // Consultas de hoy con datos financieros (siempre mostrar)
+      prisma.consulta.findMany({
+        where: {
+          fecha: {
+            gte: hoy,
+            lt: mañana,
+          },
+        },
+        select: {
+          id: true,
+          monto_consulta: true,
+          estado_pago: true,
+        },
+      }),
     ])
 
     // Calcular estadísticas de citas de hoy
@@ -142,6 +226,48 @@ export async function GET() {
       imc: consulta.imc,
     }))
 
+    // Calcular estadísticas financieras
+    const precioDefault = configuracionGeneral?.precio_consulta_default
+      ? parseFloat(configuracionGeneral.precio_consulta_default.toString())
+      : 350.0
+
+    // Ingresos del rango seleccionado
+    const ingresosDelRango = consultasEsteMesCompletas.reduce((total, consulta) => {
+      const monto = consulta.monto_consulta
+        ? parseFloat(consulta.monto_consulta.toString())
+        : precioDefault
+      return total + monto
+    }, 0)
+
+    // Ingresos de hoy
+    const ingresosDeHoy = consultasHoyCompletas.reduce((total, consulta) => {
+      const monto = consulta.monto_consulta
+        ? parseFloat(consulta.monto_consulta.toString())
+        : precioDefault
+      return total + monto
+    }, 0)
+
+    // Promedio por consulta en el rango
+    const promedioConsulta =
+      consultasEsteMesCompletas.length > 0
+        ? ingresosDelRango / consultasEsteMesCompletas.length
+        : 0
+
+    // Pagos pendientes en el rango
+    const consultasPendientes = consultasEsteMesCompletas.filter(
+      (c) => c.estado_pago === 'PENDIENTE' || c.estado_pago === 'PARCIAL'
+    )
+    const montosPendientes = consultasPendientes.reduce((total, consulta) => {
+      const monto = consulta.monto_consulta
+        ? parseFloat(consulta.monto_consulta.toString())
+        : precioDefault
+      return total + monto
+    }, 0)
+
+    // Contar consultas por estado de pago
+    const consultasPagadas = consultasEsteMesCompletas.filter((c) => c.estado_pago === 'PAGADO')
+      .length
+
     return NextResponse.json({
       totalPacientes,
       citasHoy: {
@@ -156,6 +282,20 @@ export async function GET() {
       tasaAsistencia,
       mensajesPendientes,
       ultimasConsultas: ultimasConsultasFormateadas,
+      finanzas: {
+        rango: rangoParam,
+        fechaInicio: fechaInicio.toISOString(),
+        fechaFin: fechaFin.toISOString(),
+        totalConsultas: consultasEsteMesCompletas.length,
+        ingresosDelRango: Math.round(ingresosDelRango * 100) / 100,
+        ingresosDeHoy: Math.round(ingresosDeHoy * 100) / 100,
+        promedioConsulta: Math.round(promedioConsulta * 100) / 100,
+        consultasPagadas,
+        pagosPendientes: {
+          cantidad: consultasPendientes.length,
+          monto: Math.round(montosPendientes * 100) / 100,
+        },
+      },
     })
   } catch (error) {
     console.error('Error al obtener estadísticas del dashboard:', error)

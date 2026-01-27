@@ -34,46 +34,68 @@ interface DashboardStats {
     peso: number | null
     imc: number | null
   }>
+  finanzas: {
+    rango: string
+    fechaInicio: string
+    fechaFin: string
+    totalConsultas: number
+    ingresosDelRango: number
+    ingresosDeHoy: number
+    promedioConsulta: number
+    consultasPagadas: number
+    pagosPendientes: {
+      cantidad: number
+      monto: number
+    }
+  }
 }
+
+type RangoFechas = 'hoy' | 'semana' | 'mes' | 'trimestre' | 'anio' | 'personalizado'
 
 export default function DashboardPage() {
   const router = useRouter()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [rangoSeleccionado, setRangoSeleccionado] = useState<RangoFechas>('mes')
+  const [fechaInicio, setFechaInicio] = useState('')
+  const [fechaFin, setFechaFin] = useState('')
+  const [mostrarFechasPersonalizadas, setMostrarFechasPersonalizadas] = useState(false)
 
-  useEffect(() => {
-    fetch('/api/dashboard/stats')
-      .then((res) => res.json())
-      .then((data) => {
-        setStats(data)
-        setLoading(false)
-      })
-      .catch((error) => {
-        console.error('Error al cargar estadísticas:', error)
-        setLoading(false)
-      })
-  }, [])
+  const cargarEstadisticas = async (rango: RangoFechas, inicio?: string, fin?: string) => {
+    try {
+      setLoading(true)
+      let url = `/api/dashboard/stats?rango=${rango}`
+      if (rango === 'personalizado' && inicio && fin) {
+        url += `&fechaInicio=${inicio}&fechaFin=${fin}`
+      }
 
-  if (loading) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.pageHeader}>
-          <h1 className={styles.pageTitle}>Dashboard</h1>
-          <p className={styles.pageSubtitle}>Cargando...</p>
-        </div>
-      </div>
-    )
+      const res = await fetch(url)
+      const data = await res.json()
+      setStats(data)
+    } catch (error) {
+      console.error('Error al cargar estadísticas:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  if (!stats) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.pageHeader}>
-          <h1 className={styles.pageTitle}>Dashboard</h1>
-          <p className={styles.pageSubtitle}>Error al cargar datos</p>
-        </div>
-      </div>
-    )
+  useEffect(() => {
+    cargarEstadisticas(rangoSeleccionado, fechaInicio, fechaFin)
+  }, [rangoSeleccionado, fechaInicio, fechaFin])
+
+  const handleRangoChange = (nuevoRango: RangoFechas) => {
+    setRangoSeleccionado(nuevoRango)
+    if (nuevoRango === 'personalizado') {
+      setMostrarFechasPersonalizadas(true)
+    } else {
+      setMostrarFechasPersonalizadas(false)
+    }
+  }
+
+  const aplicarFechasPersonalizadas = () => {
+    if (fechaInicio && fechaFin) {
+      cargarEstadisticas('personalizado', fechaInicio, fechaFin)
+    }
   }
 
   const formatTime = (dateString: string) => {
@@ -93,42 +115,59 @@ export default function DashboardPage() {
     })
   }
 
+  const formatRangoLabel = () => {
+    if (!stats) return ''
+    const inicio = new Date(stats.finanzas.fechaInicio)
+    const fin = new Date(stats.finanzas.fechaFin)
+
+    return `${inicio.toLocaleDateString('es-MX', {
+      day: 'numeric',
+      month: 'short',
+    })} - ${fin.toLocaleDateString('es-MX', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })}`
+  }
+
   const getEstadoBadgeClass = (cita: any) => {
-    // Si está cancelada
     if (cita.estado === 'CANCELADA' || cita.estado_confirmacion === 'CANCELADA_PACIENTE') {
       return styles.badgeDanger
     }
-    // Si está completada
     if (cita.estado === 'COMPLETADA') {
       return styles.badgeInfo
     }
-    // Si está confirmada
     if (cita.estado_confirmacion === 'CONFIRMADA') {
       return styles.badgeSuccess
     }
-    // Si está pendiente o con recordatorio enviado
     return styles.badgeWarning
   }
 
   const getEstadoLabel = (cita: any) => {
-    // Si está cancelada
     if (cita.estado === 'CANCELADA' || cita.estado_confirmacion === 'CANCELADA_PACIENTE') {
       return 'Cancelada'
     }
-    // Si está completada
     if (cita.estado === 'COMPLETADA') {
       return 'Completada'
     }
-    // Si está confirmada
     if (cita.estado_confirmacion === 'CONFIRMADA') {
       return 'Confirmada'
     }
-    // Si recordatorio enviado
     if (cita.estado_confirmacion === 'RECORDATORIO_ENVIADO') {
       return 'Esperando confirmación'
     }
-    // Pendiente
     return 'Pendiente'
+  }
+
+  if (loading || !stats) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.pageTitle}>Dashboard</h1>
+          <p className={styles.pageSubtitle}>Cargando...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -140,16 +179,6 @@ export default function DashboardPage() {
           <p className={styles.pageSubtitle}>Resumen general de tu práctica nutricional</p>
         </div>
         <div className={styles.quickActions}>
-          <Button variant="primary" size="small" onClick={() => router.push('/agendar')}>
-            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-              <path
-                fillRule="evenodd"
-                d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Nueva Cita
-          </Button>
           <Button variant="outline" size="small" onClick={() => router.push('/pacientes/nuevo')}>
             <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
               <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
@@ -159,10 +188,182 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Selector de Rango */}
+      <div className={styles.filterSection}>
+        <div className={styles.filterHeader}>
+          <h3 className={styles.filterTitle}>Período de Análisis</h3>
+          <span className={styles.filterSubtitle}>{formatRangoLabel()}</span>
+        </div>
+        <div className={styles.rangoButtons}>
+          <button
+            className={`${styles.rangoButton} ${rangoSeleccionado === 'hoy' ? styles.rangoButtonActive : ''}`}
+            onClick={() => handleRangoChange('hoy')}
+          >
+            Hoy
+          </button>
+          <button
+            className={`${styles.rangoButton} ${rangoSeleccionado === 'semana' ? styles.rangoButtonActive : ''}`}
+            onClick={() => handleRangoChange('semana')}
+          >
+            Última Semana
+          </button>
+          <button
+            className={`${styles.rangoButton} ${rangoSeleccionado === 'mes' ? styles.rangoButtonActive : ''}`}
+            onClick={() => handleRangoChange('mes')}
+          >
+            Este Mes
+          </button>
+          <button
+            className={`${styles.rangoButton} ${rangoSeleccionado === 'trimestre' ? styles.rangoButtonActive : ''}`}
+            onClick={() => handleRangoChange('trimestre')}
+          >
+            Último Trimestre
+          </button>
+          <button
+            className={`${styles.rangoButton} ${rangoSeleccionado === 'anio' ? styles.rangoButtonActive : ''}`}
+            onClick={() => handleRangoChange('anio')}
+          >
+            Este Año
+          </button>
+          <button
+            className={`${styles.rangoButton} ${rangoSeleccionado === 'personalizado' ? styles.rangoButtonActive : ''}`}
+            onClick={() => handleRangoChange('personalizado')}
+          >
+            Personalizado
+          </button>
+        </div>
+
+        {mostrarFechasPersonalizadas && (
+          <div className={styles.fechasPersonalizadas}>
+            <div className={styles.fechaInput}>
+              <label>Desde</label>
+              <input
+                type="date"
+                value={fechaInicio}
+                onChange={(e) => setFechaInicio(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+            <div className={styles.fechaInput}>
+              <label>Hasta</label>
+              <input
+                type="date"
+                value={fechaFin}
+                onChange={(e) => setFechaFin(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+            <Button size="small" onClick={aplicarFechasPersonalizadas}>
+              Aplicar
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Stats Grid - Estadísticas Financieras */}
+      <div className={styles.sectionDivider}>
+        <h2 className={styles.sectionDividerTitle}>Estadísticas Financieras</h2>
+      </div>
       <div className={styles.statsGrid}>
         <div className={styles.statCard}>
-          <div className={styles.statIcon}>👥</div>
+          <div className={styles.statIconContainer}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <div className={styles.statContent}>
+            <p className={styles.statLabel}>Ingresos del Período</p>
+            <p className={styles.statValue}>
+              ${stats.finanzas.ingresosDelRango.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+            <p className={styles.statDetail}>{stats.finanzas.totalConsultas} consultas</p>
+          </div>
+        </div>
+
+        <div className={styles.statCard}>
+          <div className={styles.statIconContainer}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
+            </svg>
+          </div>
+          <div className={styles.statContent}>
+            <p className={styles.statLabel}>Promedio por Consulta</p>
+            <p className={styles.statValue}>
+              ${stats.finanzas.promedioConsulta.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+            <p className={styles.statDetail}>{stats.finanzas.consultasPagadas} pagadas</p>
+          </div>
+        </div>
+
+        <div className={styles.statCard}>
+          <div className={styles.statIconContainer}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+              />
+            </svg>
+          </div>
+          <div className={styles.statContent}>
+            <p className={styles.statLabel}>Ingresos de Hoy</p>
+            <p className={styles.statValue}>
+              ${stats.finanzas.ingresosDeHoy.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+            <p className={styles.statDetail}>
+              {formatDate(new Date().toISOString())}
+            </p>
+          </div>
+        </div>
+
+        <div className={`${styles.statCard} ${stats.finanzas.pagosPendientes.cantidad > 0 ? styles.statCardWarning : ''}`}>
+          <div className={styles.statIconContainer}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <div className={styles.statContent}>
+            <p className={styles.statLabel}>Pagos Pendientes</p>
+            <p className={styles.statValue}>{stats.finanzas.pagosPendientes.cantidad}</p>
+            <p className={styles.statDetail}>
+              ${stats.finanzas.pagosPendientes.monto.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Grid - Estadísticas Generales */}
+      <div className={styles.sectionDivider}>
+        <h2 className={styles.sectionDividerTitle}>Estadísticas Generales</h2>
+      </div>
+      <div className={styles.statsGrid}>
+        <div className={styles.statCard}>
+          <div className={styles.statIconContainer}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+          </div>
           <div className={styles.statContent}>
             <p className={styles.statLabel}>Total Pacientes</p>
             <p className={styles.statValue}>{stats.totalPacientes}</p>
@@ -170,7 +371,16 @@ export default function DashboardPage() {
         </div>
 
         <div className={styles.statCard}>
-          <div className={styles.statIcon}>📅</div>
+          <div className={styles.statIconContainer}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
           <div className={styles.statContent}>
             <p className={styles.statLabel}>Citas Hoy</p>
             <p className={styles.statValue}>{stats.citasHoy.total}</p>
@@ -181,7 +391,16 @@ export default function DashboardPage() {
         </div>
 
         <div className={styles.statCard}>
-          <div className={styles.statIcon}>📋</div>
+          <div className={styles.statIconContainer}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+          </div>
           <div className={styles.statContent}>
             <p className={styles.statLabel}>Consultas este Mes</p>
             <p className={styles.statValue}>{stats.consultasEsteMes}</p>
@@ -189,7 +408,16 @@ export default function DashboardPage() {
         </div>
 
         <div className={styles.statCard}>
-          <div className={styles.statIcon}>📊</div>
+          <div className={styles.statIconContainer}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
           <div className={styles.statContent}>
             <p className={styles.statLabel}>Tasa de Asistencia</p>
             <p className={styles.statValue}>{stats.tasaAsistencia}%</p>

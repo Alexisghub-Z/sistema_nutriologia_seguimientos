@@ -51,9 +51,15 @@ export default function ConsultaForm({
     plan: '',
     observaciones: '',
     proxima_cita: '',
+    monto_consulta: '',
+    metodo_pago: 'EFECTIVO',
+    estado_pago: 'PAGADO',
+    notas_pago: '',
   })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
@@ -116,6 +122,12 @@ export default function ConsultaForm({
         data.pliegue_supraespinal = parseFloat(formData.pliegue_supraespinal)
       if (formData.pliegue_abdominal)
         data.pliegue_abdominal = parseFloat(formData.pliegue_abdominal)
+
+      // Agregar información financiera
+      if (formData.monto_consulta) data.monto_consulta = parseFloat(formData.monto_consulta)
+      if (formData.metodo_pago) data.metodo_pago = formData.metodo_pago
+      if (formData.estado_pago) data.estado_pago = formData.estado_pago
+      if (formData.notas_pago) data.notas_pago = formData.notas_pago
 
       // Crear consulta
       const response = await fetch('/api/consultas', {
@@ -628,6 +640,87 @@ export default function ConsultaForm({
             placeholder="Cualquier otra observación relevante..."
             disabled={loading}
           />
+        </div>
+      </div>
+
+      {/* Información Financiera */}
+      <div className={styles.section}>
+        <h3 className={styles.sectionTitle}>Información de Pago</h3>
+        <div className={styles.gridTwo}>
+          <div className={styles.formGroup}>
+            <label htmlFor="monto_consulta" className={styles.label}>
+              Monto de la Consulta (MXN)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              id="monto_consulta"
+              name="monto_consulta"
+              value={formData.monto_consulta}
+              onChange={handleChange}
+              className={styles.input}
+              placeholder="350.00 (dejar vacío para usar precio default)"
+              disabled={loading}
+            />
+            <small style={{ color: '#666', fontSize: '0.875rem' }}>
+              Si se deja vacío, se usará el precio configurado en el sistema
+            </small>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="estado_pago" className={styles.label}>
+              Estado del Pago
+            </label>
+            <select
+              id="estado_pago"
+              name="estado_pago"
+              value={formData.estado_pago}
+              onChange={handleChange}
+              className={styles.input}
+              disabled={loading}
+            >
+              <option value="PAGADO">Pagado</option>
+              <option value="PENDIENTE">Pendiente</option>
+              <option value="PARCIAL">Parcial</option>
+            </select>
+          </div>
+        </div>
+
+        <div className={styles.gridTwo}>
+          <div className={styles.formGroup}>
+            <label htmlFor="metodo_pago" className={styles.label}>
+              Método de Pago
+            </label>
+            <select
+              id="metodo_pago"
+              name="metodo_pago"
+              value={formData.metodo_pago}
+              onChange={handleChange}
+              className={styles.input}
+              disabled={loading}
+            >
+              <option value="EFECTIVO">Efectivo</option>
+              <option value="TARJETA">Tarjeta</option>
+              <option value="TRANSFERENCIA">Transferencia</option>
+              <option value="OTRO">Otro</option>
+            </select>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="notas_pago" className={styles.label}>
+              Notas de Pago (opcional)
+            </label>
+            <input
+              type="text"
+              id="notas_pago"
+              name="notas_pago"
+              value={formData.notas_pago}
+              onChange={handleChange}
+              className={styles.input}
+              placeholder="Ej: Pagó con cambio de $500"
+              disabled={loading}
+            />
+          </div>
         </div>
       </div>
 
