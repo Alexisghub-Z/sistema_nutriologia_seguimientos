@@ -49,11 +49,13 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  border: 1px solid transparent;
 }
 
 .statCard:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
+  border-color: rgba(45, 159, 93, 0.1);
 }
 
 .statIcon {
@@ -68,14 +70,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--color-primary) 0%, #6366f1 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
   border-radius: var(--radius-lg);
   flex-shrink: 0;
   color: var(--color-white);
+  box-shadow: 0 4px 6px -1px rgba(45, 159, 93, 0.2);
 }
 
 .statCardWarning .statIconContainer {
   background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.2);
 }
 
 .statContent {
@@ -583,17 +587,18 @@
 .rangoButton:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
-  background-color: rgba(99, 102, 241, 0.05);
+  background-color: rgba(45, 159, 93, 0.05);
 }
 
 .rangoButtonActive {
-  background: linear-gradient(135deg, var(--color-primary) 0%, #6366f1 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
   border-color: var(--color-primary);
   color: var(--color-white);
+  box-shadow: 0 2px 4px -1px rgba(45, 159, 93, 0.3);
 }
 
 .rangoButtonActive:hover {
-  background: linear-gradient(135deg, #5558d9 0%, #5558d9 100%);
+  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
   color: var(--color-white);
 }
 
@@ -632,7 +637,7 @@
 .fechaInput input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 3px rgba(45, 159, 93, 0.1);
 }
 
 /* Section Divider */

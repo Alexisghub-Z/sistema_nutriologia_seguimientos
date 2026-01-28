@@ -2,6 +2,7 @@
 
 import { useSession, signOut } from 'next-auth/react'
 import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useSidebar } from '@/contexts/SidebarContext'
 import styles from './Header.module.css'
 
@@ -10,6 +11,7 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const { toggleSidebar } = useSidebar()
+  const router = useRouter()
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -92,13 +94,13 @@ export default function Header() {
                 <p className={styles.dropdownEmail}>{session?.user?.email}</p>
               </div>
               <div className={styles.dropdownDivider}></div>
-              <button className={styles.dropdownItem}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M8 8a3 3 0 100-6 3 3 0 000 6zM12.93 11c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 11v1H1v-1a5 5 0 015-5z" />
-                </svg>
-                Mi Perfil
-              </button>
-              <button className={styles.dropdownItem}>
+              <button
+                className={styles.dropdownItem}
+                onClick={() => {
+                  setIsMenuOpen(false)
+                  router.push('/configuracion')
+                }}
+              >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                   <path
                     fillRule="evenodd"
