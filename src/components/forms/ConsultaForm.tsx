@@ -659,7 +659,7 @@ export default function ConsultaForm({
               value={formData.monto_consulta}
               onChange={handleChange}
               className={styles.input}
-              placeholder="350.00 (dejar vacío para usar precio default)"
+              placeholder="500.00 (dejar vacío para usar precio default)"
               disabled={loading}
             />
             <small style={{ color: '#666', fontSize: '0.875rem' }}>

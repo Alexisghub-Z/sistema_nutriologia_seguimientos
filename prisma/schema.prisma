@@ -347,7 +347,7 @@ model ConfiguracionGeneral {
   horas_anticipacion_min          Int      @default(24) // Mínimo horas de anticipación
 
   // Configuración financiera
-  precio_consulta_default         Decimal  @default(350.00) @db.Decimal(10,2)
+  precio_consulta_default         Decimal  @default(500.00) @db.Decimal(10,2)
 
   createdAt                       DateTime @default(now())
   updatedAt                       DateTime @updatedAt

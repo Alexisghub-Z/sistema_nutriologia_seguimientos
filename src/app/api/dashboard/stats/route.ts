@@ -229,7 +229,7 @@ export async function GET(request: NextRequest) {
     // Calcular estadísticas financieras
     const precioDefault = configuracionGeneral?.precio_consulta_default
       ? parseFloat(configuracionGeneral.precio_consulta_default.toString())
-      : 350.0
+      : 500.0
 
     // Ingresos del rango seleccionado
     const ingresosDelRango = consultasEsteMesCompletas.reduce((total, consulta) => {

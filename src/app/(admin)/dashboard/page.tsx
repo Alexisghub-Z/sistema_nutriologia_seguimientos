@@ -3,7 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Button from '@/components/ui/Button'
+import PaymentStatusChart from '@/components/dashboard/PaymentStatusChart'
+import FinancialMetricsChart from '@/components/dashboard/FinancialMetricsChart'
 import styles from './dashboard.module.css'
+import chartStyles from '@/components/dashboard/Charts.module.css'
 
 interface DashboardStats {
   totalPacientes: number
@@ -346,6 +349,22 @@ export default function DashboardPage() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Gráficas Financieras */}
+      <div className={chartStyles.chartsGrid}>
+        <FinancialMetricsChart
+          ingresosDelRango={stats.finanzas.ingresosDelRango}
+          ingresosDeHoy={stats.finanzas.ingresosDeHoy}
+          promedioConsulta={stats.finanzas.promedioConsulta}
+          pagosPendientesMonto={stats.finanzas.pagosPendientes.monto}
+        />
+        <PaymentStatusChart
+          consultasPagadas={stats.finanzas.consultasPagadas}
+          pagosPendientesCantidad={stats.finanzas.pagosPendientes.cantidad}
+          pagosPendientesMonto={stats.finanzas.pagosPendientes.monto}
+          ingresosDelRango={stats.finanzas.ingresosDelRango}
+        />
       </div>
 
       {/* Stats Grid - Estadísticas Generales */}
