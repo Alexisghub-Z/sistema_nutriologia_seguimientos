@@ -39,6 +39,8 @@ export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWi
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
+  const prevMensajesLengthRef = useRef(0)
 
   // Fetch mensajes del paciente
   const fetchMensajes = async (silent = false) => {
@@ -110,10 +112,85 @@ export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWi
     return () => clearInterval(interval)
   }, [pacienteId])
 
-  // Scroll al último mensaje
+  // Scroll inteligente: solo si el usuario está al final o si hay nuevos mensajes
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [mensajes])
+    if (!messagesContainerRef.current) return
+
+    const container = messagesContainerRef.current
+    const isAtBottom =
+      container.scrollHeight - container.scrollTop <= container.clientHeight + 100
+
+    // Detectar nuevo mensaje ENTRANTE
+    const nuevoMensaje = mensajes.length > prevMensajesLengthRef.current
+    const ultimoMensaje = mensajes[mensajes.length - 1]
+    const esNuevoMensajeEntrante = nuevoMensaje && ultimoMensaje?.direccion === 'ENTRANTE'
+
+    // Reproducir sonido si es un mensaje entrante nuevo
+    if (esNuevoMensajeEntrante && prevMensajesLengthRef.current > 0) {
+      playNotificationSound()
+
+      // Mostrar notificación del navegador si el usuario no está en la pestaña
+      if (document.hidden && paciente) {
+        showBrowserNotification(paciente.nombre, ultimoMensaje.contenido)
+      }
+    }
+
+    // Hacer scroll si el usuario estaba al final O si envió un mensaje (último es SALIENTE)
+    const ultimoEsSaliente = ultimoMensaje?.direccion === 'SALIENTE'
+    if (isAtBottom || ultimoEsSaliente || mensajes.length === 1) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+
+    prevMensajesLengthRef.current = mensajes.length
+  }, [mensajes, paciente])
+
+  // Reproducir sonido de notificación
+  const playNotificationSound = () => {
+    try {
+      // Intentar reproducir archivo de audio
+      const audio = new Audio('/sounds/notification.mp3')
+      audio.volume = 0.5
+      audio.play().catch(() => {
+        // Si falla, usar Web Audio API como fallback
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+        const oscillator = audioContext.createOscillator()
+        const gainNode = audioContext.createGain()
+
+        oscillator.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+
+        oscillator.frequency.value = 800
+        oscillator.type = 'sine'
+        gainNode.gain.value = 0.1
+
+        oscillator.start()
+        oscillator.stop(audioContext.currentTime + 0.2)
+      })
+    } catch (err) {
+      console.log('Error al reproducir sonido:', err)
+    }
+  }
+
+  // Mostrar notificación del navegador
+  const showBrowserNotification = (titulo: string, mensaje: string) => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(titulo, {
+        body: mensaje.substring(0, 100),
+        icon: '/icon-192x192.png',
+        tag: 'nuevo-mensaje',
+      })
+    } else if ('Notification' in window && Notification.permission !== 'denied') {
+      Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') {
+          new Notification(titulo, {
+            body: mensaje.substring(0, 100),
+            icon: '/icon-192x192.png',
+            tag: 'nuevo-mensaje',
+          })
+        }
+      })
+    }
+  }
 
   // Formatear fecha
   const formatFecha = (fecha: string) => {
@@ -211,7 +288,7 @@ export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWi
       )}
 
       {/* Mensajes */}
-      <div className={styles.messagesContainer}>
+      <div className={styles.messagesContainer} ref={messagesContainerRef}>
         {mensajes.length === 0 ? (
           <div className={styles.emptyState}>
             <p>No hay mensajes aún</p>

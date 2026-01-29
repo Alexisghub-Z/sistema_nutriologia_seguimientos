@@ -73,6 +73,26 @@
   flex: 1;
 }
 
+.badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background-color: #ef4444;
+  color: var(--color-white);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.navItem.active .badge {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: var(--color-primary);
+}
+
 .footer {
   padding: var(--spacing-lg);
   border-top: 1px solid var(--color-border);

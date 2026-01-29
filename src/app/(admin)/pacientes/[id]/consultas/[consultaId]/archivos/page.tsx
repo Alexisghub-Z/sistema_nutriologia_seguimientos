@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card'
 import Alert from '@/components/ui/Alert'
 import Spinner from '@/components/ui/Spinner'
 import Badge from '@/components/ui/Badge'
+import FilePreviewModal from '@/components/ui/FilePreviewModal'
 import styles from './archivos.module.css'
 
 interface Archivo {
@@ -33,6 +34,11 @@ export default function ArchivosConsultaPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [categoria, setCategoria] = useState('DOCUMENTO')
   const [descripcion, setDescripcion] = useState('')
+  const [previewFile, setPreviewFile] = useState<{
+    url: string
+    name: string
+    type: string
+  } | null>(null)
 
   useEffect(() => {
     fetchArchivos()
@@ -152,8 +158,25 @@ export default function ArchivosConsultaPage() {
     }
   }
 
+  const handlePreview = (rutaArchivo: string, nombreOriginal: string, tipoMime: string) => {
+    setPreviewFile({
+      url: `/api${rutaArchivo}`,
+      name: nombreOriginal,
+      type: tipoMime,
+    })
+  }
+
   return (
-    <div className={styles.container}>
+    <>
+      <FilePreviewModal
+        isOpen={!!previewFile}
+        onClose={() => setPreviewFile(null)}
+        fileUrl={previewFile?.url || ''}
+        fileName={previewFile?.name || ''}
+        fileType={previewFile?.type || ''}
+      />
+
+      <div className={styles.container}>
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
@@ -309,6 +332,23 @@ export default function ArchivosConsultaPage() {
 
                 <div className={styles.archivoActions}>
                   <Button
+                    variant="primary"
+                    size="small"
+                    onClick={() =>
+                      handlePreview(archivo.ruta_archivo, archivo.nombre_original, archivo.tipo_mime)
+                    }
+                  >
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                      <path
+                        fillRule="evenodd"
+                        d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Ver
+                  </Button>
+                  <Button
                     variant="outline"
                     size="small"
                     onClick={() => handleDescargar(archivo.ruta_archivo, archivo.nombre_original)}
@@ -343,6 +383,7 @@ export default function ArchivosConsultaPage() {
           </div>
         )}
       </Card>
-    </div>
+      </div>
+    </>
   )
 }

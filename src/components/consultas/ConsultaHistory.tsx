@@ -7,6 +7,7 @@ import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
 import Alert from '@/components/ui/Alert'
+import FilePreviewModal from '@/components/ui/FilePreviewModal'
 import styles from './ConsultaHistory.module.css'
 
 interface Consulta {
@@ -46,6 +47,13 @@ interface Consulta {
   plan: string | null
   observaciones: string | null
   proxima_cita: string | null
+
+  // Información financiera
+  monto_consulta: any // Decimal
+  metodo_pago: string | null
+  estado_pago: string | null
+  notas_pago: string | null
+
   archivos: Array<{
     id: string
     nombre_original: string
@@ -81,6 +89,11 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
     total: 0,
     totalPages: 0,
   })
+  const [previewFile, setPreviewFile] = useState<{
+    url: string
+    name: string
+    type: string
+  } | null>(null)
 
   useEffect(() => {
     fetchConsultas()
@@ -153,6 +166,43 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
     return labels[categoria] || categoria
   }
 
+  const getMetodoPagoLabel = (metodo: string | null) => {
+    if (!metodo) return 'No especificado'
+    const labels: Record<string, string> = {
+      EFECTIVO: 'Efectivo',
+      TARJETA: 'Tarjeta',
+      TRANSFERENCIA: 'Transferencia',
+      OTRO: 'Otro',
+    }
+    return labels[metodo] || metodo
+  }
+
+  const getEstadoPagoBadge = (estado: string | null) => {
+    if (!estado) return 'info'
+    const badges: Record<string, string> = {
+      PAGADO: 'success',
+      PENDIENTE: 'warning',
+      PARCIAL: 'info',
+    }
+    return badges[estado] || 'info'
+  }
+
+  const getEstadoPagoLabel = (estado: string | null) => {
+    if (!estado) return 'No especificado'
+    const labels: Record<string, string> = {
+      PAGADO: 'Pagado',
+      PENDIENTE: 'Pendiente',
+      PARCIAL: 'Parcial',
+    }
+    return labels[estado] || estado
+  }
+
+  const formatearMonto = (monto: any) => {
+    if (!monto) return '$0.00'
+    const montoNum = typeof monto === 'string' ? parseFloat(monto) : monto
+    return `$${montoNum.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  }
+
   const handleDescargar = (rutaArchivo: string, nombreOriginal: string) => {
     // Crear enlace temporal para descargar
     const link = document.createElement('a')
@@ -161,6 +211,14 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+  }
+
+  const handlePreview = (rutaArchivo: string, nombreOriginal: string, tipoMime: string) => {
+    setPreviewFile({
+      url: `/api${rutaArchivo}`,
+      name: nombreOriginal,
+      type: tipoMime,
+    })
   }
 
   if (loading) {
@@ -201,7 +259,16 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
   }
 
   return (
-    <div className={styles.container}>
+    <>
+      <FilePreviewModal
+        isOpen={!!previewFile}
+        onClose={() => setPreviewFile(null)}
+        fileUrl={previewFile?.url || ''}
+        fileName={previewFile?.name || ''}
+        fileType={previewFile?.type || ''}
+      />
+
+      <div className={styles.container}>
       {/* Información de paginación */}
       {pagination.total > 0 && (
         <div className={styles.paginationInfo}>
@@ -231,9 +298,19 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
                   </div>
                 </div>
                 <div className={styles.headerRight}>
-                  {consulta.archivos.length > 0 && (
-                    <Badge variant="primary">{consulta.archivos.length} archivos</Badge>
-                  )}
+                  <div className={styles.badges}>
+                    {consulta.monto_consulta && (
+                      <Badge variant="success">{formatearMonto(consulta.monto_consulta)}</Badge>
+                    )}
+                    {consulta.estado_pago && consulta.estado_pago !== 'PAGADO' && (
+                      <Badge variant={getEstadoPagoBadge(consulta.estado_pago) as any}>
+                        {getEstadoPagoLabel(consulta.estado_pago)}
+                      </Badge>
+                    )}
+                    {consulta.archivos.length > 0 && (
+                      <Badge variant="primary">{consulta.archivos.length} archivos</Badge>
+                    )}
+                  </div>
                   <button type="button" className={styles.expandButton}>
                     <svg
                       width="20"
@@ -488,6 +565,45 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
                     </div>
                   )}
 
+                  {/* Información de Pago */}
+                  {(consulta.monto_consulta || consulta.metodo_pago || consulta.estado_pago) && (
+                    <div className={styles.section}>
+                      <h5 className={styles.sectionTitle}>Información de Pago</h5>
+                      <div className={styles.pagoInfo}>
+                        {consulta.monto_consulta && (
+                          <div className={styles.pagoItem}>
+                            <span className={styles.pagoLabel}>Monto:</span>
+                            <span className={styles.pagoValue}>
+                              {formatearMonto(consulta.monto_consulta)}
+                            </span>
+                          </div>
+                        )}
+                        {consulta.metodo_pago && (
+                          <div className={styles.pagoItem}>
+                            <span className={styles.pagoLabel}>Método:</span>
+                            <span className={styles.pagoValue}>
+                              {getMetodoPagoLabel(consulta.metodo_pago)}
+                            </span>
+                          </div>
+                        )}
+                        {consulta.estado_pago && (
+                          <div className={styles.pagoItem}>
+                            <span className={styles.pagoLabel}>Estado:</span>
+                            <Badge variant={getEstadoPagoBadge(consulta.estado_pago) as any}>
+                              {getEstadoPagoLabel(consulta.estado_pago)}
+                            </Badge>
+                          </div>
+                        )}
+                        {consulta.notas_pago && (
+                          <div className={styles.pagoItem}>
+                            <span className={styles.pagoLabel}>Notas:</span>
+                            <span className={styles.pagoValue}>{consulta.notas_pago}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Archivos Adjuntos */}
                   {consulta.archivos.length > 0 && (
                     <div className={styles.section}>
@@ -520,21 +636,43 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
                                 <p className={styles.archivoDescripcion}>{archivo.descripcion}</p>
                               )}
                             </div>
-                            <button
-                              onClick={() =>
-                                handleDescargar(archivo.ruta_archivo, archivo.nombre_original)
-                              }
-                              className={styles.descargarButton}
-                              title="Descargar"
-                            >
-                              <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                                <path
-                                  fillRule="evenodd"
-                                  d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                            </button>
+                            <div className={styles.archivoActions}>
+                              <button
+                                onClick={() =>
+                                  handlePreview(
+                                    archivo.ruta_archivo,
+                                    archivo.nombre_original,
+                                    archivo.tipo_mime
+                                  )
+                                }
+                                className={styles.verButton}
+                                title="Ver archivo"
+                              >
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleDescargar(archivo.ruta_archivo, archivo.nombre_original)
+                                }
+                                className={styles.descargarButton}
+                                title="Descargar"
+                              >
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -625,6 +763,7 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
           </Button>
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }
