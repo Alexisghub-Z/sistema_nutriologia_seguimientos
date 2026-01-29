@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { useSidebar } from '@/contexts/SidebarContext'
 import styles from './Sidebar.module.css'
 
@@ -68,6 +69,27 @@ const menuItems = [
 export default function Sidebar() {
   const pathname = usePathname()
   const { isOpen, closeSidebar } = useSidebar()
+  const [mensajesNoLeidos, setMensajesNoLeidos] = useState(0)
+
+  // Obtener contador de mensajes no leídos
+  const fetchMensajesNoLeidos = async () => {
+    try {
+      const response = await fetch('/api/mensajes/no-leidos')
+      if (response.ok) {
+        const data = await response.json()
+        setMensajesNoLeidos(data.total || 0)
+      }
+    } catch (error) {
+      console.error('Error al obtener mensajes no leídos:', error)
+    }
+  }
+
+  // Obtener contador al cargar y actualizar cada 10 segundos
+  useEffect(() => {
+    fetchMensajesNoLeidos()
+    const interval = setInterval(fetchMensajesNoLeidos, 10000)
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <>
@@ -89,6 +111,9 @@ export default function Sidebar() {
         <nav className={styles.nav}>
           {menuItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+            const isMensajes = item.href === '/mensajes'
+            const showBadge = isMensajes && mensajesNoLeidos > 0
+
             return (
               <Link
                 key={item.href}
@@ -98,6 +123,7 @@ export default function Sidebar() {
               >
                 <span className={styles.navIcon}>{item.icon}</span>
                 <span className={styles.navText}>{item.name}</span>
+                {showBadge && <span className={styles.badge}>{mensajesNoLeidos}</span>}
               </Link>
             )
           })}

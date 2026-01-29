@@ -281,6 +281,45 @@
   margin: 0;
 }
 
+/* Información de Pago */
+.pagoInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.pagoItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.pagoLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-600);
+  min-width: 80px;
+}
+
+.pagoValue {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-900);
+}
+
+.badges {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.archivoActions {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+.verButton,
 .descargarButton {
   display: flex;
   align-items: center;
@@ -289,17 +328,33 @@
   height: 40px;
   padding: 0;
   border: none;
-  background-color: var(--color-primary);
-  color: var(--color-white);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all var(--transition-fast);
   flex-shrink: 0;
 }
 
-.descargarButton:hover {
+.verButton {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+.verButton:hover {
   background-color: var(--color-primary-dark);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.descargarButton {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-700);
+}
+
+.descargarButton:hover {
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-900);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Próxima Cita */

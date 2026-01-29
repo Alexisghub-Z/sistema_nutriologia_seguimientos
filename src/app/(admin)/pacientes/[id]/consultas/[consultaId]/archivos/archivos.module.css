@@ -246,15 +246,18 @@
 
 .archivoActions {
   display: flex;
+  flex-direction: column;
   gap: var(--spacing-sm);
 }
 
-.archivoActions button {
-  flex: 1;
+.archivoActions button,
+.archivoActions a {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
 }
 
 .deleteButton {

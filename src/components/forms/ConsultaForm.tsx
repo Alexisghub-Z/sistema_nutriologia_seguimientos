@@ -22,7 +22,6 @@ export default function ConsultaForm({
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [archivosSeleccionados, setArchivosSeleccionados] = useState<File[]>([])
 
   const [formData, setFormData] = useState({
     motivo: '',
@@ -64,16 +63,6 @@ export default function ConsultaForm({
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files)
-      setArchivosSeleccionados((prev) => [...prev, ...newFiles])
-    }
-  }
-
-  const handleRemoveFile = (index: number) => {
-    setArchivosSeleccionados((prev) => prev.filter((_, i) => i !== index))
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -143,22 +132,7 @@ export default function ConsultaForm({
         throw new Error(errorData.error || 'Error al crear consulta')
       }
 
-      const consulta = await response.json()
-
-      // Subir archivos si hay
-      if (archivosSeleccionados.length > 0) {
-        for (const archivo of archivosSeleccionados) {
-          const formData = new FormData()
-          formData.append('file', archivo)
-          formData.append('categoria', 'DOCUMENTO')
-          formData.append('descripcion', archivo.name)
-
-          await fetch(`/api/consultas/${consulta.id}/archivos`, {
-            method: 'POST',
-            body: formData,
-          })
-        }
-      }
+      await response.json() // Consumir respuesta
 
       // Éxito
       if (onSuccess) {
@@ -742,95 +716,6 @@ export default function ConsultaForm({
             disabled={loading}
           />
         </div>
-      </div>
-
-      {/* Archivos Adjuntos */}
-      <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>Archivos Adjuntos</h3>
-        <div className={styles.infoBox}>
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className={styles.infoIcon}
-          >
-            <path
-              fillRule="evenodd"
-              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-              clipRule="evenodd"
-            />
-          </svg>
-          <p>
-            Puedes adjuntar análisis de laboratorio, fotos de progreso, estudios médicos, etc. Los
-            archivos se subirán al guardar la consulta.
-          </p>
-        </div>
-
-        <div className={styles.fileInputContainer}>
-          <label htmlFor="archivos" className={styles.fileInputLabel}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-              <path
-                fillRule="evenodd"
-                d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Seleccionar Archivos
-          </label>
-          <input
-            type="file"
-            id="archivos"
-            multiple
-            onChange={handleFileSelect}
-            className={styles.fileInput}
-            disabled={loading}
-            accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
-          />
-        </div>
-
-        {archivosSeleccionados.length > 0 && (
-          <div className={styles.fileList}>
-            <h4 className={styles.fileListTitle}>
-              Archivos seleccionados ({archivosSeleccionados.length})
-            </h4>
-            {archivosSeleccionados.map((file, index) => (
-              <div key={index} className={styles.fileItem}>
-                <div className={styles.fileInfo}>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className={styles.fileIcon}
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span className={styles.fileName}>{file.name}</span>
-                  <span className={styles.fileSize}>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveFile(index)}
-                  className={styles.fileRemoveButton}
-                  disabled={loading}
-                >
-                  <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-                    <path
-                      fillRule="evenodd"
-                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Botones */}
