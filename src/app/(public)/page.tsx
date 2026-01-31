@@ -119,47 +119,41 @@ export default function Home() {
           {/* Columna Izquierda - Información */}
           <div className={`${styles.sobreMiContent} fade-in-left`} data-scroll-reveal>
             <h2 className={styles.sobreMiTitle}>Sobre Mí</h2>
-            <h3 className={styles.sobreMiSubtitle}>Nutriólogo Paul Certificado</h3>
+            <h3 className={styles.sobreMiSubtitle}>Lic. Eder Paúl Alavez Cortés</h3>
 
             <p className={styles.sobreMiDescription}>
-              Con más de 10 años de experiencia ayudando a pacientes a alcanzar sus objetivos de
-              salud y bienestar a través de la nutrición personalizada y basada en evidencia
-              científica.
+              Soy nutriólogo clínico con más de 10 años de experiencia ayudando a personas a mejorar su salud, su composición corporal y su calidad de vida a través de planes de alimentación personalizados, basados en ciencia y adaptados a cada estilo de vida.
+            </p>
+
+            <p className={styles.sobreMiDescription}>
+              Trabajo tanto en consulta privada como en el ámbito hospitalario en Red OSMO, lo que me permite ofrecer un enfoque integral, seguro y profesional.
             </p>
 
             {/* Credenciales */}
             <div className={styles.credencialesContainer}>
               <div className={styles.credencialItem}>
-                <h4 className={styles.credencialTitulo}>Cédula Profesional</h4>
-                <p className={styles.credencialDetalle}>12345678 - Nutrición Clínica</p>
-              </div>
-
-              <div className={styles.credencialItem}>
-                <h4 className={styles.credencialTitulo}>Certificaciones</h4>
-                <ul className={styles.credencialLista}>
-                  <li>Certificación en Nutrición Deportiva</li>
-                  <li>Especialista en Diabetes y Nutrición</li>
-                  <li>Certificación en Nutrición Pediátrica</li>
-                  <li>Terapia Nutricional Intensiva</li>
-                </ul>
-              </div>
-
-              <div className={styles.credencialItem}>
                 <h4 className={styles.credencialTitulo}>Formación Académica</h4>
                 <ul className={styles.credencialLista}>
-                  <li>Licenciatura en Nutrición - UNAM</li>
-                  <li>Maestría en Ciencias de la Nutrición</li>
-                  <li>Diplomado en Obesidad y Síndrome Metabólico</li>
+                  <li>Licenciatura en Nutrición</li>
+                  <li>Maestro en Nutrición y Dietética</li>
                 </ul>
               </div>
 
               <div className={styles.credencialItem}>
                 <h4 className={styles.credencialTitulo}>Experiencia Profesional</h4>
                 <ul className={styles.credencialLista}>
-                  <li>Nutriólogo en Hospital Regional de Oaxaca (5 años)</li>
+                  <li>Nutriólogo Clínico – Red OSMO (2018 – Actualidad)</li>
                   <li>Consulta privada en Oaxaca (10+ años)</li>
-                  <li>Colaborador en medios de comunicación locales</li>
-                  <li>Más de 500 pacientes atendidos exitosamente</li>
+                  <li>Experiencia en investigación clínica</li>
+                </ul>
+              </div>
+
+              <div className={styles.credencialItem}>
+                <h4 className={styles.credencialTitulo}>Especialidades</h4>
+                <ul className={styles.credencialLista}>
+                  <li>Control de peso y composición corporal</li>
+                  <li>Enfermedades crónicas (diabetes, hipertensión, cáncer)</li>
+                  <li>Nutrición deportiva y rendimiento físico</li>
                 </ul>
               </div>
             </div>
@@ -226,10 +220,10 @@ export default function Home() {
       <section id="servicios" className={styles.serviciosSection}>
         <div className={styles.container}>
           <h2 className={`${styles.sectionTitle} fade-in`} data-scroll-reveal>
-            Servicios Especializados
+            ¿Cómo te ayudo?
           </h2>
           <p className={`${styles.sectionDescription} fade-in`} data-scroll-reveal>
-            Programas nutricionales diseñados para tus objetivos específicos
+            Durante la consulta realizo una evaluación completa y personalizada
           </p>
           <div className={styles.serviciosGrid}>
             <div className={`${styles.servicioCard} slide-up`} data-scroll-reveal>
@@ -247,10 +241,30 @@ export default function Home() {
                   <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                 </svg>
               </div>
-              <h3>Control de Peso</h3>
+              <h3>Evaluación Nutricional</h3>
               <p>
-                Pérdida o ganancia de peso saludable con planes personalizados basados en tu
-                metabolismo y estilo de vida.
+                Evaluación nutricional completa y personalizada con análisis de composición corporal para conocer tu estado actual.
+              </p>
+            </div>
+            <div className={`${styles.servicioCard} slide-up`} data-scroll-reveal>
+              <div className={styles.servicioIcono}>
+                <svg
+                  width="32"
+                  height="32"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                </svg>
+              </div>
+              <h3>Plan Personalizado</h3>
+              <p>
+                Plan de alimentación adaptado a tus objetivos, gustos y rutina diaria. Sin dietas genéricas, todo es personalizado.
               </p>
             </div>
             <div className={`${styles.servicioCard} slide-up`} data-scroll-reveal>
@@ -268,10 +282,9 @@ export default function Home() {
                   <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
                 </svg>
               </div>
-              <h3>Nutrición Clínica</h3>
+              <h3>Seguimiento Continuo</h3>
               <p>
-                Manejo nutricional de diabetes, hipertensión, colesterol alto y otras condiciones
-                médicas crónicas.
+                Acompañamiento y seguimiento continuo para asegurar que logres tus objetivos de forma sostenible.
               </p>
             </div>
             <div className={`${styles.servicioCard} slide-up`} data-scroll-reveal>
@@ -290,10 +303,9 @@ export default function Home() {
                   <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
                 </svg>
               </div>
-              <h3>Embarazo y Lactancia</h3>
+              <h3>Educación Nutricional</h3>
               <p>
-                Nutrición especializada para mamás, asegurando una alimentación óptima para ti y tu
-                bebé.
+                Educación nutricional para lograr cambios reales y duraderos. Aprenderás a tomar mejores decisiones alimentarias.
               </p>
             </div>
             <div className={`${styles.servicioCard} slide-up`} data-scroll-reveal>
@@ -314,32 +326,9 @@ export default function Home() {
                   <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                 </svg>
               </div>
-              <h3>Nutrición Infantil</h3>
+              <h3>Atención Hospitalaria</h3>
               <p>
-                Alimentación balanceada para el crecimiento y desarrollo óptimo de niños y
-                adolescentes.
-              </p>
-            </div>
-            <div className={`${styles.servicioCard} slide-up`} data-scroll-reveal>
-              <div className={styles.servicioIcono}>
-                <svg
-                  width="32"
-                  height="32"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-                </svg>
-              </div>
-              <h3>Reeducación Alimentaria</h3>
-              <p>
-                Aprende a comer bien sin dietas restrictivas, creando hábitos alimenticios
-                sostenibles a largo plazo.
+                Experiencia en atención nutricional hospitalaria y ambulatoria para pacientes con enfermedades crónicas.
               </p>
             </div>
           </div>
@@ -350,39 +339,35 @@ export default function Home() {
       <section id="beneficios" className={styles.beneficiosSection}>
         <div className={styles.container}>
           <h2 className={`${styles.sectionTitle} fade-in`} data-scroll-reveal>
-            ¿Por qué elegir a Nutriólogo Paul?
+            ¿Por qué confiar en mí?
           </h2>
           <div className={styles.beneficiosGrid}>
             <div className={`${styles.beneficioCard} fade-in`} data-scroll-reveal>
               <div className={styles.beneficioNumber}>01</div>
-              <h3>Atención Personalizada</h3>
+              <h3>Formación Completa</h3>
               <p>
-                Cada plan nutricional es único, diseñado específicamente para tus necesidades,
-                objetivos y estilo de vida.
+                Formación universitaria y de posgrado en nutrición. Maestro en Nutrición y Dietética con educación continua y especializada.
               </p>
             </div>
             <div className={`${styles.beneficioCard} fade-in`} data-scroll-reveal>
               <div className={styles.beneficioNumber}>02</div>
-              <h3>Seguimiento Continuo</h3>
+              <h3>Experiencia Clínica Real</h3>
               <p>
-                Monitoreo constante de tu progreso con ajustes en tiempo real para garantizar
-                resultados sostenibles.
+                Más de 10 años de experiencia clínica real en hospital y consulta privada. Atención nutricional a pacientes hospitalizados y ambulatorios.
               </p>
             </div>
             <div className={`${styles.beneficioCard} fade-in`} data-scroll-reveal>
               <div className={styles.beneficioNumber}>03</div>
-              <h3>Enfoque Científico</h3>
+              <h3>Actualización Constante</h3>
               <p>
-                Estrategias basadas en evidencia científica y las últimas investigaciones en
-                nutrición y salud.
+                Actualización constante y participación en congresos nacionales e internacionales. Experiencia en investigación clínica.
               </p>
             </div>
             <div className={`${styles.beneficioCard} fade-in`} data-scroll-reveal>
               <div className={styles.beneficioNumber}>04</div>
-              <h3>Resultados Medibles</h3>
+              <h3>Trato Profesional</h3>
               <p>
-                Cambios reales y cuantificables en tu salud, energía, composición corporal y
-                bienestar general.
+                Trato cercano, profesional y centrado en el paciente. Planes personalizados, no dietas genéricas. Enfoque integral y seguro.
               </p>
             </div>
           </div>
@@ -530,19 +515,19 @@ export default function Home() {
             <div className={styles.contactoCard}>
               <h3>Ubicación</h3>
               <p>
-                Calle Principal #123
-                <br />
                 Oaxaca de Juárez
                 <br />
-                Oaxaca, México 68000
+                Oaxaca, México
+                <br />
+                Consulta privada y Red OSMO
               </p>
             </div>
             <div className={styles.contactoCard}>
               <h3>Teléfono</h3>
               <p>
-                (951) 123-4567
+                Citas disponibles
                 <br />
-                (951) 765-4321
+                Agenda tu consulta
                 <br />
                 Lun - Vie: 9:00 - 18:00
               </p>
@@ -550,9 +535,9 @@ export default function Home() {
             <div className={styles.contactoCard}>
               <h3>Email</h3>
               <p>
-                consultas@drpaul.com
+                paul_nutricion@hotmail.com
                 <br />
-                info@drpaul.com
+                paul.alavez@redosmo.com
                 <br />
                 Respuesta en 24h
               </p>
@@ -568,7 +553,7 @@ export default function Home() {
             <div className={styles.footerColumn}>
               <div className={styles.footerLogo}>Nutriólogo Paul</div>
               <p className={styles.footerDescription}>
-                Consultorio de nutrición profesional dedicado a mejorar tu salud y bienestar.
+                Lic. Eder Paúl Alavez Cortés - Nutriólogo Clínico | Maestro en Nutrición y Dietética. Consultorio de nutrición profesional dedicado a mejorar tu salud y bienestar.
               </p>
             </div>
 
@@ -579,13 +564,13 @@ export default function Home() {
                   <a href="#servicios">Control de Peso</a>
                 </li>
                 <li>
-                  <a href="#servicios">Nutrición Deportiva</a>
+                  <a href="#servicios">Composición Corporal</a>
                 </li>
                 <li>
                   <a href="#servicios">Nutrición Clínica</a>
                 </li>
                 <li>
-                  <a href="#servicios">Embarazo y Lactancia</a>
+                  <a href="#servicios">Enfermedades Crónicas</a>
                 </li>
               </ul>
             </div>
