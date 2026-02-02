@@ -83,6 +83,7 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [closingId, setClosingId] = useState<string | null>(null)
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
@@ -123,6 +124,21 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleToggle = (consultaId: string) => {
+    if (expandedId === consultaId) {
+      // Cerrar con animación
+      setClosingId(consultaId)
+      setTimeout(() => {
+        setExpandedId(null)
+        setClosingId(null)
+      }, 300) // Duración de la animación
+    } else {
+      // Abrir
+      setExpandedId(consultaId)
+      setClosingId(null)
     }
   }
 
@@ -286,7 +302,7 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
             <Card key={consulta.id} className={styles.consultaCard}>
               <div
                 className={styles.consultaHeader}
-                onClick={() => setExpandedId(expandedId === consulta.id ? null : consulta.id)}
+                onClick={() => handleToggle(consulta.id)}
               >
                 <div className={styles.headerLeft}>
                   <div className={styles.consultaNumber}>#{consultaNumber}</div>
@@ -329,8 +345,10 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
                 </div>
               </div>
 
-              {expandedId === consulta.id && (
-                <CardContent className={styles.consultaContent}>
+              {(expandedId === consulta.id || closingId === consulta.id) && (
+                <CardContent
+                  className={`${styles.consultaContent} ${closingId === consulta.id ? styles.closing : ''}`}
+                >
                   {/* Mediciones Básicas */}
                   {(consulta.peso || consulta.talla || consulta.imc) && (
                     <div className={styles.section}>

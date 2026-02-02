@@ -8,7 +8,6 @@ import Alert from '@/components/ui/Alert'
 import {
   extraerDigitosTelefono,
   validarTelefonoMexico,
-  normalizarTelefonoMexico,
 } from '@/lib/utils/phone'
 import styles from './PacienteForm.module.css'
 
@@ -154,12 +153,13 @@ export default function PacienteForm({ pacienteId, initialData }: PacienteFormPr
       const url = isEditing ? `/api/pacientes/${pacienteId}` : '/api/pacientes'
       const method = isEditing ? 'PUT' : 'POST'
 
-      // Normalizar teléfono antes de enviar (convertir 10 dígitos a +521XXXXXXXXXX)
+      // Preparar datos para enviar
+      // El backend normaliza el teléfono automáticamente (10 dígitos → +521XXXXXXXXXX)
       const dataToSend = {
         ...formData,
         nombre: formData.nombre.trim(),
         email: formData.email.trim().toLowerCase(),
-        telefono: normalizarTelefonoMexico(formData.telefono),
+        telefono: formData.telefono, // Enviar solo los 10 dígitos
       }
 
       const response = await fetch(url, {
