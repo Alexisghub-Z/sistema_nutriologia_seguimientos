@@ -56,13 +56,15 @@ export function formatWhatsAppNumber(phoneNumber: string): string {
  * @param body - Contenido del mensaje (para sandbox)
  * @param contentSid - ID de plantilla aprobada (para producción)
  * @param contentVariables - Variables de la plantilla (para producción, JSON string)
+ * @param statusCallback - URL para recibir actualizaciones de estado del mensaje
  * @returns Información del mensaje enviado
  */
 export async function sendWhatsAppMessage(
   to: string,
   body: string,
   contentSid?: string,
-  contentVariables?: string
+  contentVariables?: string,
+  statusCallback?: string
 ) {
   try {
     const client = getTwilioClient()
@@ -106,6 +108,12 @@ export async function sendWhatsAppMessage(
     } else {
       // Modo sandbox: Usar texto libre
       messageParams.body = body
+    }
+
+    // Configurar StatusCallback URL para recibir actualizaciones
+    if (statusCallback) {
+      messageParams.statusCallback = statusCallback
+      console.log('📊 StatusCallback configurado:', statusCallback)
     }
 
     const message = await client.messages.create(messageParams)

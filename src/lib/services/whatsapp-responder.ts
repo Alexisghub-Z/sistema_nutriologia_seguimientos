@@ -174,12 +174,12 @@ export async function procesarMensajeEntrante(
 async function esRespuestaARecordatorio(mensaje: string, pacienteId: string): Promise<boolean> {
   const mensajeNormalizado = mensaje.trim().toLowerCase()
 
-  // Palabras clave de confirmación/cancelación
-  const palabrasCita = ['1', '2', 'confirmar', 'confirmo', 'cancelar', 'si', 'sí', 'no puedo']
+  // Palabras clave solo para CONFIRMACIÓN (cancelar ahora se maneja con IA + link)
+  const palabrasConfirmacion = ['1', 'confirmar', 'confirmo']
 
-  const contienepalabracita = palabrasCita.some((palabra) => mensajeNormalizado === palabra)
+  const esConfirmacion = palabrasConfirmacion.some((palabra) => mensajeNormalizado === palabra)
 
-  if (!contienepalabracita) {
+  if (!esConfirmacion) {
     return false
   }
 
@@ -230,9 +230,14 @@ function generarMensajeDerivacion(nombrePaciente: string, mensajeOriginal: strin
 
 Entiendo que tienes preguntas sobre ${temaDetectado}.
 
-Paul (el nutriólogo) te responderá personalmente para darte la mejor orientación.
+Para atención personalizada, puedes contactar directamente a:
 
-Mientras tanto, si tienes alguna pregunta sobre el consultorio (horarios, precios, ubicación), con gusto te ayudo. 🌿`
+📞 *Paul Cortez* (Nutriólogo)
+Teléfono: *951 130 1554*
+
+Él podrá darte la mejor orientación sobre tu caso específico.
+
+Mientras tanto, si tienes preguntas sobre el consultorio (horarios, precios, ubicación), con gusto te ayudo. 🌿`
 }
 
 /**
@@ -304,6 +309,7 @@ async function obtenerContextoPaciente(pacienteId: string): Promise<PacienteCont
         })
       : undefined,
     tipo_cita: proximaCita?.tipo_cita || undefined,
+    codigo_cita: proximaCita?.codigo_cita || undefined,
     es_paciente_nuevo: esPacienteNuevo,
     total_consultas: totalConsultas,
     ultima_consulta_fecha: ultimaConsulta

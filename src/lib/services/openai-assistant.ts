@@ -31,6 +31,32 @@ export function isOpenAIConfigured(): boolean {
 }
 
 /**
+ * Limpia formato Markdown de la respuesta para WhatsApp
+ * WhatsApp no interpreta Markdown, solo reconoce URLs directas
+ */
+function limpiarMarkdown(texto: string): string {
+  // Convertir enlaces [texto](url) a solo URL
+  // Ejemplo: [Agendar cita](https://ejemplo.com) -> https://ejemplo.com
+  let textoLimpio = texto.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$2')
+
+  // Eliminar formato de código ```texto```
+  textoLimpio = textoLimpio.replace(/```[^`]*```/g, (match) => {
+    return match.replace(/```/g, '')
+  })
+
+  // Eliminar código inline `texto`
+  textoLimpio = textoLimpio.replace(/`([^`]+)`/g, '$1')
+
+  // Convertir encabezados ## Texto a solo Texto
+  textoLimpio = textoLimpio.replace(/^#{1,6}\s+/gm, '')
+
+  // Mantener *texto* porque WhatsApp lo usa para negrita
+  // Mantener _texto_ porque WhatsApp lo usa para cursiva
+
+  return textoLimpio.trim()
+}
+
+/**
  * Interfaz para el contexto del paciente
  */
 export interface PacienteContexto {
@@ -39,6 +65,7 @@ export interface PacienteContexto {
   fecha_proxima_cita?: string
   hora_proxima_cita?: string
   tipo_cita?: string
+  codigo_cita?: string
   es_paciente_nuevo: boolean
   total_consultas?: number
   ultima_consulta_fecha?: string
@@ -86,6 +113,11 @@ function generarContextoSistema(pacienteContexto?: PacienteContexto): string {
       contexto += `- Fecha: ${pacienteContexto.fecha_proxima_cita}\n`
       contexto += `- Hora: ${pacienteContexto.hora_proxima_cita}\n`
       contexto += `- Modalidad: ${pacienteContexto.tipo_cita}\n`
+      if (pacienteContexto.codigo_cita) {
+        contexto += `- Código de cita: ${pacienteContexto.codigo_cita}\n`
+        contexto += `- URL para gestionar cita (confirmar/cancelar/reagendar): ${KNOWLEDGE_BASE.urls.sitio_web}/cita/${pacienteContexto.codigo_cita}\n`
+      }
+      contexto += `\nIMPORTANTE: Si el paciente pregunta sobre REAGENDAR, CANCELAR o CONFIRMAR su cita, proporciona la URL directa de gestión de cita.\n`
     } else {
       contexto += `\nNo tiene citas próximas agendadas.\n`
     }
@@ -166,14 +198,17 @@ export async function obtenerRespuestaIA(
       longitud: respuesta.length,
     })
 
+    // Limpiar formato Markdown de la respuesta (WhatsApp no lo interpreta)
+    const respuestaLimpia = limpiarMarkdown(respuesta)
+
     // Analizar si la IA sugiere derivar a humano
-    const debeDeriviar = analizarSiDebeDeriviar(respuesta, mensajePaciente)
+    const debeDeriviar = analizarSiDebeDeriviar(respuestaLimpia, mensajePaciente)
 
     // Calcular confianza basada en la respuesta
-    const confidence = calcularConfianza(respuesta, completion)
+    const confidence = calcularConfianza(respuestaLimpia, completion)
 
     return {
-      mensaje: respuesta,
+      mensaje: respuestaLimpia,
       debe_derivar_humano: debeDeriviar,
       confidence,
       tokens_usados: tokensUsados,

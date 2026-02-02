@@ -6,6 +6,7 @@ import {
   unsyncCitaFromGoogleCalendar,
   isGoogleCalendarConfigured,
 } from '@/lib/services/google-calendar'
+import { notificarCancelacion, notificarConfirmacion } from '@/lib/services/notificaciones'
 
 // GET /api/citas/codigo/[codigo] - Buscar cita por código
 export async function GET(_request: NextRequest, context: { params: Promise<{ codigo: string }> }) {
@@ -123,6 +124,11 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ cod
       })
 
       console.log(`✅ Cita confirmada por paciente: ${cita.id}`)
+
+      // Notificar al nutriólogo sobre la confirmación
+      notificarConfirmacion(cita).catch((err) =>
+        console.error('Error al notificar confirmación:', err)
+      )
     } else {
       // Cancelar la cita
       cita = await prisma.cita.update({
@@ -164,6 +170,13 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ cod
         console.error('Error al eliminar evento de Google Calendar:', calendarError)
         // No fallar la operación si no se puede eliminar del calendario
       }
+
+      console.log(`❌ Cita cancelada por paciente: ${cita.id}`)
+
+      // Notificar al nutriólogo sobre la cancelación
+      notificarCancelacion(cita).catch((err) =>
+        console.error('Error al notificar cancelación:', err)
+      )
     }
 
     // Invalidar caché del paciente

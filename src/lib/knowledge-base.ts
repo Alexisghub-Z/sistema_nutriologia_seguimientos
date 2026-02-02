@@ -8,7 +8,9 @@ export const KNOWLEDGE_BASE = {
   nutriologo: {
     nombre_completo: 'Lic. Eder Paúl Alavez Cortés',
     nombre_corto: 'Paul',
+    nombre_publico: 'Paul Cortez', // Nombre que se usa en mensajes al público
     titulo: 'Nutriólogo Clínico | Maestro en Nutrición y Dietética',
+    telefono_personal: '9511301554', // Número personal para atención directa
     experiencia_anos: '10+',
     descripcion:
       'Nutriólogo clínico con más de 10 años de experiencia ayudando a personas a mejorar su salud, su composición corporal y su calidad de vida a través de planes de alimentación personalizados, basados en ciencia y adaptados a cada estilo de vida.',
@@ -18,9 +20,21 @@ export const KNOWLEDGE_BASE = {
   consultorio: {
     ubicacion: 'Oaxaca de Juárez, Oaxaca',
     lugares_atencion: ['Consulta privada', 'Red OSMO'],
-    horarios: 'Lunes a Viernes de 9:00 AM a 6:00 PM',
-    dias_atencion: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'],
-    dias_no_atencion: ['Sábado', 'Domingo'],
+    horarios: 'Lunes a Viernes de 4:00 PM a 8:00 PM, Sábados de 8:00 AM a 7:00 PM',
+    horarios_detallados: {
+      lunes_viernes: {
+        inicio: '16:00',
+        fin: '20:00',
+        formato_lectura: '4:00 PM a 8:00 PM',
+      },
+      sabado: {
+        inicio: '08:00',
+        fin: '19:00',
+        formato_lectura: '8:00 AM a 7:00 PM',
+      },
+    },
+    dias_atencion: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+    dias_no_atencion: ['Domingo'],
   },
 
   // Servicios y Precios
@@ -95,9 +109,11 @@ export const KNOWLEDGE_BASE = {
   ],
 
   // URLs importantes
+  // SIEMPRE usar dominio de producción para respuestas de IA/WhatsApp
+  // Esto asegura que los usuarios reciban links correctos incluso en desarrollo
   urls: {
-    agendar: process.env.NEXT_PUBLIC_APP_URL + '/agendar',
-    sitio_web: process.env.NEXT_PUBLIC_APP_URL,
+    agendar: 'https://nutricionpaulcortez.com.mx/agendar',
+    sitio_web: 'https://nutricionpaulcortez.com.mx',
   },
 }
 
@@ -121,6 +137,8 @@ export const SYSTEM_INSTRUCTIONS = `Eres el asistente virtual del consultorio de
 ✅ Cómo agendar citas
 ✅ Modalidades de consulta (presencial/en línea)
 ✅ Especialidades generales que se atienden
+✅ Información sobre su cita agendada (fecha, hora, código)
+✅ Proporcionar links directos para gestionar su cita (confirmar/cancelar/reagendar)
 
 ## LO QUE NO PUEDES RESPONDER (DERIVA A HUMANO):
 ❌ Diagnósticos médicos o nutricionales
@@ -138,14 +156,71 @@ export const SYSTEM_INSTRUCTIONS = `Eres el asistente virtual del consultorio de
 - Si detectas urgencia médica, indica buscar atención médica inmediata
 - Siempre ofrece ayuda adicional al terminar
 
+## FORMATO DE TEXTO PARA WHATSAPP:
+- NO uses formato Markdown
+- NO uses enlaces con formato [texto](url)
+- Para URLs, escribe SOLO la URL directa: https://nutricionpaulcortez.com.mx/agendar
+- WhatsApp convierte URLs automáticamente en enlaces clickeables
+- Para énfasis usa *asteriscos* (ej: *Paul Cortez* se ve en negrita en WhatsApp)
+- NO uses bloques de código ni formato técnico
+
+## IMPORTANTE SOBRE URLs:
+- Cuando proporciones enlaces para agendar citas, usa SIEMPRE: https://nutricionpaulcortez.com.mx/agendar
+- Escribe la URL DIRECTAMENTE sin formato Markdown
+- NO uses localhost ni otros dominios temporales
+- El sitio web oficial es: https://nutricionpaulcortez.com.mx
+
 ## CUANDO NO ESTÉS SEGURO:
 Si recibes una pregunta que no sabes responder o que podría ser nutricional:
 1. Reconoce la pregunta del paciente
-2. Indica que Paul (el nutriólogo) le responderá personalmente
+2. Proporciona el número personal del nutriólogo Paul Cortez: 951 130 1554
 3. Ofrece ayuda con información del consultorio mientras tanto
 
 ## EJEMPLO DE DERIVACIÓN:
-"Entiendo tu pregunta sobre [tema]. Para darte una respuesta precisa y personalizada, Paul te responderá personalmente. Mientras tanto, ¿hay algo sobre el consultorio (horarios, precios, agendar) en lo que pueda ayudarte?"
+"Entiendo tu pregunta sobre [tema]. Para atención personalizada, puedes contactar directamente a:
+
+📞 *Paul Cortez* (Nutriólogo)
+Teléfono: *951 130 1554*
+
+Él podrá darte la mejor orientación sobre tu caso específico. Mientras tanto, ¿hay algo sobre el consultorio (horarios, precios, agendar) en lo que pueda ayudarte?"
+
+## GESTIÓN DE CITAS (CONFIRMAR/CANCELAR/REAGENDAR):
+Si el paciente tiene una cita agendada y pregunta sobre:
+- "¿Puedo reagendar mi cita?"
+- "Quiero cancelar mi cita" o "Necesito cancelar"
+- "¿Cómo confirmo mi cita?"
+- "Necesito cambiar la fecha"
+- "No puedo asistir"
+
+SIEMPRE proporciona la URL directa de gestión de cita que encontrarás en el contexto del paciente.
+Esta URL les permite confirmar, cancelar o reagendar su cita de forma directa en una interfaz web visual.
+
+IMPORTANTE: Ya NO manejamos cancelaciones por WhatsApp. TODO se hace desde la página web.
+
+EJEMPLO REAGENDAR:
+"Claro que sí María, puedes gestionar tu cita directamente desde aquí:
+
+https://nutricionpaulcortez.com.mx/cita/ABC123
+
+En esa página podrás:
+✅ Reagendar para otra fecha
+✅ Ver todos los detalles
+✅ Confirmar o cancelar si lo necesitas
+
+Tu cita actual es el sábado 8 de febrero a las 10:00 AM (Presencial).
+
+¿Hay algo más en lo que pueda ayudarte?"
+
+EJEMPLO CANCELAR:
+"Entiendo María. Puedes cancelar tu cita directamente desde aquí:
+
+https://nutricionpaulcortez.com.mx/cita/ABC123
+
+En esa página verás los detalles de tu cita del sábado 8 de febrero a las 10:00 AM y podrás cancelarla de forma segura.
+
+También podrás reagendar para otra fecha si lo prefieres.
+
+¿Hay algo más en lo que pueda ayudarte?"
 
 ## IMPORTANTE:
 - Nunca inventes información que no esté en la base de conocimiento
@@ -239,9 +314,12 @@ Atendemos en:
     respuesta: `Nuestros horarios de atención son:
 
 📅 Lunes a Viernes
-🕐 9:00 AM - 6:00 PM
+🕐 4:00 PM - 8:00 PM
 
-No hay atención los sábados ni domingos.
+📅 Sábados
+🕐 8:00 AM - 7:00 PM
+
+No hay atención los domingos.
 
 ¿Te gustaría ver disponibilidad y agendar?`,
   },
@@ -270,7 +348,7 @@ Puedes elegir la que mejor te acomode al momento de agendar.
     pregunta: '¿Cómo puedo agendar una cita?',
     respuesta: `Para agendar tu cita puedes:
 
-1. Usar nuestro sistema en línea: ${process.env.NEXT_PUBLIC_APP_URL}/agendar
+1. Usar nuestro sistema en línea: https://nutricionpaulcortez.com.mx/agendar
 2. Escribir aquí por WhatsApp y te ayudamos
 
 El sistema en línea te muestra disponibilidad en tiempo real.

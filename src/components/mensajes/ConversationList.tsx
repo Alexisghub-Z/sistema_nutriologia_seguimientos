@@ -5,30 +5,27 @@ import Spinner from '@/components/ui/Spinner'
 import Alert from '@/components/ui/Alert'
 import styles from './ConversationList.module.css'
 
-interface Paciente {
-  id: string
-  nombre: string
-  email: string
-  telefono: string
-}
-
 interface UltimoMensaje {
   id: string
   contenido: string
   direccion: string
   createdAt: string
-  leido: boolean
+  leido?: boolean
 }
 
 interface Conversacion {
-  paciente: Paciente
+  tipo: 'PACIENTE' | 'PROSPECTO'
+  id: string
+  nombre: string
+  email: string | null
+  telefono: string
   ultimoMensaje: UltimoMensaje | null
   mensajesNoLeidos: number
 }
 
 interface ConversationListProps {
   selectedPacienteId: string | null
-  onSelectConversation: (pacienteId: string) => void
+  onSelectConversation: (id: string, tipo: 'PACIENTE' | 'PROSPECTO') => void
   refreshKey: number
 }
 
@@ -41,6 +38,7 @@ export default function ConversationList({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [filtroTipo, setFiltroTipo] = useState<'TODOS' | 'PACIENTE' | 'PROSPECTO'>('TODOS')
 
   // Fetch conversaciones
   const fetchConversaciones = async (silent = false) => {
@@ -119,6 +117,12 @@ export default function ConversationList({
     return contenido.substring(0, maxLength) + '...'
   }
 
+  // Filtrar conversaciones según el tipo seleccionado
+  const conversacionesFiltradas = conversaciones.filter((conv) => {
+    if (filtroTipo === 'TODOS') return true
+    return conv.tipo === filtroTipo
+  })
+
   if (loading && conversaciones.length === 0) {
     return (
       <div className={styles.loadingContainer}>
@@ -154,6 +158,39 @@ export default function ConversationList({
         </svg>
       </div>
 
+      {/* Filtros */}
+      <div className={styles.filtersContainer}>
+        <button
+          className={`${styles.filterButton} ${filtroTipo === 'TODOS' ? styles.active : ''}`}
+          onClick={() => setFiltroTipo('TODOS')}
+        >
+          Todos
+          {filtroTipo === 'TODOS' && <span className={styles.filterCount}>{conversaciones.length}</span>}
+        </button>
+        <button
+          className={`${styles.filterButton} ${filtroTipo === 'PACIENTE' ? styles.active : ''}`}
+          onClick={() => setFiltroTipo('PACIENTE')}
+        >
+          Pacientes
+          {filtroTipo === 'PACIENTE' && (
+            <span className={styles.filterCount}>
+              {conversaciones.filter((c) => c.tipo === 'PACIENTE').length}
+            </span>
+          )}
+        </button>
+        <button
+          className={`${styles.filterButton} ${filtroTipo === 'PROSPECTO' ? styles.active : ''}`}
+          onClick={() => setFiltroTipo('PROSPECTO')}
+        >
+          Prospectos
+          {filtroTipo === 'PROSPECTO' && (
+            <span className={styles.filterCount}>
+              {conversaciones.filter((c) => c.tipo === 'PROSPECTO').length}
+            </span>
+          )}
+        </button>
+      </div>
+
       {/* Error */}
       {error && (
         <div className={styles.errorContainer}>
@@ -163,23 +200,29 @@ export default function ConversationList({
 
       {/* Lista de conversaciones */}
       <div className={styles.conversationsList}>
-        {conversaciones.length === 0 ? (
+        {conversacionesFiltradas.length === 0 ? (
           <div className={styles.emptyState}>
-            <p>No hay conversaciones</p>
+            <p>
+              {filtroTipo === 'TODOS'
+                ? 'No hay conversaciones'
+                : filtroTipo === 'PACIENTE'
+                  ? 'No hay pacientes'
+                  : 'No hay prospectos'}
+            </p>
           </div>
         ) : (
-          conversaciones.map((conv) => (
+          conversacionesFiltradas.map((conv) => (
             <div
-              key={conv.paciente.id}
+              key={conv.id}
               className={`${styles.conversationItem} ${
-                selectedPacienteId === conv.paciente.id ? styles.active : ''
+                selectedPacienteId === conv.id ? styles.active : ''
               }`}
-              onClick={() => onSelectConversation(conv.paciente.id)}
+              onClick={() => onSelectConversation(conv.id, conv.tipo)}
             >
               {/* Avatar */}
               <div className={styles.avatar}>
                 <span className={styles.avatarText}>
-                  {conv.paciente.nombre
+                  {conv.nombre
                     .split(' ')
                     .map((n) => n[0])
                     .slice(0, 2)
@@ -191,7 +234,16 @@ export default function ConversationList({
               {/* Contenido */}
               <div className={styles.conversationContent}>
                 <div className={styles.conversationHeader}>
-                  <h3 className={styles.pacienteNombre}>{conv.paciente.nombre}</h3>
+                  <div className={styles.headerContent}>
+                    <h3 className={styles.pacienteNombre}>{conv.nombre}</h3>
+                    <span
+                      className={
+                        conv.tipo === 'PACIENTE' ? styles.badgePaciente : styles.badgeProspecto
+                      }
+                    >
+                      {conv.tipo === 'PACIENTE' ? '✓ Paciente' : '• Prospecto'}
+                    </span>
+                  </div>
                   {conv.ultimoMensaje && (
                     <span className={styles.timestamp}>
                       {formatFechaRelativa(conv.ultimoMensaje.createdAt)}

@@ -29,11 +29,12 @@ interface Mensaje {
 
 interface ChatWindowProps {
   pacienteId: string
+  tipo: 'PACIENTE' | 'PROSPECTO'
   onMessageSent: () => void
   onBack?: () => void
 }
 
-export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWindowProps) {
+export default function ChatWindow({ pacienteId, tipo, onMessageSent, onBack }: ChatWindowProps) {
   const [mensajes, setMensajes] = useState<Mensaje[]>([])
   const [paciente, setPaciente] = useState<Paciente | null>(null)
   const [loading, setLoading] = useState(true)
@@ -50,7 +51,7 @@ export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWi
       }
       setError(null)
 
-      const response = await fetch(`/api/mensajes?paciente_id=${pacienteId}`)
+      const response = await fetch(`/api/mensajes?paciente_id=${pacienteId}&tipo=${tipo}`)
 
       if (!response.ok) {
         throw new Error('Error al cargar mensajes')
@@ -59,9 +60,19 @@ export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWi
       const data = await response.json()
       setMensajes(data.mensajes || [])
 
-      // Obtener info del paciente, ya sea de mensajes o directamente de la API
+      // Obtener info del paciente o prospecto
       if (data.mensajes && data.mensajes.length > 0) {
-        setPaciente(data.mensajes[0].paciente)
+        const primerMensaje = data.mensajes[0]
+        if (tipo === 'PROSPECTO') {
+          setPaciente({
+            id: primerMensaje.prospecto.id,
+            nombre: primerMensaje.prospecto.nombre || 'Sin nombre',
+            email: '',
+            telefono: primerMensaje.prospecto.telefono,
+          })
+        } else {
+          setPaciente(primerMensaje.paciente)
+        }
 
         // Marcar mensajes entrantes como leídos
         const mensajesNoLeidos = data.mensajes.filter(
@@ -76,16 +87,29 @@ export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWi
           })
         }
       } else {
-        // Si no hay mensajes, obtener info del paciente directamente
-        const pacienteResponse = await fetch(`/api/pacientes/${pacienteId}`)
-        if (pacienteResponse.ok) {
-          const pacienteData = await pacienteResponse.json()
-          setPaciente({
-            id: pacienteData.id,
-            nombre: pacienteData.nombre,
-            email: pacienteData.email,
-            telefono: pacienteData.telefono,
-          })
+        // Si no hay mensajes, obtener info directamente
+        if (tipo === 'PROSPECTO') {
+          const prospectoResponse = await fetch(`/api/prospectos/${pacienteId}`)
+          if (prospectoResponse.ok) {
+            const prospectoData = await prospectoResponse.json()
+            setPaciente({
+              id: prospectoData.id,
+              nombre: prospectoData.nombre || 'Sin nombre',
+              email: '',
+              telefono: prospectoData.telefono,
+            })
+          }
+        } else {
+          const pacienteResponse = await fetch(`/api/pacientes/${pacienteId}`)
+          if (pacienteResponse.ok) {
+            const pacienteData = await pacienteResponse.json()
+            setPaciente({
+              id: pacienteData.id,
+              nombre: pacienteData.nombre,
+              email: pacienteData.email,
+              telefono: pacienteData.telefono,
+            })
+          }
         }
       }
     } catch (err) {
@@ -125,10 +149,8 @@ export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWi
     const ultimoMensaje = mensajes[mensajes.length - 1]
     const esNuevoMensajeEntrante = nuevoMensaje && ultimoMensaje?.direccion === 'ENTRANTE'
 
-    // Reproducir sonido si es un mensaje entrante nuevo
+    // Mostrar notificación del navegador si es un mensaje entrante nuevo
     if (esNuevoMensajeEntrante && prevMensajesLengthRef.current > 0) {
-      playNotificationSound()
-
       // Mostrar notificación del navegador si el usuario no está en la pestaña
       if (document.hidden && paciente) {
         showBrowserNotification(paciente.nombre, ultimoMensaje.contenido)
@@ -143,33 +165,6 @@ export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWi
 
     prevMensajesLengthRef.current = mensajes.length
   }, [mensajes, paciente])
-
-  // Reproducir sonido de notificación
-  const playNotificationSound = () => {
-    try {
-      // Intentar reproducir archivo de audio
-      const audio = new Audio('/sounds/notification.mp3')
-      audio.volume = 0.5
-      audio.play().catch(() => {
-        // Si falla, usar Web Audio API como fallback
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-        const oscillator = audioContext.createOscillator()
-        const gainNode = audioContext.createGain()
-
-        oscillator.connect(gainNode)
-        gainNode.connect(audioContext.destination)
-
-        oscillator.frequency.value = 800
-        oscillator.type = 'sine'
-        gainNode.gain.value = 0.1
-
-        oscillator.start()
-        oscillator.stop(audioContext.currentTime + 0.2)
-      })
-    } catch (err) {
-      console.log('Error al reproducir sonido:', err)
-    }
-  }
 
   // Mostrar notificación del navegador
   const showBrowserNotification = (titulo: string, mensaje: string) => {
@@ -213,6 +208,7 @@ export default function ChatWindow({ pacienteId, onMessageSent, onBack }: ChatWi
           paciente_id: pacienteId,
           contenido,
           tipo: 'MANUAL',
+          tipo_destinatario: tipo,
         }),
       })
 
