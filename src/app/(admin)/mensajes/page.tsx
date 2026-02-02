@@ -9,16 +9,21 @@ import styles from './mensajes.module.css'
 function MensajesContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [selectedPacienteId, setSelectedPacienteId] = useState<string | null>(null)
+  const [selectedChat, setSelectedChat] = useState<{
+    id: string
+    tipo: 'PACIENTE' | 'PROSPECTO'
+  } | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
-  // Leer el paciente seleccionado de la URL
+  // Leer el chat seleccionado de la URL
   useEffect(() => {
-    const pacienteId = searchParams.get('chat')
-    if (pacienteId) {
-      setSelectedPacienteId(pacienteId)
+    const chatId = searchParams.get('chat')
+    const tipo = (searchParams.get('tipo') as 'PACIENTE' | 'PROSPECTO') || 'PACIENTE'
+
+    if (chatId) {
+      setSelectedChat({ id: chatId, tipo })
     } else {
-      setSelectedPacienteId(null)
+      setSelectedChat(null)
     }
   }, [searchParams])
 
@@ -28,8 +33,8 @@ function MensajesContent() {
   }
 
   // Función para seleccionar una conversación
-  const handleSelectConversation = (pacienteId: string) => {
-    router.push(`/mensajes?chat=${pacienteId}`, { scroll: false })
+  const handleSelectConversation = (id: string, tipo: 'PACIENTE' | 'PROSPECTO') => {
+    router.push(`/mensajes?chat=${id}&tipo=${tipo}`, { scroll: false })
   }
 
   // Función para volver a la lista (móvil)
@@ -45,18 +50,19 @@ function MensajesContent() {
       </div>
 
       <div className={styles.content}>
-        <div className={`${styles.conversationsPanel} ${selectedPacienteId ? styles.hidden : ''}`}>
+        <div className={`${styles.conversationsPanel} ${selectedChat ? styles.hidden : ''}`}>
           <ConversationList
-            selectedPacienteId={selectedPacienteId}
+            selectedPacienteId={selectedChat?.id || null}
             onSelectConversation={handleSelectConversation}
             refreshKey={refreshKey}
           />
         </div>
 
-        <div className={`${styles.chatPanel} ${selectedPacienteId ? styles.active : ''}`}>
-          {selectedPacienteId ? (
+        <div className={`${styles.chatPanel} ${selectedChat ? styles.active : ''}`}>
+          {selectedChat ? (
             <ChatWindow
-              pacienteId={selectedPacienteId}
+              pacienteId={selectedChat.id}
+              tipo={selectedChat.tipo}
               onMessageSent={handleMessageSent}
               onBack={handleBackToList}
             />
@@ -73,7 +79,7 @@ function MensajesContent() {
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
               <h3>Selecciona una conversación</h3>
-              <p>Elige un paciente de la lista para ver sus mensajes</p>
+              <p>Elige un paciente o prospecto de la lista para ver sus mensajes</p>
             </div>
           )}
         </div>

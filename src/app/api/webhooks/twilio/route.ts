@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { deleteCachePattern } from '@/lib/redis'
 import twilio from 'twilio'
+import { notificarConfirmacion } from '@/lib/services/notificaciones'
 
 /**
  * Webhook de Twilio para recibir mensajes entrantes de WhatsApp
@@ -284,86 +285,23 @@ Gracias ${paciente.nombre.split(' ')[0]}, tu asistencia ha sido confirmada.
 Te esperamos! 🌟`
 
           console.log(`✅ Cita ${citaPendiente.id} confirmada por paciente`)
+
+          // Notificar al nutriólogo sobre la confirmación
+          notificarConfirmacion({
+            id: citaPendiente.id,
+            codigo_cita: citaPendiente.codigo_cita,
+            fecha_hora: citaPendiente.fecha_hora,
+            tipo_cita: citaPendiente.tipo_cita,
+            motivo_consulta: citaPendiente.motivo_consulta,
+            paciente: {
+              nombre: paciente.nombre,
+              telefono: paciente.telefono,
+              email: paciente.email,
+            },
+          }).catch((err) => console.error('Error al notificar confirmación:', err))
         }
-
-        // OPCIÓN 2: CANCELAR CITA
-        else if (
-          mensajeNormalizado === '2' ||
-          mensajeNormalizado.includes('cancelar') ||
-          mensajeNormalizado.includes('no puedo')
-        ) {
-          // Si ya había solicitado cancelar y responde "sí", cancelar definitivamente
-          if (
-            citaPendiente.solicitud_cancelacion &&
-            (mensajeNormalizado === 'si' ||
-              mensajeNormalizado === 'sí' ||
-              mensajeNormalizado === 'yes')
-          ) {
-            await prisma.cita.update({
-              where: { id: citaPendiente.id },
-              data: {
-                estado: 'CANCELADA',
-                estado_confirmacion: 'CANCELADA_PACIENTE',
-              },
-            })
-
-            const fechaCita = new Date(citaPendiente.fecha_hora).toLocaleDateString('es-MX', {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
-            })
-            const horaCita = new Date(citaPendiente.fecha_hora).toLocaleTimeString('es-MX', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })
-
-            respuestaAutomatica = `❌ Cita cancelada
-
-Hola ${paciente.nombre.split(' ')[0]}, tu cita del ${fechaCita} a las ${horaCita} ha sido cancelada.
-
-🔑 Código: ${citaPendiente.codigo_cita}
-
-Si deseas agendar una nueva cita, visita:
-${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}
-
-¡Gracias!`
-
-            console.log(`❌ Cita ${citaPendiente.id} cancelada por paciente`)
-          }
-          // Primera vez que solicita cancelar, pedir confirmación
-          else {
-            await prisma.cita.update({
-              where: { id: citaPendiente.id },
-              data: {
-                solicitud_cancelacion: true,
-              },
-            })
-
-            const fechaCita = new Date(citaPendiente.fecha_hora).toLocaleDateString('es-MX', {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
-            })
-            const horaCita = new Date(citaPendiente.fecha_hora).toLocaleTimeString('es-MX', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })
-
-            respuestaAutomatica = `❓ Confirmación de cancelación
-
-Hola ${paciente.nombre.split(' ')[0]}, ¿estás seguro que deseas cancelar tu cita?
-
-📅 ${fechaCita}
-🕐 ${horaCita}
-
-Responde *SÍ* para confirmar la cancelación.
-
-Si necesitas reagendar, usa tu código ${citaPendiente.codigo_cita} en:
-${process.env.NEXT_PUBLIC_APP_URL}/cita/${citaPendiente.codigo_cita}`
-
-            console.log(`⚠️ Solicitud de cancelación pendiente de confirmación`)
-          }
-        }
+        // Nota: Cancelar y reagendar ahora se manejan a través de la IA
+        // que proporciona el link directo: /cita/[codigo]
       }
     }
 
@@ -405,14 +343,47 @@ ${process.env.NEXT_PUBLIC_APP_URL}/cita/${citaPendiente.codigo_cita}`
     }
 
     // ========================================
-    // ENVIAR RESPUESTA AUTOMÁTICA (si hay)
+    // GUARDAR Y ENVIAR RESPUESTA AUTOMÁTICA (si hay)
     // ========================================
-    const twimlResponse = respuestaAutomatica
-      ? `<?xml version="1.0" encoding="UTF-8"?>
+    if (respuestaAutomatica) {
+      // Guardar mensaje saliente en BD con estado PENDIENTE
+      // El estado se actualizará cuando Twilio envíe status callbacks
+      const mensajeSaliente = await prisma.mensajeWhatsApp.create({
+        data: {
+          paciente_id: paciente.id,
+          direccion: 'SALIENTE',
+          contenido: respuestaAutomatica,
+          tipo: 'AUTOMATICO_RECORDATORIO',
+          estado: 'PENDIENTE', // Se actualizará vía Status Callbacks
+          leido: true,
+        },
+      })
+
+      // Marcar el mensaje entrante como leído (ya fue procesado automáticamente)
+      await prisma.mensajeWhatsApp.update({
+        where: { id: mensaje.id },
+        data: { leido: true },
+      })
+
+      console.log('✅ Mensaje entrante marcado como leído (respuesta automática enviada)')
+      console.log('📤 Mensaje saliente guardado con estado PENDIENTE, ID:', mensajeSaliente.id)
+
+      // Configurar StatusCallback URL para recibir actualizaciones de Twilio
+      const statusCallbackUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/webhooks/twilio/status`
+
+      const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
          <Response>
-           <Message>${respuestaAutomatica}</Message>
+           <Message statusCallback="${statusCallbackUrl}">${respuestaAutomatica}</Message>
          </Response>`
-      : `<?xml version="1.0" encoding="UTF-8"?>
+
+      return new NextResponse(twimlResponse, {
+        status: 200,
+        headers: { 'Content-Type': 'text/xml' },
+      })
+    }
+
+    // Sin respuesta automática
+    const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
          <Response></Response>`
 
     return new NextResponse(twimlResponse, {

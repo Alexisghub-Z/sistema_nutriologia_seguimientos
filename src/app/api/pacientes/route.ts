@@ -208,6 +208,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Buscar si existe un prospecto con este teléfono
+    const prospectoExistente = await prisma.prospecto.findUnique({
+      where: { telefono: validatedData.telefono },
+    })
+
     // Crear paciente
     const paciente = await prisma.paciente.create({
       data: {
@@ -225,6 +230,19 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+
+    // Si había un prospecto, convertirlo
+    if (prospectoExistente && prospectoExistente.estado !== 'REGISTRADO') {
+      await prisma.prospecto.update({
+        where: { id: prospectoExistente.id },
+        data: {
+          estado: 'REGISTRADO',
+          convertido_a_paciente_id: paciente.id,
+          fecha_conversion: new Date(),
+        },
+      })
+      console.log(`✅ Prospecto ${prospectoExistente.id} convertido en paciente ${paciente.id}`)
+    }
 
     // Invalidar caché de lista de pacientes
     await deleteCachePattern('patients:list:*')

@@ -597,9 +597,9 @@ export default function Home() {
               <h4 className={styles.footerTitle}>Horarios</h4>
               <ul className={styles.footerList}>
                 <li>Lunes - Viernes</li>
-                <li>9:00 AM - 6:00 PM</li>
+                <li>4:00 PM - 8:00 PM</li>
                 <li>Sábado</li>
-                <li>10:00 AM - 2:00 PM</li>
+                <li>8:00 AM - 7:00 PM</li>
               </ul>
             </div>
           </div>

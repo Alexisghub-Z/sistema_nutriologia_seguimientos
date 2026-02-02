@@ -350,10 +350,13 @@ enum TipoMensaje {
 }
 
 enum EstadoMensaje {
-  ENVIADO
-  ENTREGADO
-  LEIDO
-  FALLIDO
+  PENDIENTE      // Mensaje guardado en BD, esperando procesamiento de Twilio
+  EN_COLA        // Twilio lo recibió y está en cola (queued)
+  ENVIADO        // Twilio lo envió (sent)
+  ENTREGADO      // WhatsApp lo entregó al destinatario (delivered)
+  LEIDO          // Destinatario lo leyó (read)
+  FALLIDO        // Falló el envío (failed)
+  NO_ENTREGADO   // No se pudo entregar (undelivered)
 }
 
 // ============================================

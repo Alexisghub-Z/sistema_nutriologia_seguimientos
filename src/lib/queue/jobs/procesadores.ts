@@ -2,6 +2,9 @@ import prisma from '@/lib/prisma'
 import { sendWhatsAppMessage } from '@/lib/services/twilio'
 import { generarMensaje, TipoPlantilla, VariablesPlantilla } from '@/lib/utils/plantillas'
 
+// URL para recibir Status Callbacks de Twilio
+const STATUS_CALLBACK_URL = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/webhooks/twilio/status`
+
 /**
  * Procesa el env�o de confirmaci�n de cita
  */
@@ -51,10 +54,19 @@ export async function procesarConfirmacion(citaId: string): Promise<void> {
     // Generar mensaje (sandbox o producci�n)
     const mensaje = await generarMensaje(TipoPlantilla.CONFIRMACION, variables)
 
+    // Configurar StatusCallback URL
+    const STATUS_CALLBACK_URL = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/webhooks/twilio/status`
+
     // Enviar mensaje
     let messageSid: string
     if (mensaje.modo === 'sandbox') {
-      const resultado = await sendWhatsAppMessage(cita.paciente.telefono, mensaje.contenido!)
+      const resultado = await sendWhatsAppMessage(
+        cita.paciente.telefono,
+        mensaje.contenido!,
+        undefined,
+        undefined,
+        STATUS_CALLBACK_URL
+      )
       messageSid = resultado.messageSid
     } else {
       // Para producci�n con plantillas aprobadas
@@ -62,12 +74,14 @@ export async function procesarConfirmacion(citaId: string): Promise<void> {
         cita.paciente.telefono,
         '',
         mensaje.contentSid,
-        mensaje.contentVariables
+        mensaje.contentVariables,
+        STATUS_CALLBACK_URL
       )
       messageSid = resultado.messageSid
     }
 
-    // Guardar registro del mensaje
+    // Guardar registro del mensaje con estado PENDIENTE
+    // El estado se actualizará vía Status Callbacks de Twilio
     await prisma.mensajeWhatsApp.create({
       data: {
         paciente_id: cita.paciente.id,
@@ -75,7 +89,7 @@ export async function procesarConfirmacion(citaId: string): Promise<void> {
         contenido: mensaje.contenido || `Confirmaci�n enviada (Template: ${mensaje.contentSid})`,
         tipo: 'AUTOMATICO_CONFIRMACION',
         twilio_sid: messageSid,
-        estado: 'ENVIADO',
+        estado: 'PENDIENTE', // Se actualizará vía callbacks
       },
     })
 
@@ -133,14 +147,15 @@ export async function procesarRecordatorio24h(citaId: string): Promise<void> {
 
     let messageSid: string
     if (mensaje.modo === 'sandbox') {
-      const resultado = await sendWhatsAppMessage(cita.paciente.telefono, mensaje.contenido!)
+      const resultado = await sendWhatsAppMessage(cita.paciente.telefono, mensaje.contenido!, undefined, undefined, STATUS_CALLBACK_URL)
       messageSid = resultado.messageSid
     } else {
       const resultado = await sendWhatsAppMessage(
         cita.paciente.telefono,
         '',
         mensaje.contentSid,
-        mensaje.contentVariables
+        mensaje.contentVariables,
+        STATUS_CALLBACK_URL
       )
       messageSid = resultado.messageSid
     }
@@ -153,7 +168,7 @@ export async function procesarRecordatorio24h(citaId: string): Promise<void> {
           mensaje.contenido || `Recordatorio 24h enviado (Template: ${mensaje.contentSid})`,
         tipo: 'AUTOMATICO_RECORDATORIO',
         twilio_sid: messageSid,
-        estado: 'ENVIADO',
+        estado: 'PENDIENTE', // Se actualizará vía Status Callbacks
       },
     })
 
@@ -211,14 +226,15 @@ export async function procesarRecordatorio1h(citaId: string): Promise<void> {
 
     let messageSid: string
     if (mensaje.modo === 'sandbox') {
-      const resultado = await sendWhatsAppMessage(cita.paciente.telefono, mensaje.contenido!)
+      const resultado = await sendWhatsAppMessage(cita.paciente.telefono, mensaje.contenido!, undefined, undefined, STATUS_CALLBACK_URL)
       messageSid = resultado.messageSid
     } else {
       const resultado = await sendWhatsAppMessage(
         cita.paciente.telefono,
         '',
         mensaje.contentSid,
-        mensaje.contentVariables
+        mensaje.contentVariables,
+        STATUS_CALLBACK_URL
       )
       messageSid = resultado.messageSid
     }
@@ -230,7 +246,7 @@ export async function procesarRecordatorio1h(citaId: string): Promise<void> {
         contenido: mensaje.contenido || `Recordatorio 1h enviado (Template: ${mensaje.contentSid})`,
         tipo: 'AUTOMATICO_RECORDATORIO',
         twilio_sid: messageSid,
-        estado: 'ENVIADO',
+        estado: 'PENDIENTE', // Se actualizará vía Status Callbacks
       },
     })
 
@@ -349,7 +365,7 @@ ${urlPortal}
         contenido: mensajeTexto,
         tipo: 'AUTOMATICO_SEGUIMIENTO',
         twilio_sid: messageSid,
-        estado: 'ENVIADO',
+        estado: 'PENDIENTE', // Se actualizará vía Status Callbacks
       },
     })
 
@@ -411,7 +427,8 @@ export async function procesarSeguimientoInicial(consultaId: string): Promise<vo
       consulta.paciente.telefono,
       mensaje.contenido || '',
       mensaje.contentSid,
-      mensaje.contentVariables
+      mensaje.contentVariables,
+        STATUS_CALLBACK_URL
     )
 
     // Registrar en BD
@@ -422,7 +439,7 @@ export async function procesarSeguimientoInicial(consultaId: string): Promise<vo
         contenido: mensaje.contenido || `Seguimiento inicial programado`,
         tipo: 'AUTOMATICO_SEGUIMIENTO',
         twilio_sid: resultado.messageSid,
-        estado: 'ENVIADO',
+        estado: 'PENDIENTE', // Se actualizará vía Status Callbacks
       },
     })
 
@@ -478,7 +495,8 @@ export async function procesarSeguimientoIntermedio(consultaId: string): Promise
       consulta.paciente.telefono,
       mensaje.contenido || '',
       mensaje.contentSid,
-      mensaje.contentVariables
+      mensaje.contentVariables,
+        STATUS_CALLBACK_URL
     )
 
     await prisma.mensajeWhatsApp.create({
@@ -488,7 +506,7 @@ export async function procesarSeguimientoIntermedio(consultaId: string): Promise
         contenido: mensaje.contenido || `Seguimiento intermedio programado`,
         tipo: 'AUTOMATICO_SEGUIMIENTO',
         twilio_sid: resultado.messageSid,
-        estado: 'ENVIADO',
+        estado: 'PENDIENTE', // Se actualizará vía Status Callbacks
       },
     })
 
@@ -544,7 +562,8 @@ export async function procesarSeguimientoPrevioCita(consultaId: string): Promise
       consulta.paciente.telefono,
       mensaje.contenido || '',
       mensaje.contentSid,
-      mensaje.contentVariables
+      mensaje.contentVariables,
+        STATUS_CALLBACK_URL
     )
 
     await prisma.mensajeWhatsApp.create({
@@ -554,7 +573,7 @@ export async function procesarSeguimientoPrevioCita(consultaId: string): Promise
         contenido: mensaje.contenido || `Seguimiento previo cita programado`,
         tipo: 'AUTOMATICO_SEGUIMIENTO',
         twilio_sid: resultado.messageSid,
-        estado: 'ENVIADO',
+        estado: 'PENDIENTE', // Se actualizará vía Status Callbacks
       },
     })
 
@@ -637,7 +656,8 @@ export async function procesarRecordatorioAgendar(consultaId: string): Promise<v
       consulta.paciente.telefono,
       mensaje.contenido || '',
       mensaje.contentSid,
-      mensaje.contentVariables
+      mensaje.contentVariables,
+        STATUS_CALLBACK_URL
     )
 
     await prisma.mensajeWhatsApp.create({
@@ -647,7 +667,7 @@ export async function procesarRecordatorioAgendar(consultaId: string): Promise<v
         contenido: mensaje.contenido || `Recordatorio agendar programado`,
         tipo: 'AUTOMATICO_RECORDATORIO',
         twilio_sid: resultado.messageSid,
-        estado: 'ENVIADO',
+        estado: 'PENDIENTE', // Se actualizará vía Status Callbacks
       },
     })
 

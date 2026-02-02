@@ -146,6 +146,26 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
       }
     }
 
+    // Si cambió el teléfono, buscar si existe un prospecto con el NUEVO teléfono
+    if (validatedData.telefono !== existingPaciente.telefono) {
+      const prospectoExistente = await prisma.prospecto.findUnique({
+        where: { telefono: validatedData.telefono },
+      })
+
+      // Si existe y no está ya registrado, convertirlo
+      if (prospectoExistente && prospectoExistente.estado !== 'REGISTRADO') {
+        await prisma.prospecto.update({
+          where: { id: prospectoExistente.id },
+          data: {
+            estado: 'REGISTRADO',
+            convertido_a_paciente_id: id,
+            fecha_conversion: new Date(),
+          },
+        })
+        console.log(`✅ Prospecto ${prospectoExistente.id} convertido en paciente ${id}`)
+      }
+    }
+
     // Actualizar paciente
     const paciente = await prisma.paciente.update({
       where: { id },

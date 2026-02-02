@@ -97,9 +97,9 @@ Usa este mismo número de WhatsApp para comunicarte y recibirás atención compl
 
     if (!limitesValidacion.puede_continuar) {
       return {
-        respuesta: limitesValidacion.mensaje_limite,
+        respuesta: limitesValidacion.mensaje_limite || null,
         debe_responder_automaticamente: true,
-        razon: limitesValidacion.razon,
+        razon: limitesValidacion.razon || 'Límite alcanzado',
         metadata: {
           fuente: 'sistema',
           es_prospecto: true,
@@ -407,7 +407,9 @@ ${process.env.NEXT_PUBLIC_APP_URL}/agendar
 
 **Información básica:**
 💰 Costo: $500 MXN
-📅 Horario: Lunes a Viernes 9 AM - 6 PM
+📅 Horarios:
+   • Lunes a Viernes: 4 PM - 8 PM
+   • Sábados: 8 AM - 7 PM
 📍 Ubicación: Oaxaca de Juárez, Oaxaca
 💻 Modalidades: Presencial y En línea
 
@@ -441,8 +443,8 @@ Una vez registrado podrás:
  */
 export async function guardarLogRespuestaProspecto(
   prospectoId: string,
-  mensajeEntrante: string,
-  respuestaGenerada: string,
+  _mensajeEntrante: string,
+  _respuestaGenerada: string,
   resultado: ResultadoProcesamientoProspecto
 ): Promise<void> {
   try {
