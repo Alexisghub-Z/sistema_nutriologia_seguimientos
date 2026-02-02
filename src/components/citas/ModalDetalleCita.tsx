@@ -333,15 +333,6 @@ export default function ModalDetalleCita({ cita, onClose, onActualizar }: ModalD
                 </button>
               </>
             )}
-            {cita.estado !== 'PENDIENTE' && (
-              <button
-                onClick={() => cambiarEstado('PENDIENTE')}
-                className={styles.btnSecondary}
-                disabled={loading}
-              >
-                Reactivar
-              </button>
-            )}
           </div>
         </div>
       </div>

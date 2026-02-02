@@ -72,21 +72,145 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // ========================================
+    // MANEJO DE PROSPECTOS (números no registrados)
+    // ========================================
     if (!paciente) {
       console.warn('⚠️  No patient found for phone:', phoneNumber)
+      console.log('🆕 Procesando como prospecto...')
 
-      // Responder al usuario que no está registrado
+      // Validar que los prospectos solo puedan enviar texto
+      if (numMedia > 0) {
+        return new NextResponse(
+          `<?xml version="1.0" encoding="UTF-8"?>
+          <Response>
+            <Message>Por favor envía solo mensajes de texto. Para enviar archivos necesitas registrarte como paciente.
+
+📋 Registrarte aquí: ${process.env.NEXT_PUBLIC_APP_URL}/agendar
+
+¿Tienes alguna pregunta sobre el consultorio?</Message>
+          </Response>`,
+          {
+            status: 200,
+            headers: { 'Content-Type': 'text/xml' },
+          }
+        )
+      }
+
+      // Validar que haya contenido de texto
+      if (!body || !body.trim()) {
+        return new NextResponse(
+          `<?xml version="1.0" encoding="UTF-8"?>
+          <Response>
+            <Message>Hola! 👋
+
+¿En qué puedo ayudarte?
+
+Pregunta sobre:
+📅 Horarios
+💰 Precios
+📍 Ubicación
+💳 Formas de pago
+📋 Cómo agendar</Message>
+          </Response>`,
+          {
+            status: 200,
+            headers: { 'Content-Type': 'text/xml' },
+          }
+        )
+      }
+
+      // Importar servicio de prospectos
+      const { procesarMensajeProspecto, guardarLogRespuestaProspecto } = await import(
+        '@/lib/services/prospecto-responder'
+      )
+
+      // Buscar o crear prospecto
+      let prospecto = await prisma.prospecto.findUnique({
+        where: { telefono: phoneNumber },
+      })
+
+      if (!prospecto) {
+        prospecto = await prisma.prospecto.create({
+          data: {
+            telefono: phoneNumber,
+            total_mensajes: 0,
+            estado: 'ACTIVO',
+          },
+        })
+        console.log('✅ Nuevo prospecto creado:', prospecto.id)
+      }
+
+      // Guardar mensaje entrante del prospecto
+      await prisma.mensajeProspecto.create({
+        data: {
+          prospecto_id: prospecto.id,
+          direccion: 'ENTRANTE',
+          contenido: body,
+          twilio_sid: messageSid,
+          estado: 'ENTREGADO',
+        },
+      })
+
+      console.log('✅ Mensaje de prospecto guardado')
+
+      // Procesar mensaje con sistema de prospectos
+      const resultado = await procesarMensajeProspecto(body, phoneNumber)
+
+      // Guardar log
+      if (resultado.respuesta) {
+        await guardarLogRespuestaProspecto(prospecto.id, body, resultado.respuesta, resultado)
+      }
+
+      // Guardar mensaje saliente si hay respuesta
+      if (resultado.debe_responder_automaticamente && resultado.respuesta) {
+        await prisma.mensajeProspecto.create({
+          data: {
+            prospecto_id: prospecto.id,
+            direccion: 'SALIENTE',
+            contenido: resultado.respuesta,
+            estado: 'ENVIADO',
+          },
+        })
+
+        console.log('✅ Respuesta automática generada para prospecto:', {
+          fuente: resultado.metadata?.fuente,
+          confidence: resultado.metadata?.confidence,
+          total_mensajes: resultado.metadata?.total_mensajes,
+        })
+
+        // Mostrar respuesta en consola
+        console.log('\n📩 RESPUESTA ENVIADA AL PROSPECTO:')
+        console.log('─'.repeat(60))
+        console.log(resultado.respuesta)
+        console.log('─'.repeat(60) + '\n')
+
+        // Enviar respuesta
+        const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
+         <Response>
+           <Message>${resultado.respuesta}</Message>
+         </Response>`
+
+        return new NextResponse(twimlResponse, {
+          status: 200,
+          headers: { 'Content-Type': 'text/xml' },
+        })
+      }
+
+      // Sin respuesta automática
       return new NextResponse(
         `<?xml version="1.0" encoding="UTF-8"?>
-        <Response>
-          <Message>Lo siento, no encontramos tu registro como paciente. Por favor contacta al consultorio.</Message>
-        </Response>`,
+         <Response></Response>`,
         {
           status: 200,
           headers: { 'Content-Type': 'text/xml' },
         }
       )
     }
+
+    // ========================================
+    // CONTINÚA CON PROCESAMIENTO DE PACIENTES
+    // ========================================
 
     // Guardar mensaje en la base de datos
     const mensaje = await prisma.mensajeWhatsApp.create({
@@ -240,6 +364,43 @@ ${process.env.NEXT_PUBLIC_APP_URL}/cita/${citaPendiente.codigo_cita}`
             console.log(`⚠️ Solicitud de cancelación pendiente de confirmación`)
           }
         }
+      }
+    }
+
+    // ========================================
+    // PROCESAR CON IA (si no hay respuesta automática)
+    // ========================================
+    if (!respuestaAutomatica && body && body.trim()) {
+      const { procesarMensajeEntrante, guardarLogRespuestaIA } = await import(
+        '@/lib/services/whatsapp-responder'
+      )
+
+      console.log('🤖 Procesando mensaje con sistema de IA...')
+
+      const resultado = await procesarMensajeEntrante(body, paciente.id, paciente.nombre)
+
+      // Guardar log de la respuesta
+      if (resultado.respuesta) {
+        await guardarLogRespuestaIA(paciente.id, body, resultado.respuesta, resultado)
+      }
+
+      // Si debe responder automáticamente, usar esa respuesta
+      if (resultado.debe_responder_automaticamente && resultado.respuesta) {
+        respuestaAutomatica = resultado.respuesta
+
+        console.log('✅ Respuesta automática generada:', {
+          fuente: resultado.metadata?.fuente,
+          confidence: resultado.metadata?.confidence,
+          deriva_humano: resultado.debe_derivar_humano,
+        })
+
+        // Mostrar respuesta completa en consola (útil para sandbox)
+        console.log('\n📩 RESPUESTA ENVIADA AL PACIENTE:')
+        console.log('─'.repeat(60))
+        console.log(resultado.respuesta)
+        console.log('─'.repeat(60) + '\n')
+      } else {
+        console.log('ℹ️ Sin respuesta automática, requiere atención humana')
       }
     }
 

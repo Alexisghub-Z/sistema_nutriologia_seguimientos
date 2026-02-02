@@ -50,6 +50,7 @@ model Paciente {
   consultas       Consulta[]
   mensajes        MensajeWhatsApp[]
   configuraciones ConfiguracionMensajePaciente[]
+  prospecto_origen Prospecto? // Si se convirtió desde prospecto
 
   // Índices para búsquedas y ordenamiento
   @@index([email])
@@ -58,6 +59,65 @@ model Paciente {
   @@index([createdAt]) // Ordenar por fecha de registro
   @@index([fecha_nacimiento]) // Ordenar por edad
   @@map("pacientes")
+}
+
+// ============================================
+// PROSPECTOS (Personas no registradas)
+// ============================================
+
+model Prospecto {
+  id                       String   @id @default(cuid())
+  telefono                 String   @unique
+  nombre                   String?  // Opcional, pueden darlo después
+  primer_contacto          DateTime @default(now())
+  ultimo_contacto          DateTime @default(now())
+  total_mensajes           Int      @default(0)
+  estado                   EstadoProspecto @default(ACTIVO)
+
+  // Si se convierte en paciente
+  convertido_a_paciente_id String?  @unique
+  fecha_conversion         DateTime?
+
+  // Notas del nutriólogo
+  notas                    String?  @db.Text
+
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  // Relaciones
+  convertido_a_paciente Paciente? @relation(fields: [convertido_a_paciente_id], references: [id], onDelete: SetNull)
+  mensajes              MensajeProspecto[]
+
+  @@index([telefono])
+  @@index([estado])
+  @@index([primer_contacto])
+  @@map("prospectos")
+}
+
+enum EstadoProspecto {
+  ACTIVO       // Puede seguir preguntando
+  REGISTRADO   // Se convirtió en paciente
+  BLOQUEADO    // Bloqueado por spam o abuso
+}
+
+model MensajeProspecto {
+  id           String            @id @default(cuid())
+  prospecto_id String
+  direccion    DireccionMensaje
+  contenido    String            @db.Text
+  twilio_sid   String?           @unique
+  estado       EstadoMensaje     @default(ENVIADO)
+  media_url    String?
+  media_type   String?
+  createdAt    DateTime          @default(now())
+
+  // Relaciones
+  prospecto Prospecto @relation(fields: [prospecto_id], references: [id], onDelete: Cascade)
+
+  @@index([prospecto_id])
+  @@index([createdAt])
+  @@index([prospecto_id, createdAt])
+  @@map("mensajes_prospecto")
 }
 
 // ============================================
