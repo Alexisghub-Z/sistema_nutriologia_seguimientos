@@ -105,15 +105,15 @@ Usa este mismo número de WhatsApp para comunicarte y recibirás atención compl
       }
     }
 
-    // PASO 4: Actualizar contador de mensajes
-    const totalMensajes = prospecto.total_mensajes + 1
-    await prisma.prospecto.update({
+    // PASO 4: Actualizar contador de mensajes (increment atómico previene race condition)
+    const prospectoActualizado = await prisma.prospecto.update({
       where: { id: prospecto.id },
       data: {
         ultimo_contacto: new Date(),
-        total_mensajes: totalMensajes,
+        total_mensajes: { increment: 1 },
       },
     })
+    const totalMensajes = prospectoActualizado.total_mensajes
 
     // PASO 5: Verificar si debe recordar registrarse
     const debeRecordarRegistro = totalMensajes % LIMITES_PROSPECTO.RECORDATORIO_REGISTRAR_CADA === 0

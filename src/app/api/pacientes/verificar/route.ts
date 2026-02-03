@@ -20,16 +20,10 @@ export async function POST(request: NextRequest) {
     const paciente = await prisma.paciente.findUnique({
       where: { email: validatedData.email },
       select: {
-        id: true,
         nombre: true,
         email: true,
         telefono: true,
         fecha_nacimiento: true,
-        _count: {
-          select: {
-            citas: true,
-          },
-        },
       },
     })
 
@@ -39,18 +33,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Paciente existe - retornar sus datos
-    console.log(`✅ Paciente encontrado: ${paciente.id} (${paciente.email})`)
+    console.log(`✅ Paciente encontrado: ${paciente.email}`)
 
     return NextResponse.json(
       {
         existe: true,
         paciente: {
-          id: paciente.id,
           nombre: paciente.nombre,
           email: paciente.email,
           telefono: paciente.telefono,
           fecha_nacimiento: paciente.fecha_nacimiento,
-          total_citas: paciente._count.citas,
         },
       },
       { status: 200 }

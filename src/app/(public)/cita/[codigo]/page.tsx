@@ -162,6 +162,24 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
       setReagendando(true)
       setError('') // Limpiar errores previos
 
+      // Guardar datos en localStorage ANTES de cancelar (si falla, no se cancela la cita)
+      const datosReagendar = {
+        nombre: cita.paciente.nombre,
+        email: cita.paciente.email || '',
+        telefono: cita.paciente.telefono,
+        fecha_nacimiento: cita.paciente.fecha_nacimiento,
+        motivo: cita.motivo_consulta || cita.motivo,
+        reagendando: true,
+        citaOriginal: codigo,
+      }
+
+      try {
+        localStorage.setItem('datosReagendar', JSON.stringify(datosReagendar))
+      } catch {
+        setError('No se puede reagendar en modo privado. Por favor, usa un navegador sin modo incógnito.')
+        return
+      }
+
       // Cancelar la cita actual
       const response = await fetch(`/api/citas/codigo/${codigo}`, {
         method: 'PUT',
@@ -173,19 +191,6 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
         setError('Error al cancelar la cita actual')
         return
       }
-
-      // Guardar datos en localStorage para pre-llenar el formulario
-      const datosReagendar = {
-        nombre: cita.paciente.nombre,
-        email: cita.paciente.email || '',
-        telefono: cita.paciente.telefono,
-        fecha_nacimiento: cita.paciente.fecha_nacimiento,
-        motivo: cita.motivo_consulta || cita.motivo,
-        reagendando: true,
-        citaOriginal: codigo,
-      }
-
-      localStorage.setItem('datosReagendar', JSON.stringify(datosReagendar))
 
       // Redirigir a agendar
       router.push('/agendar?reagendar=true')

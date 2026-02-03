@@ -54,18 +54,20 @@ export async function POST(request: NextRequest) {
       mediaType,
     })
 
-    // Validar firma de Twilio (seguridad) - Deshabilitado en desarrollo con ngrok
-    // ngrok modifica la URL y hace que la validación de firma falle
-    // En producción, habilita esto para mayor seguridad
-    const twilioSignature = request.headers.get('x-twilio-signature') || ''
-    const validateSignature = process.env.NODE_ENV === 'production'
+    // Validar firma de Twilio en producción (obligatoria)
+    // En desarrollo con ngrok la firma falla porque ngrok modifica la URL
+    if (process.env.NODE_ENV === 'production') {
+      const twilioSignature = request.headers.get('x-twilio-signature') || ''
 
-    if (validateSignature && twilioSignature) {
-      const url = request.url
+      if (!twilioSignature) {
+        console.error('❌ Missing Twilio signature in production')
+        return NextResponse.json({ error: 'Missing signature' }, { status: 403 })
+      }
+
       const isValid = twilio.validateRequest(
         process.env.TWILIO_AUTH_TOKEN!,
         twilioSignature,
-        url,
+        request.url,
         Object.fromEntries(formData)
       )
 

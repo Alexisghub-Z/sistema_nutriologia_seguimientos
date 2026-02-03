@@ -115,9 +115,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ cod
             select: {
               id: true,
               nombre: true,
-              email: true,
               telefono: true,
-              fecha_nacimiento: true,
             },
           },
         },
@@ -142,9 +140,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ cod
             select: {
               id: true,
               nombre: true,
-              email: true,
               telefono: true,
-              fecha_nacimiento: true,
             },
           },
         },

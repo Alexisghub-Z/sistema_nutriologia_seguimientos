@@ -26,9 +26,15 @@ export async function POST(request: NextRequest) {
     const errorCode = formData.get('ErrorCode') as string | null
     const errorMessage = formData.get('ErrorMessage') as string | null
 
-    // Validar firma de Twilio en producción
-    const twilioSignature = request.headers.get('x-twilio-signature') || ''
-    if (process.env.NODE_ENV === 'production' && twilioSignature) {
+    // Validar firma de Twilio en producción (obligatoria)
+    if (process.env.NODE_ENV === 'production') {
+      const twilioSignature = request.headers.get('x-twilio-signature') || ''
+
+      if (!twilioSignature) {
+        console.error('❌ Missing Twilio signature on status callback')
+        return NextResponse.json({ error: 'Missing signature' }, { status: 403 })
+      }
+
       const isValid = twilio.validateRequest(
         process.env.TWILIO_AUTH_TOKEN!,
         twilioSignature,
