@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/auth-utils'
 
 /**
  * Proxy para servir archivos multimedia de Twilio
@@ -6,6 +7,11 @@ import { NextRequest, NextResponse } from 'next/server'
  */
 export async function GET(request: NextRequest) {
   try {
+    const user = await getAuthUser()
+    if (!user) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const mediaUrl = searchParams.get('url')
 

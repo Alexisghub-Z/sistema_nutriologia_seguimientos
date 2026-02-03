@@ -38,13 +38,8 @@ export async function POST(request: NextRequest) {
         },
       },
       select: {
-        id: true,
         codigo_cita: true,
         fecha_hora: true,
-        duracion_minutos: true,
-        motivo_consulta: true,
-        estado_confirmacion: true,
-        confirmada_por_paciente: true,
       },
       orderBy: {
         fecha_hora: 'asc', // La más próxima primero
@@ -56,11 +51,6 @@ export async function POST(request: NextRequest) {
         {
           existe: false,
           mensaje: 'No tienes citas pendientes',
-          paciente: {
-            id: paciente.id,
-            nombre: paciente.nombre,
-            email: paciente.email,
-          },
         },
         { status: 200 }
       )
@@ -72,18 +62,8 @@ export async function POST(request: NextRequest) {
       {
         existe: true,
         cita: {
-          id: citaActiva.id,
           codigo_cita: citaActiva.codigo_cita,
           fecha_hora: citaActiva.fecha_hora,
-          duracion_minutos: citaActiva.duracion_minutos,
-          motivo_consulta: citaActiva.motivo_consulta,
-          estado_confirmacion: citaActiva.estado_confirmacion,
-          confirmada_por_paciente: citaActiva.confirmada_por_paciente,
-        },
-        paciente: {
-          id: paciente.id,
-          nombre: paciente.nombre,
-          email: paciente.email,
         },
       },
       { status: 200 }
