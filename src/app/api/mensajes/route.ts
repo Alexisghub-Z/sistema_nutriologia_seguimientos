@@ -172,6 +172,7 @@ export async function GET(request: NextRequest) {
             mensajes: {
               where: {
                 direccion: 'ENTRANTE',
+                leido: false,
               },
             },
           },

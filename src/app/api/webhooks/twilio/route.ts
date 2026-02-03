@@ -165,7 +165,7 @@ Pregunta sobre:
       console.log('✅ Prospecto encontrado/creado:', prospecto.id)
 
       // Guardar mensaje entrante del prospecto
-      await prisma.mensajeProspecto.create({
+      const mensajeEntranteProspecto = await prisma.mensajeProspecto.create({
         data: {
           prospecto_id: prospecto.id,
           direccion: 'ENTRANTE',
@@ -193,8 +193,18 @@ Pregunta sobre:
             direccion: 'SALIENTE',
             contenido: resultado.respuesta,
             estado: 'ENVIADO',
+            leido: true,
           },
         })
+
+        // El chatbot resolvió la consulta: marcar mensaje entrante como leído
+        await prisma.mensajeProspecto.update({
+          where: { id: mensajeEntranteProspecto.id },
+          data: { leido: true },
+        })
+
+        // Invalidar caché para que el panel de mensajes se actualice
+        await deleteCachePattern('messages:*')
 
         console.log('✅ Respuesta automática generada para prospecto:', {
           fuente: resultado.metadata?.fuente,

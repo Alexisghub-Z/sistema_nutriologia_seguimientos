@@ -107,6 +107,7 @@ model MensajeProspecto {
   contenido    String            @db.Text
   twilio_sid   String?           @unique
   estado       EstadoMensaje     @default(ENVIADO)
+  leido        Boolean           @default(false)
   media_url    String?
   media_type   String?
   createdAt    DateTime          @default(now())
@@ -116,6 +117,7 @@ model MensajeProspecto {
 
   @@index([prospecto_id])
   @@index([createdAt])
+  @@index([leido])
   @@index([prospecto_id, createdAt])
   @@map("mensajes_prospecto")
 }
