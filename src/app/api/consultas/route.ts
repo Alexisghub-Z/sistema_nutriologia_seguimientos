@@ -15,31 +15,31 @@ const consultaSchema = z.object({
   motivo: z.string().optional(),
 
   // Mediciones básicas
-  peso: z.number().positive().optional(),
-  talla: z.number().positive().optional(),
+  peso: z.number().min(5).max(300).optional(),           // 5-300 kg
+  talla: z.number().min(0.5).max(2.5).optional(),        // 0.5-2.5 m
 
   // Composición corporal
   grasa_corporal: z.number().min(0).max(100).optional(),
   porcentaje_agua: z.number().min(0).max(100).optional(),
-  masa_muscular_kg: z.number().positive().optional(),
-  grasa_visceral: z.number().int().min(0).optional(),
+  masa_muscular_kg: z.number().min(1).max(200).optional(),
+  grasa_visceral: z.number().int().min(0).max(30).optional(),
 
-  // Perímetros
-  brazo_relajado: z.number().positive().optional(),
-  brazo_flexionado: z.number().positive().optional(),
-  cintura: z.number().positive().optional(),
-  cadera_maximo: z.number().positive().optional(),
-  muslo_maximo: z.number().positive().optional(),
-  muslo_medio: z.number().positive().optional(),
-  pantorrilla_maximo: z.number().positive().optional(),
+  // Perímetros (cm)
+  brazo_relajado: z.number().min(10).max(80).optional(),
+  brazo_flexionado: z.number().min(10).max(90).optional(),
+  cintura: z.number().min(30).max(200).optional(),
+  cadera_maximo: z.number().min(60).max(200).optional(),
+  muslo_maximo: z.number().min(20).max(120).optional(),
+  muslo_medio: z.number().min(20).max(120).optional(),
+  pantorrilla_maximo: z.number().min(20).max(80).optional(),
 
-  // Pliegues cutáneos
-  pliegue_tricipital: z.number().positive().optional(),
-  pliegue_subescapular: z.number().positive().optional(),
-  pliegue_bicipital: z.number().positive().optional(),
-  pliegue_cresta_iliaca: z.number().positive().optional(),
-  pliegue_supraespinal: z.number().positive().optional(),
-  pliegue_abdominal: z.number().positive().optional(),
+  // Pliegues cutáneos (mm)
+  pliegue_tricipital: z.number().min(1).max(60).optional(),
+  pliegue_subescapular: z.number().min(1).max(60).optional(),
+  pliegue_bicipital: z.number().min(1).max(60).optional(),
+  pliegue_cresta_iliaca: z.number().min(1).max(60).optional(),
+  pliegue_supraespinal: z.number().min(1).max(60).optional(),
+  pliegue_abdominal: z.number().min(1).max(60).optional(),
 
   // Notas
   notas: z.string().optional(),

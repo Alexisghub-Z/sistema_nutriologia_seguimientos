@@ -70,45 +70,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validar que el horario esté disponible
-    const inicioDia = new Date(year!, month! - 1, day!, 0, 0, 0)
-    const finDia = new Date(year!, month! - 1, day!, 23, 59, 59)
-
-    const citasExistentes = await prisma.cita.findMany({
-      where: {
-        fecha_hora: {
-          gte: inicioDia,
-          lte: finDia,
-        },
-        estado: { not: 'CANCELADA' },
-      },
-      select: {
-        fecha_hora: true,
-        duracion_minutos: true,
-      },
-    })
-
-    // Verificar solapamiento
-    const finCitaNueva = new Date(fechaHoraCita.getTime() + config.duracion_cita_default * 60000)
-
-    const hayConflicto = citasExistentes.some((cita) => {
-      const inicioCita = new Date(cita.fecha_hora)
-      const finCita = new Date(inicioCita.getTime() + cita.duracion_minutos * 60000)
-
-      return (
-        (fechaHoraCita >= inicioCita && fechaHoraCita < finCita) ||
-        (finCitaNueva > inicioCita && finCitaNueva <= finCita) ||
-        (fechaHoraCita <= inicioCita && finCitaNueva >= finCita)
-      )
-    })
-
-    if (hayConflicto && citasExistentes.length >= config.citas_simultaneas_max) {
-      return NextResponse.json(
-        { error: 'Este horario ya no está disponible. Por favor, elige otro.' },
-        { status: 409 }
-      )
-    }
-
     // Buscar o crear paciente
     let paciente = await prisma.paciente.findUnique({
       where: { email: validatedData.email },
@@ -217,40 +178,77 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Generar código único
-    let codigoCita = generarCodigo()
-    let intentos = 0
-    while (await prisma.cita.findUnique({ where: { codigo_cita: codigoCita } })) {
-      codigoCita = generarCodigo()
-      intentos++
-      if (intentos > 10) {
-        throw new Error('No se pudo generar un código único')
-      }
-    }
+    // Crear cita dentro de transaction para evitar race condition de overbooking
+    const cita = await prisma.$transaction(async (tx) => {
+      // Verificar disponibilidad del horario dentro de la transacción
+      const inicioDia = new Date(year!, month! - 1, day!, 0, 0, 0)
+      const finDia = new Date(year!, month! - 1, day!, 23, 59, 59)
 
-    // Crear la cita
-    const cita = await prisma.cita.create({
-      data: {
-        paciente_id: paciente.id,
-        fecha_hora: fechaHoraCita,
-        duracion_minutos: config.duracion_cita_default,
-        motivo_consulta: validatedData.motivo,
-        tipo_cita: validatedData.tipo_cita,
-        codigo_cita: codigoCita,
-        estado: 'PENDIENTE',
-        estado_confirmacion: 'PENDIENTE',
-      },
-      include: {
-        paciente: {
-          select: {
-            id: true,
-            nombre: true,
-            email: true,
-            telefono: true,
+      const citasExistentes = await tx.cita.findMany({
+        where: {
+          fecha_hora: { gte: inicioDia, lte: finDia },
+          estado: { not: 'CANCELADA' },
+        },
+        select: { fecha_hora: true, duracion_minutos: true },
+      })
+
+      const finCitaNueva = new Date(fechaHoraCita.getTime() + config.duracion_cita_default * 60000)
+
+      const hayConflicto = citasExistentes.some((cita) => {
+        const inicioCita = new Date(cita.fecha_hora)
+        const finCita = new Date(inicioCita.getTime() + cita.duracion_minutos * 60000)
+        return (
+          (fechaHoraCita >= inicioCita && fechaHoraCita < finCita) ||
+          (finCitaNueva > inicioCita && finCitaNueva <= finCita) ||
+          (fechaHoraCita <= inicioCita && finCitaNueva >= finCita)
+        )
+      })
+
+      if (hayConflicto && citasExistentes.length >= config.citas_simultaneas_max) {
+        return null // Señal de conflicto
+      }
+
+      // Generar código único dentro de la transacción
+      let codigoCita = generarCodigo()
+      let intentos = 0
+      while (await tx.cita.findUnique({ where: { codigo_cita: codigoCita } })) {
+        codigoCita = generarCodigo()
+        intentos++
+        if (intentos > 10) {
+          throw new Error('No se pudo generar un código único')
+        }
+      }
+
+      return tx.cita.create({
+        data: {
+          paciente_id: paciente.id,
+          fecha_hora: fechaHoraCita,
+          duracion_minutos: config.duracion_cita_default,
+          motivo_consulta: validatedData.motivo,
+          tipo_cita: validatedData.tipo_cita,
+          codigo_cita: codigoCita,
+          estado: 'PENDIENTE',
+          estado_confirmacion: 'PENDIENTE',
+        },
+        include: {
+          paciente: {
+            select: {
+              id: true,
+              nombre: true,
+              email: true,
+              telefono: true,
+            },
           },
         },
-      },
+      })
     })
+
+    if (!cita) {
+      return NextResponse.json(
+        { error: 'Este horario ya no está disponible. Por favor, elige otro.' },
+        { status: 409 }
+      )
+    }
 
     // Invalidar caché del paciente
     await deleteCache(CacheKeys.patientDetail(paciente.id))
@@ -297,7 +295,7 @@ export async function POST(request: NextRequest) {
       // No fallar la creación de la cita si hay error al cancelar
     }
 
-    console.log(`✅ Cita creada desde portal público: ${cita.id} (${codigoCita})`)
+    console.log(`✅ Cita creada desde portal público: ${cita.id} (${cita.codigo_cita})`)
 
     return NextResponse.json(
       {

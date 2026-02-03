@@ -5,6 +5,15 @@ import twilio from 'twilio'
 import { notificarConfirmacion } from '@/lib/services/notificaciones'
 import { extraerDigitosTelefono } from '@/lib/utils/phone'
 
+function escapeXml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
 /**
  * Webhook de Twilio para recibir mensajes entrantes de WhatsApp
  * POST /api/webhooks/twilio
@@ -221,7 +230,7 @@ Pregunta sobre:
         // Enviar respuesta
         const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
          <Response>
-           <Message>${resultado.respuesta}</Message>
+           <Message>${escapeXml(resultado.respuesta)}</Message>
          </Response>`
 
         return new NextResponse(twimlResponse, {
@@ -416,7 +425,7 @@ Te esperamos! 🌟`
 
       const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
          <Response>
-           <Message statusCallback="${statusCallbackUrl}">${respuestaAutomatica}</Message>
+           <Message statusCallback="${statusCallbackUrl}">${escapeXml(respuestaAutomatica)}</Message>
          </Response>`
 
       return new NextResponse(twimlResponse, {

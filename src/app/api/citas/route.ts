@@ -111,6 +111,44 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validar disponibilidad del horario
+    const fechaHoraCita = new Date(validatedData.fecha_hora)
+    const config = await prisma.configuracionGeneral.findFirst()
+
+    if (config) {
+      const inicioDia = new Date(fechaHoraCita)
+      inicioDia.setHours(0, 0, 0, 0)
+      const finDia = new Date(fechaHoraCita)
+      finDia.setHours(23, 59, 59, 999)
+
+      const citasExistentes = await prisma.cita.findMany({
+        where: {
+          fecha_hora: { gte: inicioDia, lte: finDia },
+          estado: { not: 'CANCELADA' },
+        },
+        select: { fecha_hora: true, duracion_minutos: true },
+      })
+
+      const finCitaNueva = new Date(fechaHoraCita.getTime() + validatedData.duracion_minutos * 60000)
+
+      const hayConflicto = citasExistentes.some((cita) => {
+        const inicioCita = new Date(cita.fecha_hora)
+        const finCita = new Date(inicioCita.getTime() + cita.duracion_minutos * 60000)
+        return (
+          (fechaHoraCita >= inicioCita && fechaHoraCita < finCita) ||
+          (finCitaNueva > inicioCita && finCitaNueva <= finCita) ||
+          (fechaHoraCita <= inicioCita && finCitaNueva >= finCita)
+        )
+      })
+
+      if (hayConflicto && citasExistentes.length >= config.citas_simultaneas_max) {
+        return NextResponse.json(
+          { error: 'Este horario ya no está disponible. Por favor, elige otro.' },
+          { status: 409 }
+        )
+      }
+    }
+
     // Crear cita
     const cita = await prisma.cita.create({
       data: {
