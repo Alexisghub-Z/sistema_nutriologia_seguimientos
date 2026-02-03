@@ -398,7 +398,7 @@ export default function Home() {
               <button
                 type="submit"
                 className={styles.codigoButton}
-                disabled={loading || codigo.length < 6}
+                disabled={loading || codigo.length < 8}
               >
                 {loading ? 'Buscando...' : 'Buscar'}
               </button>

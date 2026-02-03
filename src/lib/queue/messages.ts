@@ -201,6 +201,7 @@ export async function programarSeguimiento(
         TipoJob.SEGUIMIENTO_INICIAL,
         { consultaId },
         {
+          jobId: `seguimiento-inicial-${consultaId}`,
           delay: delay1,
           attempts: 3,
           backoff: { type: 'exponential', delay: 5000 },
@@ -221,6 +222,7 @@ export async function programarSeguimiento(
         TipoJob.SEGUIMIENTO_INTERMEDIO,
         { consultaId },
         {
+          jobId: `seguimiento-intermedio-${consultaId}`,
           delay: delayMitad,
           attempts: 3,
           backoff: { type: 'exponential', delay: 5000 },
@@ -241,6 +243,7 @@ export async function programarSeguimiento(
         TipoJob.SEGUIMIENTO_PREVIO_CITA,
         { consultaId },
         {
+          jobId: `seguimiento-previo-${consultaId}`,
           delay: delay3,
           attempts: 3,
           backoff: { type: 'exponential', delay: 5000 },
@@ -266,6 +269,7 @@ export async function programarSeguimiento(
         TipoJob.RECORDATORIO_AGENDAR,
         { consultaId },
         {
+          jobId: `recordatorio-agendar-${consultaId}`,
           delay: delayRecordatorio,
           attempts: 3,
           backoff: { type: 'exponential', delay: 5000 },
@@ -315,32 +319,62 @@ export async function cancelarJobsCita(citaId: string) {
 
 /**
  * Cancela SOLO los recordatorios de agendar (NO los seguimientos de apoyo)
- * Se usa cuando el paciente agenda una cita y ya no necesita recordatorios
+ * Se usa cuando el paciente agenda una cita y ya no necesita recordatorios.
+ * Busca las consultas del paciente con fecha sugerida cercana y cancela sus jobs por jobId (O(k)).
  */
 export async function cancelarRecordatoriosAgendar(pacienteId: string, fechaCitaAgendada: Date) {
-  const jobs = await mensajesQueue.getJobs(['waiting', 'delayed'])
+  // Buscar consultas del paciente con fecha sugerida cercana (±7 días)
+  const consultas = await prisma.consulta.findMany({
+    where: {
+      paciente_id: pacienteId,
+      proxima_cita: {
+        gte: new Date(fechaCitaAgendada.getTime() - 7 * 24 * 60 * 60 * 1000),
+        lte: new Date(fechaCitaAgendada.getTime() + 7 * 24 * 60 * 60 * 1000),
+      },
+    },
+    select: { id: true },
+  })
 
-  for (const job of jobs) {
-    // Solo cancelar jobs de tipo RECORDATORIO_AGENDAR
-    if (job.name === TipoJob.RECORDATORIO_AGENDAR && job.data.consultaId) {
-      // Verificar que pertenezca al paciente correcto
-      const consulta = await prisma.consulta.findUnique({
-        where: { id: job.data.consultaId },
-        select: { paciente_id: true, proxima_cita: true },
-      })
-
-      if (consulta?.paciente_id === pacienteId) {
-        // Verificar que la cita agendada esté cerca de la fecha sugerida (±7 días)
-        if (consulta.proxima_cita) {
-          const diff = Math.abs(fechaCitaAgendada.getTime() - consulta.proxima_cita.getTime())
-          const diffDays = diff / (1000 * 60 * 60 * 24)
-
-          if (diffDays <= 7) {
-            await job.remove()
-            console.log(`✅ [Queue] Recordatorio agendar cancelado (paciente ya agendó cita)`)
-          }
-        }
+  let cancelados = 0
+  for (const consulta of consultas) {
+    try {
+      const jobId = `recordatorio-agendar-${consulta.id}`
+      const job = await mensajesQueue.getJob(jobId)
+      if (job) {
+        await job.remove()
+        console.log(`✅ [Queue] Recordatorio agendar cancelado (paciente ya agendó cita)`)
+        cancelados++
       }
+    } catch {
+      // Job no existe o ya fue procesado
     }
   }
+  console.log(`[Queue] ${cancelados} recordatorio(s) de agendar cancelado(s) para paciente: ${pacienteId}`)
+}
+
+/**
+ * Cancela todos los jobs de seguimiento de una consulta por jobId (O(1) cada uno)
+ */
+export async function cancelarJobsSeguimiento(consultaId: string) {
+  const jobIds = [
+    `seguimiento-inicial-${consultaId}`,
+    `seguimiento-intermedio-${consultaId}`,
+    `seguimiento-previo-${consultaId}`,
+    `recordatorio-agendar-${consultaId}`,
+  ]
+
+  let cancelados = 0
+  for (const jobId of jobIds) {
+    try {
+      const job = await mensajesQueue.getJob(jobId)
+      if (job) {
+        await job.remove()
+        console.log(`[Queue] Job ${jobId} cancelado`)
+        cancelados++
+      }
+    } catch {
+      // Job no existe o ya fue procesado
+    }
+  }
+  console.log(`[Queue] ${cancelados} job(s) de seguimiento cancelado(s) para consulta: ${consultaId}`)
 }

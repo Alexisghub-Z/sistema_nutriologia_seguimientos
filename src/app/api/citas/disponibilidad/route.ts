@@ -203,18 +203,6 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Log detallado para debugging
-      if (slot === '17:00') {
-        console.log(`\n🔍 DEBUG SLOT 17:00:`)
-        console.log(`   Slot Local: ${slot}`)
-        console.log(`   Hora UTC calculada: ${horaUTC}:${min}`)
-        console.log(`   Slot UTC: ${fechaSlotUTC.toISOString()} - ${finSlotUTC.toISOString()}`)
-        console.log(`   Eventos a verificar: ${eventosCalendar.length}`)
-        eventosCalendar.forEach((ev, i) => {
-          console.log(`   Evento ${i + 1}: ${ev.inicio.toISOString()} - ${ev.fin.toISOString()}`)
-        })
-      }
-
       // Verificar solapamiento con eventos de Google Calendar
       const hayEventoEnSlot = eventosCalendar.some((evento) => {
         // Comparar timestamps en UTC
@@ -223,20 +211,8 @@ export async function GET(request: NextRequest) {
         const condicion3 = fechaSlotUTC <= evento.inicio && finSlotUTC >= evento.fin
         const solapa = condicion1 || condicion2 || condicion3
 
-        // Log para slot 17:00
-        if (slot === '17:00' && solapa) {
-          console.log(`❌ Slot ${slot} bloqueado por evento:`)
-          console.log(`   Slot UTC: ${fechaSlotUTC.toISOString()} - ${finSlotUTC.toISOString()}`)
-          console.log(`   Evento UTC: ${evento.inicio.toISOString()} - ${evento.fin.toISOString()}`)
-          console.log(`   Condición 1: ${condicion1}`)
-          console.log(`   Condición 2: ${condicion2}`)
-          console.log(`   Condición 3: ${condicion3}`)
-        }
-
-        if (solapa && slot !== '17:00') {
-          console.log(`❌ Slot ${slot} (hora local) bloqueado por evento de Google Calendar:`)
-          console.log(`   Slot UTC: ${fechaSlotUTC.toISOString()} - ${finSlotUTC.toISOString()}`)
-          console.log(`   Evento UTC: ${evento.inicio.toISOString()} - ${evento.fin.toISOString()}`)
+        if (solapa) {
+          console.log(`❌ Slot ${slot} bloqueado por evento de Google Calendar`)
         }
 
         return solapa

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { deleteCachePattern } from '@/lib/redis'
+import twilio from 'twilio'
 
 /**
  * Webhook de Twilio Status Callbacks
@@ -24,6 +25,21 @@ export async function POST(request: NextRequest) {
     const messageStatus = formData.get('MessageStatus') as string // queued, sent, delivered, read, failed, undelivered
     const errorCode = formData.get('ErrorCode') as string | null
     const errorMessage = formData.get('ErrorMessage') as string | null
+
+    // Validar firma de Twilio en producción
+    const twilioSignature = request.headers.get('x-twilio-signature') || ''
+    if (process.env.NODE_ENV === 'production' && twilioSignature) {
+      const isValid = twilio.validateRequest(
+        process.env.TWILIO_AUTH_TOKEN!,
+        twilioSignature,
+        request.url,
+        Object.fromEntries(formData)
+      )
+      if (!isValid) {
+        console.error('❌ Invalid Twilio signature on status callback')
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 403 })
+      }
+    }
 
     console.log('📊 Status Callback received:', {
       messageSid,
