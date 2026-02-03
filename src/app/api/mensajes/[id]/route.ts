@@ -13,39 +13,51 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
 
     const { id } = await context.params
     const body = await request.json()
+    const nuevoLeido = body.leido ?? true
 
-    // Verificar que el mensaje existe
-    const mensaje = await prisma.mensajeWhatsApp.findUnique({
+    // Buscar primero en MensajeWhatsApp (pacientes)
+    const mensajePaciente = await prisma.mensajeWhatsApp.findUnique({
       where: { id },
     })
 
-    if (!mensaje) {
-      return NextResponse.json({ error: 'Mensaje no encontrado' }, { status: 404 })
-    }
-
-    // Actualizar mensaje
-    const mensajeActualizado = await prisma.mensajeWhatsApp.update({
-      where: { id },
-      data: {
-        leido: body.leido ?? true,
-      },
-      include: {
-        paciente: {
-          select: {
-            id: true,
-            nombre: true,
-            email: true,
-            telefono: true,
+    if (mensajePaciente) {
+      const mensajeActualizado = await prisma.mensajeWhatsApp.update({
+        where: { id },
+        data: { leido: nuevoLeido },
+        include: {
+          paciente: {
+            select: { id: true, nombre: true, email: true, telefono: true },
           },
         },
-      },
+      })
+
+      await deleteCachePattern(`messages:*`)
+      console.log('🗑️  Cache invalidated: messages after mark as read', mensajePaciente.paciente_id)
+      return NextResponse.json(mensajeActualizado)
+    }
+
+    // Si no se encontró en pacientes, buscar en MensajeProspecto
+    const mensajeProspecto = await prisma.mensajeProspecto.findUnique({
+      where: { id },
     })
 
-    // Invalidar caché de mensajes
-    await deleteCachePattern(`messages:*`)
-    console.log('🗑️  Cache invalidated: messages after mark as read', mensaje.paciente_id)
+    if (mensajeProspecto) {
+      const mensajeActualizado = await prisma.mensajeProspecto.update({
+        where: { id },
+        data: { leido: nuevoLeido },
+        include: {
+          prospecto: {
+            select: { id: true, nombre: true, telefono: true },
+          },
+        },
+      })
 
-    return NextResponse.json(mensajeActualizado)
+      await deleteCachePattern(`messages:*`)
+      console.log('🗑️  Cache invalidated: messages after mark prospecto as read', mensajeProspecto.prospecto_id)
+      return NextResponse.json(mensajeActualizado)
+    }
+
+    return NextResponse.json({ error: 'Mensaje no encontrado' }, { status: 404 })
   } catch (error) {
     console.error('Error al actualizar mensaje:', error)
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido'
