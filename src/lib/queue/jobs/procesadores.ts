@@ -35,8 +35,8 @@ export async function procesarConfirmacion(citaId: string): Promise<void> {
       throw new Error(`Cita ${citaId} no encontrada`)
     }
 
-    if (cita.estado === 'CANCELADA') {
-      console.log(`[Job] Cita ${citaId} est� cancelada, no se env�a confirmaci�n`)
+    if (cita.estado !== 'PENDIENTE') {
+      console.log(`[Job] Cita ${citaId} no está pendiente (estado: ${cita.estado}), no se envía confirmación`)
       return
     }
 
@@ -126,8 +126,8 @@ export async function procesarRecordatorio24h(citaId: string): Promise<void> {
       throw new Error(`Cita ${citaId} no encontrada`)
     }
 
-    if (cita.estado === 'CANCELADA') {
-      console.log(`[Job] Cita ${citaId} est� cancelada, no se env�a recordatorio`)
+    if (cita.estado !== 'PENDIENTE') {
+      console.log(`[Job] Cita ${citaId} no está pendiente (estado: ${cita.estado}), no se envía recordatorio 24h`)
       return
     }
 
@@ -205,8 +205,8 @@ export async function procesarRecordatorio1h(citaId: string): Promise<void> {
       throw new Error(`Cita ${citaId} no encontrada`)
     }
 
-    if (cita.estado === 'CANCELADA') {
-      console.log(`[Job] Cita ${citaId} est� cancelada, no se env�a recordatorio`)
+    if (cita.estado !== 'PENDIENTE') {
+      console.log(`[Job] Cita ${citaId} no está pendiente (estado: ${cita.estado}), no se envía recordatorio 1h`)
       return
     }
 
@@ -356,7 +356,13 @@ ${urlPortal}
     }
 
     // Enviar mensaje directamente
-    const resultado = await sendWhatsAppMessage(consulta.paciente.telefono, mensajeTexto)
+    const resultado = await sendWhatsAppMessage(
+      consulta.paciente.telefono,
+      mensajeTexto,
+      undefined,
+      undefined,
+      STATUS_CALLBACK_URL
+    )
     const messageSid = resultado.messageSid
 
     await prisma.mensajeWhatsApp.create({
