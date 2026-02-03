@@ -17,10 +17,7 @@ import {
  */
 
 console.log('🚀 Worker de mensajes iniciado')
-console.log('🔌 Conectando a Redis:', {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: process.env.REDIS_PORT || 6380,
-})
+console.log('🔌 Conectando a Redis:', process.env.REDIS_URL || 'redis://localhost:6380')
 
 // Registrar procesador para confirmaciones (concurrencia: 5)
 mensajesQueue.process(TipoJob.CONFIRMACION, 5, async (job) => {

@@ -44,36 +44,52 @@ services:
       timeout: 5s
       retries: 5
 
-  # Next.js Application (development)
-  # Comentado: En desarrollo local usamos 'npm run dev' en lugar de Docker
-  # Descomentar solo si quieres correr todo en Docker
-  # app:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.dev
-  #   container_name: nutriologo-app
-  #   restart: unless-stopped
-  #   ports:
-  #     - '${APP_PORT:-3000}:3000'
-  #   environment:
-  #     - NODE_ENV=development
-  #     - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres123}@db:5432/${DB_NAME:-nutriologo_db}?schema=public
-  #     - REDIS_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379
-  #     - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
-  #     - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
-  #   volumes:
-  #     - ./src:/app/src
-  #     - ./public:/app/public
-  #     - ./prisma:/app/prisma
-  #     - /app/node_modules
-  #     - /app/.next
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
-  #   networks:
-  #     - nutriologo-network
+  # Next.js Application (producción)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nutriologo-app
+    restart: unless-stopped
+    ports:
+      - '${APP_PORT:-3000}:3000'
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres123}@db:5432/${DB_NAME:-nutriologo_db}?schema=public
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - nutriologo-network
+
+  # Bull Queue Worker (procesador de jobs automáticos)
+  # Debe correr como proceso separado y largo de vida
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: nutriologo-worker
+    restart: unless-stopped
+    command: ["npx", "tsx", "src/lib/queue/worker.ts"]
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres123}@db:5432/${DB_NAME:-nutriologo_db}?schema=public
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - nutriologo-network
 
 networks:
   nutriologo-network:

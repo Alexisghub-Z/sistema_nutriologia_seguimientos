@@ -3,6 +3,10 @@ import { sendWhatsAppMessage } from '@/lib/services/twilio'
 import { generarMensaje, TipoPlantilla, VariablesPlantilla } from '@/lib/utils/plantillas'
 
 // URL para recibir Status Callbacks de Twilio
+// En producción NEXT_PUBLIC_APP_URL debe estar definida; Twilio no puede alcanzar localhost
+if (!process.env.NEXT_PUBLIC_APP_URL) {
+  console.warn('⚠️  [procesadores] NEXT_PUBLIC_APP_URL no está definida. STATUS_CALLBACK_URL caerá en localhost (no funciona en producción)')
+}
 const STATUS_CALLBACK_URL = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/webhooks/twilio/status`
 
 /**
@@ -53,9 +57,6 @@ export async function procesarConfirmacion(citaId: string): Promise<void> {
 
     // Generar mensaje (sandbox o producci�n)
     const mensaje = await generarMensaje(TipoPlantilla.CONFIRMACION, variables)
-
-    // Configurar StatusCallback URL
-    const STATUS_CALLBACK_URL = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/webhooks/twilio/status`
 
     // Enviar mensaje
     let messageSid: string

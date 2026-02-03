@@ -1,16 +1,10 @@
 import Queue from 'bull'
 import prisma from '@/lib/prisma'
 
-// Crear conexion a Redis
-const redisConfig = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6380'),
-  password: process.env.REDIS_PASSWORD || 'redis123',
-}
-
 // Cola para mensajes automaticos con configuración de auto-limpieza
+// Bull pasa la URL directamente a ioredis (mismo formato que redis.ts)
 export const mensajesQueue = new Queue('mensajes-automaticos', {
-  redis: redisConfig,
+  redis: process.env.REDIS_URL || 'redis://localhost:6380',
   defaultJobOptions: {
     removeOnComplete: {
       age: 24 * 3600, // Eliminar jobs exitosos después de 24 horas
