@@ -711,6 +711,14 @@ export async function procesarMarcarNoAsistio(citaId: string): Promise<void> {
       return
     }
 
+    // Si el paciente nunca confirmó, no auto-marcar: el nutriólogo debe decidirlo
+    if (!cita.confirmada_por_paciente) {
+      console.log(
+        `ℹ️  [Job] Cita ${citaId} nunca fue confirmada por el paciente, no se auto-marca NO_ASISTIO`
+      )
+      return
+    }
+
     // Actualizar estado a NO_ASISTIO
     await prisma.cita.update({
       where: { id: citaId },

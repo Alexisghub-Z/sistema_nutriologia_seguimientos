@@ -126,7 +126,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ cod
       console.log(`✅ Cita confirmada por paciente: ${cita.id}`)
 
       // Notificar al nutriólogo sobre la confirmación
-      notificarConfirmacion(cita).catch((err) =>
+      notificarConfirmacion({ ...cita, codigo_cita: cita.codigo_cita || codigo }).catch((err) =>
         console.error('Error al notificar confirmación:', err)
       )
     } else {
@@ -174,7 +174,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ cod
       console.log(`❌ Cita cancelada por paciente: ${cita.id}`)
 
       // Notificar al nutriólogo sobre la cancelación
-      notificarCancelacion(cita).catch((err) =>
+      notificarCancelacion({ ...cita, codigo_cita: cita.codigo_cita || codigo }).catch((err) =>
         console.error('Error al notificar cancelación:', err)
       )
     }

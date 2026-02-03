@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma'
 import { deleteCachePattern } from '@/lib/redis'
 import twilio from 'twilio'
 import { notificarConfirmacion } from '@/lib/services/notificaciones'
+import { extraerDigitosTelefono } from '@/lib/utils/phone'
 
 /**
  * Webhook de Twilio para recibir mensajes entrantes de WhatsApp
@@ -26,6 +27,12 @@ export async function POST(request: NextRequest) {
     if (numMedia > 0) {
       mediaUrl = formData.get('MediaUrl0') as string
       mediaType = formData.get('MediaContentType0') as string
+    }
+
+    // Validar campos requeridos
+    if (!from || !messageSid) {
+      console.error('❌ Missing required fields (From/MessageSid)')
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     console.log('📥 Webhook received from Twilio:', {
@@ -59,16 +66,35 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Idempotencia: ignorar webhooks duplicados (Twilio reintenta en timeouts)
+    const mensajeExistentePaciente = await prisma.mensajeWhatsApp.findFirst({
+      where: { twilio_sid: messageSid },
+    })
+    const mensajeExistenteProspecto = await prisma.mensajeProspecto.findFirst({
+      where: { twilio_sid: messageSid },
+    })
+
+    if (mensajeExistentePaciente || mensajeExistenteProspecto) {
+      console.log('⏭️ Webhook duplicado ignorado (MessageSid ya existe):', messageSid)
+      return new NextResponse(
+        `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`,
+        { status: 200, headers: { 'Content-Type': 'text/xml' } }
+      )
+    }
+
     // Extraer número de teléfono (remover prefijo whatsapp:)
     const phoneNumber = from.replace('whatsapp:', '')
 
-    // Buscar paciente por número de teléfono
+    // Normalizar teléfono: extraer los 10 dígitos base para búsqueda flexible
+    const digitos10 = extraerDigitosTelefono(phoneNumber)
+
+    // Buscar paciente por número de teléfono en todos los formatos posibles
     const paciente = await prisma.paciente.findFirst({
       where: {
         OR: [
-          { telefono: phoneNumber },
-          { telefono: phoneNumber.replace('+52', '') }, // Sin código de país
-          { telefono: phoneNumber.replace('+', '') }, // Sin +
+          { telefono: phoneNumber },           // Formato exacto de Twilio
+          { telefono: `+521${digitos10}` },    // Formato normalizado (+521 + 10 dígitos)
+          { telefono: digitos10 },             // Solo 10 dígitos
         ],
       },
     })
@@ -126,21 +152,17 @@ Pregunta sobre:
         '@/lib/services/prospecto-responder'
       )
 
-      // Buscar o crear prospecto
-      let prospecto = await prisma.prospecto.findUnique({
+      // Buscar o crear prospecto (upsert previene race condition en webhooks duplicados)
+      const prospecto = await prisma.prospecto.upsert({
         where: { telefono: phoneNumber },
+        update: { estado: 'ACTIVO' },
+        create: {
+          telefono: phoneNumber,
+          total_mensajes: 0,
+          estado: 'ACTIVO',
+        },
       })
-
-      if (!prospecto) {
-        prospecto = await prisma.prospecto.create({
-          data: {
-            telefono: phoneNumber,
-            total_mensajes: 0,
-            estado: 'ACTIVO',
-          },
-        })
-        console.log('✅ Nuevo prospecto creado:', prospecto.id)
-      }
+      console.log('✅ Prospecto encontrado/creado:', prospecto.id)
 
       // Guardar mensaje entrante del prospecto
       await prisma.mensajeProspecto.create({
@@ -261,11 +283,22 @@ Pregunta sobre:
 
       if (citaPendiente) {
         // OPCIÓN 1: CONFIRMAR ASISTENCIA
-        if (
+        // Respuestas cortas exactas (respuesta directa al recordatorio)
+        const esConfirmacionExacta =
           mensajeNormalizado === '1' ||
-          mensajeNormalizado.includes('confirmar') ||
-          mensajeNormalizado.includes('confirmo')
-        ) {
+          mensajeNormalizado === 'si' ||
+          mensajeNormalizado === 'sí' ||
+          mensajeNormalizado === 'confirmo' ||
+          mensajeNormalizado === 'confirmado' ||
+          mensajeNormalizado === 'ok' ||
+          mensajeNormalizado === 'dale' ||
+          mensajeNormalizado === 'listo'
+        // Mensajes más largos: buscar confirmación pero descartar si hay negación previa
+        const esConfirmacionEnTexto =
+          /\b(confirmo|confirmar)\b/.test(mensajeNormalizado) &&
+          !/\bno\b\s[\s\S]*?\b(confirmo|confirmar)\b/.test(mensajeNormalizado)
+
+        if (esConfirmacionExacta || esConfirmacionEnTexto) {
           await prisma.cita.update({
             where: { id: citaPendiente.id },
             data: {
@@ -289,7 +322,7 @@ Te esperamos! 🌟`
           // Notificar al nutriólogo sobre la confirmación
           notificarConfirmacion({
             id: citaPendiente.id,
-            codigo_cita: citaPendiente.codigo_cita,
+            codigo_cita: citaPendiente.codigo_cita || '',
             fecha_hora: citaPendiente.fecha_hora,
             tipo_cita: citaPendiente.tipo_cita,
             motivo_consulta: citaPendiente.motivo_consulta,

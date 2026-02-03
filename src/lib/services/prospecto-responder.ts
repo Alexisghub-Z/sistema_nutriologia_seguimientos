@@ -43,20 +43,18 @@ export async function procesarMensajeProspecto(
       mensaje: mensajeTelefono.substring(0, 50) + '...',
     })
 
-    // PASO 1: Buscar o crear prospecto
-    let prospecto = await prisma.prospecto.findUnique({
+    // PASO 1: Buscar o crear prospecto (upsert previene race condition)
+    const prospecto = await prisma.prospecto.upsert({
       where: { telefono: numeroWhatsApp },
+      update: { estado: 'ACTIVO' },
+      create: {
+        telefono: numeroWhatsApp,
+        total_mensajes: 0,
+        estado: 'ACTIVO',
+      },
     })
 
-    if (!prospecto) {
-      // Crear nuevo prospecto
-      prospecto = await prisma.prospecto.create({
-        data: {
-          telefono: numeroWhatsApp,
-          total_mensajes: 0,
-          estado: 'ACTIVO',
-        },
-      })
+    if (prospecto.total_mensajes === 0) {
 
       console.log('✅ Nuevo prospecto creado:', prospecto.id)
     }
