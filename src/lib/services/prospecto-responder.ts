@@ -118,24 +118,7 @@ Usa este mismo número de WhatsApp para comunicarte y recibirás atención compl
     // PASO 5: Verificar si debe recordar registrarse
     const debeRecordarRegistro = totalMensajes % LIMITES_PROSPECTO.RECORDATORIO_REGISTRAR_CADA === 0
 
-    // PASO 6: Verificar si requiere derivación nutricional
-    if (requiereDerivacion(mensajeTelefono)) {
-      const respuesta = generarMensajeDerivacionProspecto(mensajeTelefono)
-
-      return {
-        respuesta,
-        debe_responder_automaticamente: true,
-        razon: 'Detectadas palabras clave nutricionales - deriva a consulta',
-        metadata: {
-          fuente: 'sistema',
-          es_prospecto: true,
-          total_mensajes: totalMensajes,
-          debe_recordar_registro: true, // Siempre recordar en derivaciones
-        },
-      }
-    }
-
-    // PASO 7: Buscar en FAQ
+    // PASO 6: Buscar en FAQ (tiene prioridad sobre derivación por palabras clave)
     const respuestaFAQ = buscarEnFAQ(mensajeTelefono)
     if (respuestaFAQ) {
       console.log('✅ Respuesta encontrada en FAQ para prospecto')
@@ -154,6 +137,23 @@ Usa este mismo número de WhatsApp para comunicarte y recibirás atención compl
           es_prospecto: true,
           total_mensajes: totalMensajes,
           debe_recordar_registro: debeRecordarRegistro,
+        },
+      }
+    }
+
+    // PASO 7: Verificar si requiere derivación nutricional
+    if (requiereDerivacion(mensajeTelefono)) {
+      const respuesta = generarMensajeDerivacionProspecto(mensajeTelefono)
+
+      return {
+        respuesta,
+        debe_responder_automaticamente: true,
+        razon: 'Detectadas palabras clave nutricionales - deriva a consulta',
+        metadata: {
+          fuente: 'sistema',
+          es_prospecto: true,
+          total_mensajes: totalMensajes,
+          debe_recordar_registro: true, // Siempre recordar en derivaciones
         },
       }
     }

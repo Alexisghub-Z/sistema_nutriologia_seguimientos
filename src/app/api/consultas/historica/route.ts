@@ -60,6 +60,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = consultaHistoricaSchema.parse(body)
 
+    // Verificar que el paciente existe
+    const paciente = await prisma.paciente.findUnique({
+      where: { id: validatedData.paciente_id },
+      select: { id: true },
+    })
+
+    if (!paciente) {
+      return NextResponse.json({ error: 'Paciente no encontrado' }, { status: 404 })
+    }
+
     // Calcular IMC si hay peso y talla
     let imc: number | undefined
     if (validatedData.peso && validatedData.talla) {
