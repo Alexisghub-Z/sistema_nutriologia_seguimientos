@@ -201,6 +201,20 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = consultaSchema.parse(body)
 
+    // Verificar que la cita existe y pertenece al paciente
+    const cita = await prisma.cita.findUnique({
+      where: { id: validatedData.cita_id },
+      select: { paciente_id: true },
+    })
+
+    if (!cita) {
+      return NextResponse.json({ error: 'Cita no encontrada' }, { status: 404 })
+    }
+
+    if (cita.paciente_id !== validatedData.paciente_id) {
+      return NextResponse.json({ error: 'La cita no pertenece a este paciente' }, { status: 400 })
+    }
+
     // Calcular IMC si hay peso y talla
     let imc: number | undefined
     if (validatedData.peso && validatedData.talla) {

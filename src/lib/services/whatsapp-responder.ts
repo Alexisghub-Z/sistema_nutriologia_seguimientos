@@ -46,22 +46,7 @@ export async function procesarMensajeEntrante(
       }
     }
 
-    // PASO 2: Verificar si contiene palabras que requieren derivación automática
-    if (requiereDerivacion(mensajePaciente)) {
-      const respuesta = generarMensajeDerivacion(nombrePaciente, mensajePaciente)
-
-      return {
-        respuesta,
-        debe_responder_automaticamente: true,
-        debe_derivar_humano: true,
-        razon: 'Detectadas palabras clave nutricionales/médicas - deriva a humano',
-        metadata: {
-          fuente: 'sistema',
-        },
-      }
-    }
-
-    // PASO 3: Buscar en FAQ
+    // PASO 2: Buscar en FAQ (tiene prioridad sobre derivación por palabras clave)
     const respuestaFAQ = buscarEnFAQ(mensajePaciente)
     if (respuestaFAQ) {
       console.log('✅ Respuesta encontrada en FAQ')
@@ -74,6 +59,21 @@ export async function procesarMensajeEntrante(
         metadata: {
           fuente: 'faq',
           confidence: 1.0,
+        },
+      }
+    }
+
+    // PASO 3: Verificar si contiene palabras que requieren derivación automática
+    if (requiereDerivacion(mensajePaciente)) {
+      const respuesta = generarMensajeDerivacion(nombrePaciente, mensajePaciente)
+
+      return {
+        respuesta,
+        debe_responder_automaticamente: true,
+        debe_derivar_humano: true,
+        razon: 'Detectadas palabras clave nutricionales/médicas - deriva a humano',
+        metadata: {
+          fuente: 'sistema',
         },
       }
     }
