@@ -8,16 +8,45 @@
   margin-bottom: var(--spacing-xl);
 }
 
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.backButton:hover {
+  background: var(--color-gray-50);
+  color: var(--color-primary);
+}
+
+.backButton svg {
+  transition: transform var(--transition-fast);
+}
+
+.backButton:hover svg {
+  transform: translateX(-2px);
+}
+
 .title {
   font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-gray-900);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
   margin: 0 0 var(--spacing-xs) 0;
 }
 
 .subtitle {
   font-size: var(--font-size-sm);
-  color: var(--color-gray-600);
+  color: var(--color-text-secondary);
   margin: 0;
 }
 

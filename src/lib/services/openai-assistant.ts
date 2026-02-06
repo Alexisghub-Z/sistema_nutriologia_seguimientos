@@ -1,5 +1,7 @@
 import OpenAI from 'openai'
 import { KNOWLEDGE_BASE, SYSTEM_INSTRUCTIONS } from '@/lib/knowledge-base'
+import { logSuccess, logDebug } from '@/lib/logger'
+import { captureError, addBreadcrumb, measurePerformance } from '@/lib/sentry-utils'
 
 /**
  * Cliente de OpenAI
@@ -80,6 +82,8 @@ export interface RespuestaIA {
   confidence: number
   razonamiento?: string
   tokens_usados?: number
+  intencion_detectada?: 'agendar' | 'precios' | 'horarios' | 'urgencia' | 'consulta_general' | 'derivar'
+  nivel_urgencia?: 'baja' | 'media' | 'alta'
 }
 
 /**
@@ -88,8 +92,63 @@ export interface RespuestaIA {
 function generarContextoSistema(pacienteContexto?: PacienteContexto): string {
   let contexto = SYSTEM_INSTRUCTIONS
 
+  // Obtener información de fecha y hora actual
+  const ahora = new Date()
+  const fechaActual = ahora.toLocaleDateString('es-MX', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+  const horaActual = ahora.toLocaleTimeString('es-MX', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  const hora = ahora.getHours()
+  const dia = ahora.getDay() // 0 = Domingo, 6 = Sábado
+
+  // Determinar saludo apropiado según la hora
+  let saludoSugerido = 'Hola'
+  if (hora >= 5 && hora < 12) saludoSugerido = 'Buenos días'
+  else if (hora >= 12 && hora < 19) saludoSugerido = 'Buenas tardes'
+  else saludoSugerido = 'Buenas noches'
+
+  // Determinar estado del consultorio
+  let estadoConsultorio = ''
+  const esDomingo = dia === 0
+  const esLunesViernes = dia >= 1 && dia <= 5
+  const esSabado = dia === 6
+
+  if (esDomingo) {
+    estadoConsultorio = '🔴 CERRADO - El consultorio no atiende los domingos. Abre mañana lunes a las 4:00 PM.'
+  } else if (esLunesViernes) {
+    if (hora >= 16 && hora < 20) {
+      estadoConsultorio = '🟢 ABIERTO - Horario de atención: 4:00 PM a 8:00 PM'
+    } else if (hora < 16) {
+      estadoConsultorio = `🟡 CERRADO - Abre hoy a las 4:00 PM (en ${16 - hora} horas)`
+    } else {
+      estadoConsultorio = '🔴 CERRADO - Abre mañana a las 4:00 PM'
+    }
+  } else if (esSabado) {
+    if (hora >= 8 && hora < 19) {
+      estadoConsultorio = '🟢 ABIERTO - Horario de atención: 8:00 AM a 7:00 PM'
+    } else if (hora < 8) {
+      estadoConsultorio = `🟡 CERRADO - Abre hoy a las 8:00 AM (en ${8 - hora} horas)`
+    } else {
+      estadoConsultorio = '🔴 CERRADO - Abre el lunes a las 4:00 PM'
+    }
+  }
+
+  // Agregar contexto temporal
+  contexto += `\n\n## CONTEXTO TEMPORAL:\n`
+  contexto += `Fecha actual: ${fechaActual}\n`
+  contexto += `Hora actual: ${horaActual}\n`
+  contexto += `Estado del consultorio: ${estadoConsultorio}\n`
+  contexto += `Saludo sugerido: "${saludoSugerido}" (adapta según la hora del día)\n\n`
+  contexto += `IMPORTANTE: Usa el saludo apropiado según la hora. Si el consultorio está cerrado, menciona cuándo abre.\n`
+
   // Agregar información de la base de conocimiento
-  contexto += `\n\n## INFORMACIÓN DEL CONSULTORIO:\n`
+  contexto += `\n## INFORMACIÓN DEL CONSULTORIO:\n`
   contexto += `Nutriólogo: ${KNOWLEDGE_BASE.nutriologo.nombre_completo}\n`
   contexto += `Ubicación: ${KNOWLEDGE_BASE.consultorio.ubicacion}\n`
   contexto += `Horarios: ${KNOWLEDGE_BASE.consultorio.horarios}\n`
@@ -131,6 +190,96 @@ function generarContextoSistema(pacienteContexto?: PacienteContexto): string {
 }
 
 /**
+ * Detecta la intención del usuario en su mensaje
+ */
+function detectarIntencion(mensaje: string): {
+  intencion: 'agendar' | 'precios' | 'horarios' | 'urgencia' | 'consulta_general' | 'derivar'
+  nivel_urgencia: 'baja' | 'media' | 'alta'
+} {
+  const mensajeNormalizado = mensaje.toLowerCase()
+
+  // Detectar urgencia
+  const palabrasUrgencia = [
+    'urgente',
+    'emergencia',
+    'ahora mismo',
+    'ya',
+    'rápido',
+    'cuanto antes',
+    'lo antes posible',
+    'necesito ya',
+  ]
+  const esUrgente = palabrasUrgencia.some((palabra) => mensajeNormalizado.includes(palabra))
+
+  // Detectar intención de agendar
+  const palabrasAgendar = [
+    'agendar',
+    'cita',
+    'consulta',
+    'reservar',
+    'apartar',
+    'cuando puedo',
+    'disponibilidad',
+    'horarios disponibles',
+  ]
+  if (palabrasAgendar.some((palabra) => mensajeNormalizado.includes(palabra))) {
+    return {
+      intencion: 'agendar',
+      nivel_urgencia: esUrgente ? 'alta' : 'media',
+    }
+  }
+
+  // Detectar pregunta de precios
+  const palabrasPrecios = ['precio', 'costo', 'cuanto', 'cuánto', 'pagar', 'cobrar', 'vale']
+  if (palabrasPrecios.some((palabra) => mensajeNormalizado.includes(palabra))) {
+    return {
+      intencion: 'precios',
+      nivel_urgencia: 'baja',
+    }
+  }
+
+  // Detectar pregunta de horarios
+  const palabrasHorarios = [
+    'horario',
+    'que hora',
+    'a qué hora',
+    'cuando abren',
+    'cuando atienden',
+    'están abiertos',
+  ]
+  if (palabrasHorarios.some((palabra) => mensajeNormalizado.includes(palabra))) {
+    return {
+      intencion: 'horarios',
+      nivel_urgencia: 'baja',
+    }
+  }
+
+  // Detectar necesidad de derivar (temas nutricionales/médicos)
+  const palabrasDerivar = [
+    'puedo comer',
+    'debo comer',
+    'mi plan',
+    'mi dieta',
+    'dolor',
+    'síntoma',
+    'enfermedad',
+    'medicamento',
+  ]
+  if (palabrasDerivar.some((palabra) => mensajeNormalizado.includes(palabra))) {
+    return {
+      intencion: 'derivar',
+      nivel_urgencia: esUrgente ? 'alta' : 'media',
+    }
+  }
+
+  // Por defecto: consulta general
+  return {
+    intencion: 'consulta_general',
+    nivel_urgencia: esUrgente ? 'alta' : 'baja',
+  }
+}
+
+/**
  * Obtiene respuesta de la IA para un mensaje del paciente
  */
 export async function obtenerRespuestaIA(
@@ -145,24 +294,62 @@ export async function obtenerRespuestaIA(
 
     const client = getOpenAIClient()
 
+    // Detectar intención del usuario
+    const { intencion, nivel_urgencia } = detectarIntencion(mensajePaciente)
+
     // Configuración del modelo
     const model = process.env.OPENAI_MODEL || 'gpt-4o'
     const temperature = parseFloat(process.env.OPENAI_TEMPERATURE || '0.7')
     const maxTokens = parseInt(process.env.OPENAI_MAX_TOKENS || '500')
 
-    console.log('🤖 Consultando OpenAI:', {
+    logDebug('Consultando OpenAI', {
       model,
       temperatura: temperature,
       maxTokens,
       mensaje: mensajePaciente.substring(0, 50) + '...',
       paciente: pacienteContexto?.nombre || 'Desconocido',
+      intencion_detectada: intencion,
+      nivel_urgencia,
     })
+
+    // Construir contexto del sistema con hints proactivos según intención
+    let contextoSistema = generarContextoSistema(pacienteContexto)
+
+    // Agregar instrucciones proactivas según intención detectada
+    contextoSistema += `\n\n## INTENCIÓN DETECTADA: ${intencion.toUpperCase()}\n`
+
+    if (intencion === 'agendar') {
+      contextoSistema += `El usuario muestra interés en agendar una cita. SÉ PROACTIVO:\n`
+      contextoSistema += `- Después de responder su pregunta, ofrécele DIRECTAMENTE el link de agenda: ${KNOWLEDGE_BASE.urls.agendar}\n`
+      contextoSistema += `- Menciona que puede ver disponibilidad en tiempo real\n`
+      contextoSistema += `- Si no tiene cita agendada, incentiva a que agende ahora\n`
+    } else if (intencion === 'precios') {
+      contextoSistema += `El usuario pregunta por precios. SÉ PROACTIVO:\n`
+      contextoSistema += `- Después de dar el precio ($500 MXN), menciona qué incluye\n`
+      contextoSistema += `- Ofrece el link de agenda si parece interesado: ${KNOWLEDGE_BASE.urls.agendar}\n`
+      contextoSistema += `- Resalta el valor de la consulta (plan personalizado, seguimiento)\n`
+    } else if (intencion === 'horarios') {
+      contextoSistema += `El usuario pregunta por horarios. SÉ PROACTIVO:\n`
+      contextoSistema += `- Después de dar los horarios, menciona que puede ver disponibilidad exacta en: ${KNOWLEDGE_BASE.urls.agendar}\n`
+      contextoSistema += `- Si está fuera de horario, menciona cuándo abre el consultorio\n`
+    } else if (intencion === 'derivar') {
+      contextoSistema += `El usuario hace una pregunta nutricional/médica. SÉ PROACTIVO:\n`
+      contextoSistema += `- NO intentes responder temas nutricionales específicos\n`
+      contextoSistema += `- Deriva al nutriólogo Paul (951 130 1554)\n`
+      contextoSistema += `- Explica que necesita evaluación profesional personalizada\n`
+    }
+
+    if (nivel_urgencia === 'alta') {
+      contextoSistema += `\n⚠️ URGENCIA DETECTADA: El usuario usa palabras de urgencia. Responde con prioridad y ofrece opciones rápidas.\n`
+      contextoSistema += `- Si pregunta por citas: menciona disponibilidad inmediata o más cercana\n`
+      contextoSistema += `- Si es tema nutricional urgente: da el teléfono directo del nutriólogo: 951 130 1554\n`
+    }
 
     // Construir mensajes
     const mensajes: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
       {
         role: 'system',
-        content: generarContextoSistema(pacienteContexto),
+        content: contextoSistema,
       },
     ]
 
@@ -176,15 +363,24 @@ export async function obtenerRespuestaIA(
       content: mensajePaciente,
     })
 
-    // Llamar a OpenAI
+    // Llamar a OpenAI con medición de performance
     const inicio = Date.now()
-    const completion = await client.chat.completions.create({
+
+    addBreadcrumb('openai', 'Llamando a OpenAI API', {
       model,
-      messages: mensajes,
-      temperature,
-      max_tokens: maxTokens,
-      presence_penalty: 0.6, // Evita repeticiones
-      frequency_penalty: 0.3, // Variedad en respuestas
+      intencion,
+      nivel_urgencia,
+    })
+
+    const completion = await measurePerformance('openai.chat.completions', async () => {
+      return await client.chat.completions.create({
+        model,
+        messages: mensajes,
+        temperature,
+        max_tokens: maxTokens,
+        presence_penalty: 0.6, // Evita repeticiones
+        frequency_penalty: 0.3, // Variedad en respuestas
+      })
     })
 
     const tiempoRespuesta = Date.now() - inicio
@@ -192,10 +388,11 @@ export async function obtenerRespuestaIA(
     const respuesta = completion.choices[0]?.message?.content || ''
     const tokensUsados = completion.usage?.total_tokens || 0
 
-    console.log('✅ Respuesta de OpenAI recibida:', {
+    logSuccess('Respuesta de OpenAI recibida', {
       tiempo: `${tiempoRespuesta}ms`,
       tokens: tokensUsados,
       longitud: respuesta.length,
+      paciente: pacienteContexto?.nombre || 'Desconocido',
     })
 
     // Limpiar formato Markdown de la respuesta (WhatsApp no lo interpreta)
@@ -215,9 +412,19 @@ export async function obtenerRespuestaIA(
       razonamiento: debeDeriviar
         ? 'La IA detectó que requiere atención humana'
         : 'Respuesta automática generada',
+      intencion_detectada: intencion,
+      nivel_urgencia,
     }
   } catch (error) {
-    console.error('❌ Error al obtener respuesta de OpenAI:', error)
+    // Capturar error en Sentry y logs
+    captureError(error, {
+      module: 'openai',
+      extra: {
+        paciente: pacienteContexto?.nombre || 'Desconocido',
+        mensaje: mensajePaciente.substring(0, 50) + '...',
+        model: process.env.OPENAI_MODEL,
+      },
+    })
 
     // Si hay error, derivar a humano
     return {

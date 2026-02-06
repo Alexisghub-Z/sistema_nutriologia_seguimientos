@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import Header from '@/components/layout/Header'
+import PageTransition from '@/components/layout/PageTransition'
 import { SidebarProvider } from '@/contexts/SidebarContext'
 import styles from './admin-layout.module.css'
 
@@ -17,7 +18,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className={styles.main}>
           <Header />
           <main className={isMensajesPage ? styles.contentNoPadding : styles.content}>
-            {children}
+            <PageTransition>{children}</PageTransition>
           </main>
         </div>
       </div>

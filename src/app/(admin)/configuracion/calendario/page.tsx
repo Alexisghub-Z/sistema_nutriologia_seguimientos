@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Alert from '@/components/ui/Alert'
@@ -20,6 +21,7 @@ interface Configuracion {
 }
 
 export default function ConfiguracionCalendarioPage() {
+  const router = useRouter()
   const [config, setConfig] = useState<Configuracion | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -142,10 +144,25 @@ export default function ConfiguracionCalendarioPage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Configuración del Calendario</h1>
-        <p className={styles.subtitle}>
-          Configura los horarios y disponibilidad para agendar citas
-        </p>
+        <div>
+          <button className={styles.backButton} onClick={() => router.push('/configuracion')}>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 4l-6 6 6 6" />
+            </svg>
+            Volver a Configuración
+          </button>
+          <h1 className={styles.title}>Configuración del Calendario</h1>
+          <p className={styles.subtitle}>
+            Configura los horarios y disponibilidad para agendar citas
+          </p>
+        </div>
       </div>
 
       <form onSubmit={guardarConfiguracion}>

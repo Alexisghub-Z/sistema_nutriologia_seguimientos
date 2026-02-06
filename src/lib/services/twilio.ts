@@ -1,4 +1,6 @@
 import twilio from 'twilio'
+import { captureError, addBreadcrumb } from '@/lib/sentry-utils'
+import { logger } from '@/lib/logger'
 
 /**
  * Servicio de integración con Twilio para envío de WhatsApp
@@ -80,21 +82,35 @@ export async function sendWhatsAppMessage(
     const usarPlantillaAprobada = !!contentSid
 
     if (usarPlantillaAprobada) {
-      console.log('📤 Sending WhatsApp message (Approved Template):', {
+      logger.info('📤 Sending WhatsApp message (Approved Template)', {
         from: twilioNumber,
         to: formattedTo,
         contentSid,
       })
+      addBreadcrumb('twilio', 'Enviando mensaje con plantilla aprobada', {
+        contentSid,
+        to: formattedTo,
+      })
     } else {
-      console.log('📤 Sending WhatsApp message (Sandbox):', {
+      logger.info('📤 Sending WhatsApp message (Sandbox)', {
         from: twilioNumber,
         to: formattedTo,
         body: body.substring(0, 50) + '...',
       })
+      addBreadcrumb('twilio', 'Enviando mensaje en sandbox', {
+        to: formattedTo,
+      })
     }
 
     // Crear mensaje según el modo
-    const messageParams: any = {
+    const messageParams: {
+      from: string
+      to: string
+      body?: string
+      contentSid?: string
+      contentVariables?: string
+      statusCallback?: string
+    } = {
       from: twilioNumber,
       to: formattedTo,
     }
@@ -110,15 +126,17 @@ export async function sendWhatsAppMessage(
       messageParams.body = body
     }
 
-    // Configurar StatusCallback URL para recibir actualizaciones
-    if (statusCallback) {
+    // Configurar StatusCallback solo si es URL pública (Twilio no puede alcanzar localhost)
+    if (statusCallback && statusCallback.startsWith('https://')) {
       messageParams.statusCallback = statusCallback
       console.log('📊 StatusCallback configurado:', statusCallback)
+    } else if (statusCallback) {
+      console.log('⚠️ StatusCallback omitido en desarrollo (URL no pública):', statusCallback)
     }
 
     const message = await client.messages.create(messageParams)
 
-    console.log('✅ WhatsApp message sent successfully:', {
+    logger.info('✅ WhatsApp message sent successfully', {
       sid: message.sid,
       status: message.status,
       to: formattedTo,
@@ -133,7 +151,15 @@ export async function sendWhatsAppMessage(
       dateCreated: message.dateCreated,
     }
   } catch (error) {
-    console.error('❌ Error sending WhatsApp message:', error)
+    // Capturar error en Sentry y logs
+    captureError(error, {
+      module: 'twilio',
+      extra: {
+        to,
+        contentSid,
+        mode: contentSid ? 'production' : 'sandbox',
+      },
+    })
 
     // Extraer mensaje de error de Twilio
     let errorMessage = 'Error al enviar mensaje de WhatsApp'

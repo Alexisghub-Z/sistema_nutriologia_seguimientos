@@ -55,7 +55,6 @@ export async function procesarMensajeProspecto(
     })
 
     if (prospecto.total_mensajes === 0) {
-
       console.log('✅ Nuevo prospecto creado:', prospecto.id)
     }
 
@@ -184,7 +183,9 @@ Usa este mismo número de WhatsApp para comunicarte y recibirás atención compl
     const umbralConfianza = 0.8 // Más alto que para pacientes (0.7)
 
     if (respuestaIA.confidence < umbralConfianza) {
-      console.log(`⚠️ Confianza baja para prospecto (${respuestaIA.confidence}), enviando derivación`)
+      console.log(
+        `⚠️ Confianza baja para prospecto (${respuestaIA.confidence}), enviando derivación`
+      )
 
       const respuesta = generarMensajeSinIA()
 
