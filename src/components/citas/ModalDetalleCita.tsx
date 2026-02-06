@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import styles from './ModalDetalleCita.module.css'
 
 interface Cita {
@@ -34,8 +35,14 @@ interface ModalDetalleCitaProps {
 export default function ModalDetalleCita({ cita, onClose, onActualizar }: ModalDetalleCitaProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [mounted, setMounted] = useState(false)
 
-  if (!cita) return null
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
+  }, [])
+
+  if (!cita || !mounted) return null
 
   const formatearFecha = (fecha: string) => {
     return new Date(fecha).toLocaleDateString('es-MX', {
@@ -113,13 +120,10 @@ export default function ModalDetalleCita({ cita, onClose, onActualizar }: ModalD
     }
   }
 
-  return (
-    <>
-      {/* Overlay */}
-      <div className={styles.overlay} onClick={onClose} />
-
+  const modalContent = (
+    <div className={styles.overlay} onClick={onClose}>
       {/* Modal */}
-      <div className={styles.modal}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className={styles.header}>
           <div>
@@ -336,6 +340,8 @@ export default function ModalDetalleCita({ cita, onClose, onActualizar }: ModalD
           </div>
         </div>
       </div>
-    </>
+    </div>
   )
+
+  return createPortal(modalContent, document.body)
 }
