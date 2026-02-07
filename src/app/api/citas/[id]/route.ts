@@ -6,6 +6,7 @@ import {
   syncCitaWithGoogleCalendar,
   unsyncCitaFromGoogleCalendar,
   isGoogleCalendarConfigured,
+  markEventAsCompleted,
 } from '@/lib/services/google-calendar'
 import { cancelarJobsCita } from '@/lib/queue/messages'
 
@@ -97,8 +98,12 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
           // Si la cita se canceló, eliminar del calendario
           await unsyncCitaFromGoogleCalendar(id)
           console.log('📅 Cita eliminada de Google Calendar:', id)
+        } else if (body.estado === 'COMPLETADA' && cita.google_event_id) {
+          // Si la cita se completó, cambiar color a verde en Google Calendar
+          await markEventAsCompleted(cita.google_event_id)
+          console.log('✅ Cita marcada como completada en Google Calendar (color verde):', id)
         } else {
-          // De lo contrario, sincronizar
+          // De lo contrario, sincronizar normalmente
           await syncCitaWithGoogleCalendar(id)
           console.log('📅 Cita sincronizada con Google Calendar:', id)
         }
