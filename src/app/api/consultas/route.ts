@@ -15,31 +15,31 @@ const consultaSchema = z.object({
   motivo: z.string().optional(),
 
   // Mediciones básicas
-  peso: z.number().min(5).max(300).optional(),           // 5-300 kg
-  talla: z.number().min(0.5).max(2.5).optional(),        // 0.5-2.5 m
+  peso: z.number().min(2.5).max(600).optional(),           // 2.5-600 kg (duplicado)
+  talla: z.number().min(0.25).max(5).optional(),           // 0.25-5 m (duplicado)
 
   // Composición corporal
   grasa_corporal: z.number().min(0).max(100).optional(),
   porcentaje_agua: z.number().min(0).max(100).optional(),
-  masa_muscular_kg: z.number().min(1).max(200).optional(),
-  grasa_visceral: z.number().int().min(0).max(30).optional(),
+  masa_muscular_kg: z.number().min(0.5).max(400).optional(), // 0.5-400 kg (duplicado)
+  grasa_visceral: z.number().int().min(0).max(60).optional(), // 0-60 (duplicado)
 
   // Perímetros (cm)
-  brazo_relajado: z.number().min(10).max(80).optional(),
-  brazo_flexionado: z.number().min(10).max(90).optional(),
-  cintura: z.number().min(30).max(200).optional(),
-  cadera_maximo: z.number().min(60).max(200).optional(),
-  muslo_maximo: z.number().min(20).max(120).optional(),
-  muslo_medio: z.number().min(20).max(120).optional(),
-  pantorrilla_maximo: z.number().min(20).max(80).optional(),
+  brazo_relajado: z.number().min(5).max(160).optional(),      // 5-160 cm (duplicado)
+  brazo_flexionado: z.number().min(5).max(180).optional(),    // 5-180 cm (duplicado)
+  cintura: z.number().min(15).max(400).optional(),            // 15-400 cm (duplicado)
+  cadera_maximo: z.number().min(30).max(400).optional(),      // 30-400 cm (duplicado)
+  muslo_maximo: z.number().min(10).max(240).optional(),       // 10-240 cm (duplicado)
+  muslo_medio: z.number().min(10).max(240).optional(),        // 10-240 cm (duplicado)
+  pantorrilla_maximo: z.number().min(10).max(160).optional(), // 10-160 cm (duplicado)
 
   // Pliegues cutáneos (mm)
-  pliegue_tricipital: z.number().min(1).max(60).optional(),
-  pliegue_subescapular: z.number().min(1).max(60).optional(),
-  pliegue_bicipital: z.number().min(1).max(60).optional(),
-  pliegue_cresta_iliaca: z.number().min(1).max(60).optional(),
-  pliegue_supraespinal: z.number().min(1).max(60).optional(),
-  pliegue_abdominal: z.number().min(1).max(60).optional(),
+  pliegue_tricipital: z.number().min(0.5).max(120).optional(),      // 0.5-120 mm (duplicado)
+  pliegue_subescapular: z.number().min(0.5).max(120).optional(),    // 0.5-120 mm (duplicado)
+  pliegue_bicipital: z.number().min(0.5).max(120).optional(),       // 0.5-120 mm (duplicado)
+  pliegue_cresta_iliaca: z.number().min(0.5).max(120).optional(),   // 0.5-120 mm (duplicado)
+  pliegue_supraespinal: z.number().min(0.5).max(120).optional(),    // 0.5-120 mm (duplicado)
+  pliegue_abdominal: z.number().min(0.5).max(120).optional(),       // 0.5-120 mm (duplicado)
 
   // Notas
   notas: z.string().optional(),
@@ -199,6 +199,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    console.log('📝 Datos recibidos para crear consulta:', JSON.stringify(body, null, 2))
     const validatedData = consultaSchema.parse(body)
 
     // Verificar que la cita existe y pertenece al paciente
@@ -335,6 +336,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(consulta, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error('❌ Error de validación Zod:', JSON.stringify(error.errors, null, 2))
       return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
     }
 
