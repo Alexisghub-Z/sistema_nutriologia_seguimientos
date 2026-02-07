@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getAuthUser } from '@/lib/auth-utils'
 import { prisma } from '@/lib/prisma'
 
 /**
@@ -12,9 +11,9 @@ import { prisma } from '@/lib/prisma'
  */
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
+    const user = await getAuthUser()
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
@@ -49,7 +48,7 @@ export async function GET() {
 
     const nuevosProspectos = await prisma.prospecto.findMany({
       where: {
-        created_at: {
+        createdAt: {
           gte: hace24Horas,
         },
         // Solo prospectos que aún no tienen muchos mensajes (nuevos)
@@ -58,7 +57,7 @@ export async function GET() {
         },
       },
       orderBy: {
-        created_at: 'desc',
+        createdAt: 'desc',
       },
       take: 10, // Máximo 10 prospectos
     })
@@ -81,7 +80,7 @@ export async function GET() {
         tipo: 'prospecto',
         telefono: prospecto.telefono,
         nombre: prospecto.nombre || 'Prospecto sin nombre',
-        createdAt: prospecto.created_at,
+        createdAt: prospecto.createdAt,
         totalMensajes: prospecto.total_mensajes,
       })),
       total:
