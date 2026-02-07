@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import styles from './ModalDetalleCita.module.css'
 
@@ -35,30 +35,32 @@ interface ModalDetalleCitaProps {
 export default function ModalDetalleCita({ cita, onClose, onActualizar }: ModalDetalleCitaProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
-    return () => setMounted(false)
-  }, [])
+    if (!cita) return
+    // Prevenir scroll del body cuando el modal está abierto
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [cita])
 
-  if (!cita || !mounted) return null
-
-  const formatearFecha = (fecha: string) => {
+  // Memoizar funciones de formato para evitar re-cálculos
+  const formatearFecha = useCallback((fecha: string) => {
     return new Date(fecha).toLocaleDateString('es-MX', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     })
-  }
+  }, [])
 
-  const formatearHora = (fecha: string) => {
+  const formatearHora = useCallback((fecha: string) => {
     return new Date(fecha).toLocaleTimeString('es-MX', {
       hour: '2-digit',
       minute: '2-digit',
     })
-  }
+  }, [])
 
   const getEstadoColor = (estado: string) => {
     switch (estado) {
@@ -90,7 +92,9 @@ export default function ModalDetalleCita({ cita, onClose, onActualizar }: ModalD
     }
   }
 
-  const cambiarEstado = async (nuevoEstado: string) => {
+  const cambiarEstado = useCallback(async (nuevoEstado: string) => {
+    if (!cita) return
+
     try {
       setLoading(true)
       setError('')
@@ -112,13 +116,16 @@ export default function ModalDetalleCita({ cita, onClose, onActualizar }: ModalD
     } finally {
       setLoading(false)
     }
-  }
+  }, [cita, onActualizar, onClose])
 
-  const confirmarCambioEstado = (nuevoEstado: string, mensaje: string) => {
+  const confirmarCambioEstado = useCallback((nuevoEstado: string, mensaje: string) => {
     if (confirm(mensaje)) {
       cambiarEstado(nuevoEstado)
     }
-  }
+  }, [cambiarEstado])
+
+  // Si no hay cita, no renderizar el modal
+  if (!cita) return null
 
   const modalContent = (
     <div className={styles.overlay} onClick={onClose}>
