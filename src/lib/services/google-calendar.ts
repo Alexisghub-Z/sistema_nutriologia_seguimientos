@@ -301,6 +301,7 @@ export async function updateCalendarEvent(
     fechaFin?: Date
     pacienteEmail?: string
     pacienteNombre?: string
+    colorId?: string // ID del color (del 1 al 11 en Google Calendar)
   }
 ) {
   try {
@@ -322,6 +323,7 @@ export async function updateCalendarEvent(
         timeZone: 'America/Mexico_City',
       }
     }
+    if (data.colorId) event.colorId = data.colorId
     // NO se agregan asistentes para evitar enviar notificaciones
 
     const response = await calendar.events.patch({
@@ -334,6 +336,24 @@ export async function updateCalendarEvent(
     return response.data
   } catch (error) {
     console.error('Error al actualizar evento en Google Calendar:', error)
+    throw error
+  }
+}
+
+/**
+ * Marca un evento como completado cambiando su color a verde
+ * Google Calendar Color IDs:
+ * 1: Lavanda, 2: Salvia, 3: Uva, 4: Flamingo, 5: Banana
+ * 6: Mandarina, 7: Pavo real, 8: Grafito, 9: Arándano, 10: Albahaca, 11: Tomate
+ */
+export async function markEventAsCompleted(eventId: string) {
+  try {
+    await updateCalendarEvent(eventId, {
+      colorId: '10', // 10 = Verde (Albahaca) - Color de completado
+    })
+    console.log(`✅ Evento ${eventId} marcado como completado (color verde)`)
+  } catch (error) {
+    console.error('Error al marcar evento como completado:', error)
     throw error
   }
 }
