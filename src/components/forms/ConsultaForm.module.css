@@ -65,6 +65,22 @@
   opacity: 0.6;
 }
 
+.inputError {
+  border-color: var(--color-error) !important;
+  background-color: rgba(239, 68, 68, 0.05);
+}
+
+.inputError:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.errorText {
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+  margin-top: 2px;
+  display: block;
+}
+
 .textarea {
   resize: vertical;
   min-height: 80px;
