@@ -15,6 +15,7 @@ export default function Button({
   className = '',
   loading = false,
   disabled,
+  type = 'button',
   children,
   ...props
 }: ButtonProps) {
@@ -33,6 +34,7 @@ export default function Button({
 
   return (
     <button
+      type={type}
       className={`${styles.button} ${variantClass} ${sizeClass} ${className}`}
       disabled={disabled || loading}
       {...props}
