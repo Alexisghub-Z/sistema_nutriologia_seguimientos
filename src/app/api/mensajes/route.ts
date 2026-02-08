@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import { z } from 'zod'
 import { getCache, setCache, deleteCachePattern, CacheKeys } from '@/lib/redis'
 import { sendWhatsAppMessage, isTwilioConfigured } from '@/lib/services/twilio'
+import { mensajesLimiter, checkRateLimit } from '@/lib/rate-limit'
 
 // Schema de validación para enviar mensaje
 const mensajeSchema = z.object({
@@ -263,6 +264,32 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const validatedData = mensajeSchema.parse(body)
+
+    // Rate limiting: 20 mensajes por hora por usuario
+    const rateLimitResult = await checkRateLimit(
+      mensajesLimiter,
+      `user:${user.id}:messages`
+    )
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Límite de mensajes excedido',
+          message: 'Solo puedes enviar 20 mensajes por hora. Por favor intenta más tarde.',
+          retryAfter: rateLimitResult.reset
+            ? new Date(rateLimitResult.reset * 1000).toISOString()
+            : undefined,
+        },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit?.toString() || '20',
+            'X-RateLimit-Remaining': rateLimitResult.remaining?.toString() || '0',
+            'X-RateLimit-Reset': rateLimitResult.reset?.toString() || '',
+          },
+        }
+      )
+    }
 
     let telefono: string
     let mensaje: any
