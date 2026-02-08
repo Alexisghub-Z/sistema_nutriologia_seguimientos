@@ -19,6 +19,7 @@ interface DashboardStats {
     detalles: Array<{
       id: string
       paciente: string
+      paciente_id: string
       telefono: string
       fecha_hora: string
       estado: string
@@ -473,7 +474,7 @@ export default function DashboardPage() {
                   <div
                     key={cita.id}
                     className={styles.citaItem}
-                    onClick={() => router.push(`/citas/${cita.id}`)}
+                    onClick={() => router.push(`/pacientes/${cita.paciente_id}`)}
                   >
                     <div className={styles.citaTime}>{formatTime(cita.fecha_hora)}</div>
                     <div className={styles.citaInfo}>
@@ -524,10 +525,10 @@ export default function DashboardPage() {
                       <p className={styles.consultaFecha}>{formatDate(consulta.fecha)}</p>
                     </div>
                     <div className={styles.consultaStats}>
-                      {consulta.peso && (
+                      {consulta.peso != null && consulta.peso > 0 && (
                         <span className={styles.consultaStat}>{consulta.peso} kg</span>
                       )}
-                      {consulta.imc && (
+                      {consulta.imc != null && consulta.imc > 0 && (
                         <span className={styles.consultaStat}>IMC: {consulta.imc}</span>
                       )}
                     </div>

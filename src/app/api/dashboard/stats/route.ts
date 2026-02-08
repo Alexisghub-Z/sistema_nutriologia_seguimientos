@@ -209,6 +209,7 @@ export async function GET(request: NextRequest) {
     const citasHoyFormateadas = citasHoy.map((cita) => ({
       id: cita.id,
       paciente: cita.paciente.nombre,
+      paciente_id: cita.paciente_id,
       telefono: cita.paciente.telefono,
       fecha_hora: cita.fecha_hora,
       estado: cita.estado,

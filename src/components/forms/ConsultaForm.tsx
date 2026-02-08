@@ -22,6 +22,7 @@ export default function ConsultaForm({
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const [formData, setFormData] = useState({
     motivo: '',
@@ -56,11 +57,130 @@ export default function ConsultaForm({
     notas_pago: '',
   })
 
+  // Validación en tiempo real
+  const validateField = (name: string, value: string) => {
+    // Si el campo está vacío, no validar (campos opcionales)
+    if (!value || value.trim() === '') {
+      setFieldErrors((prev) => {
+        const newErrors = { ...prev }
+        delete newErrors[name]
+        return newErrors
+      })
+      return
+    }
+
+    const numValue = parseFloat(value)
+    let errorMessage = ''
+
+    // Validar según el campo
+    switch (name) {
+      // Mediciones básicas
+      case 'peso':
+        if (isNaN(numValue)) errorMessage = 'Debe ser un número'
+        else if (numValue < 2.5) errorMessage = 'Mínimo 2.5 kg'
+        else if (numValue > 600) errorMessage = 'Máximo 600 kg'
+        break
+      case 'talla':
+        if (isNaN(numValue)) errorMessage = 'Debe ser un número'
+        else if (numValue < 0.25) errorMessage = 'Mínimo 0.25 m'
+        else if (numValue > 5) errorMessage = 'Máximo 5 m'
+        break
+
+      // Composición corporal
+      case 'grasa_corporal':
+      case 'porcentaje_agua':
+        if (isNaN(numValue)) errorMessage = 'Debe ser un número'
+        else if (numValue < 0) errorMessage = 'Mínimo 0%'
+        else if (numValue > 100) errorMessage = 'Máximo 100%'
+        break
+      case 'masa_muscular_kg':
+        if (isNaN(numValue)) errorMessage = 'Debe ser un número'
+        else if (numValue < 0.5) errorMessage = 'Mínimo 0.5 kg'
+        else if (numValue > 400) errorMessage = 'Máximo 400 kg'
+        break
+      case 'grasa_visceral':
+        if (isNaN(numValue)) errorMessage = 'Debe ser un número'
+        else if (numValue < 0) errorMessage = 'Mínimo 0'
+        else if (numValue > 60) errorMessage = 'Máximo 60'
+        else if (!Number.isInteger(numValue)) errorMessage = 'Debe ser un número entero'
+        break
+
+      // Perímetros
+      case 'brazo_relajado':
+        if (isNaN(numValue)) errorMessage = 'Debe ser un número'
+        else if (numValue < 5) errorMessage = 'Mínimo 5 cm'
+        else if (numValue > 160) errorMessage = 'Máximo 160 cm'
+        break
+      case 'brazo_flexionado':
+        if (isNaN(numValue)) errorMessage = 'Debe ser un número'
+        else if (numValue < 5) errorMessage = 'Mínimo 5 cm'
+        else if (numValue > 180) errorMessage = 'Máximo 180 cm'
+        break
+      case 'cintura':
+        if (isNaN(numValue)) errorMessage = 'Debe ser un número'
+        else if (numValue < 15) errorMessage = 'Mínimo 15 cm'
+        else if (numValue > 400) errorMessage = 'Máximo 400 cm'
+        break
+      case 'cadera_maximo':
+        if (isNaN(numValue)) errorMessage = 'Debe ser un número'
+        else if (numValue < 30) errorMessage = 'Mínimo 30 cm'
+        else if (numValue > 400) errorMessage = 'Máximo 400 cm'
+        break
+      case 'muslo_maximo':
+      case 'muslo_medio':
+        if (isNaN(numValue)) errorMessage = 'Debe ser un número'
+        else if (numValue < 10) errorMessage = 'Mínimo 10 cm'
+        else if (numValue > 240) errorMessage = 'Máximo 240 cm'
+        break
+      case 'pantorrilla_maximo':
+        if (isNaN(numValue)) errorMessage = 'Debe ser un número'
+        else if (numValue < 10) errorMessage = 'Mínimo 10 cm'
+        else if (numValue > 160) errorMessage = 'Máximo 160 cm'
+        break
+
+      // Pliegues cutáneos
+      case 'pliegue_tricipital':
+      case 'pliegue_subescapular':
+      case 'pliegue_bicipital':
+      case 'pliegue_cresta_iliaca':
+      case 'pliegue_supraespinal':
+      case 'pliegue_abdominal':
+        if (isNaN(numValue)) errorMessage = 'Debe ser un número'
+        else if (numValue < 0.5) errorMessage = 'Mínimo 0.5 mm'
+        else if (numValue > 120) errorMessage = 'Máximo 120 mm'
+        break
+    }
+
+    // Actualizar errores
+    if (errorMessage) {
+      setFieldErrors((prev) => ({ ...prev, [name]: errorMessage }))
+    } else {
+      setFieldErrors((prev) => {
+        const newErrors = { ...prev }
+        delete newErrors[name]
+        return newErrors
+      })
+    }
+  }
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+
+    // Validar en tiempo real solo para campos numéricos
+    const numericFields = [
+      'peso', 'talla', 'grasa_corporal', 'porcentaje_agua', 'masa_muscular_kg', 'grasa_visceral',
+      'brazo_relajado', 'brazo_flexionado', 'cintura', 'cadera_maximo',
+      'muslo_maximo', 'muslo_medio', 'pantorrilla_maximo',
+      'pliegue_tricipital', 'pliegue_subescapular', 'pliegue_bicipital',
+      'pliegue_cresta_iliaca', 'pliegue_supraespinal', 'pliegue_abdominal'
+    ]
+
+    if (numericFields.includes(name)) {
+      validateField(name, value)
+    }
   }
 
 
@@ -68,8 +188,57 @@ export default function ConsultaForm({
     e.preventDefault()
     setLoading(true)
     setError(null)
+    setFieldErrors({})
 
     try {
+      // Verificar si hay errores de validación
+      if (Object.keys(fieldErrors).length > 0) {
+        setError('Por favor corrige los errores en los campos marcados antes de guardar')
+        setLoading(false)
+        return
+      }
+
+      // Verificar si el formulario está completamente vacío
+      const hasAnyData =
+        formData.motivo ||
+        formData.peso ||
+        formData.talla ||
+        formData.grasa_corporal ||
+        formData.porcentaje_agua ||
+        formData.masa_muscular_kg ||
+        formData.grasa_visceral ||
+        formData.brazo_relajado ||
+        formData.brazo_flexionado ||
+        formData.cintura ||
+        formData.cadera_maximo ||
+        formData.muslo_maximo ||
+        formData.muslo_medio ||
+        formData.pantorrilla_maximo ||
+        formData.pliegue_tricipital ||
+        formData.pliegue_subescapular ||
+        formData.pliegue_bicipital ||
+        formData.pliegue_cresta_iliaca ||
+        formData.pliegue_supraespinal ||
+        formData.pliegue_abdominal ||
+        formData.notas ||
+        formData.diagnostico ||
+        formData.objetivo ||
+        formData.plan ||
+        formData.observaciones
+
+      if (!hasAnyData) {
+        const confirmar = window.confirm(
+          '⚠️ ADVERTENCIA: Estás enviando una consulta SIN DATOS.\n\n' +
+          'No has llenado ningún campo (peso, talla, mediciones, notas, etc.).\n\n' +
+          '¿Estás seguro de que quieres crear una consulta vacía?'
+        )
+
+        if (!confirmar) {
+          setLoading(false)
+          return
+        }
+      }
+
       // Preparar datos
       const data: any = {
         cita_id: citaId,
@@ -129,6 +298,20 @@ export default function ConsultaForm({
 
       if (!response.ok) {
         const errorData = await response.json()
+
+        // Si hay detalles de validación de Zod, extraer errores por campo
+        if (errorData.details && Array.isArray(errorData.details)) {
+          const errors: Record<string, string> = {}
+          errorData.details.forEach((err: any) => {
+            const field = err.path.join('.')
+            errors[field] = err.message
+          })
+          setFieldErrors(errors)
+          setError('Por favor corrige los errores en los campos marcados')
+          setLoading(false)
+          return
+        }
+
         throw new Error(errorData.error || 'Error al crear consulta')
       }
 
@@ -204,10 +387,15 @@ export default function ConsultaForm({
               name="peso"
               value={formData.peso}
               onChange={handleChange}
-              className={styles.input}
-              placeholder="85.5"
+              className={`${styles.input} ${fieldErrors.peso ? styles.inputError : ''}`}
+              placeholder="2.5-600 kg"
+              min="2.5"
+              max="600"
               disabled={loading}
             />
+            {fieldErrors.peso && (
+              <span className={styles.errorText}>{fieldErrors.peso}</span>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -221,10 +409,15 @@ export default function ConsultaForm({
               name="talla"
               value={formData.talla}
               onChange={handleChange}
-              className={styles.input}
-              placeholder="1.70"
+              className={`${styles.input} ${fieldErrors.talla ? styles.inputError : ''}`}
+              placeholder="0.25-5 m"
+              min="0.25"
+              max="5"
               disabled={loading}
             />
+            {fieldErrors.talla && (
+              <span className={styles.errorText}>{fieldErrors.talla}</span>
+            )}
           </div>
         </div>
 
@@ -254,10 +447,15 @@ export default function ConsultaForm({
               name="grasa_corporal"
               value={formData.grasa_corporal}
               onChange={handleChange}
-              className={styles.input}
-              placeholder="25.5"
+              className={`${styles.input} ${fieldErrors.grasa_corporal ? styles.inputError : ''}`}
+              placeholder="0-100%"
+              min="0"
+              max="100"
               disabled={loading}
             />
+            {fieldErrors.grasa_corporal && (
+              <span className={styles.errorText}>{fieldErrors.grasa_corporal}</span>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -271,10 +469,15 @@ export default function ConsultaForm({
               name="porcentaje_agua"
               value={formData.porcentaje_agua}
               onChange={handleChange}
-              className={styles.input}
-              placeholder="55.0"
+              className={`${styles.input} ${fieldErrors.porcentaje_agua ? styles.inputError : ''}`}
+              placeholder="0-100%"
+              min="0"
+              max="100"
               disabled={loading}
             />
+            {fieldErrors.porcentaje_agua && (
+              <span className={styles.errorText}>{fieldErrors.porcentaje_agua}</span>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -288,10 +491,15 @@ export default function ConsultaForm({
               name="masa_muscular_kg"
               value={formData.masa_muscular_kg}
               onChange={handleChange}
-              className={styles.input}
-              placeholder="45.5"
+              className={`${styles.input} ${fieldErrors.masa_muscular_kg ? styles.inputError : ''}`}
+              placeholder="0.5-400 kg"
+              min="0.5"
+              max="400"
               disabled={loading}
             />
+            {fieldErrors.masa_muscular_kg && (
+              <span className={styles.errorText}>{fieldErrors.masa_muscular_kg}</span>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -304,10 +512,15 @@ export default function ConsultaForm({
               name="grasa_visceral"
               value={formData.grasa_visceral}
               onChange={handleChange}
-              className={styles.input}
-              placeholder="8"
+              className={`${styles.input} ${fieldErrors.grasa_visceral ? styles.inputError : ''}`}
+              placeholder="0-60"
+              min="0"
+              max="60"
               disabled={loading}
             />
+            {fieldErrors.grasa_visceral && (
+              <span className={styles.errorText}>{fieldErrors.grasa_visceral}</span>
+            )}
           </div>
         </div>
       </div>
@@ -327,9 +540,15 @@ export default function ConsultaForm({
               name="brazo_relajado"
               value={formData.brazo_relajado}
               onChange={handleChange}
-              className={styles.input}
+              className={`${styles.input} ${fieldErrors.brazo_relajado ? styles.inputError : ''}`}
               disabled={loading}
+              placeholder="5-160 cm"
+              min="5"
+              max="160"
             />
+            {fieldErrors.brazo_relajado && (
+              <span className={styles.errorText}>{fieldErrors.brazo_relajado}</span>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -343,9 +562,15 @@ export default function ConsultaForm({
               name="brazo_flexionado"
               value={formData.brazo_flexionado}
               onChange={handleChange}
-              className={styles.input}
+              className={`${styles.input} ${fieldErrors.brazo_flexionado ? styles.inputError : ''}`}
               disabled={loading}
+              placeholder="5-180 cm"
+              min="5"
+              max="180"
             />
+            {fieldErrors.brazo_flexionado && (
+              <span className={styles.errorText}>{fieldErrors.brazo_flexionado}</span>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -359,9 +584,15 @@ export default function ConsultaForm({
               name="cintura"
               value={formData.cintura}
               onChange={handleChange}
-              className={styles.input}
+              className={`${styles.input} ${fieldErrors.cintura ? styles.inputError : ''}`}
               disabled={loading}
+              placeholder="15-400 cm"
+              min="15"
+              max="400"
             />
+            {fieldErrors.cintura && (
+              <span className={styles.errorText}>{fieldErrors.cintura}</span>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -375,9 +606,15 @@ export default function ConsultaForm({
               name="cadera_maximo"
               value={formData.cadera_maximo}
               onChange={handleChange}
-              className={styles.input}
+              className={`${styles.input} ${fieldErrors.cadera_maximo ? styles.inputError : ''}`}
               disabled={loading}
+              placeholder="30-400 cm"
+              min="30"
+              max="400"
             />
+            {fieldErrors.cadera_maximo && (
+              <span className={styles.errorText}>{fieldErrors.cadera_maximo}</span>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -391,9 +628,15 @@ export default function ConsultaForm({
               name="muslo_maximo"
               value={formData.muslo_maximo}
               onChange={handleChange}
-              className={styles.input}
+              className={`${styles.input} ${fieldErrors.muslo_maximo ? styles.inputError : ''}`}
               disabled={loading}
+              placeholder="10-240 cm"
+              min="10"
+              max="240"
             />
+            {fieldErrors.muslo_maximo && (
+              <span className={styles.errorText}>{fieldErrors.muslo_maximo}</span>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -407,9 +650,15 @@ export default function ConsultaForm({
               name="muslo_medio"
               value={formData.muslo_medio}
               onChange={handleChange}
-              className={styles.input}
+              className={`${styles.input} ${fieldErrors.muslo_medio ? styles.inputError : ''}`}
               disabled={loading}
+              placeholder="10-240 cm"
+              min="10"
+              max="240"
             />
+            {fieldErrors.muslo_medio && (
+              <span className={styles.errorText}>{fieldErrors.muslo_medio}</span>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -423,9 +672,15 @@ export default function ConsultaForm({
               name="pantorrilla_maximo"
               value={formData.pantorrilla_maximo}
               onChange={handleChange}
-              className={styles.input}
+              className={`${styles.input} ${fieldErrors.pantorrilla_maximo ? styles.inputError : ''}`}
               disabled={loading}
+              placeholder="10-160 cm"
+              min="10"
+              max="160"
             />
+            {fieldErrors.pantorrilla_maximo && (
+              <span className={styles.errorText}>{fieldErrors.pantorrilla_maximo}</span>
+            )}
           </div>
         </div>
       </div>
@@ -445,9 +700,15 @@ export default function ConsultaForm({
               name="pliegue_tricipital"
               value={formData.pliegue_tricipital}
               onChange={handleChange}
-              className={styles.input}
+              className={`${styles.input} ${fieldErrors.pliegue_tricipital ? styles.inputError : ''}`}
               disabled={loading}
+              placeholder="0.5-120 mm"
+              min="0.5"
+              max="120"
             />
+            {fieldErrors.pliegue_tricipital && (
+              <span className={styles.errorText}>{fieldErrors.pliegue_tricipital}</span>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -461,9 +722,15 @@ export default function ConsultaForm({
               name="pliegue_subescapular"
               value={formData.pliegue_subescapular}
               onChange={handleChange}
-              className={styles.input}
+              className={`${styles.input} ${fieldErrors.pliegue_subescapular ? styles.inputError : ''}`}
               disabled={loading}
+              placeholder="0.5-120 mm"
+              min="0.5"
+              max="120"
             />
+            {fieldErrors.pliegue_subescapular && (
+              <span className={styles.errorText}>{fieldErrors.pliegue_subescapular}</span>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -477,9 +744,15 @@ export default function ConsultaForm({
               name="pliegue_bicipital"
               value={formData.pliegue_bicipital}
               onChange={handleChange}
-              className={styles.input}
+              className={`${styles.input} ${fieldErrors.pliegue_bicipital ? styles.inputError : ''}`}
               disabled={loading}
+              placeholder="0.5-120 mm"
+              min="0.5"
+              max="120"
             />
+            {fieldErrors.pliegue_bicipital && (
+              <span className={styles.errorText}>{fieldErrors.pliegue_bicipital}</span>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -493,9 +766,15 @@ export default function ConsultaForm({
               name="pliegue_cresta_iliaca"
               value={formData.pliegue_cresta_iliaca}
               onChange={handleChange}
-              className={styles.input}
+              className={`${styles.input} ${fieldErrors.pliegue_cresta_iliaca ? styles.inputError : ''}`}
               disabled={loading}
+              placeholder="0.5-120 mm"
+              min="0.5"
+              max="120"
             />
+            {fieldErrors.pliegue_cresta_iliaca && (
+              <span className={styles.errorText}>{fieldErrors.pliegue_cresta_iliaca}</span>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -509,9 +788,15 @@ export default function ConsultaForm({
               name="pliegue_supraespinal"
               value={formData.pliegue_supraespinal}
               onChange={handleChange}
-              className={styles.input}
+              className={`${styles.input} ${fieldErrors.pliegue_supraespinal ? styles.inputError : ''}`}
               disabled={loading}
+              placeholder="0.5-120 mm"
+              min="0.5"
+              max="120"
             />
+            {fieldErrors.pliegue_supraespinal && (
+              <span className={styles.errorText}>{fieldErrors.pliegue_supraespinal}</span>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -525,9 +810,15 @@ export default function ConsultaForm({
               name="pliegue_abdominal"
               value={formData.pliegue_abdominal}
               onChange={handleChange}
-              className={styles.input}
+              className={`${styles.input} ${fieldErrors.pliegue_abdominal ? styles.inputError : ''}`}
               disabled={loading}
+              placeholder="0.5-120 mm"
+              min="0.5"
+              max="120"
             />
+            {fieldErrors.pliegue_abdominal && (
+              <span className={styles.errorText}>{fieldErrors.pliegue_abdominal}</span>
+            )}
           </div>
         </div>
       </div>

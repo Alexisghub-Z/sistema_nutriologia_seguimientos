@@ -1,0 +1,99 @@
+/**
+ * Transiciones suaves entre páginas
+ *
+ * Usa CSS animations para fade-in + slide desde abajo
+ * Performance optimizada con transform y opacity (GPU accelerated)
+ */
+
+.pageTransition {
+  /* Animación de entrada */
+  animation: pageEnter 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Forzar aceleración por GPU para mejor performance */
+  will-change: transform, opacity;
+
+  /* Asegurar que el contenido esté en su propio layer de composición */
+  transform: translateZ(0);
+}
+
+/* Animación de entrada: fade-in + slide desde abajo */
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+/* Reducir movimiento si el usuario lo prefiere (accesibilidad) */
+@media (prefers-reduced-motion: reduce) {
+  .pageTransition {
+    animation: pageFadeOnly 0.15s ease-out;
+  }
+
+  @keyframes pageFadeOnly {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/* Optimizaciones para dispositivos móviles */
+@media (max-width: 768px) {
+  .pageTransition {
+    /* Animación más rápida en móvil */
+    animation-duration: 0.25s;
+  }
+}
+
+/*
+ * Variantes de animación (comentadas, podés descomentar para probar)
+ */
+
+/* Variante 1: Slide desde la derecha */
+/*
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateX(20px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateZ(0);
+  }
+}
+*/
+
+/* Variante 2: Scale + Fade */
+/*
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.98) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateZ(0);
+  }
+}
+*/
+
+/* Variante 3: Blur + Fade (más pesado, usar solo si es necesario) */
+/*
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+*/

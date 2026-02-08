@@ -226,7 +226,14 @@ function CitasContent() {
             pacienteSeleccionado={pacienteSeleccionado}
             onSeleccionar={cambiarFiltroPaciente}
           />
-          <button className={styles.btnPrimary}>+ Nueva Cita</button>
+          {pacienteSeleccionado && pacienteInfo && (
+            <button
+              className={styles.btnPrimary}
+              onClick={() => router.push(`/pacientes/${pacienteSeleccionado}/citas/nueva`)}
+            >
+              + Nueva Cita para {pacienteInfo.nombre.split(' ')[0]}
+            </button>
+          )}
         </div>
       </div>
 
