@@ -96,10 +96,12 @@ export default function ArchivosConsultaPage() {
         }
       }
 
-      // Limpiar y recargar
+      // Primero recargar archivos para mostrar los nuevos
+      await fetchArchivos()
+
+      // DESPUÉS limpiar el formulario
       setSelectedFiles([])
       setDescripcion('')
-      fetchArchivos()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al subir archivos')
     } finally {

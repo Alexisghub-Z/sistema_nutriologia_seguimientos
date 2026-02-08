@@ -14,6 +14,7 @@ import {
 } from '@/lib/services/google-calendar'
 import { normalizarTelefonoMexico } from '@/lib/utils/phone'
 import { deleteCache, CacheKeys } from '@/lib/redis'
+import { citasPublicasLimiter, getClientIp, checkRateLimit } from '@/lib/rate-limit'
 
 // Schema de validación para crear cita pública
 const citaPublicaSchema = z.object({
@@ -45,6 +46,30 @@ function generarCodigo(): string {
  */
 export async function POST(request: NextRequest) {
   try {
+    // 1. Rate limiting: 3 citas por hora por IP
+    const clientIp = getClientIp(request)
+    const rateLimitResult = await checkRateLimit(citasPublicasLimiter, clientIp)
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Límite de citas excedido',
+          message: 'Solo puedes agendar 3 citas por hora. Por favor intenta más tarde.',
+          retryAfter: rateLimitResult.reset
+            ? new Date(rateLimitResult.reset * 1000).toISOString()
+            : undefined,
+        },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit?.toString() || '3',
+            'X-RateLimit-Remaining': rateLimitResult.remaining?.toString() || '0',
+            'X-RateLimit-Reset': rateLimitResult.reset?.toString() || '',
+          },
+        }
+      )
+    }
+
     const body = await request.json()
     const validatedData = citaPublicaSchema.parse(body)
 
