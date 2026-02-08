@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Button from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import Spinner from '@/components/ui/Spinner'
@@ -18,6 +19,7 @@ interface Plantilla {
 }
 
 export default function PlantillasPage() {
+  const router = useRouter()
   const [plantillas, setPlantillas] = useState<Plantilla[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -138,6 +140,22 @@ export default function PlantillasPage() {
 
   return (
     <div className={styles.container}>
+      <div className={styles.headerContainer}>
+        <button className={styles.backButton} onClick={() => router.push('/configuracion')}>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 4l-6 6 6 6" />
+          </svg>
+          Volver a Configuración
+        </button>
+      </div>
+
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Plantillas de Mensajes</h1>

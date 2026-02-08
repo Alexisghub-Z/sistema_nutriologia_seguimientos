@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Button from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import Alert from '@/components/ui/Alert'
@@ -15,6 +15,7 @@ interface AccountInfo {
 }
 
 function GoogleCalendarContent() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState(false)
@@ -120,10 +121,25 @@ function GoogleCalendarContent() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Configuración de Google Calendar</h1>
-        <p className={styles.subtitle}>
-          Sincroniza automáticamente las citas con tu Google Calendar
-        </p>
+        <div>
+          <button className={styles.backButton} onClick={() => router.push('/configuracion')}>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 4l-6 6 6 6" />
+            </svg>
+            Volver a Configuración
+          </button>
+          <h1 className={styles.title}>Configuración de Google Calendar</h1>
+          <p className={styles.subtitle}>
+            Sincroniza automáticamente las citas con tu Google Calendar
+          </p>
+        </div>
       </div>
 
       {error && <Alert variant="error">{error}</Alert>}
