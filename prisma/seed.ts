@@ -23,11 +23,11 @@ async function main() {
 
   // Crear usuario admin
   console.log('👤 Creating admin user...')
-  const passwordHash = await bcrypt.hash('admin123', 12)
+  const passwordHash = await bcrypt.hash('Cort3z18', 12)
   const admin = await prisma.usuario.create({
     data: {
-      email: 'admin@nutriologo.com',
-      nombre: 'Dr. Nutriólogo',
+      email: 'paul_nutricion@hotmail.com',
+      nombre: 'Paul Cortez',
       password_hash: passwordHash,
       rol: 'ADMIN',
     },
