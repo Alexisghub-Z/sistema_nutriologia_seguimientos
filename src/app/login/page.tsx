@@ -129,13 +129,6 @@ export default function LoginPage() {
             )}
           </button>
         </form>
-
-        <div className={styles.footer}>
-          <p className={styles.helpText}>
-            Credenciales por defecto: <br />
-            <code>admin@nutriologo.com</code> / <code>admin123</code>
-          </p>
-        </div>
       </div>
     </div>
   )
