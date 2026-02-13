@@ -500,7 +500,7 @@ export default function Home() {
           {/* Mapa */}
           <div className={`${styles.mapaContainer} fade-in`} data-scroll-reveal>
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d30559.437524935!2d-96.72633484999999!3d17.0731842!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85c7220a2b7e0d85%3A0x3c0f3e2b7e0d85c7!2sOaxaca%20de%20Ju%C3%A1rez%2C%20Oax.!5e0!3m2!1ses!2smx!4v1234567890123!5m2!1ses!2smx"
+              src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d6570.704082201117!2d-96.71241669999999!3d17.0586389!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTfCsDAzJzMxLjEiTiA5NsKwNDInNDQuNyJX!5e1!3m2!1ses!2smx!4v1770946253898!5m2!1ses!2smx"
               width="100%"
               height="450"
               style={{ border: 0 }}
