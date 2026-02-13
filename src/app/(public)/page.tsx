@@ -119,7 +119,7 @@ export default function Home() {
           {/* Columna Izquierda - Información */}
           <div className={`${styles.sobreMiContent} fade-in-left`} data-scroll-reveal>
             <h2 className={styles.sobreMiTitle}>Sobre Mí</h2>
-            <h3 className={styles.sobreMiSubtitle}>Lic. Eder Paúl Alavez Cortés</h3>
+            <h3 className={styles.sobreMiSubtitle}>Mtro. Eder Paúl Alavez Cortés</h3>
 
             <p className={styles.sobreMiDescription}>
               Soy nutriólogo clínico con más de 10 años de experiencia ayudando a personas a mejorar su salud, su composición corporal y su calidad de vida a través de planes de alimentación personalizados, basados en ciencia y adaptados a cada estilo de vida.
@@ -553,7 +553,7 @@ export default function Home() {
             <div className={styles.footerColumn}>
               <div className={styles.footerLogo}>Nutriólogo Paul</div>
               <p className={styles.footerDescription}>
-                Lic. Eder Paúl Alavez Cortés - Nutriólogo Clínico | Maestro en Nutrición y Dietética. Consultorio de nutrición profesional dedicado a mejorar tu salud y bienestar.
+                Mtro. Eder Paúl Alavez Cortés - Nutriólogo Clínico | Maestro en Nutrición y Dietética. Consultorio de nutrición profesional dedicado a mejorar tu salud y bienestar.
               </p>
             </div>
 
