@@ -60,8 +60,8 @@ export default function LoginPage() {
               />
             </svg>
           </div>
-          <h1 className={styles.title}>Sistema de Nutrición</h1>
-          <p className={styles.subtitle}>Inicia sesión para continuar</p>
+          <h1 className={styles.title}>Nutrición Paul Cortez</h1>
+          <p className={styles.subtitle}>Panel de administración</p>
         </div>
 
         <form onSubmit={handleSubmit} className={styles.form}>
