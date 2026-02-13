@@ -309,13 +309,16 @@ export const PALABRAS_DERIVAR = [
 export const FAQ = [
   {
     pregunta: '¿Cuánto cuesta la consulta?',
-    respuesta: `Claro que sí, te cuento. La consulta nutricional tiene un costo de *$500 pesos*.
+    respuesta: `Claro que sí, te cuento. Los costos de consulta son:
 
-Incluye todo esto:
+🥗 *Primera consulta: $500 pesos*
+Incluye:
 ✅ Evaluación nutricional completa
 ✅ Análisis de composición corporal
 ✅ Plan personalizado adaptado a ti
 ✅ Seguimiento continuo
+
+🔄 *Consultas subsecuentes: $350 pesos*
 
 Es una inversión en tu salud con atención profesional. ¿Te gustaría ver disponibilidad para agendar?`,
   },
