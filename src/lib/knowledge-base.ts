@@ -112,8 +112,8 @@ export const KNOWLEDGE_BASE = {
   // SIEMPRE usar dominio de producción para respuestas de IA/WhatsApp
   // Esto asegura que los usuarios reciban links correctos incluso en desarrollo
   urls: {
-    agendar: 'https://nutricionpaulcortez.com.mx/agendar',
-    sitio_web: 'https://nutricionpaulcortez.com.mx',
+    agendar: 'https://nutricionpaulcortez.com/agendar',
+    sitio_web: 'https://nutricionpaulcortez.com',
   },
 }
 
@@ -169,16 +169,16 @@ export const SYSTEM_INSTRUCTIONS = `Eres el asistente virtual del consultorio de
 ## FORMATO DE TEXTO PARA WHATSAPP:
 - NO uses formato Markdown
 - NO uses enlaces con formato [texto](url)
-- Para URLs, escribe SOLO la URL directa: https://nutricionpaulcortez.com.mx/agendar
+- Para URLs, escribe SOLO la URL directa: https://nutricionpaulcortez.com/agendar
 - WhatsApp convierte URLs automáticamente en enlaces clickeables
 - Para énfasis usa *asteriscos* (ej: *Paul Cortez* se ve en negrita en WhatsApp)
 - NO uses bloques de código ni formato técnico
 
 ## IMPORTANTE SOBRE URLs:
-- Cuando proporciones enlaces para agendar citas, usa SIEMPRE: https://nutricionpaulcortez.com.mx/agendar
+- Cuando proporciones enlaces para agendar citas, usa SIEMPRE: https://nutricionpaulcortez.com/agendar
 - Escribe la URL DIRECTAMENTE sin formato Markdown
 - NO uses localhost ni otros dominios temporales
-- El sitio web oficial es: https://nutricionpaulcortez.com.mx
+- El sitio web oficial es: https://nutricionpaulcortez.com
 
 ## CUANDO NO ESTÉS SEGURO:
 Si recibes una pregunta que no sabes responder o que podría ser nutricional:
@@ -220,7 +220,7 @@ IMPORTANTE: Ya NO manejamos cancelaciones por WhatsApp. TODO se hace desde la p�
 EJEMPLO REAGENDAR:
 "Claro que sí María, puedes gestionar tu cita directamente desde aquí:
 
-https://nutricionpaulcortez.com.mx/cita/ABC123
+https://nutricionpaulcortez.com/cita/ABC123
 
 En esa página podrás:
 ✅ Reagendar para otra fecha
@@ -234,7 +234,7 @@ Tu cita actual es el sábado 8 de febrero a las 10:00 AM (Presencial).
 EJEMPLO CANCELAR:
 "Entiendo María. Puedes cancelar tu cita directamente desde aquí:
 
-https://nutricionpaulcortez.com.mx/cita/ABC123
+https://nutricionpaulcortez.com/cita/ABC123
 
 En esa página verás los detalles de tu cita del sábado 8 de febrero a las 10:00 AM y podrás cancelarla de forma segura.
 
@@ -369,7 +369,7 @@ Tú eliges la que mejor te acomode según tu ubicación y disponibilidad.
     respuesta: `¡Qué bueno que quieras agendar! Es muy fácil:
 
 1️⃣ Desde nuestro sistema en línea (lo más rápido):
-https://nutricionpaulcortez.com.mx/agendar
+https://nutricionpaulcortez.com/agendar
 
 2️⃣ Aquí por WhatsApp y con gusto te ayudamos
 
