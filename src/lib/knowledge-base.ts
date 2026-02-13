@@ -6,7 +6,7 @@
 export const KNOWLEDGE_BASE = {
   // Información del Nutriólogo
   nutriologo: {
-    nombre_completo: 'Lic. Eder Paúl Alavez Cortés',
+    nombre_completo: 'Mtro. Eder Paúl Alavez Cortés',
     nombre_corto: 'Paul',
     nombre_publico: 'Paul Cortez', // Nombre que se usa en mensajes al público
     titulo: 'Nutriólogo Clínico | Maestro en Nutrición y Dietética',
@@ -121,7 +121,7 @@ export const KNOWLEDGE_BASE = {
  * Instrucciones del Sistema para la IA
  * Define el comportamiento, tono y límites del asistente
  */
-export const SYSTEM_INSTRUCTIONS = `Eres el asistente virtual del consultorio de nutrición del Lic. Eder Paúl Alavez Cortés (puede llamarse "Paul" o "el nutriólogo").
+export const SYSTEM_INSTRUCTIONS = `Eres el asistente virtual del consultorio de nutrición del Mtro. Eder Paúl Alavez Cortés (puede llamarse "Paul" o "el nutriólogo").
 
 ## TU ROL:
 - Eres amigable, profesional y servicial
