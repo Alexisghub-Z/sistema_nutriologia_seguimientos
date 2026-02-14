@@ -73,9 +73,10 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
     }
   })
 
+  // Datos vienen ordenados de más antiguo a más reciente
   const sumas = dataConSuma.filter((d) => d.suma_pliegues !== null).map((d) => d.suma_pliegues!)
-  const sumaInicial = sumas.length > 0 ? sumas[sumas.length - 1] : null
-  const sumaActual = sumas.length > 0 ? sumas[0] : null
+  const sumaInicial = sumas.length > 0 ? sumas[0] : null
+  const sumaActual = sumas.length > 0 ? sumas[sumas.length - 1] : null
   const diferenciaSuma = sumaActual && sumaInicial ? sumaActual - sumaInicial : null
 
   return (
