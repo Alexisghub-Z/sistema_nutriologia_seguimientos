@@ -59,6 +59,11 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
   const musculoActual = musculos.length > 0 ? musculos[musculos.length - 1] : null
   const diferenciaMusculo = musculoActual && musculoInicial ? musculoActual - musculoInicial : null
 
+  const aguas = validData.filter((d) => d.porcentaje_agua !== null).map((d) => d.porcentaje_agua!)
+  const aguaInicial = aguas.length > 0 ? aguas[0] : null
+  const aguaActual = aguas.length > 0 ? aguas[aguas.length - 1] : null
+  const diferenciaAgua = aguaActual && aguaInicial ? aguaActual - aguaInicial : null
+
   return (
     <div className={styles.chartContainer}>
       <div className={styles.chartHeader}>
@@ -97,7 +102,7 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
               </div>
               {diferenciaMusculo !== null && (
                 <div className={styles.statItem}>
-                  <span className={styles.statLabel}>Cambio:</span>
+                  <span className={styles.statLabel}>Cambio masa musc.:</span>
                   <span
                     className={`${styles.statValue} ${
                       diferenciaMusculo > 0
@@ -109,6 +114,31 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
                   >
                     {diferenciaMusculo > 0 ? '+' : ''}
                     {diferenciaMusculo.toFixed(1)} kg
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+          {aguaActual !== null && (
+            <>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>% Agua actual:</span>
+                <span className={styles.statValue}>{aguaActual!.toFixed(1)}%</span>
+              </div>
+              {diferenciaAgua !== null && (
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>Cambio % agua:</span>
+                  <span
+                    className={`${styles.statValue} ${
+                      diferenciaAgua > 0
+                        ? styles.positive
+                        : diferenciaAgua < 0
+                          ? styles.negative
+                          : ''
+                    }`}
+                  >
+                    {diferenciaAgua > 0 ? '+' : ''}
+                    {diferenciaAgua.toFixed(1)}%
                   </span>
                 </div>
               )}
