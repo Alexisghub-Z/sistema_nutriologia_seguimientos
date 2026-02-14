@@ -3,8 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
-import ChatFAQ from '@/components/chat/ChatFAQ'
-import WhatsAppButton from '@/components/chat/WhatsAppButton'
 import styles from './page.module.css'
 
 export default function Home() {
@@ -615,11 +613,6 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* Chat FAQ flotante */}
-      <ChatFAQ />
-
-      {/* Botón de WhatsApp */}
-      <WhatsAppButton />
     </main>
   )
 }
