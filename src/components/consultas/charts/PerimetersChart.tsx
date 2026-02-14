@@ -56,56 +56,56 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
     })
   }
 
-  // Calcular estadísticas para todos los perímetros
+  // Calcular estadísticas para todos los perímetros (datos vienen ordenados de más antiguo a más reciente)
   const cinturas = validData.filter((d) => d.cintura !== null).map((d) => d.cintura!)
-  const cinturaInicial = cinturas.length > 0 ? cinturas[cinturas.length - 1] : null
-  const cinturaActual = cinturas.length > 0 ? cinturas[0] : null
+  const cinturaInicial = cinturas.length > 0 ? cinturas[0] : null
+  const cinturaActual = cinturas.length > 0 ? cinturas[cinturas.length - 1] : null
   const diferenciaCintura = cinturaActual && cinturaInicial ? cinturaActual - cinturaInicial : null
 
   const caderas = validData.filter((d) => d.cadera_maximo !== null).map((d) => d.cadera_maximo!)
-  const caderaInicial = caderas.length > 0 ? caderas[caderas.length - 1] : null
-  const caderaActual = caderas.length > 0 ? caderas[0] : null
+  const caderaInicial = caderas.length > 0 ? caderas[0] : null
+  const caderaActual = caderas.length > 0 ? caderas[caderas.length - 1] : null
   const diferenciaCadera = caderaActual && caderaInicial ? caderaActual - caderaInicial : null
 
   const brazosRelajados = validData
     .filter((d) => d.brazo_relajado !== null)
     .map((d) => d.brazo_relajado!)
-  const brazoRelajadoInicial =
+  const brazoRelajadoInicial = brazosRelajados.length > 0 ? brazosRelajados[0] : null
+  const brazoRelajadoActual =
     brazosRelajados.length > 0 ? brazosRelajados[brazosRelajados.length - 1] : null
-  const brazoRelajadoActual = brazosRelajados.length > 0 ? brazosRelajados[0] : null
   const diferenciaBrazoRelajado =
     brazoRelajadoActual && brazoRelajadoInicial ? brazoRelajadoActual - brazoRelajadoInicial : null
 
   const brazosFlexionados = validData
     .filter((d) => d.brazo_flexionado !== null)
     .map((d) => d.brazo_flexionado!)
-  const brazoFlexionadoInicial =
+  const brazoFlexionadoInicial = brazosFlexionados.length > 0 ? brazosFlexionados[0] : null
+  const brazoFlexionadoActual =
     brazosFlexionados.length > 0 ? brazosFlexionados[brazosFlexionados.length - 1] : null
-  const brazoFlexionadoActual = brazosFlexionados.length > 0 ? brazosFlexionados[0] : null
   const diferenciaBrazoFlexionado =
     brazoFlexionadoActual && brazoFlexionadoInicial
       ? brazoFlexionadoActual - brazoFlexionadoInicial
       : null
 
   const muslosMaximos = validData.filter((d) => d.muslo_maximo !== null).map((d) => d.muslo_maximo!)
-  const musloMaximoInicial =
+  const musloMaximoInicial = muslosMaximos.length > 0 ? muslosMaximos[0] : null
+  const musloMaximoActual =
     muslosMaximos.length > 0 ? muslosMaximos[muslosMaximos.length - 1] : null
-  const musloMaximoActual = muslosMaximos.length > 0 ? muslosMaximos[0] : null
   const diferenciaMusloMaximo =
     musloMaximoActual && musloMaximoInicial ? musloMaximoActual - musloMaximoInicial : null
 
   const muslosMedios = validData.filter((d) => d.muslo_medio !== null).map((d) => d.muslo_medio!)
-  const musloMedioInicial = muslosMedios.length > 0 ? muslosMedios[muslosMedios.length - 1] : null
-  const musloMedioActual = muslosMedios.length > 0 ? muslosMedios[0] : null
+  const musloMedioInicial = muslosMedios.length > 0 ? muslosMedios[0] : null
+  const musloMedioActual = muslosMedios.length > 0 ? muslosMedios[muslosMedios.length - 1] : null
   const diferenciaMusloMedio =
     musloMedioActual && musloMedioInicial ? musloMedioActual - musloMedioInicial : null
 
   const pantorrillasMaximas = validData
     .filter((d) => d.pantorrilla_maximo !== null)
     .map((d) => d.pantorrilla_maximo!)
-  const pantorrillaMaximaInicial =
+  const pantorrillaMaximaInicial = pantorrillasMaximas.length > 0 ? pantorrillasMaximas[0] : null
+  const pantorrillaMaximaActual =
     pantorrillasMaximas.length > 0 ? pantorrillasMaximas[pantorrillasMaximas.length - 1] : null
-  const pantorrillaMaximaActual = pantorrillasMaximas.length > 0 ? pantorrillasMaximas[0] : null
   const diferenciaPantorrillaMaxima =
     pantorrillaMaximaActual && pantorrillaMaximaInicial
       ? pantorrillaMaximaActual - pantorrillaMaximaInicial
