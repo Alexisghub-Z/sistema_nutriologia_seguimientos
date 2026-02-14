@@ -52,12 +52,6 @@ const preguntasFrecuentes: Pregunta[] = [
       'Sí, puedes cancelar o reagendar tu cita con al menos 24 horas de anticipación. Usa el código que recibiste por email o WhatsApp para gestionar tu cita.',
     categoria: 'Citas',
   },
-  {
-    pregunta: '🏥 ¿Aceptan seguros médicos?',
-    respuesta:
-      'Actualmente trabajamos con pago directo. Te proporcionamos factura que puedes presentar a tu aseguradora para posible reembolso, dependiendo de tu póliza.',
-    categoria: 'Pagos',
-  },
 ]
 
 export default function ChatFAQ() {
