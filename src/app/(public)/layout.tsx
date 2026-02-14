@@ -2,6 +2,8 @@
 
 import PublicFooter from '@/components/layout/PublicFooter'
 import PageTransition from '@/components/layout/PageTransition'
+import ChatFAQ from '@/components/chat/ChatFAQ'
+import WhatsAppButton from '@/components/chat/WhatsAppButton'
 import styles from './public-layout.module.css'
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -11,6 +13,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         <PageTransition>{children}</PageTransition>
       </main>
       <PublicFooter />
+      <ChatFAQ />
+      <WhatsAppButton />
     </div>
   )
 }
