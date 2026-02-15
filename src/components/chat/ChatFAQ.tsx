@@ -13,7 +13,7 @@ const preguntasFrecuentes: Pregunta[] = [
   {
     pregunta: '💰 ¿Cuánto cuesta la consulta?',
     respuesta:
-      'La primera consulta tiene un costo de $500 pesos e incluye evaluación completa, plan nutricional personalizado y seguimiento. Las consultas subsecuentes tienen un costo de $350 pesos.',
+      'La primera consulta tiene un costo de $600 pesos e incluye evaluación completa, plan nutricional personalizado y seguimiento. Las consultas subsecuentes tienen un costo de $500 pesos.',
     categoria: 'Costos',
   },
   {

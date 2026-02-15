@@ -41,7 +41,7 @@ export const KNOWLEDGE_BASE = {
   servicios: {
     consulta_nutricional: {
       nombre: 'Consulta Nutricional',
-      precio: 500,
+      precio: 600,
       moneda: 'MXN',
       incluye: [
         'Evaluación nutricional completa y personalizada',
@@ -311,14 +311,14 @@ export const FAQ = [
     pregunta: '¿Cuánto cuesta la consulta?',
     respuesta: `Claro que sí, te cuento. Los costos de consulta son:
 
-🥗 *Primera consulta: $500 pesos*
+🥗 *Primera consulta: $600 pesos*
 Incluye:
 ✅ Evaluación nutricional completa
 ✅ Análisis de composición corporal
 ✅ Plan personalizado adaptado a ti
 ✅ Seguimiento continuo
 
-🔄 *Consultas subsecuentes: $350 pesos*
+🔄 *Consultas subsecuentes: $500 pesos*
 
 Es una inversión en tu salud con atención profesional. ¿Te gustaría ver disponibilidad para agendar?`,
   },
