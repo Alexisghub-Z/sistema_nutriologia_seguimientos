@@ -81,8 +81,11 @@ export default function Home() {
             <span className={styles.titleAccent}>Resultados Reales</span>
           </h1>
           <p className={styles.subtitle}>
-            Planes alimenticios personalizados basados en ciencia. Mejora tu salud con seguimiento
-            profesional continuo.
+            Soy nutriólogo clínico con más de 10 años de experiencia ayudando a personas a mejorar
+            su salud, su composición corporal y su calidad de vida a través de planes de
+            alimentación personalizados, basados en ciencia y adaptados a cada estilo de vida.
+            Trabajo tanto en consulta privada como en el ámbito hospitalario, lo que me permite
+            ofrecer un enfoque integral, seguro y profesional.
           </p>
           <div className={styles.ctaGroup}>
             <button onClick={() => router.push('/agendar')} className={styles.ctaPrimary}>
