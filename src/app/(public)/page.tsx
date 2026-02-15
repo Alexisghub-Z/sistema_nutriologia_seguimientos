@@ -498,7 +498,7 @@ export default function Home() {
           {/* Mapa */}
           <div className={`${styles.mapaContainer} fade-in`} data-scroll-reveal>
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d6570.704082201117!2d-96.71241669999999!3d17.0586389!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTfCsDAzJzMxLjEiTiA5NsKwNDInNDQuNyJX!5e1!3m2!1ses!2smx!4v1770946253898!5m2!1ses!2smx"
+              src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d820.0879227936847!2d-96.71241669999999!3d17.0586389!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTfCsDAzJzMxLjEiTiA5NsKwNDInNDQuNyJX!5e1!3m2!1ses!2smx!4v1770946253898!5m2!1ses!2smx"
               width="100%"
               height="450"
               style={{ border: 0 }}
