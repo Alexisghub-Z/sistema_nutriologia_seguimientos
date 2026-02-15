@@ -81,9 +81,9 @@ export default function Home() {
             <span className={styles.titleAccent}>Resultados Reales</span>
           </h1>
           <p className={styles.subtitle}>
-            Nutriólogo clínico con más de 10 años de experiencia. Planes de alimentación
-            personalizados, basados en ciencia y adaptados a tu estilo de vida. Enfoque integral,
-            seguro y profesional.
+            Soy nutriólogo clínico con más de 10 años de experiencia. Creo planes de alimentación
+            personalizados, basados en ciencia y adaptados a tu estilo de vida, para ayudarte a
+            mejorar tu salud de forma integral, segura y profesional.
           </p>
           <div className={styles.ctaGroup}>
             <button onClick={() => router.push('/agendar')} className={styles.ctaPrimary}>
