@@ -373,10 +373,23 @@ export async function obtenerRespuestaIA(
         contextoSistema += `NO tiene cita agendada actualmente. Indícale que no hay cita activa y ofrece agendar en: ${KNOWLEDGE_BASE.urls.agendar}\n`
       }
     } else if (intencion === 'agendar') {
-      contextoSistema += `El usuario muestra interés en agendar una cita. SÉ PROACTIVO:\n`
-      contextoSistema += `- Después de responder su pregunta, ofrécele DIRECTAMENTE el link de agenda: ${KNOWLEDGE_BASE.urls.agendar}\n`
-      contextoSistema += `- Menciona que puede ver disponibilidad en tiempo real\n`
-      contextoSistema += `- Si no tiene cita agendada, incentiva a que agende ahora\n`
+      if (pacienteContexto?.tiene_cita_proxima) {
+        const fechaCita = pacienteContexto.fecha_proxima_cita || ''
+        const horaCita = pacienteContexto.hora_proxima_cita || ''
+        const urlGestion = pacienteContexto.codigo_cita
+          ? `${KNOWLEDGE_BASE.urls.sitio_web}/cita/${pacienteContexto.codigo_cita}`
+          : null
+        contextoSistema += `El usuario pregunta por agendar pero YA TIENE UNA CITA ACTIVA.\n`
+        contextoSistema += `RECUÉRDALE que ya tiene cita agendada para el ${fechaCita} a las ${horaCita}.\n`
+        contextoSistema += `NO le ofrezcas agendar otra cita. Solo se permite una cita activa por paciente.\n`
+        if (urlGestion) {
+          contextoSistema += `Si quiere cambiar la fecha, puede reagendarla desde: ${urlGestion}\n`
+        }
+      } else {
+        contextoSistema += `El usuario muestra interés en agendar una cita. SÉ PROACTIVO:\n`
+        contextoSistema += `- Ofrécele DIRECTAMENTE el link de agenda: ${KNOWLEDGE_BASE.urls.agendar}\n`
+        contextoSistema += `- Menciona que puede ver disponibilidad en tiempo real\n`
+      }
     } else if (intencion === 'precios') {
       contextoSistema += `El usuario pregunta por precios. SÉ PROACTIVO:\n`
       contextoSistema += `- Después de dar los precios ($${KNOWLEDGE_BASE.servicios.consulta_nutricional.precio} primera consulta / $${KNOWLEDGE_BASE.servicios.consulta_nutricional.precio_seguimiento} seguimiento), menciona qué incluye\n`
