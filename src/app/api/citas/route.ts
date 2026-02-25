@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth-utils'
 import prisma from '@/lib/prisma'
 import { z } from 'zod'
+import { randomBytes } from 'crypto'
 import { deleteCache, CacheKeys } from '@/lib/redis'
 import {
   syncCitaWithGoogleCalendar,
@@ -149,6 +150,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Generar código único para la cita (necesario para que el chatbot pueda dar URL de gestión)
+    let codigoCita = randomBytes(4).toString('hex').toUpperCase().substring(0, 8)
+    while (await prisma.cita.findUnique({ where: { codigo_cita: codigoCita } })) {
+      codigoCita = randomBytes(4).toString('hex').toUpperCase().substring(0, 8)
+    }
+
     // Crear cita
     const cita = await prisma.cita.create({
       data: {
@@ -158,6 +165,7 @@ export async function POST(request: NextRequest) {
         motivo_consulta: validatedData.motivo_consulta,
         tipo_cita: validatedData.tipo_cita,
         estado: 'PENDIENTE',
+        codigo_cita: codigoCita,
         // Si fue confirmada por admin, marcarla como confirmada desde el inicio
         confirmada_por_paciente: validatedData.confirmada_por_admin,
         estado_confirmacion: validatedData.confirmada_por_admin ? 'CONFIRMADA' : 'PENDIENTE',
