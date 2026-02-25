@@ -45,8 +45,14 @@ export default function NuevaCitaPage() {
         throw new Error('Fecha y hora son requeridas')
       }
 
-      // Combinar fecha y hora
-      const fecha_hora = `${formData.fecha}T${formData.hora}:00`
+      // Combinar fecha y hora como fecha LOCAL (evita que JS interprete como UTC)
+      // new Date("YYYY-MM-DDTHH:mm:ss") sin timezone se trata como UTC en JS,
+      // lo que desplaza la hora y puede cambiar el día. Construimos con partes numéricas
+      // para que Date use el timezone local del navegador (México).
+      const [year, month, day] = formData.fecha.split('-').map(Number)
+      const [hour, minute] = formData.hora.split(':').map(Number)
+      const fechaLocal = new Date(year!, month! - 1, day!, hour!, minute!, 0)
+      const fecha_hora = fechaLocal.toISOString()
 
       // Crear cita
       const response = await fetch('/api/citas', {
