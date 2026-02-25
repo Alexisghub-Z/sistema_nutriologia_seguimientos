@@ -156,11 +156,13 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ cod
       }
 
       // Eliminar evento de Google Calendar si existe
+      // Nota: usamos citaExistente (antes del update) para leer google_event_id
+      // porque el update no lo retorna en el include
       try {
         const isGoogleConfigured = await isGoogleCalendarConfigured()
-        if (isGoogleConfigured && cita.google_event_id) {
+        if (isGoogleConfigured && citaExistente.google_event_id) {
           await unsyncCitaFromGoogleCalendar(cita.id)
-          console.log(`🗓️  Evento de Google Calendar eliminado: ${cita.google_event_id}`)
+          console.log(`🗓️  Evento de Google Calendar eliminado: ${citaExistente.google_event_id}`)
         }
       } catch (calendarError) {
         console.error('Error al eliminar evento de Google Calendar:', calendarError)
