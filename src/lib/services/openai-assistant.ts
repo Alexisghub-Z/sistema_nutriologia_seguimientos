@@ -84,7 +84,7 @@ export interface RespuestaIA {
   confidence: number
   razonamiento?: string
   tokens_usados?: number
-  intencion_detectada?: 'agendar' | 'precios' | 'horarios' | 'urgencia' | 'consulta_general' | 'derivar'
+  intencion_detectada?: 'gestionar_cita' | 'agendar' | 'precios' | 'horarios' | 'urgencia' | 'consulta_general' | 'derivar'
   nivel_urgencia?: 'baja' | 'media' | 'alta'
 }
 
@@ -214,7 +214,7 @@ function generarContextoSistema(pacienteContexto?: PacienteContexto): string {
  * Detecta la intención del usuario en su mensaje
  */
 function detectarIntencion(mensaje: string): {
-  intencion: 'agendar' | 'precios' | 'horarios' | 'urgencia' | 'consulta_general' | 'derivar'
+  intencion: 'gestionar_cita' | 'agendar' | 'precios' | 'horarios' | 'urgencia' | 'consulta_general' | 'derivar'
   nivel_urgencia: 'baja' | 'media' | 'alta'
 } {
   const mensajeNormalizado = mensaje.toLowerCase()
@@ -231,6 +231,29 @@ function detectarIntencion(mensaje: string): {
     'necesito ya',
   ]
   const esUrgente = palabrasUrgencia.some((palabra) => mensajeNormalizado.includes(palabra))
+
+  // Detectar gestión de cita (cancelar/reagendar/confirmar) — ANTES que agendar
+  const palabrasGestion = [
+    'cancelar',
+    'cancela',
+    'cancelo',
+    'no puedo asistir',
+    'no voy a poder',
+    'reagendar',
+    'cambiar la cita',
+    'cambiar mi cita',
+    'cambiar fecha',
+    'mover la cita',
+    'mover mi cita',
+    'confirmar mi cita',
+    'confirmo mi cita',
+  ]
+  if (palabrasGestion.some((palabra) => mensajeNormalizado.includes(palabra))) {
+    return {
+      intencion: 'gestionar_cita',
+      nivel_urgencia: esUrgente ? 'alta' : 'media',
+    }
+  }
 
   // Detectar intención de agendar
   const palabrasAgendar = [
@@ -339,7 +362,17 @@ export async function obtenerRespuestaIA(
     // Agregar instrucciones proactivas según intención detectada
     contextoSistema += `\n\n## INTENCIÓN DETECTADA: ${intencion.toUpperCase()}\n`
 
-    if (intencion === 'agendar') {
+    if (intencion === 'gestionar_cita') {
+      contextoSistema += `El usuario quiere cancelar, reagendar o confirmar su cita.\n`
+      if (pacienteContexto?.tiene_cita_proxima && pacienteContexto?.codigo_cita) {
+        const urlGestion = `${KNOWLEDGE_BASE.urls.sitio_web}/cita/${pacienteContexto.codigo_cita}`
+        contextoSistema += `TIENE CITA AGENDADA. Proporciona INMEDIATAMENTE esta URL sin inventar nada:\n`
+        contextoSistema += `URL: ${urlGestion}\n`
+        contextoSistema += `NO uses ninguna otra URL. NO uses /gestion. NO uses /ABC123. La URL es: ${urlGestion}\n`
+      } else {
+        contextoSistema += `NO tiene cita agendada actualmente. Indícale que no hay cita activa y ofrece agendar en: ${KNOWLEDGE_BASE.urls.agendar}\n`
+      }
+    } else if (intencion === 'agendar') {
       contextoSistema += `El usuario muestra interés en agendar una cita. SÉ PROACTIVO:\n`
       contextoSistema += `- Después de responder su pregunta, ofrécele DIRECTAMENTE el link de agenda: ${KNOWLEDGE_BASE.urls.agendar}\n`
       contextoSistema += `- Menciona que puede ver disponibilidad en tiempo real\n`
