@@ -183,13 +183,16 @@ async function esRespuestaARecordatorio(mensaje: string, pacienteId: string): Pr
     return false
   }
 
-  // Verificar si tiene cita pendiente
+  // Verificar si tiene cita pendiente hoy o en el futuro
+  const inicioDia = new Date()
+  inicioDia.setHours(0, 0, 0, 0)
+
   const citaPendiente = await prisma.cita.findFirst({
     where: {
       paciente_id: pacienteId,
       estado: 'PENDIENTE',
       fecha_hora: {
-        gte: new Date(),
+        gte: inicioDia,
       },
     },
   })
@@ -257,13 +260,17 @@ async function obtenerContextoPaciente(pacienteId: string): Promise<PacienteCont
     throw new Error('Paciente no encontrado')
   }
 
-  // Buscar próxima cita
+  // Buscar próxima cita desde el inicio del día de hoy (no la hora exacta),
+  // para no perder citas del día actual cuya hora ya pasó en UTC pero no en México
+  const inicioDiaHoy = new Date()
+  inicioDiaHoy.setHours(0, 0, 0, 0)
+
   const proximaCita = await prisma.cita.findFirst({
     where: {
       paciente_id: pacienteId,
       estado: 'PENDIENTE',
       fecha_hora: {
-        gte: new Date(),
+        gte: inicioDiaHoy,
       },
     },
     orderBy: {
