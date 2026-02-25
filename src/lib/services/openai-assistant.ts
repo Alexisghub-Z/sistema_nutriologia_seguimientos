@@ -182,12 +182,14 @@ function generarContextoSistema(pacienteContexto?: PacienteContexto): string {
       contexto += `- Hora: ${pacienteContexto.hora_proxima_cita}\n`
       contexto += `- Modalidad: ${pacienteContexto.tipo_cita}\n`
       if (pacienteContexto.codigo_cita) {
+        const urlGestion = `${KNOWLEDGE_BASE.urls.sitio_web}/cita/${pacienteContexto.codigo_cita}`
         contexto += `- Código de cita: ${pacienteContexto.codigo_cita}\n`
-        contexto += `- URL para gestionar cita (confirmar/cancelar/reagendar): ${KNOWLEDGE_BASE.urls.sitio_web}/cita/${pacienteContexto.codigo_cita}\n`
+        contexto += `- URL para gestionar cita (confirmar/cancelar/reagendar): ${urlGestion}\n`
+        contexto += `\n⚠️ INSTRUCCIÓN CRÍTICA: Si el paciente pregunta sobre reagendar, cancelar o confirmar su cita, usa EXACTAMENTE esta URL: ${urlGestion}\n`
+        contexto += `NUNCA uses URLs de ejemplo ni inventes códigos. La URL real es la de arriba.\n`
       }
-      contexto += `\nIMPORTANTE: Si el paciente pregunta sobre REAGENDAR, CANCELAR o CONFIRMAR su cita, proporciona la URL directa de gestión de cita.\n`
     } else {
-      contexto += `\nNo tiene citas próximas agendadas.\n`
+      contexto += `\nNo tiene citas próximas agendadas. Si pregunta por cancelar o reagendar, dile que no tiene cita activa y ofrécele agendar una nueva en: ${KNOWLEDGE_BASE.urls.agendar}\n`
     }
 
     if (pacienteContexto.ultima_consulta_fecha) {
