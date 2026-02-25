@@ -29,12 +29,32 @@ interface Notificaciones {
   total: number
 }
 
+const STORAGE_KEY = 'notificaciones_vistas'
+
+function getVistas(): Set<string> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    return raw ? new Set(JSON.parse(raw)) : new Set()
+  } catch {
+    return new Set()
+  }
+}
+
+function guardarVistas(ids: Set<string>) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]))
+  } catch {
+    // ignorar errores de localStorage
+  }
+}
+
 export default function NotificacionesDropdown() {
   const [notificaciones, setNotificaciones] = useState<Notificaciones>({
     citasProximas: [],
     nuevosProspectos: [],
     total: 0,
   })
+  const [noVistas, setNoVistas] = useState(0)
   const [loading, setLoading] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
   const router = useRouter()
@@ -50,13 +70,38 @@ export default function NotificacionesDropdown() {
     try {
       const response = await fetch('/api/notificaciones')
       if (response.ok) {
-        const data = await response.json()
+        const data: Notificaciones = await response.json()
         setNotificaciones(data)
+
+        // Calcular cuántas no han sido vistas
+        const vistas = getVistas()
+        const idsActuales = [
+          ...data.citasProximas.map((c) => c.id),
+          ...data.nuevosProspectos.map((p) => p.id),
+        ]
+        const nuevas = idsActuales.filter((id) => !vistas.has(id)).length
+        setNoVistas(nuevas)
       }
     } catch (error) {
       console.error('Error al cargar notificaciones:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const marcarTodasVistas = () => {
+    const vistas = getVistas()
+    notificaciones.citasProximas.forEach((c) => vistas.add(c.id))
+    notificaciones.nuevosProspectos.forEach((p) => vistas.add(p.id))
+    guardarVistas(vistas)
+    setNoVistas(0)
+  }
+
+  const handleToggle = () => {
+    const abriendo = !isOpen
+    setIsOpen(abriendo)
+    if (abriendo) {
+      marcarTodasVistas()
     }
   }
 
@@ -106,20 +151,20 @@ export default function NotificacionesDropdown() {
     <div className={styles.container}>
       <button
         className={styles.notificationButton}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         aria-label="Notificaciones"
       >
         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
           <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
         </svg>
-        {notificaciones.total > 0 && (
-          <span className={styles.badge}>{notificaciones.total}</span>
+        {noVistas > 0 && (
+          <span className={styles.badge}>{noVistas}</span>
         )}
       </button>
 
       {isOpen && (
         <>
-          <div className={styles.overlay} onClick={() => setIsOpen(false)} />
+          <div className={styles.overlay} onClick={() => setIsOpen(false)} aria-hidden="true" />
           <div className={styles.dropdown}>
             <div className={styles.header}>
               <h3 className={styles.title}>Notificaciones</h3>

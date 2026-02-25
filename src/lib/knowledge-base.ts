@@ -19,7 +19,8 @@ export const KNOWLEDGE_BASE = {
   // Información del Consultorio
   consultorio: {
     ubicacion: 'Oaxaca de Juárez, Oaxaca',
-    lugares_atencion: ['Consulta privada', 'Red OSMO'],
+    ubicacion_maps: 'https://maps.app.goo.gl/BbDUV1aQnMkDJAow5',
+    lugares_atencion: ['Consulta privada'],
     horarios: 'Lunes a Viernes de 4:00 PM a 8:00 PM, Sábados de 8:00 AM a 7:00 PM',
     horarios_detallados: {
       lunes_viernes: {
@@ -42,6 +43,7 @@ export const KNOWLEDGE_BASE = {
     consulta_nutricional: {
       nombre: 'Consulta Nutricional',
       precio: 600,
+      precio_seguimiento: 500,
       moneda: 'MXN',
       incluye: [
         'Evaluación nutricional completa y personalizada',
@@ -59,7 +61,7 @@ export const KNOWLEDGE_BASE = {
   },
 
   // Formas de Pago
-  formas_pago: ['Efectivo', 'Tarjeta', 'Transferencia'],
+  formas_pago: ['Efectivo', 'Transferencia'],
 
   // Contacto
   contacto: {
@@ -72,7 +74,6 @@ export const KNOWLEDGE_BASE = {
     licenciatura: 'Licenciatura en Nutrición',
     posgrado: 'Maestro en Nutrición y Dietética',
     experiencia_profesional: [
-      'Nutriólogo Clínico – Red OSMO (2018 – Actualidad)',
       'Consulta privada en Oaxaca (10+ años)',
       'Experiencia en investigación clínica nacional e internacional',
     ],
@@ -130,7 +131,7 @@ export const SYSTEM_INSTRUCTIONS = `Eres el asistente virtual del consultorio de
 - Siempre hablas en primera persona del consultorio ("Ofrecemos", "Atendemos", "Nuestro horario es")
 
 ## LO QUE SÍ PUEDES RESPONDER:
-✅ Información del consultorio (ubicación, horarios, contacto)
+✅ Información del consultorio (ubicación, horarios, contacto) — cuando pregunten por la ubicación, SIEMPRE incluye el link de Google Maps: https://maps.app.goo.gl/BbDUV1aQnMkDJAow5
 ✅ Precios y formas de pago
 ✅ Servicios ofrecidos y qué incluyen
 ✅ Formación y experiencia del nutriólogo
@@ -326,11 +327,12 @@ Es una inversión en tu salud con atención profesional. ¿Te gustaría ver disp
     pregunta: '¿Dónde está ubicado el consultorio?',
     respuesta: `Con gusto! Nos encontramos en *Oaxaca de Juárez, Oaxaca*.
 
-Atendemos en dos lugares:
 📍 Consulta privada
-📍 Red OSMO
 
-¿Necesitas la dirección exacta de alguna de estas ubicaciones?`,
+Puedes ver la ubicación aquí:
+https://maps.app.goo.gl/BbDUV1aQnMkDJAow5
+
+¿Tienes alguna otra duda?`,
   },
   {
     pregunta: '¿Cuáles son los horarios?',
@@ -348,10 +350,9 @@ Los domingos no hay atención para que el consultorio descanse 😊
   },
   {
     pregunta: '¿Qué formas de pago aceptan?',
-    respuesta: `Claro! Aceptamos varias formas de pago para tu comodidad:
+    respuesta: `Claro! Aceptamos las siguientes formas de pago:
 
 💵 Efectivo
-💳 Tarjeta
 🏦 Transferencia
 
 La que te sea más conveniente. ¿Hay algo más en lo que pueda ayudarte?`,

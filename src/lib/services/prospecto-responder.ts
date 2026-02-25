@@ -1,5 +1,5 @@
 import { obtenerRespuestaIA, isOpenAIConfigured } from './openai-assistant'
-import { buscarEnFAQ, requiereDerivacion } from '@/lib/knowledge-base'
+import { buscarEnFAQ, requiereDerivacion, KNOWLEDGE_BASE } from '@/lib/knowledge-base'
 import prisma from '@/lib/prisma'
 
 /**
@@ -235,7 +235,7 @@ Tengo problemas técnicos en este momento.
 
 Si necesitas información sobre el consultorio, puedes:
 📧 Email: paul_nutricion@hotmail.com
-🌐 Web: ${process.env.NEXT_PUBLIC_APP_URL || ''}
+🌐 Web: ${KNOWLEDGE_BASE.urls.sitio_web}
 
 Disculpa las molestias.`,
       debe_responder_automaticamente: true,
@@ -275,7 +275,7 @@ async function validarLimitesProspecto(
 
 Para continuar recibiendo atención personalizada, te invitamos a registrarte como paciente:
 
-📋 Registrarse: ${process.env.NEXT_PUBLIC_APP_URL}/agendar
+📋 Registrarse: ${KNOWLEDGE_BASE.urls.agendar}
 
 O contáctanos directamente:
 📧 paul_nutricion@hotmail.com
@@ -304,7 +304,7 @@ O contáctanos directamente:
 
 Puedes volver a escribir mañana, o si necesitas información urgente:
 
-📋 Registrarte: ${process.env.NEXT_PUBLIC_APP_URL}/agendar
+📋 Registrarte: ${KNOWLEDGE_BASE.urls.agendar}
 📧 Email: paul_nutricion@hotmail.com
 
 ¡Gracias por tu paciencia!`,
@@ -377,13 +377,15 @@ function generarMensajeDerivacionProspecto(mensajeOriginal: string): string {
 
 Para darte una respuesta precisa sobre ${temaDetectado}, necesitas una consulta nutricional profesional.
 
-El Lic. Paul Alavez evaluará tu caso específico y te dará un plan personalizado adaptado a tus objetivos y estilo de vida.
+El ${KNOWLEDGE_BASE.nutriologo.nombre_completo} evaluará tu caso específico y te dará un plan personalizado adaptado a tus objetivos y estilo de vida.
 
-📋 **Agendar consulta:**
-${process.env.NEXT_PUBLIC_APP_URL}/agendar
+📋 Agendar consulta:
+${KNOWLEDGE_BASE.urls.agendar}
 
-💰 **Costo:** $500 MXN
-✅ **Incluye:**
+💰 Costos:
+🥗 Primera consulta: $${KNOWLEDGE_BASE.servicios.consulta_nutricional.precio} ${KNOWLEDGE_BASE.servicios.consulta_nutricional.moneda}
+🔄 Seguimiento: $${KNOWLEDGE_BASE.servicios.consulta_nutricional.precio_seguimiento} ${KNOWLEDGE_BASE.servicios.consulta_nutricional.moneda}
+✅ Incluye:
 - Evaluación completa
 - Plan personalizado
 - Seguimiento continuo
@@ -401,11 +403,12 @@ Gracias por contactarnos.
 
 Para brindarte la mejor atención, te invitamos a:
 
-📋 **Agendar tu consulta:**
-${process.env.NEXT_PUBLIC_APP_URL}/agendar
+📋 Agendar tu consulta:
+${KNOWLEDGE_BASE.urls.agendar}
 
-**Información básica:**
-💰 Costo: $500 MXN
+Información básica:
+💰 Primera consulta: $${KNOWLEDGE_BASE.servicios.consulta_nutricional.precio} ${KNOWLEDGE_BASE.servicios.consulta_nutricional.moneda}
+💰 Seguimiento: $${KNOWLEDGE_BASE.servicios.consulta_nutricional.precio_seguimiento} ${KNOWLEDGE_BASE.servicios.consulta_nutricional.moneda}
 📅 Horarios:
    • Lunes a Viernes: 4 PM - 8 PM
    • Sábados: 8 AM - 7 PM
@@ -428,7 +431,7 @@ function agregarRecordatorioRegistro(mensajeOriginal: string): string {
 💡 **¿Listo para agendar tu consulta?**
 
 Regístrate aquí en 2 minutos y elige tu horario:
-📋 ${process.env.NEXT_PUBLIC_APP_URL}/agendar
+📋 ${KNOWLEDGE_BASE.urls.agendar}
 
 Una vez registrado podrás:
 ✅ Agendar y reagendar citas
