@@ -57,6 +57,7 @@ services:
       - .env
     environment:
       - NODE_ENV=production
+      - TZ=America/Mexico_City
       - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres123}@db:5432/${DB_NAME:-nutriologo_db}?schema=public
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379
     depends_on:
@@ -81,6 +82,7 @@ services:
       - .env
     environment:
       - NODE_ENV=production
+      - TZ=America/Mexico_City
       - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres123}@db:5432/${DB_NAME:-nutriologo_db}?schema=public
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379
     depends_on:
