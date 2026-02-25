@@ -64,10 +64,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Missing signature' }, { status: 403 })
       }
 
+      const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/twilio`
       const isValid = twilio.validateRequest(
         process.env.TWILIO_AUTH_TOKEN!,
         twilioSignature,
-        request.url,
+        webhookUrl,
         Object.fromEntries(formData)
       )
 
