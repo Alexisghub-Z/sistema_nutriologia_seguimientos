@@ -184,9 +184,11 @@ function generarContextoSistema(pacienteContexto?: PacienteContexto): string {
       if (pacienteContexto.codigo_cita) {
         const urlGestion = `${KNOWLEDGE_BASE.urls.sitio_web}/cita/${pacienteContexto.codigo_cita}`
         contexto += `- Código de cita: ${pacienteContexto.codigo_cita}\n`
-        contexto += `- URL para gestionar cita (confirmar/cancelar/reagendar): ${urlGestion}\n`
-        contexto += `\n⚠️ INSTRUCCIÓN CRÍTICA: Si el paciente pregunta sobre reagendar, cancelar o confirmar su cita, usa EXACTAMENTE esta URL: ${urlGestion}\n`
-        contexto += `NUNCA uses URLs de ejemplo ni inventes códigos. La URL real es la de arriba.\n`
+        contexto += `- URL EXACTA para gestionar cita: ${urlGestion}\n`
+        contexto += `\n⚠️ INSTRUCCIÓN CRÍTICA: Si el paciente pregunta sobre reagendar, cancelar o confirmar su cita, usa ÚNICAMENTE esta URL (cópiala exactamente): ${urlGestion}\n`
+        contexto += `No uses ninguna otra URL. No inventes rutas. La URL correcta es: ${urlGestion}\n`
+      } else {
+        contexto += `- IMPORTANTE: Esta cita no tiene URL de gestión disponible. NO inventes ninguna URL. Si el paciente pregunta por cancelar o reagendar, indícale que contacte al consultorio directamente al 951 130 1554.\n`
       }
     } else {
       contexto += `\nNo tiene citas próximas agendadas. Si pregunta por cancelar o reagendar, dile que no tiene cita activa y ofrécele agendar una nueva en: ${KNOWLEDGE_BASE.urls.agendar}\n`
