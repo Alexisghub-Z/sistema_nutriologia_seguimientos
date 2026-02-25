@@ -190,7 +190,10 @@ export default function DetallePacientePage() {
   const filtrarCitas = () => {
     if (!paciente) return []
 
-    const ahora = new Date()
+    // Inicio del día actual (medianoche) para no ocultar citas del día de hoy
+    // aunque su hora exacta ya haya pasado
+    const inicioDiaHoy = new Date()
+    inicioDiaHoy.setHours(0, 0, 0, 0)
 
     switch (tabActiva) {
       case 'activas':
@@ -198,7 +201,7 @@ export default function DetallePacientePage() {
           (cita) =>
             cita.estado === 'PENDIENTE' &&
             cita.estado_confirmacion !== 'CANCELADA_PACIENTE' &&
-            new Date(cita.fecha_hora) >= ahora
+            new Date(cita.fecha_hora) >= inicioDiaHoy
         )
       case 'completadas':
         return paciente.citas.filter((cita) => cita.estado === 'COMPLETADA')
