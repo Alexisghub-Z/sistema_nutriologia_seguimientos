@@ -71,6 +71,8 @@ export interface PacienteContexto {
   es_paciente_nuevo: boolean
   total_consultas?: number
   ultima_consulta_fecha?: string
+  peso_ultima_consulta?: number
+  imc_ultima_consulta?: number
 }
 
 /**
@@ -151,8 +153,10 @@ function generarContextoSistema(pacienteContexto?: PacienteContexto): string {
   contexto += `\n## INFORMACIÓN DEL CONSULTORIO:\n`
   contexto += `Nutriólogo: ${KNOWLEDGE_BASE.nutriologo.nombre_completo}\n`
   contexto += `Ubicación: ${KNOWLEDGE_BASE.consultorio.ubicacion}\n`
+  contexto += `Link de ubicación en Google Maps: ${KNOWLEDGE_BASE.consultorio.ubicacion_maps}\n`
   contexto += `Horarios: ${KNOWLEDGE_BASE.consultorio.horarios}\n`
-  contexto += `Precio consulta: $${KNOWLEDGE_BASE.servicios.consulta_nutricional.precio} ${KNOWLEDGE_BASE.servicios.consulta_nutricional.moneda}\n`
+  contexto += `Precio primera consulta: $${KNOWLEDGE_BASE.servicios.consulta_nutricional.precio} ${KNOWLEDGE_BASE.servicios.consulta_nutricional.moneda}\n`
+  contexto += `Precio consulta de seguimiento: $${KNOWLEDGE_BASE.servicios.consulta_nutricional.precio_seguimiento} ${KNOWLEDGE_BASE.servicios.consulta_nutricional.moneda}\n`
   contexto += `Formas de pago: ${KNOWLEDGE_BASE.formas_pago.join(', ')}\n`
   contexto += `Modalidades: Presencial y En línea\n`
   contexto += `Link para agendar: ${KNOWLEDGE_BASE.urls.agendar}\n`
@@ -163,8 +167,13 @@ function generarContextoSistema(pacienteContexto?: PacienteContexto): string {
     contexto += `Nombre: ${pacienteContexto.nombre}\n`
     contexto += `Es paciente nuevo: ${pacienteContexto.es_paciente_nuevo ? 'Sí' : 'No'}\n`
 
-    if (!pacienteContexto.es_paciente_nuevo && pacienteContexto.total_consultas) {
-      contexto += `Total de consultas previas: ${pacienteContexto.total_consultas}\n`
+    if (pacienteContexto.es_paciente_nuevo) {
+      contexto += `Precio aplicable: $${KNOWLEDGE_BASE.servicios.consulta_nutricional.precio} ${KNOWLEDGE_BASE.servicios.consulta_nutricional.moneda} (primera consulta)\n`
+    } else {
+      if (pacienteContexto.total_consultas) {
+        contexto += `Total de consultas previas: ${pacienteContexto.total_consultas}\n`
+      }
+      contexto += `Precio aplicable: $${KNOWLEDGE_BASE.servicios.consulta_nutricional.precio_seguimiento} ${KNOWLEDGE_BASE.servicios.consulta_nutricional.moneda} (consulta de seguimiento)\n`
     }
 
     if (pacienteContexto.tiene_cita_proxima) {
@@ -183,6 +192,14 @@ function generarContextoSistema(pacienteContexto?: PacienteContexto): string {
 
     if (pacienteContexto.ultima_consulta_fecha) {
       contexto += `Última consulta: ${pacienteContexto.ultima_consulta_fecha}\n`
+    }
+
+    if (pacienteContexto.peso_ultima_consulta) {
+      let pesoInfo = `Peso en última consulta: ${pacienteContexto.peso_ultima_consulta} kg`
+      if (pacienteContexto.imc_ultima_consulta) {
+        pesoInfo += ` (IMC: ${pacienteContexto.imc_ultima_consulta})`
+      }
+      contexto += `${pesoInfo}\n`
     }
   }
 
@@ -325,7 +342,7 @@ export async function obtenerRespuestaIA(
       contextoSistema += `- Si no tiene cita agendada, incentiva a que agende ahora\n`
     } else if (intencion === 'precios') {
       contextoSistema += `El usuario pregunta por precios. SÉ PROACTIVO:\n`
-      contextoSistema += `- Después de dar el precio ($500 MXN), menciona qué incluye\n`
+      contextoSistema += `- Después de dar los precios ($${KNOWLEDGE_BASE.servicios.consulta_nutricional.precio} primera consulta / $${KNOWLEDGE_BASE.servicios.consulta_nutricional.precio_seguimiento} seguimiento), menciona qué incluye\n`
       contextoSistema += `- Ofrece el link de agenda si parece interesado: ${KNOWLEDGE_BASE.urls.agendar}\n`
       contextoSistema += `- Resalta el valor de la consulta (plan personalizado, seguimiento)\n`
     } else if (intencion === 'horarios') {

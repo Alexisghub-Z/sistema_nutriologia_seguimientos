@@ -286,6 +286,11 @@ async function obtenerContextoPaciente(pacienteId: string): Promise<PacienteCont
     orderBy: {
       fecha: 'desc',
     },
+    select: {
+      fecha: true,
+      peso: true,
+      imc: true,
+    },
   })
 
   // Determinar si es paciente nuevo (menos de 2 consultas)
@@ -319,6 +324,8 @@ async function obtenerContextoPaciente(pacienteId: string): Promise<PacienteCont
           day: 'numeric',
         })
       : undefined,
+    peso_ultima_consulta: ultimaConsulta?.peso ?? undefined,
+    imc_ultima_consulta: ultimaConsulta?.imc ?? undefined,
   }
 }
 
