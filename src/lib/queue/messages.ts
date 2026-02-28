@@ -253,8 +253,8 @@ export async function programarSeguimiento(
 
   // RECORDATORIO PARA AGENDAR CITA
   if (tipoSeguimiento === 'SOLO_RECORDATORIO' || tipoSeguimiento === 'RECORDATORIO_Y_SEGUIMIENTO') {
-    // RECORDATORIO_AGENDAR: 3-5 días antes de la fecha sugerida (usamos 4 días)
-    const delayRecordatorio = periodoTotal - 4 * 24 * 60 * 60 * 1000
+    // RECORDATORIO_AGENDAR: 1 día antes de la fecha sugerida
+    const delayRecordatorio = periodoTotal - 1 * 24 * 60 * 60 * 1000
 
     if (delayRecordatorio <= 0) {
       console.warn(`   ⚠️  La fecha sugerida es muy cercana, no se programará recordatorio`)
@@ -271,7 +271,7 @@ export async function programarSeguimiento(
       )
       const fechaEnvioRecordatorio = new Date(ahora + delayRecordatorio)
       console.log(
-        `   ✅ Recordatorio agendar: ${fechaEnvioRecordatorio.toLocaleString('es-MX')} (4 días antes)`
+        `   ✅ Recordatorio agendar: ${fechaEnvioRecordatorio.toLocaleString('es-MX')} (1 día antes)`
       )
       jobsProgramados++
     }
