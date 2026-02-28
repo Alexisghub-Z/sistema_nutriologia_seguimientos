@@ -48,7 +48,7 @@ export async function DELETE(
 
     // Eliminar archivo físico del servidor
     try {
-      const filePath = path.join(process.cwd(), 'public', archivo.ruta_archivo)
+      const filePath = path.join(process.cwd(), archivo.ruta_archivo)
       await unlink(filePath)
     } catch (fileError) {
       console.error('Error al eliminar archivo físico:', fileError)
