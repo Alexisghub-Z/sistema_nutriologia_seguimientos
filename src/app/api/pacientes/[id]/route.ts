@@ -6,6 +6,7 @@ import prisma from '@/lib/prisma'
 import { z } from 'zod'
 import { getCache, setCache, deleteCache, deleteCachePattern, CacheKeys } from '@/lib/redis'
 import { normalizarTelefonoMexico } from '@/lib/utils/phone'
+import { convertirProspectoEnPaciente } from '@/lib/services/prospecto-responder'
 import { cancelarJobsCita, cancelarJobsSeguimiento } from '@/lib/queue/messages'
 import { unsyncCitaFromGoogleCalendar } from '@/lib/services/google-calendar'
 
@@ -156,17 +157,9 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
         where: { telefono: validatedData.telefono },
       })
 
-      // Si existe y no está ya registrado, convertirlo
+      // Si existe y no está ya registrado, convertirlo y migrar sus mensajes
       if (prospectoExistente && prospectoExistente.estado !== 'REGISTRADO') {
-        await prisma.prospecto.update({
-          where: { id: prospectoExistente.id },
-          data: {
-            estado: 'REGISTRADO',
-            convertido_a_paciente_id: id,
-            fecha_conversion: new Date(),
-          },
-        })
-        console.log(`✅ Prospecto ${prospectoExistente.id} convertido en paciente ${id}`)
+        await convertirProspectoEnPaciente(prospectoExistente.id, id)
       }
     }
 
