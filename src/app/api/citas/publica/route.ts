@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { convertirProspectoEnPaciente } from '@/lib/services/prospecto-responder'
 import { z } from 'zod'
 import { randomBytes } from 'crypto'
 import {
@@ -201,6 +202,14 @@ export async function POST(request: NextRequest) {
           fecha_nacimiento: new Date(validatedData.fecha_nacimiento),
         },
       })
+
+      // Si había un prospecto con este teléfono, convertirlo y migrar sus mensajes
+      const prospectoExistente = await prisma.prospecto.findUnique({
+        where: { telefono: validatedData.telefono },
+      })
+      if (prospectoExistente && prospectoExistente.estado !== 'REGISTRADO') {
+        await convertirProspectoEnPaciente(prospectoExistente.id, paciente.id)
+      }
     }
 
     // Crear cita dentro de transaction para evitar race condition de overbooking
