@@ -195,7 +195,7 @@ export function reemplazarVariables(contenido: string, variables: VariablesPlant
   resultado = resultado.replace(/{telefono}/g, variables.telefono || '')
   resultado = resultado.replace(/{fecha_cita}/g, formatearFecha(variables.fecha_cita))
   resultado = resultado.replace(/{fecha_relativa}/g, formatearFechaRelativa(variables.fecha_cita))
-  resultado = resultado.replace(/{hora_cita}/g, variables.hora_cita || '')
+  resultado = resultado.replace(/{hora_cita}/g, variables.hora_cita ? formatearHora(variables.hora_cita) : '')
   resultado = resultado.replace(
     /{hora_formateada}/g,
     variables.hora_cita ? formatearHora(variables.hora_cita) : ''
@@ -283,7 +283,7 @@ export function prepararVariablesAprobadas(
         resultado[numeroVar] = formatearFechaRelativa(variables.fecha_cita)
         break
       case 'hora_cita':
-        resultado[numeroVar] = variables.hora_cita || ''
+        resultado[numeroVar] = variables.hora_cita ? formatearHora(variables.hora_cita) : ''
         break
       case 'hora_formateada':
         resultado[numeroVar] = variables.hora_cita ? formatearHora(variables.hora_cita) : ''
