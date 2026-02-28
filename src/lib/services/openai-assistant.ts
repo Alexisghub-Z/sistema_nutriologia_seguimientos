@@ -84,7 +84,7 @@ export interface RespuestaIA {
   confidence: number
   razonamiento?: string
   tokens_usados?: number
-  intencion_detectada?: 'gestionar_cita' | 'agendar' | 'precios' | 'horarios' | 'urgencia' | 'consulta_general' | 'derivar'
+  intencion_detectada?: 'gestionar_cita' | 'agendar' | 'precios' | 'horarios' | 'historial' | 'urgencia' | 'consulta_general' | 'derivar'
   nivel_urgencia?: 'baja' | 'media' | 'alta'
 }
 
@@ -213,7 +213,7 @@ function generarContextoSistema(pacienteContexto?: PacienteContexto): string {
  * Detecta la intención del usuario en su mensaje
  */
 function detectarIntencion(mensaje: string): {
-  intencion: 'gestionar_cita' | 'agendar' | 'precios' | 'horarios' | 'urgencia' | 'consulta_general' | 'derivar'
+  intencion: 'gestionar_cita' | 'agendar' | 'precios' | 'horarios' | 'historial' | 'urgencia' | 'consulta_general' | 'derivar'
   nivel_urgencia: 'baja' | 'media' | 'alta'
 } {
   const mensajeNormalizado = mensaje.toLowerCase()
@@ -257,8 +257,10 @@ function detectarIntencion(mensaje: string): {
   // Detectar intención de agendar
   const palabrasAgendar = [
     'agendar',
-    'cita',
-    'consulta',
+    'sacar cita',
+    'hacer cita',
+    'quiero cita',
+    'necesito cita',
     'reservar',
     'apartar',
     'cuando puedo',
@@ -273,7 +275,7 @@ function detectarIntencion(mensaje: string): {
   }
 
   // Detectar pregunta de precios
-  const palabrasPrecios = ['precio', 'costo', 'cuanto', 'cuánto', 'pagar', 'cobrar', 'vale']
+  const palabrasPrecios = ['precio', 'costo', 'cuanto cuesta', 'cuánto cuesta', 'cuanto cobran', 'cuánto cobran', 'pagar', 'cobrar', 'vale la consulta']
   if (palabrasPrecios.some((palabra) => mensajeNormalizado.includes(palabra))) {
     return {
       intencion: 'precios',
@@ -293,6 +295,29 @@ function detectarIntencion(mensaje: string): {
   if (palabrasHorarios.some((palabra) => mensajeNormalizado.includes(palabra))) {
     return {
       intencion: 'horarios',
+      nivel_urgencia: 'baja',
+    }
+  }
+
+  // Detectar consultas sobre historial del paciente
+  const palabrasHistorial = [
+    'cuánto pesé',
+    'cuanto pesé',
+    'cuanto peso',
+    'cuánto peso',
+    'mi peso',
+    'mi imc',
+    'última consulta',
+    'ultima consulta',
+    'cuántas consultas',
+    'cuantas consultas',
+    'mi historial',
+    'mis datos',
+    'mi expediente',
+  ]
+  if (palabrasHistorial.some((palabra) => mensajeNormalizado.includes(palabra))) {
+    return {
+      intencion: 'historial',
       nivel_urgencia: 'baja',
     }
   }
@@ -387,6 +412,8 @@ export async function obtenerRespuestaIA(
       contextoSistema += `Da los precios de forma breve. NO incluyas URL a menos que pregunte cómo agendar.\n`
     } else if (intencion === 'horarios') {
       contextoSistema += `Da los horarios de forma breve. NO incluyas URL a menos que pregunte cómo agendar.\n`
+    } else if (intencion === 'historial') {
+      contextoSistema += `El paciente pregunta por sus datos personales (peso, IMC, consultas). Responde SOLO con los datos que tienes en el contexto. Si no tienes el dato, dile que no cuentas con esa información.\n`
     } else if (intencion === 'derivar') {
       contextoSistema += `Tema nutricional/médico. Deriva brevemente a *Paul Cortez* al *951 130 1554*.\n`
     }
