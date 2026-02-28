@@ -411,6 +411,17 @@ export default function Home() {
                 Ver mi cita con email
               </button>
             </div>
+
+            <div className={styles.divider}>
+              <span>o</span>
+            </div>
+
+            <div className={styles.emailOption}>
+              <p className={styles.emailOptionText}>¿Quieres ver tu evolución?</p>
+              <button onClick={() => router.push('/mi-progreso')} className={styles.emailButton}>
+                Ver mi progreso de peso y medidas
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -578,6 +589,9 @@ export default function Home() {
                 </li>
                 <li>
                   <a href="#buscar-cita">Buscar Cita</a>
+                </li>
+                <li>
+                  <a href="/mi-progreso">Mi Progreso</a>
                 </li>
                 <li>
                   <a href="#contacto">Contacto</a>
