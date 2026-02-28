@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import { z } from 'zod'
 import { getCache, setCache, deleteCachePattern, CacheKeys } from '@/lib/redis'
 import { normalizarTelefonoMexico } from '@/lib/utils/phone'
+import { convertirProspectoEnPaciente } from '@/lib/services/prospecto-responder'
 
 // Schema de validación para crear/actualizar paciente
 const pacienteSchema = z.object({
@@ -231,17 +232,9 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Si había un prospecto, convertirlo
+    // Si había un prospecto, convertirlo y migrar sus mensajes
     if (prospectoExistente && prospectoExistente.estado !== 'REGISTRADO') {
-      await prisma.prospecto.update({
-        where: { id: prospectoExistente.id },
-        data: {
-          estado: 'REGISTRADO',
-          convertido_a_paciente_id: paciente.id,
-          fecha_conversion: new Date(),
-        },
-      })
-      console.log(`✅ Prospecto ${prospectoExistente.id} convertido en paciente ${paciente.id}`)
+      await convertirProspectoEnPaciente(prospectoExistente.id, paciente.id)
     }
 
     // Invalidar caché de lista de pacientes
