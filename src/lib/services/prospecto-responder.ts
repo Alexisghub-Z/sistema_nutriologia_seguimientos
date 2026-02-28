@@ -1,6 +1,7 @@
 import { obtenerRespuestaIA, isOpenAIConfigured } from './openai-assistant'
 import { buscarEnFAQ, requiereDerivacion, KNOWLEDGE_BASE } from '@/lib/knowledge-base'
 import prisma from '@/lib/prisma'
+import { deleteCachePattern } from '@/lib/redis'
 
 /**
  * Límites para prospectos
@@ -400,20 +401,60 @@ export async function guardarLogRespuestaProspecto(
 }
 
 /**
- * Convierte un prospecto en paciente
+ * Convierte un prospecto en paciente, migrando sus mensajes.
+ * Usa transacción: borra MensajeProspecto (libera twilio_sid únicos)
+ * y los recrea como MensajeWhatsApp del paciente.
  */
 export async function convertirProspectoEnPaciente(
   prospectoId: string,
   pacienteId: string
 ): Promise<void> {
-  await prisma.prospecto.update({
-    where: { id: prospectoId },
-    data: {
-      estado: 'REGISTRADO',
-      convertido_a_paciente_id: pacienteId,
-      fecha_conversion: new Date(),
-    },
+  // 1. Obtener todos los mensajes del prospecto
+  const mensajesProspecto = await prisma.mensajeProspecto.findMany({
+    where: { prospecto_id: prospectoId },
+    orderBy: { createdAt: 'asc' },
   })
 
-  console.log(`✅ Prospecto ${prospectoId} convertido en paciente ${pacienteId}`)
+  // 2. Transacción: borrar originales, crear en nueva tabla, actualizar prospecto
+  await prisma.$transaction(async (tx) => {
+    // a. Borrar mensajes de prospecto (libera twilio_sid únicos)
+    if (mensajesProspecto.length > 0) {
+      await tx.mensajeProspecto.deleteMany({
+        where: { prospecto_id: prospectoId },
+      })
+
+      // b. Crear mensajes en MensajeWhatsApp
+      await tx.mensajeWhatsApp.createMany({
+        data: mensajesProspecto.map((msg) => ({
+          paciente_id: pacienteId,
+          direccion: msg.direccion,
+          contenido: msg.contenido,
+          tipo: 'MANUAL' as const,
+          twilio_sid: msg.twilio_sid,
+          estado: msg.estado,
+          leido: true, // Marcar como leídos: son historial previo al registro
+          media_url: msg.media_url,
+          media_type: msg.media_type,
+          createdAt: msg.createdAt,
+        })),
+      })
+    }
+
+    // c. Actualizar prospecto
+    await tx.prospecto.update({
+      where: { id: prospectoId },
+      data: {
+        estado: 'REGISTRADO',
+        convertido_a_paciente_id: pacienteId,
+        fecha_conversion: new Date(),
+      },
+    })
+  })
+
+  // 3. Invalidar caché de mensajes
+  await deleteCachePattern('messages:*')
+
+  console.log(
+    `✅ Prospecto ${prospectoId} convertido en paciente ${pacienteId} (${mensajesProspecto.length} mensajes migrados)`
+  )
 }
