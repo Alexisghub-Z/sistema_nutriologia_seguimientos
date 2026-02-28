@@ -497,6 +497,109 @@
   }
 }
 
+/* Modal de confirmación de eliminación */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--spacing-md);
+}
+
+.modalCard {
+  background-color: var(--color-white);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-xl);
+}
+
+.modalTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-900);
+  margin: 0 0 var(--spacing-md) 0;
+}
+
+.modalBody {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-700);
+  margin-bottom: var(--spacing-lg);
+}
+
+.modalBody p {
+  margin: 0 0 var(--spacing-sm) 0;
+}
+
+.modalBody ul {
+  margin: var(--spacing-sm) 0;
+  padding-left: var(--spacing-lg);
+}
+
+.modalBody li {
+  margin-bottom: var(--spacing-xs);
+}
+
+.modalWarning {
+  color: var(--color-gray-500);
+  font-style: italic;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+}
+
+.modalCancelBtn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
+  background-color: var(--color-white);
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.modalCancelBtn:hover:not(:disabled) {
+  background-color: var(--color-gray-50);
+  border-color: var(--color-gray-400);
+}
+
+.modalCancelBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modalConfirmBtn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-white);
+  background-color: #dc2626;
+  border: 1px solid #dc2626;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-width: 90px;
+}
+
+.modalConfirmBtn:hover:not(:disabled) {
+  background-color: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.modalConfirmBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 /* Mobile Landscape */
 @media (max-width: 926px) and (max-height: 640px) and (orientation: landscape) {
   .container {

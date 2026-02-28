@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Button from '@/components/ui/Button'
@@ -29,6 +30,14 @@ interface PaginationInfo {
   totalPages: number
 }
 
+interface ModalEliminar {
+  open: boolean
+  pacienteId: string
+  nombre: string
+  citas: number
+  consultas: number
+}
+
 export default function PacientesPage() {
   const router = useRouter()
   const [pacientes, setPacientes] = useState<Paciente[]>([])
@@ -44,6 +53,8 @@ export default function PacientesPage() {
   const [sortBy, setSortBy] = useState('createdAt')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [activityFilter, setActivityFilter] = useState('todos')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [modalEliminar, setModalEliminar] = useState<ModalEliminar | null>(null)
 
   // Fetch pacientes
   const fetchPacientes = async () => {
@@ -125,18 +136,26 @@ export default function PacientesPage() {
     })
   }
 
-  // Manejar eliminación
-  const handleDelete = async (id: string, nombre: string) => {
-    if (
-      !confirm(
-        `¿Estás seguro de eliminar al paciente "${nombre}"?\n\nEsta acción no se puede deshacer.`
-      )
-    ) {
-      return
-    }
+  // Abrir modal de confirmación de eliminación
+  const handleDelete = (paciente: Paciente) => {
+    setModalEliminar({
+      open: true,
+      pacienteId: paciente.id,
+      nombre: paciente.nombre,
+      citas: paciente._count.citas,
+      consultas: paciente._count.consultas,
+    })
+  }
+
+  // Confirmar eliminación desde el modal
+  const confirmarEliminar = async () => {
+    if (!modalEliminar) return
+
+    const { pacienteId } = modalEliminar
+    setDeletingId(pacienteId)
 
     try {
-      const response = await fetch(`/api/pacientes/${id}`, {
+      const response = await fetch(`/api/pacientes/${pacienteId}`, {
         method: 'DELETE',
       })
 
@@ -145,10 +164,13 @@ export default function PacientesPage() {
         throw new Error(data.error || 'Error al eliminar paciente')
       }
 
-      // Recargar lista
+      setModalEliminar(null)
       fetchPacientes()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error al eliminar paciente')
+      setError(err instanceof Error ? err.message : 'Error al eliminar paciente')
+      setModalEliminar(null)
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -164,6 +186,7 @@ export default function PacientesPage() {
   }
 
   return (
+    <>
     <div className={styles.container}>
       {/* Header */}
       <div className={styles.header}>
@@ -339,9 +362,10 @@ export default function PacientesPage() {
                             </svg>
                           </button>
                           <button
-                            onClick={() => handleDelete(paciente.id, paciente.nombre)}
+                            onClick={() => handleDelete(paciente)}
                             className={`${styles.actionButton} ${styles.deleteButton}`}
                             title="Eliminar"
+                            disabled={deletingId === paciente.id}
                           >
                             <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
                               <path
@@ -392,9 +416,10 @@ export default function PacientesPage() {
                         </svg>
                       </button>
                       <button
-                        onClick={() => handleDelete(paciente.id, paciente.nombre)}
+                        onClick={() => handleDelete(paciente)}
                         className={`${styles.actionButton} ${styles.deleteButton}`}
                         title="Eliminar"
+                        disabled={deletingId === paciente.id}
                       >
                         <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
                           <path
@@ -618,5 +643,42 @@ export default function PacientesPage() {
         )}
       </Card>
     </div>
+      {/* Modal de confirmación de eliminación — renderizado en document.body via portal */}
+      {modalEliminar?.open && typeof document !== 'undefined' && createPortal(
+        <div className={styles.modalOverlay} onClick={() => !deletingId && setModalEliminar(null)}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+            <h2 className={styles.modalTitle}>Eliminar paciente</h2>
+            <div className={styles.modalBody}>
+              <p>
+                ¿Eliminar a <strong>{modalEliminar.nombre}</strong>? Se borrarán permanentemente:
+              </p>
+              <ul>
+                <li><strong>{modalEliminar.citas}</strong> cita(s)</li>
+                <li><strong>{modalEliminar.consultas}</strong> consulta(s)</li>
+                <li>Todos sus archivos, mensajes y datos</li>
+              </ul>
+              <p className={styles.modalWarning}>Esta acción no se puede deshacer.</p>
+            </div>
+            <div className={styles.modalActions}>
+              <button
+                className={styles.modalCancelBtn}
+                onClick={() => setModalEliminar(null)}
+                disabled={!!deletingId}
+              >
+                Cancelar
+              </button>
+              <button
+                className={styles.modalConfirmBtn}
+                onClick={confirmarEliminar}
+                disabled={!!deletingId}
+              >
+                {deletingId ? 'Eliminando...' : 'Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
   )
 }
