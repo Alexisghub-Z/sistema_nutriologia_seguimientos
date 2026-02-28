@@ -279,7 +279,7 @@ Para continuar recibiendo atención personalizada, te invitamos a registrarte co
 
 O contáctanos directamente:
 📧 paul_nutricion@hotmail.com
-📱 paul.alavez@redosmo.com
+📧 paul.alavez@redosmo.com
 
 ¡Gracias por tu interés!`,
       razon: 'Límite total de mensajes alcanzado (70)',
