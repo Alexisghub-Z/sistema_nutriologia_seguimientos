@@ -69,7 +69,9 @@ const PLANTILLAS_APROBADAS: Record<string, PlantillaAprobada | null> = {
   [TipoPlantilla.CONFIRMACION]: process.env.TEMPLATE_CONFIRMACION_SID
     ? {
         contentSid: process.env.TEMPLATE_CONFIRMACION_SID,
-        variables: ['nombre', 'fecha_cita', 'hora_cita', 'codigo_cita', 'url_portal'],
+        // {{1}} nombre, {{2}} fecha_cita, {{3}} hora_cita, {{4}} codigo_cita (también sufijo del botón URL)
+        // URL del botón: https://nutricionpaulcortez.com/cita/ + {{4}}
+        variables: ['nombre', 'fecha_cita', 'hora_cita', 'codigo_cita'],
       }
     : null,
   [TipoPlantilla.RECORDATORIO_24H]: process.env.TEMPLATE_RECORDATORIO_24H_SID
@@ -81,6 +83,7 @@ const PLANTILLAS_APROBADAS: Record<string, PlantillaAprobada | null> = {
   [TipoPlantilla.RECORDATORIO_1H]: process.env.TEMPLATE_RECORDATORIO_1H_SID
     ? {
         contentSid: process.env.TEMPLATE_RECORDATORIO_1H_SID,
+        // {{1}} nombre, {{2}} hora_cita
         variables: ['nombre', 'hora_cita'],
       }
     : null,
