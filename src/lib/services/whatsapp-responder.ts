@@ -157,7 +157,7 @@ export async function procesarMensajeEntrante(
 
     // En caso de error, derivar a humano
     return {
-      respuesta: `Hola ${nombrePaciente.split(' ')[0]} 👋\n\nTengo problemas técnicos en este momento. El nutriólogo te responderá personalmente en breve.\n\nGracias por tu paciencia.`,
+      respuesta: `Disculpa ${nombrePaciente.split(' ')[0]}, tengo problemas técnicos. El nutriólogo te responderá en breve.`,
       debe_responder_automaticamente: true,
       debe_derivar_humano: true,
       razon: `Error en procesamiento: ${error instanceof Error ? error.message : 'Error desconocido'}`,
@@ -229,18 +229,7 @@ function generarMensajeDerivacion(nombrePaciente: string, mensajeOriginal: strin
     }
   }
 
-  return `${saludo} ${nombreCorto} 👋
-
-Entiendo que tienes preguntas sobre ${temaDetectado}.
-
-Para atención personalizada, puedes contactar directamente a:
-
-📞 *Paul Cortez* (Nutriólogo)
-Teléfono: *951 130 1554*
-
-Él podrá darte la mejor orientación sobre tu caso específico.
-
-Mientras tanto, si tienes preguntas sobre el consultorio (horarios, precios, ubicación), con gusto te ayudo. 🌿`
+  return `${saludo} ${nombreCorto}! Para darte información precisa sobre ${temaDetectado}, lo mejor es que platiques directamente con *Paul Cortez* al *951 130 1554* 😊`
 }
 
 /**

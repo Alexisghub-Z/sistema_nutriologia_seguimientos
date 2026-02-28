@@ -146,8 +146,7 @@ function generarContextoSistema(pacienteContexto?: PacienteContexto): string {
   contexto += `Fecha actual: ${fechaActual}\n`
   contexto += `Hora actual: ${horaActual}\n`
   contexto += `Estado del consultorio: ${estadoConsultorio}\n`
-  contexto += `Saludo sugerido: "${saludoSugerido}" (adapta según la hora del día)\n\n`
-  contexto += `IMPORTANTE: Usa el saludo apropiado según la hora. Si el consultorio está cerrado, menciona cuándo abre.\n`
+  contexto += `Saludo sugerido: "${saludoSugerido}"\n`
 
   // Agregar información de la base de conocimiento
   contexto += `\n## INFORMACIÓN DEL CONSULTORIO:\n`
@@ -159,7 +158,7 @@ function generarContextoSistema(pacienteContexto?: PacienteContexto): string {
   contexto += `Precio consulta de seguimiento: $${KNOWLEDGE_BASE.servicios.consulta_nutricional.precio_seguimiento} ${KNOWLEDGE_BASE.servicios.consulta_nutricional.moneda}\n`
   contexto += `Formas de pago: ${KNOWLEDGE_BASE.formas_pago.join(', ')}\n`
   contexto += `Modalidades: Presencial y En línea\n`
-  contexto += `Link para agendar: ${KNOWLEDGE_BASE.urls.agendar}\n`
+  contexto += `Link para agendar (SOLO dar si lo piden o quieren agendar): ${KNOWLEDGE_BASE.urls.agendar}\n`
 
   // Agregar contexto del paciente si existe
   if (pacienteContexto) {
@@ -191,7 +190,7 @@ function generarContextoSistema(pacienteContexto?: PacienteContexto): string {
         contexto += `- IMPORTANTE: Esta cita no tiene URL de gestión disponible. NO inventes ninguna URL. Si el paciente pregunta por cancelar o reagendar, indícale que contacte al consultorio directamente al 951 130 1554.\n`
       }
     } else {
-      contexto += `\nNo tiene citas próximas agendadas. Si pregunta por cancelar o reagendar, dile que no tiene cita activa y ofrécele agendar una nueva en: ${KNOWLEDGE_BASE.urls.agendar}\n`
+      contexto += `\nNo tiene citas próximas agendadas. Si pregunta por cancelar o reagendar, dile que no tiene cita activa.\n`
     }
 
     if (pacienteContexto.ultima_consulta_fecha) {
@@ -359,18 +358,16 @@ export async function obtenerRespuestaIA(
     // Construir contexto del sistema con hints proactivos según intención
     let contextoSistema = generarContextoSistema(pacienteContexto)
 
-    // Agregar instrucciones proactivas según intención detectada
+    // Agregar hints breves según intención detectada
     contextoSistema += `\n\n## INTENCIÓN DETECTADA: ${intencion.toUpperCase()}\n`
 
     if (intencion === 'gestionar_cita') {
-      contextoSistema += `El usuario quiere cancelar, reagendar o confirmar su cita.\n`
       if (pacienteContexto?.tiene_cita_proxima && pacienteContexto?.codigo_cita) {
         const urlGestion = `${KNOWLEDGE_BASE.urls.sitio_web}/cita/${pacienteContexto.codigo_cita}`
-        contextoSistema += `TIENE CITA AGENDADA. Proporciona INMEDIATAMENTE esta URL sin inventar nada:\n`
-        contextoSistema += `URL: ${urlGestion}\n`
-        contextoSistema += `NO uses ninguna otra URL. NO uses /gestion. NO uses /ABC123. La URL es: ${urlGestion}\n`
+        contextoSistema += `Tiene cita. Dale SOLO esta URL para gestionar: ${urlGestion}\n`
+        contextoSistema += `NO inventes URLs. Cópiala exacta.\n`
       } else {
-        contextoSistema += `NO tiene cita agendada actualmente. Indícale que no hay cita activa y ofrece agendar en: ${KNOWLEDGE_BASE.urls.agendar}\n`
+        contextoSistema += `No tiene cita activa. Dile que no tiene cita y que puede agendar una nueva.\n`
       }
     } else if (intencion === 'agendar') {
       if (pacienteContexto?.tiene_cita_proxima) {
@@ -379,37 +376,23 @@ export async function obtenerRespuestaIA(
         const urlGestion = pacienteContexto.codigo_cita
           ? `${KNOWLEDGE_BASE.urls.sitio_web}/cita/${pacienteContexto.codigo_cita}`
           : null
-        contextoSistema += `El usuario pregunta por agendar pero YA TIENE UNA CITA ACTIVA.\n`
-        contextoSistema += `RECUÉRDALE que ya tiene cita agendada para el ${fechaCita} a las ${horaCita}.\n`
-        contextoSistema += `NO le ofrezcas agendar otra cita. Solo se permite una cita activa por paciente.\n`
+        contextoSistema += `YA tiene cita para el ${fechaCita} a las ${horaCita}. Recuérdale, no ofrezcas otra.\n`
         if (urlGestion) {
-          contextoSistema += `Si quiere cambiar la fecha, puede reagendarla desde: ${urlGestion}\n`
+          contextoSistema += `Si quiere cambiar fecha: ${urlGestion}\n`
         }
       } else {
-        contextoSistema += `El usuario muestra interés en agendar una cita. SÉ PROACTIVO:\n`
-        contextoSistema += `- Ofrécele DIRECTAMENTE el link de agenda: ${KNOWLEDGE_BASE.urls.agendar}\n`
-        contextoSistema += `- Menciona que puede ver disponibilidad en tiempo real\n`
+        contextoSistema += `Quiere agendar. Dale el link: ${KNOWLEDGE_BASE.urls.agendar}\n`
       }
     } else if (intencion === 'precios') {
-      contextoSistema += `El usuario pregunta por precios. SÉ PROACTIVO:\n`
-      contextoSistema += `- Después de dar los precios ($${KNOWLEDGE_BASE.servicios.consulta_nutricional.precio} primera consulta / $${KNOWLEDGE_BASE.servicios.consulta_nutricional.precio_seguimiento} seguimiento), menciona qué incluye\n`
-      contextoSistema += `- Ofrece el link de agenda si parece interesado: ${KNOWLEDGE_BASE.urls.agendar}\n`
-      contextoSistema += `- Resalta el valor de la consulta (plan personalizado, seguimiento)\n`
+      contextoSistema += `Da los precios de forma breve. NO incluyas URL a menos que pregunte cómo agendar.\n`
     } else if (intencion === 'horarios') {
-      contextoSistema += `El usuario pregunta por horarios. SÉ PROACTIVO:\n`
-      contextoSistema += `- Después de dar los horarios, menciona que puede ver disponibilidad exacta en: ${KNOWLEDGE_BASE.urls.agendar}\n`
-      contextoSistema += `- Si está fuera de horario, menciona cuándo abre el consultorio\n`
+      contextoSistema += `Da los horarios de forma breve. NO incluyas URL a menos que pregunte cómo agendar.\n`
     } else if (intencion === 'derivar') {
-      contextoSistema += `El usuario hace una pregunta nutricional/médica. SÉ PROACTIVO:\n`
-      contextoSistema += `- NO intentes responder temas nutricionales específicos\n`
-      contextoSistema += `- Deriva al nutriólogo Paul (951 130 1554)\n`
-      contextoSistema += `- Explica que necesita evaluación profesional personalizada\n`
+      contextoSistema += `Tema nutricional/médico. Deriva brevemente a *Paul Cortez* al *951 130 1554*.\n`
     }
 
     if (nivel_urgencia === 'alta') {
-      contextoSistema += `\n⚠️ URGENCIA DETECTADA: El usuario usa palabras de urgencia. Responde con prioridad y ofrece opciones rápidas.\n`
-      contextoSistema += `- Si pregunta por citas: menciona disponibilidad inmediata o más cercana\n`
-      contextoSistema += `- Si es tema nutricional urgente: da el teléfono directo del nutriólogo: 951 130 1554\n`
+      contextoSistema += `\nUrgencia detectada: responde con prioridad. Si es tema nutricional, da el teléfono: 951 130 1554\n`
     }
 
     // Construir mensajes
@@ -577,8 +560,8 @@ function calcularConfianza(
     confidence -= 0.3
   }
 
-  // Aumentar si la respuesta es estructurada (tiene listas, números, emojis)
-  if (respuesta.includes('✅') || respuesta.includes('•') || respuesta.includes('1.')) {
+  // Aumentar si la respuesta tiene longitud razonable (no demasiado larga ni corta)
+  if (respuesta.length >= 50 && respuesta.length <= 500) {
     confidence += 0.1
   }
 
