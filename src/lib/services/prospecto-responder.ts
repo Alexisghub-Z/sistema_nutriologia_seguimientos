@@ -73,13 +73,7 @@ export async function procesarMensajeProspecto(
 
     if (prospecto.estado === 'REGISTRADO') {
       return {
-        respuesta: `Hola! 👋
-
-Veo que ya te registraste como paciente en nuestro sistema.
-
-Usa este mismo número de WhatsApp para comunicarte y recibirás atención completa como paciente registrado.
-
-¿En qué puedo ayudarte?`,
+        respuesta: `Hola! 👋 Veo que ya estás registrado como paciente. Usa este mismo número y te atenderemos. ¿En qué te puedo ayudar?`,
         debe_responder_automaticamente: true,
         razon: 'Prospecto ya registrado',
         metadata: {
@@ -229,15 +223,7 @@ Usa este mismo número de WhatsApp para comunicarte y recibirás atención compl
     console.error('❌ Error procesando mensaje de prospecto:', error)
 
     return {
-      respuesta: `Hola! 👋
-
-Tengo problemas técnicos en este momento.
-
-Si necesitas información sobre el consultorio, puedes:
-📧 Email: paul_nutricion@hotmail.com
-🌐 Web: ${KNOWLEDGE_BASE.urls.sitio_web}
-
-Disculpa las molestias.`,
+      respuesta: `Disculpa, tengo problemas técnicos en este momento. Puedes contactarnos al *951 130 1554* o por email: paul_nutricion@hotmail.com`,
       debe_responder_automaticamente: true,
       razon: `Error en procesamiento: ${error instanceof Error ? error.message : 'Error desconocido'}`,
       metadata: {
@@ -271,17 +257,7 @@ async function validarLimitesProspecto(
   if (prospecto.total_mensajes >= LIMITES_PROSPECTO.MAX_MENSAJES_TOTAL) {
     return {
       puede_continuar: false,
-      mensaje_limite: `Has alcanzado el límite de mensajes disponibles.
-
-Para continuar recibiendo atención personalizada, te invitamos a registrarte como paciente:
-
-📋 Registrarse: ${KNOWLEDGE_BASE.urls.agendar}
-
-O contáctanos directamente:
-📧 paul_nutricion@hotmail.com
-📧 paul.alavez@redosmo.com
-
-¡Gracias por tu interés!`,
+      mensaje_limite: `Has alcanzado el límite de mensajes. Para continuar, agenda tu cita aquí: ${KNOWLEDGE_BASE.urls.agendar} o contáctanos al *951 130 1554*`,
       razon: 'Límite total de mensajes alcanzado (70)',
     }
   }
@@ -300,14 +276,7 @@ O contáctanos directamente:
   if (mensajesHoy >= LIMITES_PROSPECTO.MAX_MENSAJES_POR_DIA) {
     return {
       puede_continuar: false,
-      mensaje_limite: `Has alcanzado el límite de mensajes por hoy (20 mensajes).
-
-Puedes volver a escribir mañana, o si necesitas información urgente:
-
-📋 Registrarte: ${KNOWLEDGE_BASE.urls.agendar}
-📧 Email: paul_nutricion@hotmail.com
-
-¡Gracias por tu paciencia!`,
+      mensaje_limite: `Has alcanzado el límite de mensajes por hoy. Puedes volver mañana o contactarnos al *951 130 1554*`,
       razon: 'Límite diario de mensajes alcanzado (20)',
     }
   }
@@ -373,71 +342,34 @@ function generarMensajeDerivacionProspecto(mensajeOriginal: string): string {
     }
   }
 
-  return `${saludo}! 👋
+  return `${saludo}! Para darte información precisa sobre ${temaDetectado}, necesitas una consulta con el nutriólogo *${KNOWLEDGE_BASE.nutriologo.nombre_publico}*.
 
-Para darte una respuesta precisa sobre ${temaDetectado}, necesitas una consulta nutricional profesional.
-
-El ${KNOWLEDGE_BASE.nutriologo.nombre_completo} evaluará tu caso específico y te dará un plan personalizado adaptado a tus objetivos y estilo de vida.
-
-📋 Agendar consulta:
-${KNOWLEDGE_BASE.urls.agendar}
-
-💰 Costos:
-🥗 Primera consulta: $${KNOWLEDGE_BASE.servicios.consulta_nutricional.precio} ${KNOWLEDGE_BASE.servicios.consulta_nutricional.moneda}
-🔄 Seguimiento: $${KNOWLEDGE_BASE.servicios.consulta_nutricional.precio_seguimiento} ${KNOWLEDGE_BASE.servicios.consulta_nutricional.moneda}
-✅ Incluye:
-- Evaluación completa
-- Plan personalizado
-- Seguimiento continuo
-
-¿Te gustaría conocer más sobre el consultorio (horarios, ubicación, modalidades)?`
+Puedes contactarlo directamente al *951 130 1554* o agendar tu cita aquí:
+${KNOWLEDGE_BASE.urls.agendar}`
 }
 
 /**
  * Genera mensaje cuando la IA no está disponible
  */
 function generarMensajeSinIA(): string {
-  return `Hola! 👋
+  return `Hola! 👋 Gracias por escribirnos.
 
-Gracias por contactarnos.
-
-Para brindarte la mejor atención, te invitamos a:
-
-📋 Agendar tu consulta:
-${KNOWLEDGE_BASE.urls.agendar}
-
-Información básica:
-💰 Primera consulta: $${KNOWLEDGE_BASE.servicios.consulta_nutricional.precio} ${KNOWLEDGE_BASE.servicios.consulta_nutricional.moneda}
-💰 Seguimiento: $${KNOWLEDGE_BASE.servicios.consulta_nutricional.precio_seguimiento} ${KNOWLEDGE_BASE.servicios.consulta_nutricional.moneda}
-📅 Horarios:
-   • Lunes a Viernes: 4 PM - 8 PM
-   • Sábados: 8 AM - 7 PM
-📍 Ubicación: Oaxaca de Juárez, Oaxaca
-💻 Modalidades: Presencial y En línea
-
-📧 Email: paul_nutricion@hotmail.com
-
-¿Tienes alguna pregunta específica sobre horarios, precios o servicios?`
+Puedes preguntarme sobre horarios, precios, ubicación o cómo agendar tu cita. ¿En qué te puedo ayudar?`
 }
 
 /**
  * Agrega recordatorio de registro al final de un mensaje
  */
 function agregarRecordatorioRegistro(mensajeOriginal: string): string {
+  // No duplicar URL si ya está en el mensaje
+  if (mensajeOriginal.includes(KNOWLEDGE_BASE.urls.agendar)) {
+    return mensajeOriginal
+  }
+
   return `${mensajeOriginal}
 
----
-
-💡 **¿Listo para agendar tu consulta?**
-
-Regístrate aquí en 2 minutos y elige tu horario:
-📋 ${KNOWLEDGE_BASE.urls.agendar}
-
-Una vez registrado podrás:
-✅ Agendar y reagendar citas
-✅ Recibir recordatorios automáticos
-✅ Acceder a tu historial
-✅ Confirmar/cancelar por WhatsApp`
+Si te interesa agendar tu cita, puedes hacerlo aquí 📅
+${KNOWLEDGE_BASE.urls.agendar}`
 }
 
 /**

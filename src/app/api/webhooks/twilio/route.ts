@@ -122,11 +122,7 @@ export async function POST(request: NextRequest) {
         return new NextResponse(
           `<?xml version="1.0" encoding="UTF-8"?>
           <Response>
-            <Message>Por favor envía solo mensajes de texto. Para enviar archivos necesitas registrarte como paciente.
-
-📋 Registrarte aquí: ${process.env.NEXT_PUBLIC_APP_URL}/agendar
-
-¿Tienes alguna pregunta sobre el consultorio?</Message>
+            <Message>Por favor envía solo mensajes de texto. Si necesitas enviar archivos, agenda tu cita primero 😊</Message>
           </Response>`,
           {
             status: 200,
@@ -140,16 +136,7 @@ export async function POST(request: NextRequest) {
         return new NextResponse(
           `<?xml version="1.0" encoding="UTF-8"?>
           <Response>
-            <Message>Hola! 👋
-
-¿En qué puedo ayudarte?
-
-Pregunta sobre:
-📅 Horarios
-💰 Precios
-📍 Ubicación
-💳 Formas de pago
-📋 Cómo agendar</Message>
+            <Message>Hola! 👋 ¿En qué te puedo ayudar?</Message>
           </Response>`,
           {
             status: 200,
