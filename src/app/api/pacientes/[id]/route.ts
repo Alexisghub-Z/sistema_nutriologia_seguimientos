@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { unlink } from 'fs/promises'
+import path from 'path'
 import { getAuthUser } from '@/lib/auth-utils'
 import prisma from '@/lib/prisma'
 import { z } from 'zod'
 import { getCache, setCache, deleteCache, deleteCachePattern, CacheKeys } from '@/lib/redis'
 import { normalizarTelefonoMexico } from '@/lib/utils/phone'
+import { cancelarJobsCita, cancelarJobsSeguimiento } from '@/lib/queue/messages'
+import { unsyncCitaFromGoogleCalendar } from '@/lib/services/google-calendar'
 
 // Schema de validación para actualizar paciente
 const pacienteUpdateSchema = z.object({
@@ -201,7 +205,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
   }
 }
 
-// DELETE /api/pacientes/[id] - Eliminar paciente
+// DELETE /api/pacientes/[id] - Eliminar paciente (borrado completo con todas sus referencias)
 export async function DELETE(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser()
@@ -212,14 +216,19 @@ export async function DELETE(_request: NextRequest, context: { params: Promise<{
     // Await params (Next.js 15)
     const { id } = await context.params
 
-    // Verificar que el paciente existe
+    // Obtener paciente con todas sus citas y consultas (incluyendo archivos adjuntos)
     const paciente = await prisma.paciente.findUnique({
       where: { id },
       include: {
-        _count: {
+        citas: {
+          select: { id: true, google_event_id: true },
+        },
+        consultas: {
           select: {
-            citas: true,
-            consultas: true,
+            id: true,
+            archivos: {
+              select: { id: true, ruta_archivo: true },
+            },
           },
         },
       },
@@ -229,22 +238,42 @@ export async function DELETE(_request: NextRequest, context: { params: Promise<{
       return NextResponse.json({ error: 'Paciente no encontrado' }, { status: 404 })
     }
 
-    // Verificar si tiene citas o consultas
-    if (paciente._count.citas > 0 || paciente._count.consultas > 0) {
-      return NextResponse.json(
-        {
-          error: 'No se puede eliminar un paciente con citas o consultas registradas',
-        },
-        { status: 400 }
-      )
+    // 1. Cancelar jobs de Redis y desincronizar Google Calendar por cada cita
+    for (const cita of paciente.citas) {
+      await cancelarJobsCita(cita.id)
+
+      if (cita.google_event_id) {
+        try {
+          await unsyncCitaFromGoogleCalendar(cita.id)
+        } catch (error) {
+          console.error(`Error al desincronizar cita ${cita.id} de Google Calendar:`, error)
+          // No interrumpe el proceso
+        }
+      }
     }
 
-    // Eliminar paciente
+    // 2. Cancelar jobs de seguimiento y eliminar archivos físicos por cada consulta
+    for (const consulta of paciente.consultas) {
+      await cancelarJobsSeguimiento(consulta.id)
+
+      for (const archivo of consulta.archivos) {
+        try {
+          const filePath = path.join(process.cwd(), archivo.ruta_archivo)
+          await unlink(filePath)
+          console.log(`🗑️  Archivo eliminado: ${filePath}`)
+        } catch (error) {
+          console.error(`Error al eliminar archivo ${archivo.ruta_archivo}:`, error)
+          // No interrumpe el proceso
+        }
+      }
+    }
+
+    // 3. Eliminar paciente (cascade elimina Cita, Consulta, ArchivoAdjunto, MensajeWhatsApp, ConfiguracionMensajePaciente)
     await prisma.paciente.delete({
       where: { id },
     })
 
-    // Invalidar caché del paciente y de la lista
+    // 4. Invalidar caché del paciente y de la lista
     await deleteCache(CacheKeys.patientDetail(id))
     await deleteCachePattern('patients:list:*')
     console.log('🗑️  Cache invalidated: patient deleted', id)
