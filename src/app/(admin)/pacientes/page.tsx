@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -87,23 +87,33 @@ export default function PacientesPage() {
     }
   }
 
-  // Effect para cargar pacientes
+  // Un solo effect: debounce en search, inmediato en el resto
+  const isFirstRender = useRef(true)
+  const prevSearch = useRef(search)
+
   useEffect(() => {
+    const searchCambiado = search !== prevSearch.current
+    prevSearch.current = search
+
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      fetchPacientes()
+      return
+    }
+
+    if (searchCambiado) {
+      const timer = setTimeout(() => {
+        if (pagination.page !== 1) {
+          setPagination((prev) => ({ ...prev, page: 1 }))
+        } else {
+          fetchPacientes()
+        }
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+
     fetchPacientes()
-  }, [pagination.page, pagination.limit, sortBy, sortOrder, activityFilter])
-
-  // Búsqueda con debounce
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (pagination.page !== 1) {
-        setPagination((prev) => ({ ...prev, page: 1 }))
-      } else {
-        fetchPacientes()
-      }
-    }, 500)
-
-    return () => clearTimeout(timer)
-  }, [search])
+  }, [search, pagination.page, pagination.limit, sortBy, sortOrder, activityFilter])
 
   // Manejar ordenamiento
   const handleSort = (column: string) => {
