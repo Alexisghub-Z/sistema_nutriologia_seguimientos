@@ -30,9 +30,11 @@ interface ConsultaDetalle {
   pliegue_abdominal: number | null
   notas: string | null
   diagnostico: string | null
+  antecedentes_familiares: string | null
+  estudios_laboratorio: string | null
+  observaciones: string | null
   objetivo: string | null
   plan: string | null
-  observaciones: string | null
   proxima_cita: string | null
   monto_consulta: any
   metodo_pago: string | null
@@ -179,9 +181,11 @@ export default function EditarConsultaModal({
   const [pliegue_abdominal, setPliegue_abdominal] = useState('')
   const [notas, setNotas] = useState('')
   const [diagnostico, setDiagnostico] = useState('')
+  const [antecedentes_familiares, setAntecedentesFamiliares] = useState('')
+  const [estudios_laboratorio, setEstudiosLaboratorio] = useState('')
+  const [observaciones, setObservaciones] = useState('')
   const [objetivo, setObjetivo] = useState('')
   const [plan, setPlan] = useState('')
-  const [observaciones, setObservaciones] = useState('')
   const [proximaCita, setProximaCita] = useState('')
   const [montoConsulta, setMontoConsulta] = useState('')
   const [metodoPago, setMetodoPago] = useState('')
@@ -214,9 +218,11 @@ export default function EditarConsultaModal({
     setPliegue_abdominal(toNumberInput(consulta.pliegue_abdominal))
     setNotas(consulta.notas ?? '')
     setDiagnostico(consulta.diagnostico ?? '')
+    setAntecedentesFamiliares(consulta.antecedentes_familiares ?? '')
+    setEstudiosLaboratorio(consulta.estudios_laboratorio ?? '')
+    setObservaciones(consulta.observaciones ?? '')
     setObjetivo(consulta.objetivo ?? '')
     setPlan(consulta.plan ?? '')
-    setObservaciones(consulta.observaciones ?? '')
     setProximaCita(toDateInputValue(consulta.proxima_cita))
     setMontoConsulta(toMontoInput(consulta.monto_consulta))
     setMetodoPago(consulta.metodo_pago ?? '')
@@ -342,9 +348,11 @@ export default function EditarConsultaModal({
       pliegue_abdominal: parseOptionalNumber(pliegue_abdominal),
       notas: notas || null,
       diagnostico: diagnostico || null,
+      antecedentes_familiares: antecedentes_familiares || null,
+      estudios_laboratorio: estudios_laboratorio || null,
+      observaciones: observaciones || null,
       objetivo: objetivo || null,
       plan: plan || null,
-      observaciones: observaciones || null,
       ...(esConsultaReciente ? { proxima_cita: proximaCita || null } : {}),
       monto_consulta: parseOptionalNumber(montoConsulta),
       metodo_pago: metodoPago || null,
@@ -564,11 +572,13 @@ export default function EditarConsultaModal({
             <h3 className={styles.sectionTitle}>Notas clínicas</h3>
             <div className={styles.grid2}>
               {[
-                { id: 'notas',         label: 'Notas',             val: notas,         set: setNotas,         placeholder: 'Observaciones generales de la consulta' },
-                { id: 'diagnostico',   label: 'Diagnóstico',       val: diagnostico,   set: setDiagnostico,   placeholder: 'Diagnóstico nutricional' },
-                { id: 'objetivo',      label: 'Objetivo',          val: objetivo,      set: setObjetivo,      placeholder: 'Objetivos del tratamiento' },
-                { id: 'plan',          label: 'Plan nutricional',  val: plan,          set: setPlan,          placeholder: 'Plan de alimentación' },
-                { id: 'observaciones', label: 'Observaciones',     val: observaciones, set: setObservaciones, placeholder: 'Observaciones adicionales' },
+                { id: 'diagnostico',           label: '1. Diagnóstico y tratamiento médico', val: diagnostico,            set: setDiagnostico,            placeholder: 'Diagnóstico del estado nutricional y tratamiento médico' },
+                { id: 'antecedentes_familiares', label: '2. Antecedentes Familiares',         val: antecedentes_familiares, set: setAntecedentesFamiliares, placeholder: 'Antecedentes familiares relevantes' },
+                { id: 'estudios_laboratorio',   label: '3. Estudios de laboratorio',          val: estudios_laboratorio,   set: setEstudiosLaboratorio,   placeholder: 'Resultados o descripción de estudios de laboratorio' },
+                { id: 'notas',                  label: '4. Hábitos alimenticios',             val: notas,                  set: setNotas,                  placeholder: 'Descripción de los hábitos alimenticios del paciente' },
+                { id: 'observaciones',          label: '5. Hábitos de Ejercicio',             val: observaciones,          set: setObservaciones,          placeholder: 'Descripción de los hábitos de ejercicio del paciente' },
+                { id: 'objetivo',               label: '6. Objetivos de tratamiento',         val: objetivo,               set: setObjetivo,               placeholder: 'Objetivos planteados para el paciente' },
+                { id: 'plan',                   label: '7. Plan nutricional',                 val: plan,                   set: setPlan,                   placeholder: 'Plan de alimentación asignado' },
               ].map(({ id, label, val, set, placeholder }) => (
                 <div key={id} className={styles.fieldFull}>
                   <label className={styles.label} htmlFor={id}>{label}</label>

@@ -38,9 +38,11 @@ export default function AgregarConsultaHistoricaPage() {
     pliegue_abdominal: '',
     notas: '',
     diagnostico: '',
+    antecedentes_familiares: '',
+    estudios_laboratorio: '',
+    observaciones: '',
     objetivo: '',
     plan: '',
-    observaciones: '',
     proxima_cita: '',
   })
 
@@ -67,9 +69,11 @@ export default function AgregarConsultaHistoricaPage() {
         motivo: formData.motivo || undefined,
         notas: formData.notas || undefined,
         diagnostico: formData.diagnostico || undefined,
+        antecedentes_familiares: formData.antecedentes_familiares || undefined,
+        estudios_laboratorio: formData.estudios_laboratorio || undefined,
+        observaciones: formData.observaciones || undefined,
         objetivo: formData.objetivo || undefined,
         plan: formData.plan || undefined,
-        observaciones: formData.observaciones || undefined,
         proxima_cita: formData.proxima_cita
           ? new Date(formData.proxima_cita).toISOString()
           : undefined,
@@ -594,24 +598,8 @@ export default function AgregarConsultaHistoricaPage() {
           <h2 className={styles.sectionTitle}>Notas Clínicas</h2>
 
           <div className={styles.formGroup}>
-            <label htmlFor="notas" className={styles.label}>
-              Notas de la Consulta
-            </label>
-            <textarea
-              id="notas"
-              name="notas"
-              value={formData.notas}
-              onChange={handleChange}
-              className={styles.textarea}
-              rows={4}
-              placeholder="Observaciones generales de la consulta..."
-              disabled={loading}
-            />
-          </div>
-
-          <div className={styles.formGroup}>
             <label htmlFor="diagnostico" className={styles.label}>
-              Diagnóstico Nutricional
+              1. Diagnóstico y tratamiento médico
             </label>
             <textarea
               id="diagnostico"
@@ -620,14 +608,78 @@ export default function AgregarConsultaHistoricaPage() {
               onChange={handleChange}
               className={styles.textarea}
               rows={3}
-              placeholder="Diagnóstico nutricional del paciente..."
+              placeholder="Diagnóstico del estado nutricional y tratamiento médico..."
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="antecedentes_familiares" className={styles.label}>
+              2. Antecedentes Familiares
+            </label>
+            <textarea
+              id="antecedentes_familiares"
+              name="antecedentes_familiares"
+              value={formData.antecedentes_familiares}
+              onChange={handleChange}
+              className={styles.textarea}
+              rows={3}
+              placeholder="Antecedentes familiares relevantes..."
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="estudios_laboratorio" className={styles.label}>
+              3. Estudios de laboratorio
+            </label>
+            <textarea
+              id="estudios_laboratorio"
+              name="estudios_laboratorio"
+              value={formData.estudios_laboratorio}
+              onChange={handleChange}
+              className={styles.textarea}
+              rows={3}
+              placeholder="Resultados o descripción de estudios de laboratorio..."
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="notas" className={styles.label}>
+              4. Hábitos alimenticios
+            </label>
+            <textarea
+              id="notas"
+              name="notas"
+              value={formData.notas}
+              onChange={handleChange}
+              className={styles.textarea}
+              rows={3}
+              placeholder="Descripción de los hábitos alimenticios del paciente..."
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="observaciones" className={styles.label}>
+              5. Hábitos de Ejercicio
+            </label>
+            <textarea
+              id="observaciones"
+              name="observaciones"
+              value={formData.observaciones}
+              onChange={handleChange}
+              className={styles.textarea}
+              rows={3}
+              placeholder="Descripción de los hábitos de ejercicio del paciente..."
               disabled={loading}
             />
           </div>
 
           <div className={styles.formGroup}>
             <label htmlFor="objetivo" className={styles.label}>
-              Objetivo del Tratamiento
+              6. Objetivos de tratamiento
             </label>
             <textarea
               id="objetivo"
@@ -643,7 +695,7 @@ export default function AgregarConsultaHistoricaPage() {
 
           <div className={styles.formGroup}>
             <label htmlFor="plan" className={styles.label}>
-              Plan Nutricional
+              7. Plan nutricional
             </label>
             <textarea
               id="plan"
@@ -653,22 +705,6 @@ export default function AgregarConsultaHistoricaPage() {
               className={styles.textarea}
               rows={4}
               placeholder="Plan nutricional asignado al paciente..."
-              disabled={loading}
-            />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label htmlFor="observaciones" className={styles.label}>
-              Observaciones Adicionales
-            </label>
-            <textarea
-              id="observaciones"
-              name="observaciones"
-              value={formData.observaciones}
-              onChange={handleChange}
-              className={styles.textarea}
-              rows={3}
-              placeholder="Cualquier otra observación relevante..."
               disabled={loading}
             />
           </div>

@@ -41,9 +41,11 @@ const consultaUpdateSchema = z.object({
   // Notas clínicas
   notas: z.string().nullable().optional(),
   diagnostico: z.string().nullable().optional(),
+  antecedentes_familiares: z.string().nullable().optional(),
+  estudios_laboratorio: z.string().nullable().optional(),
+  observaciones: z.string().nullable().optional(),
   objetivo: z.string().nullable().optional(),
   plan: z.string().nullable().optional(),
-  observaciones: z.string().nullable().optional(),
 
   // Próxima cita
   proxima_cita: z.string().nullable().optional(),
@@ -130,9 +132,11 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     if (validatedData.pliegue_abdominal !== undefined) updateData.pliegue_abdominal = validatedData.pliegue_abdominal
     if (validatedData.notas !== undefined) updateData.notas = validatedData.notas
     if (validatedData.diagnostico !== undefined) updateData.diagnostico = validatedData.diagnostico
+    if (validatedData.antecedentes_familiares !== undefined) updateData.antecedentes_familiares = validatedData.antecedentes_familiares
+    if (validatedData.estudios_laboratorio !== undefined) updateData.estudios_laboratorio = validatedData.estudios_laboratorio
+    if (validatedData.observaciones !== undefined) updateData.observaciones = validatedData.observaciones
     if (validatedData.objetivo !== undefined) updateData.objetivo = validatedData.objetivo
     if (validatedData.plan !== undefined) updateData.plan = validatedData.plan
-    if (validatedData.observaciones !== undefined) updateData.observaciones = validatedData.observaciones
     if (validatedData.proxima_cita !== undefined) {
       // Parsear como mediodía UTC para evitar desplazamiento de día por zona horaria
       updateData.proxima_cita = validatedData.proxima_cita

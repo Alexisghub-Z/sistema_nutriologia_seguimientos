@@ -235,11 +235,13 @@ model Consulta {
   pliegue_abdominal     Float?   // mm
 
   // Notas del nutriólogo
-  notas         String?  @db.Text // Notas de la consulta
-  diagnostico   String?  @db.Text // Diagnóstico nutricional
-  objetivo      String?  @db.Text // Objetivo del tratamiento
-  plan          String?  @db.Text // Plan nutricional asignado
-  observaciones String?  @db.Text // Observaciones adicionales
+  notas                   String?  @db.Text // Hábitos alimenticios
+  diagnostico             String?  @db.Text // Diagnóstico y tratamiento médico
+  antecedentes_familiares String?  @db.Text // Antecedentes familiares
+  estudios_laboratorio    String?  @db.Text // Estudios de laboratorio
+  observaciones           String?  @db.Text // Hábitos de ejercicio
+  objetivo                String?  @db.Text // Objetivos de tratamiento
+  plan                    String?  @db.Text // Plan nutricional
 
   // Seguimiento
   proxima_cita           DateTime?         // Próxima cita sugerida
