@@ -159,7 +159,6 @@ export default function EditarConsultaModal({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   // Form state
-  const [fecha, setFecha] = useState('')
   const [peso, setPeso] = useState('')
   const [talla, setTalla] = useState('')
   const [grasaCorporal, setGrasaCorporal] = useState('')
@@ -196,7 +195,6 @@ export default function EditarConsultaModal({
   useEffect(() => {
     if (!consulta) return
 
-    setFecha(toDateInputValue(consulta.fecha))
     setPeso(toNumberInput(consulta.peso))
     setTalla(toNumberInput(consulta.talla))
     setGrasaCorporal(toNumberInput(consulta.grasa_corporal))
@@ -323,10 +321,7 @@ export default function EditarConsultaModal({
       return isNaN(num) ? null : num
     }
 
-    const fechaOriginal = toDateInputValue(consulta.fecha)
-
     const body: Record<string, unknown> = {
-      ...(fecha !== fechaOriginal ? { fecha } : {}),
       peso: parseOptionalNumber(peso),
       talla: parseOptionalNumber(talla),
       grasa_corporal: parseOptionalNumber(grasaCorporal),
@@ -396,23 +391,6 @@ export default function EditarConsultaModal({
         </div>
 
         <form className={styles.form} onSubmit={handleSubmit}>
-          {/* Fecha */}
-          <div className={styles.section}>
-            <h3 className={styles.sectionTitle}>Fecha de la consulta</h3>
-            <div className={styles.grid2}>
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="fecha">Fecha</label>
-                <input
-                  id="fecha"
-                  type="date"
-                  className={styles.input}
-                  value={fecha}
-                  onChange={(e) => setFecha(e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-
           {/* Mediciones básicas */}
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>Mediciones básicas</h3>

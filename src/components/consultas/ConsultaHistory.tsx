@@ -148,10 +148,12 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
   }
 
   const formatearFecha = (fecha: string) => {
+    // Forzar UTC para evitar que T00:00:00.000Z se desplace al día anterior en zonas UTC-X
     return new Date(fecha).toLocaleDateString('es-MX', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
+      timeZone: 'UTC',
     })
   }
 
