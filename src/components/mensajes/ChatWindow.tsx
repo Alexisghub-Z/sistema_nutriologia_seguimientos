@@ -74,16 +74,16 @@ export default function ChatWindow({ pacienteId, tipo, onMessageSent, onBack }: 
           setPaciente(primerMensaje.paciente)
         }
 
-        // Marcar mensajes entrantes como leídos
-        const mensajesNoLeidos = data.mensajes.filter(
-          (m: Mensaje) => m.direccion === 'ENTRANTE' && !m.leido
-        )
+        // Marcar mensajes entrantes como leídos (batch)
+        const idsNoLeidos = data.mensajes
+          .filter((m: Mensaje) => m.direccion === 'ENTRANTE' && !m.leido)
+          .map((m: Mensaje) => m.id)
 
-        for (const mensaje of mensajesNoLeidos) {
-          await fetch(`/api/mensajes/${mensaje.id}`, {
+        if (idsNoLeidos.length > 0) {
+          await fetch('/api/mensajes/marcar-leidos', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ leido: true }),
+            body: JSON.stringify({ ids: idsNoLeidos, tipo }),
           })
         }
       } else {

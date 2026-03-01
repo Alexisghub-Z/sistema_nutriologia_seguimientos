@@ -2,10 +2,14 @@ import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 
 // Crear instancia de Redis para rate limiting
-// Si no hay Redis configurado, usar Map en memoria (solo para desarrollo)
-const redis = process.env.UPSTASH_REDIS_REST_URL
+// Si no hay Redis configurado (o la URL es un placeholder), usar Map en memoria
+const isValidUpstashUrl =
+  process.env.UPSTASH_REDIS_REST_URL &&
+  !process.env.UPSTASH_REDIS_REST_URL.includes('your-redis-instance')
+
+const redis = isValidUpstashUrl
   ? new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
+      url: process.env.UPSTASH_REDIS_REST_URL!,
       token: process.env.UPSTASH_REDIS_REST_TOKEN!,
     })
   : undefined
