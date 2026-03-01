@@ -44,9 +44,11 @@ interface Consulta {
 
   notas: string | null
   diagnostico: string | null
+  antecedentes_familiares: string | null
+  estudios_laboratorio: string | null
+  observaciones: string | null
   objetivo: string | null
   plan: string | null
-  observaciones: string | null
   proxima_cita: string | null
 
   // Información financiera
@@ -546,43 +548,59 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
                     </div>
                   )}
 
-                  {/* Notas */}
-                  {consulta.notas && (
-                    <div className={styles.section}>
-                      <h5 className={styles.sectionTitle}>Notas</h5>
-                      <p className={styles.texto}>{consulta.notas}</p>
-                    </div>
-                  )}
-
-                  {/* Diagnóstico */}
+                  {/* Diagnóstico y tratamiento médico */}
                   {consulta.diagnostico && (
                     <div className={styles.section}>
-                      <h5 className={styles.sectionTitle}>Diagnóstico</h5>
+                      <h5 className={styles.sectionTitle}>Diagnóstico y tratamiento médico</h5>
                       <p className={styles.texto}>{consulta.diagnostico}</p>
                     </div>
                   )}
 
-                  {/* Objetivo */}
+                  {/* Antecedentes Familiares */}
+                  {consulta.antecedentes_familiares && (
+                    <div className={styles.section}>
+                      <h5 className={styles.sectionTitle}>Antecedentes Familiares</h5>
+                      <p className={styles.texto}>{consulta.antecedentes_familiares}</p>
+                    </div>
+                  )}
+
+                  {/* Estudios de laboratorio */}
+                  {consulta.estudios_laboratorio && (
+                    <div className={styles.section}>
+                      <h5 className={styles.sectionTitle}>Estudios de laboratorio</h5>
+                      <p className={styles.texto}>{consulta.estudios_laboratorio}</p>
+                    </div>
+                  )}
+
+                  {/* Hábitos alimenticios */}
+                  {consulta.notas && (
+                    <div className={styles.section}>
+                      <h5 className={styles.sectionTitle}>Hábitos alimenticios</h5>
+                      <p className={styles.texto}>{consulta.notas}</p>
+                    </div>
+                  )}
+
+                  {/* Hábitos de Ejercicio */}
+                  {consulta.observaciones && (
+                    <div className={styles.section}>
+                      <h5 className={styles.sectionTitle}>Hábitos de Ejercicio</h5>
+                      <p className={styles.texto}>{consulta.observaciones}</p>
+                    </div>
+                  )}
+
+                  {/* Objetivos de tratamiento */}
                   {consulta.objetivo && (
                     <div className={styles.section}>
-                      <h5 className={styles.sectionTitle}>Objetivo</h5>
+                      <h5 className={styles.sectionTitle}>Objetivos de tratamiento</h5>
                       <p className={styles.texto}>{consulta.objetivo}</p>
                     </div>
                   )}
 
-                  {/* Plan */}
+                  {/* Plan nutricional */}
                   {consulta.plan && (
                     <div className={styles.section}>
-                      <h5 className={styles.sectionTitle}>Plan Nutricional</h5>
+                      <h5 className={styles.sectionTitle}>Plan nutricional</h5>
                       <p className={styles.texto}>{consulta.plan}</p>
-                    </div>
-                  )}
-
-                  {/* Observaciones */}
-                  {consulta.observaciones && (
-                    <div className={styles.section}>
-                      <h5 className={styles.sectionTitle}>Observaciones</h5>
-                      <p className={styles.texto}>{consulta.observaciones}</p>
                     </div>
                   )}
 

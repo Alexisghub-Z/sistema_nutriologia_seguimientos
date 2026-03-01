@@ -44,9 +44,11 @@ const consultaSchema = z.object({
   // Notas
   notas: z.string().optional(),
   diagnostico: z.string().optional(),
+  antecedentes_familiares: z.string().optional(),
+  estudios_laboratorio: z.string().optional(),
+  observaciones: z.string().optional(),
   objetivo: z.string().optional(),
   plan: z.string().optional(),
-  observaciones: z.string().optional(),
   proxima_cita: z.string().optional(),
 
   // Información financiera
@@ -262,9 +264,11 @@ export async function POST(request: NextRequest) {
         // Notas
         notas: validatedData.notas,
         diagnostico: validatedData.diagnostico,
+        antecedentes_familiares: validatedData.antecedentes_familiares,
+        estudios_laboratorio: validatedData.estudios_laboratorio,
+        observaciones: validatedData.observaciones,
         objetivo: validatedData.objetivo,
         plan: validatedData.plan,
-        observaciones: validatedData.observaciones,
         // Parsear como mediodía UTC para evitar desplazamiento de día por zona horaria
         proxima_cita: validatedData.proxima_cita
           ? new Date(`${validatedData.proxima_cita}T12:00:00.000Z`)

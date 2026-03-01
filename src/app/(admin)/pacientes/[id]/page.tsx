@@ -775,7 +775,7 @@ export default function DetallePacientePage() {
                         </div>
                       )}
 
-                      {/* Diagnóstico y Objetivo */}
+                      {/* Diagnóstico y Objetivos */}
                       {(consulta.diagnostico || consulta.objetivo) && (
                         <div className={styles.consultaInfo}>
                           {consulta.diagnostico && (
