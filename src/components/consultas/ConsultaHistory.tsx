@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
 import Alert from '@/components/ui/Alert'
 import FilePreviewModal from '@/components/ui/FilePreviewModal'
+import EditarConsultaModal from './EditarConsultaModal'
 import styles from './ConsultaHistory.module.css'
 
 interface Consulta {
@@ -95,6 +96,8 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
     name: string
     type: string
   } | null>(null)
+  const [consultaEditando, setConsultaEditando] = useState<Consulta | null>(null)
+  const [editandoEsReciente, setEditandoEsReciente] = useState(false)
 
   useEffect(() => {
     fetchConsultas()
@@ -705,8 +708,22 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
                     </div>
                   )}
 
-                  {/* Botón Gestionar Archivos */}
+                  {/* Botones de acción */}
                   <div className={styles.consultaActions}>
+                    <Button
+                      variant="outline"
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setConsultaEditando(consulta)
+                        setEditandoEsReciente(index === 0 && pagination.page === 1)
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                      </svg>
+                      Editar
+                    </Button>
                     <Button
                       variant="outline"
                       size="small"
@@ -782,6 +799,20 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
         </div>
       )}
       </div>
+
+      <EditarConsultaModal
+        consulta={consultaEditando}
+        esConsultaReciente={editandoEsReciente}
+        onClose={() => {
+          setConsultaEditando(null)
+          setEditandoEsReciente(false)
+        }}
+        onActualizar={() => {
+          fetchConsultas()
+          setConsultaEditando(null)
+          setEditandoEsReciente(false)
+        }}
+      />
     </>
   )
 }
