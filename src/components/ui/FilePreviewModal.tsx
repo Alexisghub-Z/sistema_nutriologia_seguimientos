@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import styles from './FilePreviewModal.module.css'
 
 interface FilePreviewModalProps {
@@ -18,22 +19,25 @@ export default function FilePreviewModal({
   fileName,
   fileType,
 }: FilePreviewModalProps) {
-  // Cerrar con tecla ESC
+  // Cerrar con ESC y bloquear scroll del documento mientras el modal está abierto
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
-      }
+      if (e.key === 'Escape') onClose()
     }
+    const blockScroll = (e: WheelEvent) => e.preventDefault()
 
     if (isOpen) {
       document.addEventListener('keydown', handleEsc)
+      document.addEventListener('wheel', blockScroll, { passive: false })
       document.body.style.overflow = 'hidden'
+      document.documentElement.style.overflow = 'hidden'
     }
 
     return () => {
       document.removeEventListener('keydown', handleEsc)
+      document.removeEventListener('wheel', blockScroll)
       document.body.style.overflow = 'unset'
+      document.documentElement.style.overflow = 'unset'
     }
   }, [isOpen, onClose])
 
@@ -42,7 +46,7 @@ export default function FilePreviewModal({
   const isImage = fileType.startsWith('image/')
   const isPDF = fileType === 'application/pdf' || fileType.includes('pdf')
 
-  return (
+  return createPortal(
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
@@ -116,6 +120,7 @@ export default function FilePreviewModal({
           </a>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

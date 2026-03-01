@@ -90,6 +90,7 @@
   overflow: auto;
   padding: var(--spacing-xl);
   background-color: var(--color-gray-50);
+  overscroll-behavior: contain;
 }
 
 /* Imagen */
@@ -112,6 +113,7 @@
 .pdfContainer {
   height: 70vh;
   min-height: 400px;
+  overscroll-behavior: contain;
 }
 
 .pdfViewer {

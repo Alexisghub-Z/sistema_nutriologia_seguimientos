@@ -265,7 +265,10 @@ export async function POST(request: NextRequest) {
         objetivo: validatedData.objetivo,
         plan: validatedData.plan,
         observaciones: validatedData.observaciones,
-        proxima_cita: validatedData.proxima_cita ? new Date(validatedData.proxima_cita) : null,
+        // Parsear como mediodía UTC para evitar desplazamiento de día por zona horaria
+        proxima_cita: validatedData.proxima_cita
+          ? new Date(`${validatedData.proxima_cita}T12:00:00.000Z`)
+          : null,
 
         // Información financiera
         monto_consulta: validatedData.monto_consulta,
