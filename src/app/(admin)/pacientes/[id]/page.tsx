@@ -175,6 +175,7 @@ export default function DetallePacientePage() {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
+      timeZone: 'UTC',
     })
   }
 
@@ -183,6 +184,7 @@ export default function DetallePacientePage() {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+      timeZone: 'UTC',
     })
   }
 
