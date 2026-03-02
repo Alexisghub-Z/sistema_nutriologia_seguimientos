@@ -63,6 +63,7 @@ function limpiarMarkdown(texto: string): string {
  */
 export interface PacienteContexto {
   nombre: string
+  email?: string
   tiene_cita_proxima: boolean
   fecha_proxima_cita?: string
   hora_proxima_cita?: string
@@ -164,6 +165,10 @@ function generarContextoSistema(pacienteContexto?: PacienteContexto): string {
   if (pacienteContexto) {
     contexto += `\n## INFORMACIÓN DEL PACIENTE:\n`
     contexto += `Nombre: ${pacienteContexto.nombre}\n`
+    if (pacienteContexto.email) {
+      contexto += `Correo registrado: ${pacienteContexto.email}\n`
+      contexto += `Si el paciente pregunta por su correo o dice que no lo recuerda, díselo directamente.\n`
+    }
     contexto += `Es paciente nuevo: ${pacienteContexto.es_paciente_nuevo ? 'Sí' : 'No'}\n`
 
     if (pacienteContexto.es_paciente_nuevo) {
@@ -407,6 +412,9 @@ export async function obtenerRespuestaIA(
         }
       } else {
         contextoSistema += `Quiere agendar. Dale el link: ${KNOWLEDGE_BASE.urls.agendar}\n`
+        if (pacienteContexto?.email) {
+          contextoSistema += `Recuérdale que al agendar use su correo registrado: ${pacienteContexto.email}\n`
+        }
       }
     } else if (intencion === 'precios') {
       contextoSistema += `Da los precios de forma breve. NO incluyas URL a menos que pregunte cómo agendar.\n`
