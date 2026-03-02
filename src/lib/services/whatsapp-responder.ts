@@ -241,6 +241,7 @@ async function obtenerContextoPaciente(pacienteId: string): Promise<PacienteCont
     where: { id: pacienteId },
     select: {
       nombre: true,
+      email: true,
       createdAt: true,
     },
   })
@@ -294,6 +295,7 @@ async function obtenerContextoPaciente(pacienteId: string): Promise<PacienteCont
 
   return {
     nombre: paciente.nombre,
+    email: paciente.email ?? undefined,
     tiene_cita_proxima: !!proximaCita,
     fecha_proxima_cita: proximaCita
       ? new Date(proximaCita.fecha_hora).toLocaleDateString('es-MX', {
