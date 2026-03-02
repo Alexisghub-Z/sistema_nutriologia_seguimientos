@@ -6,16 +6,50 @@ import Button from '@/components/ui/Button'
 import Alert from '@/components/ui/Alert'
 import styles from './ConsultaForm.module.css'
 
+interface PacienteResumen {
+  nombre: string
+  email: string
+  telefono: string
+  fecha_nacimiento: string
+  ultimaConsulta: { fecha: string; peso: number | null; imc: number | null } | null
+}
+
 interface ConsultaFormProps {
   pacienteId: string
   citaId: string
+  paciente?: PacienteResumen
   onSuccess?: () => void
   onCancel?: () => void
+}
+
+function calcularEdad(fechaNacimiento: string): number | null {
+  if (!fechaNacimiento) return null
+  const iso = fechaNacimiento.slice(0, 10) // tomar solo "YYYY-MM-DD"
+  const parts = iso.split('-').map(Number)
+  const y = parts[0], m = parts[1], d = parts[2]
+  if (!y || !m || !d) return null
+  const hoy = new Date()
+  const nac = new Date(y, m - 1, d)
+  let edad = hoy.getFullYear() - nac.getFullYear()
+  const cumpleEsteAno = new Date(hoy.getFullYear(), nac.getMonth(), nac.getDate())
+  if (hoy < cumpleEsteAno) edad--
+  return edad
+}
+
+function formatearFecha(fechaISO: string): string {
+  if (!fechaISO) return ''
+  return new Date(fechaISO).toLocaleDateString('es-MX', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
 }
 
 export default function ConsultaForm({
   pacienteId,
   citaId,
+  paciente,
   onSuccess,
   onCancel,
 }: ConsultaFormProps) {
@@ -355,6 +389,64 @@ export default function ConsultaForm({
         <Alert variant="error" className={styles.alert}>
           {error}
         </Alert>
+      )}
+
+      {/* Tarjeta de información del paciente */}
+      {paciente && (
+        <div className={styles.pacienteCard}>
+          <div className={styles.pacienteGrid}>
+            {paciente.fecha_nacimiento && (() => {
+              const edad = calcularEdad(paciente.fecha_nacimiento)
+              return (
+                <div className={styles.pacienteDato}>
+                  <span className={styles.pacienteLabel}>Edad</span>
+                  <span className={styles.pacienteValue}>
+                    {edad !== null ? `${edad} años` : '—'}
+                  </span>
+                </div>
+              )
+            })()}
+            {paciente.fecha_nacimiento && (
+              <div className={styles.pacienteDato}>
+                <span className={styles.pacienteLabel}>Fecha de nacimiento</span>
+                <span className={styles.pacienteValue}>{formatearFecha(paciente.fecha_nacimiento)}</span>
+              </div>
+            )}
+            {paciente.email && (
+              <div className={styles.pacienteDato}>
+                <span className={styles.pacienteLabel}>Correo</span>
+                <span className={styles.pacienteValue}>{paciente.email}</span>
+              </div>
+            )}
+            {paciente.telefono && (
+              <div className={styles.pacienteDato}>
+                <span className={styles.pacienteLabel}>Teléfono</span>
+                <span className={styles.pacienteValue}>
+                  {paciente.telefono.replace(/^\+?52\s?1?\s?/, '')}
+                </span>
+              </div>
+            )}
+          </div>
+          <div className={styles.pacienteDivider} />
+          <div className={styles.pacienteUltima}>
+            {paciente.ultimaConsulta ? (
+              <>
+                <span className={styles.pacienteLabel}>Última consulta</span>
+                <div className={styles.pacienteUltimaRow}>
+                  <span>{formatearFecha(paciente.ultimaConsulta.fecha)}</span>
+                  {paciente.ultimaConsulta.peso !== null && (
+                    <span><strong>Peso:</strong> {paciente.ultimaConsulta.peso} kg</span>
+                  )}
+                  {paciente.ultimaConsulta.imc !== null && (
+                    <span><strong>IMC:</strong> {paciente.ultimaConsulta.imc}</span>
+                  )}
+                </div>
+              </>
+            ) : (
+              <span className={styles.pacienteSinConsultas}>Sin consultas previas registradas</span>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Motivo */}
