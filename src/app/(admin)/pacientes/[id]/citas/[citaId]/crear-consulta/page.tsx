@@ -19,6 +19,14 @@ interface Cita {
   }
 }
 
+interface PacienteResumen {
+  nombre: string
+  email: string
+  telefono: string
+  fecha_nacimiento: string
+  ultimaConsulta: { fecha: string; peso: number | null; imc: number | null } | null
+}
+
 export default function CrearConsultaPage() {
   const params = useParams()
   const router = useRouter()
@@ -26,6 +34,7 @@ export default function CrearConsultaPage() {
   const citaId = params.citaId as string
 
   const [cita, setCita] = useState<Cita | null>(null)
+  const [paciente, setPaciente] = useState<PacienteResumen | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -38,13 +47,16 @@ export default function CrearConsultaPage() {
       setLoading(true)
       setError(null)
 
-      const response = await fetch(`/api/citas/${citaId}`)
+      const [citaRes, pacienteRes] = await Promise.all([
+        fetch(`/api/citas/${citaId}`),
+        fetch(`/api/pacientes/${pacienteId}`),
+      ])
 
-      if (!response.ok) {
+      if (!citaRes.ok) {
         throw new Error('Error al cargar cita')
       }
 
-      const data = await response.json()
+      const data = await citaRes.json()
 
       // Verificar si la cita está cancelada
       if (data.estado === 'CANCELADA') {
@@ -68,6 +80,20 @@ export default function CrearConsultaPage() {
       // (PENDIENTE se cambiará a COMPLETADA al guardar la consulta)
 
       setCita(data)
+
+      if (pacienteRes.ok) {
+        const pacienteData = await pacienteRes.json()
+        const ultimaConsulta = pacienteData.consultas?.[0] ?? null
+        setPaciente({
+          nombre: pacienteData.nombre,
+          email: pacienteData.email ?? '',
+          telefono: pacienteData.telefono ?? '',
+          fecha_nacimiento: pacienteData.fecha_nacimiento ?? '',
+          ultimaConsulta: ultimaConsulta
+            ? { fecha: ultimaConsulta.fecha, peso: ultimaConsulta.peso ?? null, imc: ultimaConsulta.imc ?? null }
+            : null,
+        })
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
     } finally {
@@ -167,6 +193,7 @@ export default function CrearConsultaPage() {
       <ConsultaForm
         pacienteId={pacienteId}
         citaId={citaId}
+        paciente={paciente ?? undefined}
         onSuccess={handleSuccess}
         onCancel={handleCancel}
       />

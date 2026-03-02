@@ -1,10 +1,59 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Button from '@/components/ui/Button'
 import Alert from '@/components/ui/Alert'
 import styles from './agregar-historica.module.css'
+
+interface ConsultaResumen {
+  id: string
+  fecha: string
+  peso: number | null
+  imc: number | null
+}
+
+interface PacienteInfo {
+  nombre: string
+  email: string
+  telefono: string
+  fecha_nacimiento: string
+  consultas: ConsultaResumen[]
+}
+
+function calcularEdad(fechaNacimiento: string): number | null {
+  if (!fechaNacimiento) return null
+  const iso = fechaNacimiento.slice(0, 10)
+  const parts = iso.split('-').map(Number)
+  const y = parts[0], m = parts[1], d = parts[2]
+  if (!y || !m || !d) return null
+  const hoy = new Date()
+  const nac = new Date(y, m - 1, d)
+  let edad = hoy.getFullYear() - nac.getFullYear()
+  const cumpleEsteAno = new Date(hoy.getFullYear(), nac.getMonth(), nac.getDate())
+  if (hoy < cumpleEsteAno) edad--
+  return edad
+}
+
+function formatearFecha(fechaISO: string): string {
+  if (!fechaISO) return ''
+  return new Date(fechaISO).toLocaleDateString('es-MX', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+}
+
+function consultaMasCercana(consultas: ConsultaResumen[], fecha: string): ConsultaResumen | null {
+  if (!consultas.length || !fecha) return null
+  const target = new Date(`${fecha}T12:00:00.000Z`).getTime()
+  return consultas.reduce((prev, curr) => {
+    const diffPrev = Math.abs(new Date(prev.fecha).getTime() - target)
+    const diffCurr = Math.abs(new Date(curr.fecha).getTime() - target)
+    return diffCurr < diffPrev ? curr : prev
+  })
+}
 
 export default function AgregarConsultaHistoricaPage() {
   const params = useParams()
@@ -13,6 +62,22 @@ export default function AgregarConsultaHistoricaPage() {
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pacienteInfo, setPacienteInfo] = useState<PacienteInfo | null>(null)
+
+  useEffect(() => {
+    fetch(`/api/pacientes/${pacienteId}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data) return
+        setPacienteInfo({
+          nombre: data.nombre,
+          email: data.email ?? '',
+          telefono: data.telefono ?? '',
+          fecha_nacimiento: data.fecha_nacimiento ?? '',
+          consultas: data.consultas ?? [],
+        })
+      })
+  }, [pacienteId])
 
   const [formData, setFormData] = useState({
     fecha: '',
@@ -271,6 +336,71 @@ export default function AgregarConsultaHistoricaPage() {
       </div>
 
       {error && <Alert variant="error">{error}</Alert>}
+
+      {/* Tarjeta de información del paciente */}
+      {pacienteInfo && (
+        <div className={styles.pacienteCard}>
+          <div className={styles.pacienteGrid}>
+            {pacienteInfo.fecha_nacimiento && (() => {
+              const edad = calcularEdad(pacienteInfo.fecha_nacimiento)
+              return (
+                <div className={styles.pacienteDato}>
+                  <span className={styles.pacienteLabel}>Edad</span>
+                  <span className={styles.pacienteValue}>
+                    {edad !== null ? `${edad} años` : '—'}
+                  </span>
+                </div>
+              )
+            })()}
+            {pacienteInfo.fecha_nacimiento && (
+              <div className={styles.pacienteDato}>
+                <span className={styles.pacienteLabel}>Fecha de nacimiento</span>
+                <span className={styles.pacienteValue}>{formatearFecha(pacienteInfo.fecha_nacimiento)}</span>
+              </div>
+            )}
+            {pacienteInfo.email && (
+              <div className={styles.pacienteDato}>
+                <span className={styles.pacienteLabel}>Correo</span>
+                <span className={styles.pacienteValue}>{pacienteInfo.email}</span>
+              </div>
+            )}
+            {pacienteInfo.telefono && (
+              <div className={styles.pacienteDato}>
+                <span className={styles.pacienteLabel}>Teléfono</span>
+                <span className={styles.pacienteValue}>
+                  {pacienteInfo.telefono.replace(/^\+?52\s?1?\s?/, '')}
+                </span>
+              </div>
+            )}
+          </div>
+          {formData.fecha && (() => {
+            const cercana = consultaMasCercana(pacienteInfo.consultas, formData.fecha)
+            return (
+              <>
+                <div className={styles.pacienteDivider} />
+                <div className={styles.pacienteUltima}>
+                  {cercana ? (
+                    <>
+                      <span className={styles.pacienteLabel}>Consulta más cercana a la fecha seleccionada</span>
+                      <div className={styles.pacienteUltimaRow}>
+                        <span>{formatearFecha(cercana.fecha)}</span>
+                        {cercana.peso !== null && (
+                          <span><strong>Peso:</strong> {cercana.peso} kg</span>
+                        )}
+                        {cercana.imc !== null && (
+                          <span><strong>IMC:</strong> {cercana.imc}</span>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <span className={styles.pacienteSinConsultas}>Sin consultas previas registradas</span>
+                  )}
+                </div>
+              </>
+            )
+          })()}
+        </div>
+      )}
 
       {/* Formulario */}
       <form onSubmit={handleSubmit} className={styles.form}>
