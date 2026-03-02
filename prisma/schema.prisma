@@ -215,7 +215,7 @@ model Consulta {
   grasa_corporal     Float?   // porcentaje
   porcentaje_agua    Float?   // porcentaje de agua
   masa_muscular_kg   Float?   // masa muscular en kg
-  grasa_visceral     Int?     // grasa visceral en número
+  grasa_visceral     Float?   // grasa visceral en número
 
   // Perímetros
   brazo_relajado     Float?   // cm

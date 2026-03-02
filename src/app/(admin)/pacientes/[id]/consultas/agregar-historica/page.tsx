@@ -43,30 +43,147 @@ export default function AgregarConsultaHistoricaPage() {
     observaciones: '',
     objetivo: '',
     plan: '',
-    proxima_cita: '',
   })
+
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
+  const validateField = (name: string, value: string): string => {
+    if (!value || value.trim() === '') return ''
+    const num = parseFloat(value)
+    switch (name) {
+      case 'peso':
+        if (isNaN(num)) return 'Debe ser un número'
+        if (num < 2.5) return 'Mínimo 2.5 kg'
+        if (num > 600) return 'Máximo 600 kg'
+        break
+      case 'talla':
+        if (isNaN(num)) return 'Debe ser un número'
+        if (num < 0.25) return 'Mínimo 0.25 m'
+        if (num > 5) return 'Máximo 5 m'
+        break
+      case 'grasa_corporal':
+      case 'porcentaje_agua':
+        if (isNaN(num)) return 'Debe ser un número'
+        if (num < 0) return 'Mínimo 0%'
+        if (num > 100) return 'Máximo 100%'
+        break
+      case 'masa_muscular_kg':
+        if (isNaN(num)) return 'Debe ser un número'
+        if (num < 0.5) return 'Mínimo 0.5 kg'
+        if (num > 400) return 'Máximo 400 kg'
+        break
+      case 'grasa_visceral':
+        if (isNaN(num)) return 'Debe ser un número'
+        if (num < 0) return 'Mínimo 0'
+        if (num > 60) return 'Máximo 60'
+        break
+      case 'brazo_relajado':
+        if (isNaN(num)) return 'Debe ser un número'
+        if (num < 5) return 'Mínimo 5 cm'
+        if (num > 160) return 'Máximo 160 cm'
+        break
+      case 'brazo_flexionado':
+        if (isNaN(num)) return 'Debe ser un número'
+        if (num < 5) return 'Mínimo 5 cm'
+        if (num > 180) return 'Máximo 180 cm'
+        break
+      case 'cintura':
+        if (isNaN(num)) return 'Debe ser un número'
+        if (num < 15) return 'Mínimo 15 cm'
+        if (num > 400) return 'Máximo 400 cm'
+        break
+      case 'cadera_maximo':
+        if (isNaN(num)) return 'Debe ser un número'
+        if (num < 30) return 'Mínimo 30 cm'
+        if (num > 400) return 'Máximo 400 cm'
+        break
+      case 'muslo_maximo':
+      case 'muslo_medio':
+        if (isNaN(num)) return 'Debe ser un número'
+        if (num < 10) return 'Mínimo 10 cm'
+        if (num > 240) return 'Máximo 240 cm'
+        break
+      case 'pantorrilla_maximo':
+        if (isNaN(num)) return 'Debe ser un número'
+        if (num < 10) return 'Mínimo 10 cm'
+        if (num > 160) return 'Máximo 160 cm'
+        break
+      case 'pliegue_tricipital':
+      case 'pliegue_subescapular':
+      case 'pliegue_bicipital':
+      case 'pliegue_cresta_iliaca':
+      case 'pliegue_supraespinal':
+      case 'pliegue_abdominal':
+        if (isNaN(num)) return 'Debe ser un número'
+        if (num < 0.5) return 'Mínimo 0.5 mm'
+        if (num > 120) return 'Máximo 120 mm'
+        break
+    }
+    return ''
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
+  const handleNumericChange = (name: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [name]: value }))
+    const err = validateField(name, value)
+    setFieldErrors((prev) => {
+      if (!err) {
+        const { [name]: _, ...rest } = prev
+        return rest
+      }
+      return { ...prev, [name]: err }
+    })
+  }
+
+  const inputClass = (name: string) =>
+    `${styles.input}${fieldErrors[name] ? ` ${styles.inputError}` : ''}`
+
+  // IMC calculado en tiempo real
+  const pesoNum = parseFloat(formData.peso)
+  const tallaNum = parseFloat(formData.talla)
+  const imcPreview =
+    formData.peso && formData.talla && !isNaN(pesoNum) && !isNaN(tallaNum) && tallaNum > 0
+      ? (pesoNum / (tallaNum * tallaNum)).toFixed(1)
+      : null
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (Object.keys(fieldErrors).length > 0) return
     setLoading(true)
     setError(null)
 
     try {
-      // Validar que tenga fecha
-      if (!formData.fecha) {
-        throw new Error('La fecha de la consulta es requerida')
-      }
+      if (!formData.fecha) throw new Error('La fecha de la consulta es requerida')
 
-      // Preparar datos
+      const pf = (v: string) => (v ? parseFloat(v) : undefined)
+
       const data: any = {
         paciente_id: pacienteId,
-        fecha: new Date(formData.fecha).toISOString(),
+        fecha: `${formData.fecha}T12:00:00.000Z`,
         motivo: formData.motivo || undefined,
+        peso: pf(formData.peso),
+        talla: pf(formData.talla),
+        grasa_corporal: pf(formData.grasa_corporal),
+        porcentaje_agua: pf(formData.porcentaje_agua),
+        masa_muscular_kg: pf(formData.masa_muscular_kg),
+        grasa_visceral: pf(formData.grasa_visceral),
+        brazo_relajado: pf(formData.brazo_relajado),
+        brazo_flexionado: pf(formData.brazo_flexionado),
+        cintura: pf(formData.cintura),
+        cadera_maximo: pf(formData.cadera_maximo),
+        muslo_maximo: pf(formData.muslo_maximo),
+        muslo_medio: pf(formData.muslo_medio),
+        pantorrilla_maximo: pf(formData.pantorrilla_maximo),
+        pliegue_tricipital: pf(formData.pliegue_tricipital),
+        pliegue_subescapular: pf(formData.pliegue_subescapular),
+        pliegue_bicipital: pf(formData.pliegue_bicipital),
+        pliegue_cresta_iliaca: pf(formData.pliegue_cresta_iliaca),
+        pliegue_supraespinal: pf(formData.pliegue_supraespinal),
+        pliegue_abdominal: pf(formData.pliegue_abdominal),
         notas: formData.notas || undefined,
         diagnostico: formData.diagnostico || undefined,
         antecedentes_familiares: formData.antecedentes_familiares || undefined,
@@ -74,49 +191,14 @@ export default function AgregarConsultaHistoricaPage() {
         observaciones: formData.observaciones || undefined,
         objetivo: formData.objetivo || undefined,
         plan: formData.plan || undefined,
-        proxima_cita: formData.proxima_cita
-          ? new Date(formData.proxima_cita).toISOString()
-          : undefined,
       }
 
-      // Agregar mediciones numéricas si tienen valor
-      if (formData.peso) data.peso = parseFloat(formData.peso)
-      if (formData.talla) data.talla = parseFloat(formData.talla)
-      if (formData.grasa_corporal) data.grasa_corporal = parseFloat(formData.grasa_corporal)
-      if (formData.porcentaje_agua) data.porcentaje_agua = parseFloat(formData.porcentaje_agua)
-      if (formData.masa_muscular_kg) data.masa_muscular_kg = parseFloat(formData.masa_muscular_kg)
-      if (formData.grasa_visceral) data.grasa_visceral = parseInt(formData.grasa_visceral)
+      // Limpiar undefined
+      Object.keys(data).forEach((k) => data[k] === undefined && delete data[k])
 
-      // Perímetros
-      if (formData.brazo_relajado) data.brazo_relajado = parseFloat(formData.brazo_relajado)
-      if (formData.brazo_flexionado) data.brazo_flexionado = parseFloat(formData.brazo_flexionado)
-      if (formData.cintura) data.cintura = parseFloat(formData.cintura)
-      if (formData.cadera_maximo) data.cadera_maximo = parseFloat(formData.cadera_maximo)
-      if (formData.muslo_maximo) data.muslo_maximo = parseFloat(formData.muslo_maximo)
-      if (formData.muslo_medio) data.muslo_medio = parseFloat(formData.muslo_medio)
-      if (formData.pantorrilla_maximo)
-        data.pantorrilla_maximo = parseFloat(formData.pantorrilla_maximo)
-
-      // Pliegues
-      if (formData.pliegue_tricipital)
-        data.pliegue_tricipital = parseFloat(formData.pliegue_tricipital)
-      if (formData.pliegue_subescapular)
-        data.pliegue_subescapular = parseFloat(formData.pliegue_subescapular)
-      if (formData.pliegue_bicipital)
-        data.pliegue_bicipital = parseFloat(formData.pliegue_bicipital)
-      if (formData.pliegue_cresta_iliaca)
-        data.pliegue_cresta_iliaca = parseFloat(formData.pliegue_cresta_iliaca)
-      if (formData.pliegue_supraespinal)
-        data.pliegue_supraespinal = parseFloat(formData.pliegue_supraespinal)
-      if (formData.pliegue_abdominal)
-        data.pliegue_abdominal = parseFloat(formData.pliegue_abdominal)
-
-      // Crear consulta histórica
       const response = await fetch('/api/consultas/historica', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
 
@@ -125,7 +207,6 @@ export default function AgregarConsultaHistoricaPage() {
         throw new Error(errorData.error || 'Error al crear consulta')
       }
 
-      // Redirigir al historial
       router.push(`/pacientes/${pacienteId}/consultas`)
       router.refresh()
     } catch (err) {
@@ -244,13 +325,14 @@ export default function AgregarConsultaHistoricaPage() {
                 id="peso"
                 name="peso"
                 value={formData.peso}
-                onChange={handleChange}
-                className={styles.input}
+                onChange={(e) => handleNumericChange('peso', e.target.value)}
+                className={inputClass('peso')}
                 step="0.1"
                 min="0"
                 placeholder="Ej: 70.5"
                 disabled={loading}
               />
+              {fieldErrors.peso && <span className={styles.errorText}>{fieldErrors.peso}</span>}
             </div>
 
             <div className={styles.formGroup}>
@@ -262,15 +344,21 @@ export default function AgregarConsultaHistoricaPage() {
                 id="talla"
                 name="talla"
                 value={formData.talla}
-                onChange={handleChange}
-                className={styles.input}
+                onChange={(e) => handleNumericChange('talla', e.target.value)}
+                className={inputClass('talla')}
                 step="0.01"
                 min="0"
                 placeholder="Ej: 1.65"
                 disabled={loading}
               />
+              {fieldErrors.talla && <span className={styles.errorText}>{fieldErrors.talla}</span>}
             </div>
           </div>
+          {imcPreview && (
+            <div className={styles.imcPreview}>
+              IMC calculado: <strong>{imcPreview}</strong>
+            </div>
+          )}
         </section>
 
         {/* Composición Corporal */}
@@ -287,14 +375,15 @@ export default function AgregarConsultaHistoricaPage() {
                 id="grasa_corporal"
                 name="grasa_corporal"
                 value={formData.grasa_corporal}
-                onChange={handleChange}
-                className={styles.input}
+                onChange={(e) => handleNumericChange('grasa_corporal', e.target.value)}
+                className={inputClass('grasa_corporal')}
                 step="0.1"
                 min="0"
                 max="100"
                 placeholder="Ej: 25.5"
                 disabled={loading}
               />
+              {fieldErrors.grasa_corporal && <span className={styles.errorText}>{fieldErrors.grasa_corporal}</span>}
             </div>
 
             <div className={styles.formGroup}>
@@ -306,14 +395,15 @@ export default function AgregarConsultaHistoricaPage() {
                 id="porcentaje_agua"
                 name="porcentaje_agua"
                 value={formData.porcentaje_agua}
-                onChange={handleChange}
-                className={styles.input}
+                onChange={(e) => handleNumericChange('porcentaje_agua', e.target.value)}
+                className={inputClass('porcentaje_agua')}
                 step="0.1"
                 min="0"
                 max="100"
                 placeholder="Ej: 60.0"
                 disabled={loading}
               />
+              {fieldErrors.porcentaje_agua && <span className={styles.errorText}>{fieldErrors.porcentaje_agua}</span>}
             </div>
 
             <div className={styles.formGroup}>
@@ -325,31 +415,33 @@ export default function AgregarConsultaHistoricaPage() {
                 id="masa_muscular_kg"
                 name="masa_muscular_kg"
                 value={formData.masa_muscular_kg}
-                onChange={handleChange}
-                className={styles.input}
+                onChange={(e) => handleNumericChange('masa_muscular_kg', e.target.value)}
+                className={inputClass('masa_muscular_kg')}
                 step="0.1"
                 min="0"
                 placeholder="Ej: 35.0"
                 disabled={loading}
               />
+              {fieldErrors.masa_muscular_kg && <span className={styles.errorText}>{fieldErrors.masa_muscular_kg}</span>}
             </div>
 
             <div className={styles.formGroup}>
               <label htmlFor="grasa_visceral" className={styles.label}>
-                Grasa Visceral
+                Grasa Visceral (nivel)
               </label>
               <input
                 type="number"
                 id="grasa_visceral"
                 name="grasa_visceral"
                 value={formData.grasa_visceral}
-                onChange={handleChange}
-                className={styles.input}
-                step="1"
+                onChange={(e) => handleNumericChange('grasa_visceral', e.target.value)}
+                className={inputClass('grasa_visceral')}
+                step="0.1"
                 min="0"
-                placeholder="Ej: 8"
+                placeholder="Ej: 8.5"
                 disabled={loading}
               />
+              {fieldErrors.grasa_visceral && <span className={styles.errorText}>{fieldErrors.grasa_visceral}</span>}
             </div>
           </div>
         </section>
@@ -368,12 +460,13 @@ export default function AgregarConsultaHistoricaPage() {
                 id="brazo_relajado"
                 name="brazo_relajado"
                 value={formData.brazo_relajado}
-                onChange={handleChange}
-                className={styles.input}
+                onChange={(e) => handleNumericChange('brazo_relajado', e.target.value)}
+                className={inputClass('brazo_relajado')}
                 step="0.1"
                 min="0"
                 disabled={loading}
               />
+              {fieldErrors.brazo_relajado && <span className={styles.errorText}>{fieldErrors.brazo_relajado}</span>}
             </div>
 
             <div className={styles.formGroup}>
@@ -385,12 +478,13 @@ export default function AgregarConsultaHistoricaPage() {
                 id="brazo_flexionado"
                 name="brazo_flexionado"
                 value={formData.brazo_flexionado}
-                onChange={handleChange}
-                className={styles.input}
+                onChange={(e) => handleNumericChange('brazo_flexionado', e.target.value)}
+                className={inputClass('brazo_flexionado')}
                 step="0.1"
                 min="0"
                 disabled={loading}
               />
+              {fieldErrors.brazo_flexionado && <span className={styles.errorText}>{fieldErrors.brazo_flexionado}</span>}
             </div>
 
             <div className={styles.formGroup}>
@@ -402,12 +496,13 @@ export default function AgregarConsultaHistoricaPage() {
                 id="cintura"
                 name="cintura"
                 value={formData.cintura}
-                onChange={handleChange}
-                className={styles.input}
+                onChange={(e) => handleNumericChange('cintura', e.target.value)}
+                className={inputClass('cintura')}
                 step="0.1"
                 min="0"
                 disabled={loading}
               />
+              {fieldErrors.cintura && <span className={styles.errorText}>{fieldErrors.cintura}</span>}
             </div>
 
             <div className={styles.formGroup}>
@@ -419,12 +514,13 @@ export default function AgregarConsultaHistoricaPage() {
                 id="cadera_maximo"
                 name="cadera_maximo"
                 value={formData.cadera_maximo}
-                onChange={handleChange}
-                className={styles.input}
+                onChange={(e) => handleNumericChange('cadera_maximo', e.target.value)}
+                className={inputClass('cadera_maximo')}
                 step="0.1"
                 min="0"
                 disabled={loading}
               />
+              {fieldErrors.cadera_maximo && <span className={styles.errorText}>{fieldErrors.cadera_maximo}</span>}
             </div>
           </div>
 
@@ -438,12 +534,13 @@ export default function AgregarConsultaHistoricaPage() {
                 id="muslo_maximo"
                 name="muslo_maximo"
                 value={formData.muslo_maximo}
-                onChange={handleChange}
-                className={styles.input}
+                onChange={(e) => handleNumericChange('muslo_maximo', e.target.value)}
+                className={inputClass('muslo_maximo')}
                 step="0.1"
                 min="0"
                 disabled={loading}
               />
+              {fieldErrors.muslo_maximo && <span className={styles.errorText}>{fieldErrors.muslo_maximo}</span>}
             </div>
 
             <div className={styles.formGroup}>
@@ -455,12 +552,13 @@ export default function AgregarConsultaHistoricaPage() {
                 id="muslo_medio"
                 name="muslo_medio"
                 value={formData.muslo_medio}
-                onChange={handleChange}
-                className={styles.input}
+                onChange={(e) => handleNumericChange('muslo_medio', e.target.value)}
+                className={inputClass('muslo_medio')}
                 step="0.1"
                 min="0"
                 disabled={loading}
               />
+              {fieldErrors.muslo_medio && <span className={styles.errorText}>{fieldErrors.muslo_medio}</span>}
             </div>
 
             <div className={styles.formGroup}>
@@ -472,12 +570,13 @@ export default function AgregarConsultaHistoricaPage() {
                 id="pantorrilla_maximo"
                 name="pantorrilla_maximo"
                 value={formData.pantorrilla_maximo}
-                onChange={handleChange}
-                className={styles.input}
+                onChange={(e) => handleNumericChange('pantorrilla_maximo', e.target.value)}
+                className={inputClass('pantorrilla_maximo')}
                 step="0.1"
                 min="0"
                 disabled={loading}
               />
+              {fieldErrors.pantorrilla_maximo && <span className={styles.errorText}>{fieldErrors.pantorrilla_maximo}</span>}
             </div>
           </div>
         </section>
@@ -496,12 +595,13 @@ export default function AgregarConsultaHistoricaPage() {
                 id="pliegue_tricipital"
                 name="pliegue_tricipital"
                 value={formData.pliegue_tricipital}
-                onChange={handleChange}
-                className={styles.input}
+                onChange={(e) => handleNumericChange('pliegue_tricipital', e.target.value)}
+                className={inputClass('pliegue_tricipital')}
                 step="0.1"
                 min="0"
                 disabled={loading}
               />
+              {fieldErrors.pliegue_tricipital && <span className={styles.errorText}>{fieldErrors.pliegue_tricipital}</span>}
             </div>
 
             <div className={styles.formGroup}>
@@ -513,12 +613,13 @@ export default function AgregarConsultaHistoricaPage() {
                 id="pliegue_subescapular"
                 name="pliegue_subescapular"
                 value={formData.pliegue_subescapular}
-                onChange={handleChange}
-                className={styles.input}
+                onChange={(e) => handleNumericChange('pliegue_subescapular', e.target.value)}
+                className={inputClass('pliegue_subescapular')}
                 step="0.1"
                 min="0"
                 disabled={loading}
               />
+              {fieldErrors.pliegue_subescapular && <span className={styles.errorText}>{fieldErrors.pliegue_subescapular}</span>}
             </div>
 
             <div className={styles.formGroup}>
@@ -530,12 +631,13 @@ export default function AgregarConsultaHistoricaPage() {
                 id="pliegue_bicipital"
                 name="pliegue_bicipital"
                 value={formData.pliegue_bicipital}
-                onChange={handleChange}
-                className={styles.input}
+                onChange={(e) => handleNumericChange('pliegue_bicipital', e.target.value)}
+                className={inputClass('pliegue_bicipital')}
                 step="0.1"
                 min="0"
                 disabled={loading}
               />
+              {fieldErrors.pliegue_bicipital && <span className={styles.errorText}>{fieldErrors.pliegue_bicipital}</span>}
             </div>
           </div>
 
@@ -549,12 +651,13 @@ export default function AgregarConsultaHistoricaPage() {
                 id="pliegue_cresta_iliaca"
                 name="pliegue_cresta_iliaca"
                 value={formData.pliegue_cresta_iliaca}
-                onChange={handleChange}
-                className={styles.input}
+                onChange={(e) => handleNumericChange('pliegue_cresta_iliaca', e.target.value)}
+                className={inputClass('pliegue_cresta_iliaca')}
                 step="0.1"
                 min="0"
                 disabled={loading}
               />
+              {fieldErrors.pliegue_cresta_iliaca && <span className={styles.errorText}>{fieldErrors.pliegue_cresta_iliaca}</span>}
             </div>
 
             <div className={styles.formGroup}>
@@ -566,12 +669,13 @@ export default function AgregarConsultaHistoricaPage() {
                 id="pliegue_supraespinal"
                 name="pliegue_supraespinal"
                 value={formData.pliegue_supraespinal}
-                onChange={handleChange}
-                className={styles.input}
+                onChange={(e) => handleNumericChange('pliegue_supraespinal', e.target.value)}
+                className={inputClass('pliegue_supraespinal')}
                 step="0.1"
                 min="0"
                 disabled={loading}
               />
+              {fieldErrors.pliegue_supraespinal && <span className={styles.errorText}>{fieldErrors.pliegue_supraespinal}</span>}
             </div>
 
             <div className={styles.formGroup}>
@@ -583,12 +687,13 @@ export default function AgregarConsultaHistoricaPage() {
                 id="pliegue_abdominal"
                 name="pliegue_abdominal"
                 value={formData.pliegue_abdominal}
-                onChange={handleChange}
-                className={styles.input}
+                onChange={(e) => handleNumericChange('pliegue_abdominal', e.target.value)}
+                className={inputClass('pliegue_abdominal')}
                 step="0.1"
                 min="0"
                 disabled={loading}
               />
+              {fieldErrors.pliegue_abdominal && <span className={styles.errorText}>{fieldErrors.pliegue_abdominal}</span>}
             </div>
           </div>
         </section>
@@ -710,20 +815,16 @@ export default function AgregarConsultaHistoricaPage() {
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="proxima_cita" className={styles.label}>
+            <label className={styles.label}>
               Próxima Cita Sugerida
             </label>
             <input
               type="date"
-              id="proxima_cita"
-              name="proxima_cita"
-              value={formData.proxima_cita}
-              onChange={handleChange}
-              className={styles.input}
-              disabled={loading}
+              className={`${styles.input} ${styles.inputDisabled}`}
+              disabled
             />
             <p className={styles.helpText}>
-              Fecha sugerida registrada en ese momento (no se enviarán recordatorios)
+              No disponible en consultas históricas — usa el panel del paciente para programar seguimiento
             </p>
           </div>
         </section>
@@ -733,7 +834,7 @@ export default function AgregarConsultaHistoricaPage() {
           <Button type="button" variant="outline" onClick={handleCancel} disabled={loading}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading || Object.keys(fieldErrors).length > 0}>
             {loading ? 'Guardando...' : 'Guardar en Historial'}
           </Button>
         </div>

@@ -19,7 +19,7 @@ const consultaUpdateSchema = z.object({
   grasa_corporal: z.number().min(0).max(100).nullable().optional(),
   porcentaje_agua: z.number().min(0).max(100).nullable().optional(),
   masa_muscular_kg: z.number().min(0.5).max(400).nullable().optional(),
-  grasa_visceral: z.number().int().min(0).max(60).nullable().optional(),
+  grasa_visceral: z.number().min(0).max(60).nullable().optional(),
 
   // Perímetros (cm)
   brazo_relajado: z.number().min(5).max(160).nullable().optional(),

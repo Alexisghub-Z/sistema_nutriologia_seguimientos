@@ -21,7 +21,7 @@ const consultaHistoricaSchema = z.object({
   grasa_corporal: z.number().min(0).max(100).optional(),
   porcentaje_agua: z.number().min(0).max(100).optional(),
   masa_muscular_kg: z.number().positive().optional(),
-  grasa_visceral: z.number().int().min(0).optional(),
+  grasa_visceral: z.number().min(0).max(60).optional(),
 
   // Perímetros
   brazo_relajado: z.number().positive().optional(),

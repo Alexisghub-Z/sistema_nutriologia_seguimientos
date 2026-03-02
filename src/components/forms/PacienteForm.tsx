@@ -31,7 +31,7 @@ export default function PacienteForm({ pacienteId, initialData }: PacienteFormPr
     // Extraer solo los 10 dígitos del teléfono (quitar +521)
     telefono: initialData?.telefono ? extraerDigitosTelefono(initialData.telefono) : '',
     fecha_nacimiento: initialData?.fecha_nacimiento
-      ? new Date(initialData.fecha_nacimiento).toISOString().split('T')[0]
+      ? initialData.fecha_nacimiento.slice(0, 10)
       : '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})

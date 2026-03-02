@@ -128,7 +128,9 @@ export default function PacientesPage() {
   // Calcular edad
   const calcularEdad = (fechaNacimiento: string) => {
     const hoy = new Date()
-    const nacimiento = new Date(fechaNacimiento)
+    // Parsear como fecha local para evitar desplazamiento UTC
+    const [y, m, d] = fechaNacimiento.slice(0, 10).split('-').map(Number)
+    const nacimiento = new Date(y!, m! - 1, d!)
     let edad = hoy.getFullYear() - nacimiento.getFullYear()
     const mes = hoy.getMonth() - nacimiento.getMonth()
     if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
@@ -143,6 +145,7 @@ export default function PacientesPage() {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+      timeZone: 'UTC',
     })
   }
 

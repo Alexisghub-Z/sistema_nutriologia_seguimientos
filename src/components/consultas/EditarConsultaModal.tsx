@@ -98,7 +98,6 @@ function validateField(name: string, value: string): string {
       if (isNaN(numValue)) return 'Debe ser un número'
       if (numValue < 0) return 'Mínimo 0'
       if (numValue > 60) return 'Máximo 60'
-      if (!Number.isInteger(numValue)) return 'Debe ser un número entero'
       break
     case 'brazo_relajado':
       if (isNaN(numValue)) return 'Debe ser un número'
@@ -315,19 +314,13 @@ export default function EditarConsultaModal({
       return isNaN(num) ? null : num
     }
 
-    const parseOptionalInt = (val: string) => {
-      if (val === '') return null
-      const num = parseInt(val, 10)
-      return isNaN(num) ? null : num
-    }
-
     const body: Record<string, unknown> = {
       peso: parseOptionalNumber(peso),
       talla: parseOptionalNumber(talla),
       grasa_corporal: parseOptionalNumber(grasaCorporal),
       porcentaje_agua: parseOptionalNumber(porcentajeAgua),
       masa_muscular_kg: parseOptionalNumber(masaMuscularKg),
-      grasa_visceral: parseOptionalInt(grasaVisceral),
+      grasa_visceral: parseOptionalNumber(grasaVisceral),
       brazo_relajado: parseOptionalNumber(brazoRelajado),
       brazo_flexionado: parseOptionalNumber(brazoFlexionado),
       cintura: parseOptionalNumber(cintura),
