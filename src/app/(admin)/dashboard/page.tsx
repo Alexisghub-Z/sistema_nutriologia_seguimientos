@@ -116,6 +116,7 @@ export default function DashboardPage() {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
+      timeZone: 'UTC',
     })
   }
 
@@ -127,10 +128,12 @@ export default function DashboardPage() {
     return `${inicio.toLocaleDateString('es-MX', {
       day: 'numeric',
       month: 'short',
+      timeZone: 'UTC',
     })} - ${fin.toLocaleDateString('es-MX', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
+      timeZone: 'UTC',
     })}`
   }
 

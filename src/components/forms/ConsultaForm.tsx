@@ -104,7 +104,6 @@ export default function ConsultaForm({
         if (isNaN(numValue)) errorMessage = 'Debe ser un número'
         else if (numValue < 0) errorMessage = 'Mínimo 0'
         else if (numValue > 60) errorMessage = 'Máximo 60'
-        else if (!Number.isInteger(numValue)) errorMessage = 'Debe ser un número entero'
         break
 
       // Perímetros
@@ -265,7 +264,7 @@ export default function ConsultaForm({
       if (formData.grasa_corporal) data.grasa_corporal = parseFloat(formData.grasa_corporal)
       if (formData.porcentaje_agua) data.porcentaje_agua = parseFloat(formData.porcentaje_agua)
       if (formData.masa_muscular_kg) data.masa_muscular_kg = parseFloat(formData.masa_muscular_kg)
-      if (formData.grasa_visceral) data.grasa_visceral = parseInt(formData.grasa_visceral)
+      if (formData.grasa_visceral) data.grasa_visceral = parseFloat(formData.grasa_visceral)
       if (formData.brazo_relajado) data.brazo_relajado = parseFloat(formData.brazo_relajado)
       if (formData.brazo_flexionado) data.brazo_flexionado = parseFloat(formData.brazo_flexionado)
       if (formData.cintura) data.cintura = parseFloat(formData.cintura)
