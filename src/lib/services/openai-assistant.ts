@@ -436,6 +436,13 @@ export async function obtenerRespuestaIA(
       contextoSistema += `Tema nutricional/médico. Deriva brevemente a *Paul Cortez* al *951 130 1554*.\n`
     }
 
+    // Recordatorio global: si tiene cita activa, SIEMPRE mencionarla si el mensaje
+    // tiene cualquier relación con citas, aunque la intención no se detecte exactamente
+    if (pacienteContexto?.tiene_cita_proxima && pacienteContexto?.codigo_cita) {
+      const urlGestion = `${KNOWLEDGE_BASE.urls.sitio_web}/cita/${pacienteContexto.codigo_cita}`
+      contextoSistema += `\n⚠️ REGLA GLOBAL: Este paciente YA tiene una cita agendada (${pacienteContexto.fecha_proxima_cita} a las ${pacienteContexto.hora_proxima_cita}). Si su mensaje tiene cualquier relación con citas, recordársela SIEMPRE antes de ofrecer agendar otra. URL para gestionar: ${urlGestion}\n`
+    }
+
     if (nivel_urgencia === 'alta') {
       contextoSistema += `\nUrgencia detectada: responde con prioridad. Si es tema nutricional, da el teléfono: 951 130 1554\n`
     }
