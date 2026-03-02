@@ -420,10 +420,12 @@ export async function obtenerRespuestaIA(
         }
       } else {
         contextoSistema += `Quiere agendar. Dale el link: ${KNOWLEDGE_BASE.urls.agendar}\n`
-        if (pacienteContexto?.email) {
-          contextoSistema += `Es paciente registrado. Al darle el link, agrega siempre algo como: "Si no recuerdas el correo con el que te registraste, puedo recordártelo 😊". Su correo es: ${pacienteContexto.email}\n`
-        } else {
-          contextoSistema += `Es paciente registrado. Al darle el link, agrega siempre algo como: "Si no recuerdas el correo con el que te registraste, puedo recordártelo 😊"\n`
+        if (pacienteContexto && !pacienteContexto.es_paciente_nuevo) {
+          if (pacienteContexto.email) {
+            contextoSistema += `Es paciente con historial previo. Al darle el link, agrega siempre algo como: "Si no recuerdas el correo con el que te registraste, puedo recordártelo 😊". Su correo es: ${pacienteContexto.email}\n`
+          } else {
+            contextoSistema += `Es paciente con historial previo. Al darle el link, agrega siempre algo como: "Si no recuerdas el correo con el que te registraste, puedo recordártelo 😊"\n`
+          }
         }
       }
     } else if (intencion === 'precios') {
