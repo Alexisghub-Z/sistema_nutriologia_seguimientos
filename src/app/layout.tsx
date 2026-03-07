@@ -7,28 +7,28 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: {
-    default: 'Nutrición Paul Cortez',
-    template: '%s | Nutrición Paul Cortez',
+    default: 'Nutrición Paul Cortes',
+    template: '%s | Nutrición Paul Cortes',
   },
   description: 'Consulta nutricional profesional en Oaxaca. Más de 10 años de experiencia ayudándote a mejorar tu salud y alcanzar tus objetivos.',
-  keywords: ['nutriólogo', 'nutrición', 'Oaxaca', 'Paul Cortez', 'consulta nutricional', 'plan alimenticio'],
-  authors: [{ name: 'Paul Cortez' }],
-  creator: 'Paul Cortez',
+  keywords: ['nutriólogo', 'nutrición', 'Oaxaca', 'Paul Cortes', 'consulta nutricional', 'plan alimenticio'],
+  authors: [{ name: 'Paul Cortes' }],
+  creator: 'Paul Cortes',
   metadataBase: new URL('https://nutricionpaulcortez.com'),
   openGraph: {
     type: 'website',
     locale: 'es_MX',
     url: 'https://nutricionpaulcortez.com',
-    title: 'Nutrición Paul Cortez',
+    title: 'Nutrición Paul Cortes',
     description: 'Consulta nutricional profesional en Oaxaca',
-    siteName: 'Nutrición Paul Cortez',
+    siteName: 'Nutrición Paul Cortes',
   },
 }
 
 const schemaOrg = {
   '@context': 'https://schema.org',
   '@type': 'MedicalBusiness',
-  name: 'Nutrición Paul Cortez',
+  name: 'Nutrición Paul Cortes',
   description:
     'Consulta nutricional profesional en Oaxaca. Más de 10 años de experiencia ayudándote a mejorar tu salud y alcanzar tus objetivos.',
   url: 'https://nutricionpaulcortez.com',

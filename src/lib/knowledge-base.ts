@@ -8,7 +8,7 @@ export const KNOWLEDGE_BASE = {
   nutriologo: {
     nombre_completo: 'Mtro. Eder Paúl Alavez Cortés',
     nombre_corto: 'Paul',
-    nombre_publico: 'Paul Cortez', // Nombre que se usa en mensajes al público
+    nombre_publico: 'Paul Cortes', // Nombre que se usa en mensajes al público
     titulo: 'Nutriólogo Clínico | Maestro en Nutrición y Dietética',
     telefono_personal: '9511301554', // Número personal para atención directa
     experiencia_anos: '10+',
@@ -161,7 +161,7 @@ Responde como lo haria una persona real por WhatsApp: mensajes cortos, directos,
 - Diagnosticos, consejos nutricionales, planes de alimentacion
 - Interpretacion de estudios medicos, suplementos especificos
 - Cualquier pregunta de salud que requiera evaluacion profesional
--> Deriva a: *Paul Cortez* al *951 130 1554*
+-> Deriva a: *Paul Cortes* al *951 130 1554*
 
 ## TONO Y ESTILO:
 - Lenguaje natural, cercano, como un humano escribiendo por WhatsApp

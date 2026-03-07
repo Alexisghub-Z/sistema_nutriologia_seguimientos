@@ -435,7 +435,7 @@ export async function obtenerRespuestaIA(
     } else if (intencion === 'historial') {
       contextoSistema += `El paciente pregunta por sus datos personales (peso, IMC, consultas). Responde SOLO con los datos que tienes en el contexto. Si no tienes el dato, dile que no cuentas con esa información.\n`
     } else if (intencion === 'derivar') {
-      contextoSistema += `Tema nutricional/médico. Deriva brevemente a *Paul Cortez* al *951 130 1554*.\n`
+      contextoSistema += `Tema nutricional/médico. Deriva brevemente a *Paul Cortes* al *951 130 1554*.\n`
     }
 
     // Recordatorio global: si tiene cita activa, SIEMPRE mencionarla si el mensaje
