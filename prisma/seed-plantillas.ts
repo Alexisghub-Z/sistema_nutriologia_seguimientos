@@ -72,6 +72,19 @@ Consultorio Dr. Paul`,
       activa: true,
     },
     {
+      nombre: 'Agradecimiento Post-Consulta',
+      tipo: 'AUTOMATICO_SEGUIMIENTO' as TipoMensaje,
+      contenido: `Hola {nombre} 👋
+
+Gracias por tu consulta de hoy. Fue un placer atenderte 😊
+
+Recuerda seguir tu plan nutricional y cualquier duda estamos aquí para apoyarte.
+
+Síguenos en nuestras redes sociales para tips, recetas y más contenido de nutrición:
+https://linktr.ee/ederalvarez.osmo`,
+      activa: true,
+    },
+    {
       nombre: 'Confirmación de Cancelación',
       tipo: 'MANUAL' as TipoMensaje,
       contenido: `❓ Confirmación de cancelación

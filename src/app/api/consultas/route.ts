@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth-utils'
 import prisma from '@/lib/prisma'
 import { z } from 'zod'
 import { getCache, setCache, deleteCache, deleteCachePattern, CacheKeys } from '@/lib/redis'
+import { programarAgradecimientoConsulta } from '@/lib/queue/messages'
 
 // Schema de validación para crear consulta
 const consultaSchema = z.object({
@@ -284,6 +285,14 @@ export async function POST(request: NextRequest) {
         archivos: true,
       },
     })
+
+    // Programar agradecimiento post-consulta (2 horas después)
+    try {
+      await programarAgradecimientoConsulta(consulta.id)
+    } catch (agradecimientoError) {
+      console.error('Error al programar agradecimiento post-consulta:', agradecimientoError)
+      // No fallar la creación de la consulta si falla el encolamiento
+    }
 
     // La programación de seguimiento ahora se hace manualmente desde el panel del paciente
     // El nutriólogo decide cuándo enviar recordatorios para evitar duplicados
