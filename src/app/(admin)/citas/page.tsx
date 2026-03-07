@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { createPortal } from 'react-dom'
 import ModalDetalleCita from '@/components/citas/ModalDetalleCita'
 import BuscadorPacientes from '@/components/citas/BuscadorPacientes'
 import styles from './citas.module.css'
@@ -45,6 +46,8 @@ function CitasContent() {
   const [citaSeleccionada, setCitaSeleccionada] = useState<CitaConPaciente | null>(null)
   const [pacienteSeleccionado, setPacienteSeleccionado] = useState<string | null>(pacienteIdParam)
   const [pacienteInfo, setPacienteInfo] = useState<PacienteInfo | null>(null)
+  const [popoverDia, setPopoverDia] = useState<{ citas: CitaConPaciente[]; fecha: Date; rect: DOMRect } | null>(null)
+  const popoverRef = useRef<HTMLDivElement>(null)
 
   const meses = [
     'Enero',
@@ -209,6 +212,24 @@ function CitasContent() {
       default:
         return 'var(--color-gray-400)'
     }
+  }
+
+  // Cerrar popover al hacer click fuera
+  useEffect(() => {
+    if (!popoverDia) return
+    const handleClick = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setPopoverDia(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [popoverDia])
+
+  const abrirPopoverDia = (e: React.MouseEvent, citas: CitaConPaciente[], fecha: Date) => {
+    e.stopPropagation()
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    setPopoverDia({ citas, fecha, rect })
   }
 
   const dias = obtenerDiasDelMes()
@@ -376,7 +397,12 @@ function CitasContent() {
                       </div>
                     ))}
                     {citasDelDia.length > 3 && (
-                      <div className={styles.citasMas}>+{citasDelDia.length - 3} más</div>
+                      <button
+                        className={styles.citasMas}
+                        onClick={(e) => abrirPopoverDia(e, citasDelDia.slice(3), fecha)}
+                      >
+                        +{citasDelDia.length - 3} más
+                      </button>
                     )}
                   </div>
                 </div>
@@ -394,6 +420,46 @@ function CitasContent() {
         onClose={() => setCitaSeleccionada(null)}
         onActualizar={cargarCitas}
       />
+
+      {/* Popover: todas las citas del día */}
+      {popoverDia && typeof window !== 'undefined' && createPortal(
+        <div
+          ref={popoverRef}
+          className={styles.popover}
+          style={{
+            top: Math.min(popoverDia.rect.bottom + 8, window.innerHeight - 320),
+            left: Math.min(popoverDia.rect.left, window.innerWidth - 280),
+          }}
+        >
+          <div className={styles.popoverHeader}>
+            <span className={styles.popoverFecha}>
+              {popoverDia.fecha.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })}
+            </span>
+            <button className={styles.popoverCerrar} onClick={() => setPopoverDia(null)}>×</button>
+          </div>
+          <div className={styles.popoverLista}>
+            {popoverDia.citas.map((cita) => (
+              <div
+                key={cita.id}
+                className={styles.popoverCita}
+                style={{ borderLeftColor: getColorEstado(cita.estado) }}
+                onClick={() => {
+                  setCitaSeleccionada(cita)
+                  setPopoverDia(null)
+                }}
+              >
+                <span className={styles.popoverHora}>
+                  {new Date(cita.fecha_hora).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+                <span className={styles.popoverNombre}>
+                  {cita.tipo_cita === 'PRESENCIAL' ? '🏥' : '💻'} {cita.paciente.nombre}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   )
 }

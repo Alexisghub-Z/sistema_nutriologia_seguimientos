@@ -330,9 +330,114 @@
 .citasMas {
   padding: 4px 6px;
   font-size: 11px;
-  color: var(--color-text-secondary);
+  color: var(--color-primary);
   text-align: center;
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
+  background: rgba(45, 159, 93, 0.08);
+  border: 1px solid rgba(45, 159, 93, 0.2);
+  border-radius: 3px;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color var(--transition-fast);
+}
+
+.citasMas:hover {
+  background: rgba(45, 159, 93, 0.16);
+}
+
+/* Popover de citas del día */
+.popover {
+  position: fixed;
+  z-index: 1000;
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  width: 220px;
+  max-height: 220px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.popoverHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-gray-50);
+}
+
+.popoverFecha {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: capitalize;
+}
+
+.popoverCerrar {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  line-height: 1;
+}
+
+.popoverCerrar:hover {
+  background: var(--color-gray-200);
+  color: var(--color-text);
+}
+
+.popoverLista {
+  overflow-y: auto;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.popoverCita {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border-left: 3px solid;
+  border-radius: 3px;
+  background: var(--color-gray-50);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.popoverCita:hover {
+  background: var(--color-gray-100);
+}
+
+.popoverHora {
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.popoverNombre {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.popoverEstado {
+  display: none;
 }
 
 .loading {
