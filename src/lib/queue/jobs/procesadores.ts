@@ -762,3 +762,65 @@ export async function procesarMarcarNoAsistio(citaId: string): Promise<void> {
     throw error
   }
 }
+
+/**
+ * Procesa el envío de agradecimiento post-consulta con link a redes sociales
+ */
+export async function procesarAgradecimientoConsulta(consultaId: string): Promise<void> {
+  console.log(`[Job] Procesando agradecimiento post-consulta: ${consultaId}`)
+
+  try {
+    const consulta = await prisma.consulta.findUnique({
+      where: { id: consultaId },
+      include: {
+        paciente: {
+          select: {
+            id: true,
+            nombre: true,
+            email: true,
+            telefono: true,
+          },
+        },
+      },
+    })
+
+    if (!consulta) {
+      throw new Error(`Consulta ${consultaId} no encontrada`)
+    }
+
+    const variables: VariablesPlantilla = {
+      nombre: consulta.paciente.nombre,
+      email: consulta.paciente.email || undefined,
+      telefono: consulta.paciente.telefono,
+      fecha_cita: new Date(),
+      hora_cita: '',
+      codigo_cita: '',
+    }
+
+    const mensaje = await generarMensaje(TipoPlantilla.AGRADECIMIENTO_CONSULTA, variables)
+
+    const resultado = await sendWhatsAppMessage(
+      consulta.paciente.telefono,
+      mensaje.contenido || '',
+      mensaje.contentSid,
+      mensaje.contentVariables,
+      STATUS_CALLBACK_URL
+    )
+
+    await prisma.mensajeWhatsApp.create({
+      data: {
+        paciente_id: consulta.paciente.id,
+        direccion: 'SALIENTE',
+        contenido: mensaje.contenido || `Agradecimiento post-consulta`,
+        tipo: 'AUTOMATICO_SEGUIMIENTO',
+        twilio_sid: resultado.messageSid,
+        estado: 'PENDIENTE',
+      },
+    })
+
+    console.log(`✅ [Job] Agradecimiento post-consulta enviado para consulta: ${consultaId}`)
+  } catch (error) {
+    console.error(`❌ [Job] Error al procesar agradecimiento post-consulta:`, error)
+    throw error
+  }
+}

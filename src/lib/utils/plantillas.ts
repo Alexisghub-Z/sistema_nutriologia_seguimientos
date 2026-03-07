@@ -16,6 +16,9 @@ export enum TipoPlantilla {
   SEGUIMIENTO_INTERMEDIO = 'SEGUIMIENTO_INTERMEDIO',
   SEGUIMIENTO_PREVIO_CITA = 'SEGUIMIENTO_PREVIO_CITA',
   RECORDATORIO_AGENDAR = 'RECORDATORIO_AGENDAR',
+
+  // Agradecimiento post-consulta con redes sociales
+  AGRADECIMIENTO_CONSULTA = 'AGRADECIMIENTO_CONSULTA',
 }
 
 /**
@@ -34,6 +37,7 @@ export function obtenerCategoriaBD(tipo: TipoPlantilla): TipoMensaje {
     case TipoPlantilla.SEGUIMIENTO_INICIAL:
     case TipoPlantilla.SEGUIMIENTO_INTERMEDIO:
     case TipoPlantilla.SEGUIMIENTO_PREVIO_CITA:
+    case TipoPlantilla.AGRADECIMIENTO_CONSULTA:
       return TipoMensaje.AUTOMATICO_SEGUIMIENTO
     default:
       return TipoMensaje.MANUAL
@@ -117,6 +121,12 @@ const PLANTILLAS_APROBADAS: Record<string, PlantillaAprobada | null> = {
     ? {
         contentSid: process.env.TEMPLATE_RECORDATORIO_AGENDAR_SID,
         variables: ['nombre', 'fecha_cita', 'url_portal'],
+      }
+    : null,
+  [TipoPlantilla.AGRADECIMIENTO_CONSULTA]: process.env.TEMPLATE_AGRADECIMIENTO_CONSULTA_SID
+    ? {
+        contentSid: process.env.TEMPLATE_AGRADECIMIENTO_CONSULTA_SID,
+        variables: ['nombre'],
       }
     : null,
 }

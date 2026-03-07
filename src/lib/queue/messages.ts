@@ -31,6 +31,9 @@ export enum TipoJob {
 
   // Marcar automáticamente como no asistió
   MARCAR_NO_ASISTIO = 'marcar_no_asistio',
+
+  // Agradecimiento post-consulta con redes sociales
+  AGRADECIMIENTO_CONSULTA = 'agradecimiento_consulta',
 }
 
 // Interfaces para los datos de cada job
@@ -278,6 +281,32 @@ export async function programarSeguimiento(
   }
 
   console.log(`   📊 Total de mensajes programados: ${jobsProgramados}\n`)
+}
+
+/**
+ * Programa el envío de agradecimiento post-consulta 2 horas después de registrarla
+ */
+export async function programarAgradecimientoConsulta(consultaId: string) {
+  const delay = 2 * 60 * 60 * 1000 // 2 horas
+
+  await mensajesQueue.add(
+    TipoJob.AGRADECIMIENTO_CONSULTA,
+    { consultaId },
+    {
+      jobId: `agradecimiento-consulta-${consultaId}`,
+      delay,
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 5000,
+      },
+    }
+  )
+
+  const fechaEnvio = new Date(Date.now() + delay)
+  console.log(
+    `[Queue] Agradecimiento post-consulta programado para: ${fechaEnvio.toLocaleString('es-MX')}`
+  )
 }
 
 /**

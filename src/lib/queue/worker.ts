@@ -9,6 +9,7 @@ import {
   procesarSeguimientoPrevioCita,
   procesarRecordatorioAgendar,
   procesarMarcarNoAsistio,
+  procesarAgradecimientoConsulta,
 } from './jobs/procesadores'
 
 /**
@@ -152,6 +153,23 @@ mensajesQueue.process(TipoJob.RECORDATORIO_AGENDAR, 3, async (job) => {
     console.log(`✅ [Worker] Recordatorio agendar completado`)
   } catch (error) {
     console.error(`❌ [Worker] Error en recordatorio agendar:`, error)
+    throw error
+  }
+})
+
+// Registrar procesador para agradecimiento post-consulta (concurrencia: 3)
+mensajesQueue.process(TipoJob.AGRADECIMIENTO_CONSULTA, 3, async (job) => {
+  const { consultaId } = job.data
+
+  console.log(`\n📧 [Worker] Procesando agradecimiento post-consulta`)
+  console.log(`📋 [Worker] Consulta ID: ${consultaId}`)
+  console.log(`🔄 [Worker] Intento: ${job.attemptsMade + 1}/${job.opts.attempts || 3}`)
+
+  try {
+    await procesarAgradecimientoConsulta(consultaId)
+    console.log(`✅ [Worker] Agradecimiento post-consulta completado`)
+  } catch (error) {
+    console.error(`❌ [Worker] Error en agradecimiento post-consulta:`, error)
     throw error
   }
 })
