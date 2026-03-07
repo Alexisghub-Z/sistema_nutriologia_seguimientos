@@ -229,7 +229,7 @@ function generarMensajeDerivacion(nombrePaciente: string, mensajeOriginal: strin
     }
   }
 
-  return `${saludo} ${nombreCorto}! Para darte información precisa sobre ${temaDetectado}, lo mejor es que platiques directamente con *Paul Cortez* al *951 130 1554* 😊`
+  return `${saludo} ${nombreCorto}! Para darte información precisa sobre ${temaDetectado}, lo mejor es que platiques directamente con *Paul Cortes* al *951 130 1554* 😊`
 }
 
 /**

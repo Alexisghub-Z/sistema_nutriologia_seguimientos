@@ -60,7 +60,7 @@ export default function LoginPage() {
               />
             </svg>
           </div>
-          <h1 className={styles.title}>Nutrición Paul Cortez</h1>
+          <h1 className={styles.title}>Nutrición Paul Cortes</h1>
           <p className={styles.subtitle}>Panel de administración</p>
         </div>
 
