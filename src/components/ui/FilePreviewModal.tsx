@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import styles from './FilePreviewModal.module.css'
 
@@ -12,6 +12,15 @@ interface FilePreviewModalProps {
   fileType: string
 }
 
+const OFFICE_TYPES = [
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+]
+
+const PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://nutricionpaulcortez.com'
+
 export default function FilePreviewModal({
   isOpen,
   onClose,
@@ -19,6 +28,13 @@ export default function FilePreviewModal({
   fileName,
   fileType,
 }: FilePreviewModalProps) {
+  const [officeViewerUrl, setOfficeViewerUrl] = useState<string | null>(null)
+  const [loadingToken, setLoadingToken] = useState(false)
+
+  const isImage = fileType.startsWith('image/')
+  const isPDF = fileType === 'application/pdf' || fileType.includes('pdf')
+  const isOffice = OFFICE_TYPES.includes(fileType)
+
   // Cerrar con ESC y bloquear scroll del documento mientras el modal está abierto
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -41,10 +57,32 @@ export default function FilePreviewModal({
     }
   }, [isOpen, onClose])
 
-  if (!isOpen) return null
+  // Obtener token temporal para Office Viewer
+  useEffect(() => {
+    if (!isOpen || !isOffice) {
+      setOfficeViewerUrl(null)
+      return
+    }
 
-  const isImage = fileType.startsWith('image/')
-  const isPDF = fileType === 'application/pdf' || fileType.includes('pdf')
+    // Extraer path relativo quitando el prefijo /api/uploads/
+    const relativePath = fileUrl.replace(/^\/api\/uploads\//, '')
+
+    setLoadingToken(true)
+    setOfficeViewerUrl(null)
+
+    fetch(`/api/uploads/temp-token?path=${encodeURIComponent(relativePath)}`)
+      .then((res) => res.json())
+      .then(({ token }) => {
+        if (!token) return
+        const publicFileUrl = `${PUBLIC_BASE_URL}/api/uploads/public/${token}`
+        const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(publicFileUrl)}`
+        setOfficeViewerUrl(viewerUrl)
+      })
+      .catch((err) => console.error('Error obteniendo token Office:', err))
+      .finally(() => setLoadingToken(false))
+  }, [isOpen, isOffice, fileUrl])
+
+  if (!isOpen) return null
 
   return createPortal(
     <div className={styles.overlay} onClick={onClose}>
@@ -82,7 +120,31 @@ export default function FilePreviewModal({
             </div>
           )}
 
-          {!isImage && !isPDF && (
+          {isOffice && (
+            <div className={styles.pdfContainer}>
+              {loadingToken && (
+                <div className={styles.unsupportedContainer}>
+                  <div className={styles.spinner} />
+                  <p>Preparando vista previa...</p>
+                </div>
+              )}
+              {!loadingToken && officeViewerUrl && (
+                <iframe
+                  src={officeViewerUrl}
+                  className={styles.pdfViewer}
+                  title={fileName}
+                  allowFullScreen
+                />
+              )}
+              {!loadingToken && !officeViewerUrl && (
+                <div className={styles.unsupportedContainer}>
+                  <p>No se pudo cargar la vista previa. Usa el botón de descarga.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!isImage && !isPDF && !isOffice && (
             <div className={styles.unsupportedContainer}>
               <svg
                 width="64"
