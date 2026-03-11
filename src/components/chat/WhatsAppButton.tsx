@@ -3,7 +3,7 @@
 import styles from './WhatsAppButton.module.css'
 
 export default function WhatsAppButton() {
-  const numeroWhatsApp = '5219511301554' // Formato internacional
+  const numeroWhatsApp = '5219514577514' // Número del asistente IA
 
   const abrirWhatsApp = () => {
     const url = `https://wa.me/${numeroWhatsApp}`

@@ -656,10 +656,288 @@
   line-height: 1.7;
 }
 
+/* ─── Cómo Funciona ────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Mansalva&display=swap');
+
+.comoFuncionaSection {
+  padding: 8rem 2rem;
+  background: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Fondo punteado decorativo */
+.comoFuncionaBg {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, #e5e5e5 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* Header de sección */
+.comoFuncionaHeader {
+  text-align: center;
+  margin-bottom: 5rem;
+  position: relative;
+}
+
+.comoFuncionaEtiqueta {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #999;
+  margin-bottom: 1rem;
+}
+
+.comoFuncionaTitulo {
+  font-size: clamp(1.75rem, 5vw, 3rem);
+  font-weight: 700;
+  color: #000;
+  letter-spacing: -2px;
+  margin: 0 0 1rem 0;
+  line-height: 1.1;
+}
+
+.comoFuncionaSubtitulo {
+  font-size: var(--font-size-lg);
+  color: #666;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ─── Grid: Pasos + Asistente lado a lado ──────────────────────── */
+.procesoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: start;
+  margin-bottom: 3rem;
+  position: relative;
+}
+
+/* ─── Pasos como flujo de texto ─────────────────────────────────── */
+.pasosFlow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  position: relative;
+}
+
+.pasoItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  width: 75%;
+  padding: 1.5rem 0;
+}
+
+.pasoIzq {
+  align-self: flex-start;
+}
+
+.pasoDer {
+  align-self: flex-end;
+}
+
+.pasoNumero {
+  font-family: 'Mansalva', cursive;
+  font-size: 2.5rem;
+  color: #d1d5db;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 3.5rem;
+  text-align: right;
+  padding-top: 0.15rem;
+  transform: rotate(-3deg);
+}
+
+.pasoInfo {
+  flex: 1;
+}
+
+.pasoInfo h3 {
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  font-weight: 700;
+  color: #000;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.5px;
+  line-height: 1.3;
+}
+
+.pasoInfo p {
+  font-size: var(--font-size-md);
+  color: #666;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.pasoConector {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.conectorDer {
+  padding-left: 20%;
+}
+
+.conectorIzq {
+  padding-right: 20%;
+}
+
+/* Efecto marcador/highlighter sobre títulos */
+.highlight {
+  position: relative;
+  display: inline;
+  padding: 2px 8px;
+  margin: 0 -8px;
+}
+
+.highlight::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  top: -2px;
+  bottom: -2px;
+  z-index: -1;
+  border-radius: 4px 32px 8px 28px;
+  transform: rotate(-0.8deg) skewX(-1.5deg);
+  background:
+    conic-gradient(
+      from -28deg,
+      rgb(var(--mark-color) / 0.12),
+      rgb(var(--mark-color) / 0.56) 20%,
+      rgb(var(--mark-color) / 0.12) 40%,
+      rgb(var(--mark-color) / 0.5) 60%,
+      rgb(var(--mark-color) / 0.12) 80%,
+      rgb(var(--mark-color) / 0.46)
+    ),
+    linear-gradient(
+      rgb(var(--mark-color) / 0.5),
+      rgb(var(--mark-color) / 0.5)
+    );
+}
+
+.markAmarillo {
+  --mark-color: 255 232 62;
+}
+
+.markVerde {
+  --mark-color: 91 233 92;
+}
+
+.markRosa {
+  --mark-color: 255 100 185;
+}
+
+/* Flechas (legacy, hidden - replaced by pasoConector) */
+.flechaDerecha,
+.flechaIzquierda,
+.flechaBajo {
+  display: none;
+}
+
+/* ─── Asistente WhatsApp ───────────────────────────────────────── */
+.asistenteSection {
+  padding: 2rem 2rem;
+  border-left: 1px solid #e5e5e5;
+  position: relative;
+  position: sticky;
+  top: 8rem;
+}
+
+.asistenteHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.asistenteHeader h3 {
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  font-weight: 700;
+  color: #000;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.asistenteDescripcion {
+  font-size: var(--font-size-md);
+  color: #666;
+  line-height: 1.7;
+  margin: 0 0 1.25rem 0;
+}
+
+.asistenteHabilidades {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.asistenteHabilidades li {
+  font-size: var(--font-size-md);
+  color: #444;
+  line-height: 1.6;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.asistenteHabilidades li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: #25D366;
+  font-weight: 700;
+}
+
+.asistenteBoton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.75rem;
+  background: #25D366;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.asistenteBoton:hover {
+  background: #20BA5A;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+}
+
+.comoFuncionaCta {
+  text-align: center;
+  position: relative;
+}
+
 /* Buscar Cita */
 .buscarSection {
   padding: 8rem 2rem;
   background: #fafafa;
+}
+
+.consultaCitaLayout {
+  display: grid;
+  grid-template-columns: 1fr 480px 1fr;
+  gap: 2.5rem;
+  align-items: center;
+  max-width: 1300px;
+  margin: 0 auto;
 }
 
 .codigoCard {
@@ -667,8 +945,43 @@
   border: 1px solid #e5e5e5;
   border-radius: 0;
   padding: 3rem;
-  max-width: 600px;
-  margin: 0 auto;
+}
+
+.funcInfoLado {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.funcInfoIzq {
+  text-align: right;
+}
+
+.funcInfoDer {
+  text-align: left;
+}
+
+.funcCodigoOffset {
+  margin-top: -20px;
+}
+
+.funcProgresoOffset {
+  margin-top: 110px;
+}
+
+.funcInfoItem h4 {
+  font-size: clamp(1.1rem, 2.5vw, 1.35rem);
+  font-weight: 700;
+  color: #000;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.3px;
+}
+
+.funcInfoItem p {
+  font-size: var(--font-size-md);
+  color: #666;
+  line-height: 1.7;
+  margin: 0;
 }
 
 .codigoForm {
@@ -1234,6 +1547,68 @@
     grid-template-columns: 1fr;
   }
 
+  .procesoGrid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .asistenteSection {
+    border-left: none;
+    border-top: 1px solid #e5e5e5;
+    position: static;
+    padding: 2rem 0 0;
+  }
+
+  .pasoItem {
+    gap: 1.25rem;
+    width: 100%;
+    align-self: center;
+  }
+
+  .pasoNumero {
+    font-size: 2rem;
+    width: 2.5rem;
+  }
+
+  .pasoConector {
+    width: auto;
+  }
+
+  .conectorDer,
+  .conectorIzq {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .pasoConector svg {
+    width: 2px;
+    height: 30px;
+  }
+
+  .consultaCitaLayout {
+    grid-template-columns: 1fr;
+    width: auto;
+    margin-left: 0;
+    padding: 0;
+  }
+
+  .codigoCard {
+    order: -1;
+  }
+
+  .funcInfoIzq,
+  .funcInfoDer {
+    text-align: left;
+  }
+
+  .funcCodigoOffset {
+    margin-top: 0;
+  }
+
+  .funcProgresoOffset {
+    margin-top: 0;
+  }
+
   .codigoForm {
     flex-direction: column;
   }
@@ -1279,6 +1654,7 @@
   .videoSection,
   .serviciosSection,
   .beneficiosSection,
+  .comoFuncionaSection,
   .buscarSection,
   .ctaSection,
   .contactoSection {
@@ -1325,6 +1701,16 @@
     margin: 0 auto;
     left: 0;
     right: 0;
+  }
+
+  .pasoItem {
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .pasoNumero {
+    font-size: 1.75rem;
+    width: 2rem;
   }
 
   .codigoCard {

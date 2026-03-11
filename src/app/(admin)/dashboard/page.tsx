@@ -64,6 +64,16 @@ export default function DashboardPage() {
   const [fechaInicio, setFechaInicio] = useState('')
   const [fechaFin, setFechaFin] = useState('')
   const [mostrarFechasPersonalizadas, setMostrarFechasPersonalizadas] = useState(false)
+  const [googleCalendarDesconectado, setGoogleCalendarDesconectado] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/google-calendar/status')
+      .then(res => res.json())
+      .then(data => {
+        if (!data.configured) setGoogleCalendarDesconectado(true)
+      })
+      .catch(() => setGoogleCalendarDesconectado(true))
+  }, [])
 
   const cargarEstadisticas = async (rango: RangoFechas, inicio?: string, fin?: string) => {
     try {
@@ -194,6 +204,26 @@ export default function DashboardPage() {
           </Button>
         </div>
       </div>
+
+      {/* Alerta Google Calendar desconectado */}
+      {googleCalendarDesconectado && (
+        <div className={styles.gcalAlert} onClick={() => router.push('/configuracion/google-calendar')}>
+          <div className={styles.gcalAlertContent}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <div>
+              <p className={styles.gcalAlertTitle}>Google Calendar desconectado</p>
+              <p className={styles.gcalAlertText}>Las citas no se están sincronizando. Haz clic aquí para reconectar.</p>
+            </div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </div>
+      )}
 
       {/* Selector de Rango */}
       <div className={styles.filterSection}>

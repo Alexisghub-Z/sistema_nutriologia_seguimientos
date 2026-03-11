@@ -316,6 +316,54 @@
   font-weight: var(--font-weight-medium);
 }
 
+/* Google Calendar Alert */
+.gcalAlert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-xl);
+  background-color: #fef2f2;
+  border-left: 4px solid #ef4444;
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-xl);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.gcalAlert:hover {
+  background-color: #fee2e2;
+}
+
+.gcalAlertContent {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.gcalAlertContent svg {
+  color: #ef4444;
+  flex-shrink: 0;
+}
+
+.gcalAlert > svg {
+  color: #999;
+  flex-shrink: 0;
+}
+
+.gcalAlertTitle {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: #991b1b;
+  margin: 0;
+}
+
+.gcalAlertText {
+  font-size: var(--font-size-sm);
+  color: #b91c1c;
+  margin: 0;
+}
+
 /* Alert Box */
 .alertBox {
   display: flex;

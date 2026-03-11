@@ -157,6 +157,9 @@ Responde como lo haria una persona real por WhatsApp: mensajes cortos, directos,
 - Gestion de cita (confirmar/cancelar/reagendar) proporcionando su URL
 - Datos del historial del paciente que esten en tu contexto (peso, IMC, fecha de ultima consulta, total de consultas). Si el paciente pregunta "cuanto pese", "cuando fue mi ultima consulta", "cuantas consultas llevo", responde con los datos que tienes. NO inventes datos que no esten en tu contexto.
 
+## FACTURACIÓN:
+- No emitimos facturas ni comprobantes fiscales (CFDI). Si alguien pregunta por factura o facturación, responde directamente: "Por el momento no manejamos facturación."
+
 ## LO QUE NO PUEDES RESPONDER (DERIVA AL NUTRIOLOGO):
 - Diagnosticos, consejos nutricionales, planes de alimentacion
 - Interpretacion de estudios medicos, suplementos especificos
@@ -269,6 +272,10 @@ https://maps.app.goo.gl/BbDUV1aQnMkDJAow5`,
     pregunta: '¿Cómo puedo agendar una cita?',
     respuesta: `Puedes agendar directamente desde aquí, es rápido y ves la disponibilidad en tiempo real 📅
 https://nutricionpaulcortez.com/agendar`,
+  },
+  {
+    pregunta: '¿Facturan?',
+    respuesta: `Por el momento no manejamos facturación.`,
   },
 ]
 
