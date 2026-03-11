@@ -369,6 +369,130 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Cómo funciona */}
+      <section className={styles.comoFuncionaSection}>
+        {/* Fondo decorativo punteado */}
+        <div className={styles.comoFuncionaBg} aria-hidden="true" />
+
+        <div className={styles.container}>
+          <div className={`${styles.comoFuncionaHeader} fade-in`} data-scroll-reveal>
+            <span className={styles.comoFuncionaEtiqueta}>Proceso</span>
+            <h2 className={styles.comoFuncionaTitulo}>Tu camino hacia una mejor salud</h2>
+            <p className={styles.comoFuncionaSubtitulo}>
+              Cuatro pasos simples para comenzar tu transformación
+            </p>
+          </div>
+
+          {/* Grid: Pasos a la izquierda, Asistente a la derecha */}
+          <div className={styles.procesoGrid}>
+
+            {/* Columna izquierda: pasos en zigzag */}
+            <div className={styles.pasosFlow}>
+
+              <div className={`${styles.pasoItem} ${styles.pasoIzq} fade-in-left`} data-scroll-reveal>
+<span className={styles.pasoNumero}>01</span>
+                <div className={styles.pasoInfo}>
+                  <h3>
+                    <span className={`${styles.highlight} ${styles.markAmarillo}`}>Elige fecha y hora</span>
+                  </h3>
+                  <p>Entra a <strong>Agendar Cita</strong> y selecciona el día y horario disponible que mejor te acomode.</p>
+                </div>
+              </div>
+
+              <div className={`${styles.pasoConector} ${styles.conectorDer}`} aria-hidden="true">
+                <svg viewBox="0 0 200 60" width="200" height="60">
+                  <path d="M 20 5 C 60 5, 140 55, 180 55" stroke="#bbb" strokeWidth="2.5" strokeDasharray="6 5" fill="none" />
+                  <polygon points="175,48 185,55 175,62" fill="#bbb" />
+                </svg>
+              </div>
+
+              <div className={`${styles.pasoItem} ${styles.pasoDer} fade-in-right`} data-scroll-reveal>
+<span className={styles.pasoNumero}>02</span>
+                <div className={styles.pasoInfo}>
+                  <h3>
+                    <span className={`${styles.highlight} ${styles.markVerde}`}>Ingresa tu correo</span>
+                  </h3>
+                  <p>Escribe tu correo electrónico. Si ya eres paciente, el sistema te reconoce y llena tus datos automáticamente.</p>
+                </div>
+              </div>
+
+              <div className={`${styles.pasoConector} ${styles.conectorIzq}`} aria-hidden="true">
+                <svg viewBox="0 0 200 60" width="200" height="60">
+                  <path d="M 180 5 C 140 5, 60 55, 20 55" stroke="#bbb" strokeWidth="2.5" strokeDasharray="6 5" fill="none" />
+                  <polygon points="25,48 15,55 25,62" fill="#bbb" />
+                </svg>
+              </div>
+
+              <div className={`${styles.pasoItem} ${styles.pasoIzq} fade-in-left`} data-scroll-reveal>
+<span className={styles.pasoNumero}>03</span>
+                <div className={styles.pasoInfo}>
+                  <h3>
+                    <span className={`${styles.highlight} ${styles.markRosa}`}>Confirma tus datos</span>
+                  </h3>
+                  <p>Revisa tu información y confirma. Recibirás un <strong>código único</strong> de 8 caracteres para gestionar tu cita en cualquier momento.</p>
+                </div>
+              </div>
+
+              <div className={`${styles.pasoConector} ${styles.conectorDer}`} aria-hidden="true">
+                <svg viewBox="0 0 200 60" width="200" height="60">
+                  <path d="M 20 5 C 60 5, 140 55, 180 55" stroke="#bbb" strokeWidth="2.5" strokeDasharray="6 5" fill="none" />
+                  <polygon points="175,48 185,55 175,62" fill="#bbb" />
+                </svg>
+              </div>
+
+              <div className={`${styles.pasoItem} ${styles.pasoDer} fade-in-right`} data-scroll-reveal>
+<span className={styles.pasoNumero}>04</span>
+                <div className={styles.pasoInfo}>
+                  <h3>
+                    <span className={`${styles.highlight} ${styles.markVerde}`}>Recibe tu confirmación</span>
+                  </h3>
+                  <p>Te llegará un mensaje de <strong>WhatsApp</strong> con todos los detalles y recordatorios automáticos antes de tu cita.</p>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Columna derecha: Asistente WhatsApp */}
+            <div className={`${styles.asistenteSection} fade-in-right`} data-scroll-reveal>
+              <div className={styles.asistenteHeader}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="#25D366">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                </svg>
+                <h3>
+                  <span className={`${styles.highlight} ${styles.markVerde}`}>Asistente por WhatsApp</span>
+                </h3>
+              </div>
+              <p className={styles.asistenteDescripcion}>
+                Nuestro asistente inteligente te ayuda al instante, las 24 horas, los 7 días de la semana.
+              </p>
+              <ul className={styles.asistenteHabilidades}>
+                <li>Consultar precios, horarios y ubicación del consultorio</li>
+                <li>Agendar, confirmar, cancelar o reagendar tu cita</li>
+                <li>Conocer los servicios y modalidades de consulta</li>
+                <li>Revisar tu peso, IMC y fecha de última consulta</li>
+                <li>Resolver dudas generales al instante</li>
+              </ul>
+              <button
+                onClick={() => window.open('https://wa.me/5219514577514', '_blank')}
+                className={styles.asistenteBoton}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                </svg>
+                Escríbenos
+              </button>
+            </div>
+
+          </div>
+
+          <div className={`${styles.comoFuncionaCta} fade-in`} data-scroll-reveal>
+            <button onClick={() => router.push('/agendar')} className={styles.ctaPrimary}>
+              Agendar mi cita ahora
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* Buscar Cita por Código */}
       <section id="buscar-cita" className={styles.buscarSection}>
         <div className={styles.container}>
@@ -379,48 +503,78 @@ export default function Home() {
             Ingresa tu código único para ver detalles, cancelar o reagendar
           </p>
 
-          <div className={`${styles.codigoCard} scale-in`} data-scroll-reveal>
-            <form onSubmit={buscarCita} className={styles.codigoForm}>
-              <input
-                type="text"
-                value={codigo}
-                onChange={(e) => setCodigo(e.target.value.toUpperCase().replace(/\s/g, ''))}
-                placeholder="ABC123DE"
-                className={styles.codigoInput}
-                maxLength={8}
-                required
-              />
-              <button
-                type="submit"
-                className={styles.codigoButton}
-                disabled={loading || codigo.length < 8}
-              >
-                {loading ? 'Buscando...' : 'Buscar'}
-              </button>
-            </form>
-
-            {error && <p className={styles.error}>{error}</p>}
-
-            <div className={styles.divider}>
-              <span>o</span>
+          <div className={styles.consultaCitaLayout}>
+            {/* Columna izquierda: buscar por email */}
+            <div className={`${styles.funcInfoLado} ${styles.funcInfoIzq} fade-in-left`} data-scroll-reveal>
+              <div className={styles.funcInfoItem}>
+                <h4>
+                  <span className={`${styles.highlight} ${styles.markVerde}`}>Buscar por email</span>
+                </h4>
+                <p>Si no tienes tu código a la mano, puedes buscar tu cita activa ingresando el correo electrónico con el que te registraste. El sistema te mostrará tu próxima cita.</p>
+              </div>
             </div>
 
-            <div className={styles.emailOption}>
-              <p className={styles.emailOptionText}>¿No tienes el código?</p>
-              <button onClick={() => router.push('/mis-citas')} className={styles.emailButton}>
-                Ver mi cita con email
-              </button>
+            {/* Centro: panel */}
+            <div className={`${styles.codigoCard} scale-in`} data-scroll-reveal>
+              <form onSubmit={buscarCita} className={styles.codigoForm}>
+                <input
+                  type="text"
+                  value={codigo}
+                  onChange={(e) => setCodigo(e.target.value.toUpperCase().replace(/\s/g, ''))}
+                  placeholder="ABC123DE"
+                  className={styles.codigoInput}
+                  maxLength={8}
+                  required
+                />
+                <button
+                  type="submit"
+                  className={styles.codigoButton}
+                  disabled={loading || codigo.length < 8}
+                >
+                  {loading ? 'Buscando...' : 'Buscar'}
+                </button>
+              </form>
+
+              {error && <p className={styles.error}>{error}</p>}
+
+              <div className={styles.divider}>
+                <span>o</span>
+              </div>
+
+              <div className={styles.emailOption}>
+                <p className={styles.emailOptionText}>¿No tienes el código?</p>
+                <button onClick={() => router.push('/mis-citas')} className={styles.emailButton}>
+                  Ver mi cita con email
+                </button>
+              </div>
+
+              <div className={styles.divider}>
+                <span>o</span>
+              </div>
+
+              <div className={styles.emailOption}>
+                <p className={styles.emailOptionText}>¿Quieres ver tu evolución?</p>
+                <button onClick={() => router.push('/mi-progreso')} className={styles.emailButton}>
+                  Ver mi progreso de peso y medidas
+                </button>
+              </div>
             </div>
 
-            <div className={styles.divider}>
-              <span>o</span>
-            </div>
+            {/* Columna derecha: código de cita + mi progreso */}
+            <div className={`${styles.funcInfoLado} ${styles.funcInfoDer} fade-in-right`} data-scroll-reveal>
+              <div className={`${styles.funcInfoItem} ${styles.funcCodigoOffset}`}>
+                <h4>
+                  <span className={`${styles.highlight} ${styles.markAmarillo}`}>Código de cita</span>
+                </h4>
+                <p>Al agendar tu cita recibes un código único de 8 caracteres por WhatsApp. Con él puedes ver los detalles, confirmar asistencia, cancelar o reagendar en cualquier momento.</p>
+              </div>
 
-            <div className={styles.emailOption}>
-              <p className={styles.emailOptionText}>¿Quieres ver tu evolución?</p>
-              <button onClick={() => router.push('/mi-progreso')} className={styles.emailButton}>
-                Ver mi progreso de peso y medidas
-              </button>
+              <div className={`${styles.funcInfoItem} ${styles.funcProgresoOffset}`}>
+                <h4>
+                  <span className={`${styles.highlight} ${styles.markRosa}`}>Mi progreso</span>
+                </h4>
+                <p>Consulta tu evolución de peso, IMC, medidas corporales y composición corporal a lo largo de tus consultas. Solo necesitas tu correo para acceder.</p>
+              </div>
             </div>
           </div>
         </div>

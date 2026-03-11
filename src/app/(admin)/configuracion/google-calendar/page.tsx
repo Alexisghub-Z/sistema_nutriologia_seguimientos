@@ -211,10 +211,10 @@ function GoogleCalendarContent() {
                     <div className={styles.connectedActions}>
                       <Button
                         variant="secondary"
-                        onClick={() => window.location.reload()}
-                        disabled={disconnecting}
+                        onClick={handleConnect}
+                        disabled={connecting || disconnecting}
                       >
-                        Reconectar
+                        {connecting ? 'Conectando...' : 'Reconectar'}
                       </Button>
                       <Button
                         variant="outline"
