@@ -42,15 +42,10 @@ function formatearFechaTooltip(fecha: string) {
   })
 }
 
-function DeltaBadge({ delta, unit, invertido = false }: { delta: number; unit: string; invertido?: boolean }) {
-  const esMejora = invertido ? delta < 0 : delta > 0
-  const color = delta === 0 ? '#6b7280' : esMejora ? '#16a34a' : '#dc2626'
-  const signo = delta > 0 ? '+' : ''
-  return (
-    <span style={{ color, fontSize: '11px', fontWeight: 600 }}>
-      {signo}{delta.toFixed(1)} {unit}
-    </span>
-  )
+function colorDelta(delta: number, bajarEsBueno: boolean): string {
+  if (delta === 0) return '#6b7280'
+  const esMejora = bajarEsBueno ? delta < 0 : delta > 0
+  return esMejora ? '#16a34a' : '#dc2626'
 }
 
 function WeightTooltip({ active, payload, label }: any) {
@@ -59,38 +54,37 @@ function WeightTooltip({ active, payload, label }: any) {
   const punto: DataPointConDelta = payload[0]?.payload
   const fecha = formatearFechaTooltip(label)
 
-  const filas = payload.map((p: any) => {
-    const nombre = p.name
-    const valor = p.value
-    const color = p.color
-    let delta: number | null = null
-    let unit = ''
-    if (p.dataKey === 'peso') { delta = punto.delta_peso; unit = 'kg' }
-    if (p.dataKey === 'imc') { delta = punto.delta_imc; unit = '' }
+  type FilaCfg = { name: string; valor: number | null; unit: string; color: string; delta: number | null; bajarEsBueno: boolean }
+  const filas: FilaCfg[] = []
 
-    return { nombre, valor, color, delta, unit }
-  })
+  for (const p of payload) {
+    if (p.dataKey === 'peso') {
+      filas.push({ name: p.name, valor: p.value, unit: ' kg', color: p.color, delta: punto.delta_peso, bajarEsBueno: true })
+    } else if (p.dataKey === 'imc') {
+      filas.push({ name: p.name, valor: p.value, unit: '', color: p.color, delta: punto.delta_imc, bajarEsBueno: true })
+    }
+  }
+
+  const hayDelta = filas.some((f) => f.delta != null)
 
   return (
     <div className={styles.customTooltip}>
       <p className={styles.tooltipFecha}>{fecha}</p>
       <div className={styles.tooltipFilas}>
-        {filas.map(({ nombre, valor, color, delta, unit }: any) => (
-          <div key={nombre} className={styles.tooltipFila}>
-            <span className={styles.tooltipDot} style={{ backgroundColor: color }} />
-            <span className={styles.tooltipNombre}>{nombre}:</span>
-            <span className={styles.tooltipValor}>{valor != null ? Number(valor).toFixed(1) : '—'}{unit ? ` ${unit}` : ''}</span>
-            {delta != null && (
-              <span className={styles.tooltipDelta}>
-                <DeltaBadge delta={delta} unit={unit} invertido={true} />
+        {filas.map((f) => (
+          <div key={f.name} className={styles.tooltipFila}>
+            <span className={styles.tooltipDot} style={{ backgroundColor: f.color }} />
+            <span className={styles.tooltipNombre}>{f.name}:</span>
+            <span className={styles.tooltipValor}>{f.valor != null ? Number(f.valor).toFixed(1) : '—'}{f.unit}</span>
+            {f.delta != null && (
+              <span className={styles.tooltipDelta} style={{ color: colorDelta(f.delta, f.bajarEsBueno), fontSize: '11px', fontWeight: 600 }}>
+                {f.delta > 0 ? '+' : ''}{f.delta.toFixed(1)}{f.unit}
               </span>
             )}
           </div>
         ))}
       </div>
-      {filas.some((f: any) => f.delta != null) && (
-        <p className={styles.tooltipHint}>vs. consulta anterior</p>
-      )}
+      {hayDelta && <p className={styles.tooltipHint}>vs. consulta anterior</p>}
     </div>
   )
 }
