@@ -38,15 +38,10 @@ function formatearFechaTooltip(fecha: string) {
   return new Date(fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function DeltaBadge({ delta, unit, invertido = false }: { delta: number; unit: string; invertido?: boolean }) {
-  const esMejora = invertido ? delta < 0 : delta > 0
-  const color = delta === 0 ? '#6b7280' : esMejora ? '#16a34a' : '#dc2626'
-  const signo = delta > 0 ? '+' : ''
-  return (
-    <span style={{ color, fontSize: '11px', fontWeight: 600 }}>
-      {signo}{delta.toFixed(1)}{unit}
-    </span>
-  )
+function colorDelta(delta: number, bajarEsBueno: boolean): string {
+  if (delta === 0) return '#6b7280'
+  const esMejora = bajarEsBueno ? delta < 0 : delta > 0
+  return esMejora ? '#16a34a' : '#dc2626'
 }
 
 function BodyTooltip({ active, payload, label }: any) {
@@ -55,35 +50,40 @@ function BodyTooltip({ active, payload, label }: any) {
   const punto: DataPointConDelta = payload[0]?.payload
   const fecha = formatearFechaTooltip(label)
 
-  const config: Record<string, { delta: number | null; unit: string; invertido: boolean }> = {
-    grasa_corporal:  { delta: punto.delta_grasa,   unit: '%',  invertido: true },
-    porcentaje_agua: { delta: punto.delta_agua,    unit: '%',  invertido: false },
-    masa_muscular_kg:{ delta: punto.delta_musculo, unit: ' kg', invertido: false },
+  // Configuración explícita por métrica
+  type FilaCfg = { name: string; valor: number | null; unit: string; color: string; delta: number | null; bajarEsBueno: boolean }
+  const filas: FilaCfg[] = []
+
+  for (const p of payload) {
+    if (p.dataKey === 'grasa_corporal') {
+      filas.push({ name: p.name, valor: p.value, unit: '%', color: p.color, delta: punto.delta_grasa, bajarEsBueno: true })
+    } else if (p.dataKey === 'porcentaje_agua') {
+      filas.push({ name: p.name, valor: p.value, unit: '%', color: p.color, delta: punto.delta_agua, bajarEsBueno: true })
+    } else if (p.dataKey === 'masa_muscular_kg') {
+      filas.push({ name: p.name, valor: p.value, unit: ' kg', color: p.color, delta: punto.delta_musculo, bajarEsBueno: true })
+    }
   }
+
+  const hayDelta = filas.some((f) => f.delta != null)
 
   return (
     <div className={styles.customTooltip}>
       <p className={styles.tooltipFecha}>{fecha}</p>
       <div className={styles.tooltipFilas}>
-        {payload.map((p: any) => {
-          const cfg = config[p.dataKey]
-          return (
-            <div key={p.dataKey} className={styles.tooltipFila}>
-              <span className={styles.tooltipDot} style={{ backgroundColor: p.color }} />
-              <span className={styles.tooltipNombre}>{p.name}:</span>
-              <span className={styles.tooltipValor}>{p.value != null ? Number(p.value).toFixed(1) : '—'}{cfg?.unit ?? ''}</span>
-              {cfg?.delta != null && (
-                <span className={styles.tooltipDelta}>
-                  <DeltaBadge delta={cfg.delta} unit={cfg.unit} invertido={cfg.invertido} />
-                </span>
-              )}
-            </div>
-          )
-        })}
+        {filas.map((f) => (
+          <div key={f.name} className={styles.tooltipFila}>
+            <span className={styles.tooltipDot} style={{ backgroundColor: f.color }} />
+            <span className={styles.tooltipNombre}>{f.name}:</span>
+            <span className={styles.tooltipValor}>{f.valor != null ? Number(f.valor).toFixed(1) : '—'}{f.unit}</span>
+            {f.delta != null && (
+              <span className={styles.tooltipDelta} style={{ color: colorDelta(f.delta, f.bajarEsBueno), fontSize: '11px', fontWeight: 600 }}>
+                {f.delta > 0 ? '+' : ''}{f.delta.toFixed(1)}{f.unit}
+              </span>
+            )}
+          </div>
+        ))}
       </div>
-      {payload.some((p: any) => config[p.dataKey]?.delta != null) && (
-        <p className={styles.tooltipHint}>vs. consulta anterior</p>
-      )}
+      {hayDelta && <p className={styles.tooltipHint}>vs. consulta anterior</p>}
     </div>
   )
 }
@@ -174,9 +174,9 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
                   <span className={styles.statLabel}>Cambio masa musc.:</span>
                   <span
                     className={`${styles.statValue} ${
-                      diferenciaMusculo > 0
+                      diferenciaMusculo < 0
                         ? styles.positive
-                        : diferenciaMusculo < 0
+                        : diferenciaMusculo > 0
                           ? styles.negative
                           : ''
                     }`}
@@ -199,9 +199,9 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
                   <span className={styles.statLabel}>Cambio % agua:</span>
                   <span
                     className={`${styles.statValue} ${
-                      diferenciaAgua > 0
+                      diferenciaAgua < 0
                         ? styles.positive
-                        : diferenciaAgua < 0
+                        : diferenciaAgua > 0
                           ? styles.negative
                           : ''
                     }`}

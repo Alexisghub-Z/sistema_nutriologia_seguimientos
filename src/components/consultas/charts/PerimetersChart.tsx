@@ -45,55 +45,52 @@ function formatearFechaTooltip(fecha: string) {
   return new Date(fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function DeltaBadge({ delta, unit }: { delta: number; unit: string }) {
-  const color = delta === 0 ? '#6b7280' : delta < 0 ? '#16a34a' : '#dc2626'
-  const signo = delta > 0 ? '+' : ''
-  return (
-    <span style={{ color, fontSize: '11px', fontWeight: 600 }}>
-      {signo}{delta.toFixed(1)} {unit}
-    </span>
-  )
+function colorDelta(delta: number): string {
+  if (delta === 0) return '#6b7280'
+  // En perímetros, bajar es bueno
+  return delta < 0 ? '#16a34a' : '#dc2626'
 }
 
-const DELTA_KEY: Record<string, keyof DataPointConDelta> = {
-  cintura:          'delta_cintura',
-  cadera_maximo:    'delta_cadera',
-  brazo_relajado:   'delta_brazo_relajado',
-  brazo_flexionado: 'delta_brazo_flexionado',
-  muslo_maximo:     'delta_muslo_maximo',
-  muslo_medio:      'delta_muslo_medio',
+const DELTA_MAP: Record<string, keyof DataPointConDelta> = {
+  cintura:            'delta_cintura',
+  cadera_maximo:      'delta_cadera',
+  brazo_relajado:     'delta_brazo_relajado',
+  brazo_flexionado:   'delta_brazo_flexionado',
+  muslo_maximo:       'delta_muslo_maximo',
+  muslo_medio:        'delta_muslo_medio',
   pantorrilla_maximo: 'delta_pantorrilla',
 }
 
 function PerimetersTooltip({ active, payload, label }: any) {
   if (!active || !payload || payload.length === 0) return null
   const punto: DataPointConDelta = payload[0]?.payload
+  let hayDelta = false
+
+  const filas = payload.map((p: any) => {
+    const deltaKey = DELTA_MAP[p.dataKey as string]
+    const delta = deltaKey !== undefined ? (punto[deltaKey] as number | null) : null
+    if (delta != null) hayDelta = true
+    return { dataKey: p.dataKey as string, name: p.name as string, valor: p.value as number | null, color: p.color as string, delta }
+  })
+
   return (
     <div className={styles.customTooltip}>
       <p className={styles.tooltipFecha}>{formatearFechaTooltip(label)}</p>
       <div className={styles.tooltipFilas}>
-        {payload.map((p: any) => {
-          const deltaKey = DELTA_KEY[p.dataKey]
-          const delta = deltaKey ? (punto[deltaKey] as number | null) : null
-          return (
-            <div key={p.dataKey} className={styles.tooltipFila}>
-              <span className={styles.tooltipDot} style={{ backgroundColor: p.color }} />
-              <span className={styles.tooltipNombre}>{p.name}:</span>
-              <span className={styles.tooltipValor}>{p.value != null ? Number(p.value).toFixed(1) : '—'} cm</span>
-              {delta != null && (
-                <span className={styles.tooltipDelta}>
-                  <DeltaBadge delta={delta} unit="cm" />
-                </span>
-              )}
-            </div>
-          )
-        })}
+        {filas.map((f: { dataKey: string; name: string; valor: number | null; color: string; delta: number | null }) => (
+          <div key={f.dataKey} className={styles.tooltipFila}>
+            <span className={styles.tooltipDot} style={{ backgroundColor: f.color }} />
+            <span className={styles.tooltipNombre}>{f.name}:</span>
+            <span className={styles.tooltipValor}>{f.valor != null ? Number(f.valor).toFixed(1) : '—'} cm</span>
+            {f.delta != null && (
+              <span className={styles.tooltipDelta} style={{ color: colorDelta(f.delta), fontSize: '11px', fontWeight: 600 }}>
+                {f.delta > 0 ? '+' : ''}{f.delta.toFixed(1)} cm
+              </span>
+            )}
+          </div>
+        ))}
       </div>
-      {payload.some((p: any) => {
-        const k = DELTA_KEY[p.dataKey]; return k && punto[k] != null
-      }) && (
-        <p className={styles.tooltipHint}>vs. consulta anterior</p>
-      )}
+      {hayDelta && <p className={styles.tooltipHint}>vs. consulta anterior</p>}
     </div>
   )
 }
