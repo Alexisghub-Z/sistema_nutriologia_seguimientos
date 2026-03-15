@@ -9,21 +9,22 @@
   margin-left: 260px;
   display: flex;
   flex-direction: column;
-  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 .content {
   flex: 1;
   padding: var(--spacing-xl);
   overflow-y: auto;
-  width: 100%;
+  min-width: 0;
 }
 
 .contentNoPadding {
   flex: 1;
   padding: 0;
   overflow: hidden;
-  width: 100%;
+  min-width: 0;
 }
 
 /* Responsive */

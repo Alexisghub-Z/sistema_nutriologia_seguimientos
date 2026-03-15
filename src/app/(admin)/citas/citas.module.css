@@ -246,24 +246,28 @@
 .diasGrid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 120px;
   gap: 0;
 }
 
 .diaVacio {
+  height: 120px;
   background: var(--color-gray-50);
-  min-height: 120px;
   border-right: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
 }
 
 .dia {
-  min-height: 120px;
+  height: 120px;
+  overflow: hidden;
   border-right: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
   padding: var(--spacing-sm);
   background: white;
   transition: background-color var(--transition-fast);
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
 }
 
 .dia:hover {
@@ -296,6 +300,9 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .citaMini {
@@ -569,11 +576,12 @@
 
   .diasGrid {
     grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: 80px;
   }
 
   .dia,
   .diaVacio {
-    min-height: 80px;
+    height: 80px;
     padding: 2px;
   }
 
@@ -647,7 +655,7 @@
 
   .dia,
   .diaVacio {
-    min-height: 60px;
+    height: 60px;
   }
 
   .diaNumero {

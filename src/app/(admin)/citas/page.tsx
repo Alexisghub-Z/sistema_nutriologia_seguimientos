@@ -371,7 +371,7 @@ function CitasContent() {
                   <div className={styles.diaNumero}>{fecha.getDate()}</div>
 
                   <div className={styles.citasDelDia}>
-                    {citasDelDia.slice(0, 3).map((cita) => (
+                    {citasDelDia.slice(0, 2).map((cita) => (
                       <div
                         key={cita.id}
                         className={styles.citaMini}
@@ -396,12 +396,12 @@ function CitasContent() {
                         </span>
                       </div>
                     ))}
-                    {citasDelDia.length > 3 && (
+                    {citasDelDia.length > 2 && (
                       <button
                         className={styles.citasMas}
-                        onClick={(e) => abrirPopoverDia(e, citasDelDia.slice(3), fecha)}
+                        onClick={(e) => abrirPopoverDia(e, citasDelDia.slice(2), fecha)}
                       >
-                        +{citasDelDia.length - 3} más
+                        +{citasDelDia.length - 2} más
                       </button>
                     )}
                   </div>
