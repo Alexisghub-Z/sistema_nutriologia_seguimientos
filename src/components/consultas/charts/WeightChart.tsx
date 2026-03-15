@@ -34,6 +34,8 @@ export default function WeightChart({ data }: WeightChartProps) {
     )
   }
 
+  const soloUnPunto = validData.length === 1
+
   // Formatear fecha para el eje X
   const formatearFecha = (fecha: string) => {
     return new Date(fecha).toLocaleDateString('es-MX', {
@@ -64,6 +66,11 @@ export default function WeightChart({ data }: WeightChartProps) {
     <div className={styles.chartContainer}>
       <div className={styles.chartHeader}>
         <h3 className={styles.chartTitle}>Evolución de Peso e IMC</h3>
+        {soloUnPunto && (
+          <p className={styles.singlePointWarning}>
+            Se necesitan al menos 2 consultas con datos para mostrar la evolución.
+          </p>
+        )}
         {pesos.length > 0 && (
           <div className={styles.stats}>
             <div className={styles.statItem}>
