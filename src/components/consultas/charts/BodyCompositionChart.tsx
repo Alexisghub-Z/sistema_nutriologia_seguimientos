@@ -24,8 +24,71 @@ interface BodyCompositionChartProps {
   data: DataPoint[]
 }
 
+interface DataPointConDelta extends DataPoint {
+  delta_grasa: number | null
+  delta_agua: number | null
+  delta_musculo: number | null
+}
+
+function formatearFecha(fecha: string) {
+  return new Date(fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })
+}
+
+function formatearFechaTooltip(fecha: string) {
+  return new Date(fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+function DeltaBadge({ delta, unit, invertido = false }: { delta: number; unit: string; invertido?: boolean }) {
+  const esMejora = invertido ? delta < 0 : delta > 0
+  const color = delta === 0 ? '#6b7280' : esMejora ? '#16a34a' : '#dc2626'
+  const signo = delta > 0 ? '+' : ''
+  return (
+    <span style={{ color, fontSize: '11px', fontWeight: 600 }}>
+      {signo}{delta.toFixed(1)}{unit}
+    </span>
+  )
+}
+
+function BodyTooltip({ active, payload, label }: any) {
+  if (!active || !payload || payload.length === 0) return null
+
+  const punto: DataPointConDelta = payload[0]?.payload
+  const fecha = formatearFechaTooltip(label)
+
+  const config: Record<string, { delta: number | null; unit: string; invertido: boolean }> = {
+    grasa_corporal:  { delta: punto.delta_grasa,   unit: '%',  invertido: true },
+    porcentaje_agua: { delta: punto.delta_agua,    unit: '%',  invertido: false },
+    masa_muscular_kg:{ delta: punto.delta_musculo, unit: ' kg', invertido: false },
+  }
+
+  return (
+    <div className={styles.customTooltip}>
+      <p className={styles.tooltipFecha}>{fecha}</p>
+      <div className={styles.tooltipFilas}>
+        {payload.map((p: any) => {
+          const cfg = config[p.dataKey]
+          return (
+            <div key={p.dataKey} className={styles.tooltipFila}>
+              <span className={styles.tooltipDot} style={{ backgroundColor: p.color }} />
+              <span className={styles.tooltipNombre}>{p.name}:</span>
+              <span className={styles.tooltipValor}>{p.value != null ? Number(p.value).toFixed(1) : '—'}{cfg?.unit ?? ''}</span>
+              {cfg?.delta != null && (
+                <span className={styles.tooltipDelta}>
+                  <DeltaBadge delta={cfg.delta} unit={cfg.unit} invertido={cfg.invertido} />
+                </span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      {payload.some((p: any) => config[p.dataKey]?.delta != null) && (
+        <p className={styles.tooltipHint}>vs. consulta anterior</p>
+      )}
+    </div>
+  )
+}
+
 export default function BodyCompositionChart({ data }: BodyCompositionChartProps) {
-  // Filtrar datos válidos
   const validData = data.filter(
     (d) => d.grasa_corporal !== null || d.porcentaje_agua !== null || d.masa_muscular_kg !== null
   )
@@ -40,32 +103,22 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
 
   const soloUnPunto = validData.length === 1
 
-  // Formatear fecha para el eje X
-  const formatearFecha = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString('es-MX', {
-      day: '2-digit',
-      month: 'short',
-    })
-  }
+  const dataConDelta: DataPointConDelta[] = validData.map((d, i) => {
+    const prev = i > 0 ? validData[i - 1] : null
+    return {
+      ...d,
+      delta_grasa:   prev?.grasa_corporal   != null && d.grasa_corporal   != null ? d.grasa_corporal   - prev.grasa_corporal   : null,
+      delta_agua:    prev?.porcentaje_agua   != null && d.porcentaje_agua   != null ? d.porcentaje_agua   - prev.porcentaje_agua   : null,
+      delta_musculo: prev?.masa_muscular_kg != null && d.masa_muscular_kg != null ? d.masa_muscular_kg - prev.masa_muscular_kg : null,
+    }
+  })
 
-  // Formatear fecha para el tooltip (incluye año)
-  const formatearFechaTooltip = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString('es-MX', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    })
-  }
-
-  // Calcular estadísticas (datos vienen ordenados de más antiguo a más reciente)
   const grasas = validData.filter((d) => d.grasa_corporal !== null).map((d) => d.grasa_corporal!)
-  const grasaInicial = grasas.length > 0 ? grasas[0] : null // Primer elemento = más antiguo
-  const grasaActual = grasas.length > 0 ? grasas[grasas.length - 1] : null // Último = más reciente
+  const grasaInicial = grasas.length > 0 ? grasas[0] : null
+  const grasaActual = grasas.length > 0 ? grasas[grasas.length - 1] : null
   const diferenciaGrasa = grasaActual && grasaInicial ? grasaActual - grasaInicial : null
 
-  const musculos = validData
-    .filter((d) => d.masa_muscular_kg !== null)
-    .map((d) => d.masa_muscular_kg!)
+  const musculos = validData.filter((d) => d.masa_muscular_kg !== null).map((d) => d.masa_muscular_kg!)
   const musculoInicial = musculos.length > 0 ? musculos[0] : null
   const musculoActual = musculos.length > 0 ? musculos[musculos.length - 1] : null
   const diferenciaMusculo = musculoActual && musculoInicial ? musculoActual - musculoInicial : null
@@ -164,7 +217,7 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
       </div>
 
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={validData}>
+        <LineChart data={dataConDelta}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis
             dataKey="fecha"
@@ -185,15 +238,7 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
             style={{ fontSize: '12px' }}
             label={{ value: 'Masa (kg)', angle: 90, position: 'insideRight' }}
           />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: '#fff',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-            }}
-            labelFormatter={formatearFechaTooltip}
-            formatter={(value: any) => value?.toFixed(1)}
-          />
+          <Tooltip content={<BodyTooltip />} />
           <Legend />
           <Line
             yAxisId="left"

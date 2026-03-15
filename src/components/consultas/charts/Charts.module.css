@@ -56,6 +56,68 @@
   color: var(--color-error);
 }
 
+/* Custom Tooltip */
+.customTooltip {
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-width: 180px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.tooltipFecha {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-gray-700);
+  margin: 0 0 8px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.tooltipFilas {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.tooltipFila {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+}
+
+.tooltipDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tooltipNombre {
+  color: var(--color-gray-600);
+  flex: 1;
+}
+
+.tooltipValor {
+  font-weight: 600;
+  color: var(--color-gray-900);
+}
+
+.tooltipDelta {
+  margin-left: 4px;
+}
+
+.tooltipHint {
+  font-size: 10px;
+  color: var(--color-gray-400);
+  margin: 6px 0 0 0;
+  padding-top: 5px;
+  border-top: 1px solid var(--color-gray-100);
+  text-align: right;
+}
+
 /* Single point warning */
 .singlePointWarning {
   font-size: var(--font-size-sm);

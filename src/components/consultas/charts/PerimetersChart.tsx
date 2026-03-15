@@ -27,6 +27,77 @@ interface PerimetersChartProps {
   data: DataPoint[]
 }
 
+interface DataPointConDelta extends DataPoint {
+  delta_brazo_relajado: number | null
+  delta_brazo_flexionado: number | null
+  delta_cintura: number | null
+  delta_cadera: number | null
+  delta_muslo_maximo: number | null
+  delta_muslo_medio: number | null
+  delta_pantorrilla: number | null
+}
+
+function formatearFecha(fecha: string) {
+  return new Date(fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })
+}
+
+function formatearFechaTooltip(fecha: string) {
+  return new Date(fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+function DeltaBadge({ delta, unit }: { delta: number; unit: string }) {
+  const color = delta === 0 ? '#6b7280' : delta < 0 ? '#16a34a' : '#dc2626'
+  const signo = delta > 0 ? '+' : ''
+  return (
+    <span style={{ color, fontSize: '11px', fontWeight: 600 }}>
+      {signo}{delta.toFixed(1)} {unit}
+    </span>
+  )
+}
+
+const DELTA_KEY: Record<string, keyof DataPointConDelta> = {
+  cintura:          'delta_cintura',
+  cadera_maximo:    'delta_cadera',
+  brazo_relajado:   'delta_brazo_relajado',
+  brazo_flexionado: 'delta_brazo_flexionado',
+  muslo_maximo:     'delta_muslo_maximo',
+  muslo_medio:      'delta_muslo_medio',
+  pantorrilla_maximo: 'delta_pantorrilla',
+}
+
+function PerimetersTooltip({ active, payload, label }: any) {
+  if (!active || !payload || payload.length === 0) return null
+  const punto: DataPointConDelta = payload[0]?.payload
+  return (
+    <div className={styles.customTooltip}>
+      <p className={styles.tooltipFecha}>{formatearFechaTooltip(label)}</p>
+      <div className={styles.tooltipFilas}>
+        {payload.map((p: any) => {
+          const deltaKey = DELTA_KEY[p.dataKey]
+          const delta = deltaKey ? (punto[deltaKey] as number | null) : null
+          return (
+            <div key={p.dataKey} className={styles.tooltipFila}>
+              <span className={styles.tooltipDot} style={{ backgroundColor: p.color }} />
+              <span className={styles.tooltipNombre}>{p.name}:</span>
+              <span className={styles.tooltipValor}>{p.value != null ? Number(p.value).toFixed(1) : '—'} cm</span>
+              {delta != null && (
+                <span className={styles.tooltipDelta}>
+                  <DeltaBadge delta={delta} unit="cm" />
+                </span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      {payload.some((p: any) => {
+        const k = DELTA_KEY[p.dataKey]; return k && punto[k] != null
+      }) && (
+        <p className={styles.tooltipHint}>vs. consulta anterior</p>
+      )}
+    </div>
+  )
+}
+
 export default function PerimetersChart({ data }: PerimetersChartProps) {
   // Filtrar datos válidos
   const validData = data.filter(
@@ -50,22 +121,20 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
 
   const soloUnPunto = validData.length === 1
 
-  // Formatear fecha para el eje X
-  const formatearFecha = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString('es-MX', {
-      day: '2-digit',
-      month: 'short',
-    })
-  }
-
-  // Formatear fecha para el tooltip (incluye año)
-  const formatearFechaTooltip = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString('es-MX', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    })
-  }
+  // Pre-calcular deltas respecto al punto anterior
+  const dataConDelta: DataPointConDelta[] = validData.map((d, i) => {
+    const prev = i > 0 ? validData[i - 1] : null
+    return {
+      ...d,
+      delta_brazo_relajado:   prev?.brazo_relajado   != null && d.brazo_relajado   != null ? d.brazo_relajado   - prev.brazo_relajado   : null,
+      delta_brazo_flexionado: prev?.brazo_flexionado != null && d.brazo_flexionado != null ? d.brazo_flexionado - prev.brazo_flexionado : null,
+      delta_cintura:          prev?.cintura          != null && d.cintura          != null ? d.cintura          - prev.cintura          : null,
+      delta_cadera:           prev?.cadera_maximo    != null && d.cadera_maximo    != null ? d.cadera_maximo    - prev.cadera_maximo    : null,
+      delta_muslo_maximo:     prev?.muslo_maximo     != null && d.muslo_maximo     != null ? d.muslo_maximo     - prev.muslo_maximo     : null,
+      delta_muslo_medio:      prev?.muslo_medio      != null && d.muslo_medio      != null ? d.muslo_medio      - prev.muslo_medio      : null,
+      delta_pantorrilla:      prev?.pantorrilla_maximo != null && d.pantorrilla_maximo != null ? d.pantorrilla_maximo - prev.pantorrilla_maximo : null,
+    }
+  })
 
   // Calcular estadísticas para todos los perímetros (datos vienen ordenados de más antiguo a más reciente)
   const cinturas = validData.filter((d) => d.cintura !== null).map((d) => d.cintura!)
@@ -311,7 +380,7 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
       </div>
 
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={validData}>
+        <LineChart data={dataConDelta}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis
             dataKey="fecha"
@@ -324,15 +393,7 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
             style={{ fontSize: '12px' }}
             label={{ value: 'cm', angle: -90, position: 'insideLeft' }}
           />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: '#fff',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-            }}
-            labelFormatter={formatearFechaTooltip}
-            formatter={(value: any) => value?.toFixed(1) + ' cm'}
-          />
+          <Tooltip content={<PerimetersTooltip />} />
           <Legend />
           <Line
             type="monotone"
