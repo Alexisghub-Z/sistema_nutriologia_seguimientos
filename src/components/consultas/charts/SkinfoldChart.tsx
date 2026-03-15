@@ -13,6 +13,7 @@ import {
 import styles from './Charts.module.css'
 
 interface DataPoint {
+  id: string
   fecha: string
   pliegue_tricipital: number | null
   pliegue_subescapular: number | null
@@ -24,6 +25,7 @@ interface DataPoint {
 
 interface SkinfoldChartProps {
   data: DataPoint[]
+  onConsultaClick: (id: string) => void
 }
 
 interface DataPointConSumaYDelta extends DataPoint {
@@ -95,7 +97,7 @@ function SkinfoldTooltip({ active, payload, label }: any) {
   )
 }
 
-export default function SkinfoldChart({ data }: SkinfoldChartProps) {
+export default function SkinfoldChart({ data, onConsultaClick }: SkinfoldChartProps) {
   // Filtrar datos válidos
   const validData = data.filter(
     (d) =>
@@ -190,7 +192,14 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
       </div>
 
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={dataConSuma}>
+        <LineChart
+          data={dataConSuma}
+          onClick={(e: any) => {
+            const id = e?.activePayload?.[0]?.payload?.id
+            if (id) onConsultaClick(id)
+          }}
+          style={{ cursor: 'pointer' }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis
             dataKey="fecha"
@@ -219,7 +228,8 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
             dataKey="pliegue_tricipital"
             stroke="#ef4444"
             strokeWidth={2}
-            dot={{ fill: '#ef4444', r: 4 }}
+            dot={{ fill: '#ef4444', r: 5 }}
+            activeDot={{ r: 10, strokeWidth: 0, onClick: (_: any, payload: any) => { if (payload?.payload?.id) onConsultaClick(payload.payload.id) } }}
             name="P. Tricipital"
             connectNulls
           />
@@ -229,7 +239,8 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
             dataKey="pliegue_subescapular"
             stroke="#f59e0b"
             strokeWidth={2}
-            dot={{ fill: '#f59e0b', r: 4 }}
+            dot={{ fill: '#f59e0b', r: 5 }}
+            activeDot={{ r: 10, strokeWidth: 0, onClick: (_: any, payload: any) => { if (payload?.payload?.id) onConsultaClick(payload.payload.id) } }}
             name="P. Subescapular"
             connectNulls
           />
@@ -239,7 +250,8 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
             dataKey="pliegue_bicipital"
             stroke="#10b981"
             strokeWidth={2}
-            dot={{ fill: '#10b981', r: 4 }}
+            dot={{ fill: '#10b981', r: 5 }}
+            activeDot={{ r: 10, strokeWidth: 0, onClick: (_: any, payload: any) => { if (payload?.payload?.id) onConsultaClick(payload.payload.id) } }}
             name="P. Bicipital"
             connectNulls
           />
@@ -249,7 +261,8 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
             dataKey="pliegue_cresta_iliaca"
             stroke="#3b82f6"
             strokeWidth={2}
-            dot={{ fill: '#3b82f6', r: 4 }}
+            dot={{ fill: '#3b82f6', r: 5 }}
+            activeDot={{ r: 10, strokeWidth: 0, onClick: (_: any, payload: any) => { if (payload?.payload?.id) onConsultaClick(payload.payload.id) } }}
             name="P. Cresta ilíaca"
             connectNulls
           />
@@ -259,7 +272,8 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
             dataKey="pliegue_supraespinal"
             stroke="#8b5cf6"
             strokeWidth={2}
-            dot={{ fill: '#8b5cf6', r: 4 }}
+            dot={{ fill: '#8b5cf6', r: 5 }}
+            activeDot={{ r: 10, strokeWidth: 0, onClick: (_: any, payload: any) => { if (payload?.payload?.id) onConsultaClick(payload.payload.id) } }}
             name="P. Supraespinal"
             connectNulls
           />
@@ -269,7 +283,8 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
             dataKey="pliegue_abdominal"
             stroke="#ec4899"
             strokeWidth={2}
-            dot={{ fill: '#ec4899', r: 4 }}
+            dot={{ fill: '#ec4899', r: 5 }}
+            activeDot={{ r: 10, strokeWidth: 0, onClick: (_: any, payload: any) => { if (payload?.payload?.id) onConsultaClick(payload.payload.id) } }}
             name="P. Abdominal"
             connectNulls
           />
@@ -281,6 +296,7 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
             strokeWidth={3}
             strokeDasharray="5 5"
             dot={{ fill: '#6b7280', r: 5 }}
+            activeDot={{ r: 10, strokeWidth: 0, onClick: (_: any, payload: any) => { if (payload?.payload?.id) onConsultaClick(payload.payload.id) } }}
             name="Suma Total"
             connectNulls
           />

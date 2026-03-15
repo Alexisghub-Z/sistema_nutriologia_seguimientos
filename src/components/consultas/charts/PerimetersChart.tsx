@@ -13,6 +13,7 @@ import {
 import styles from './Charts.module.css'
 
 interface DataPoint {
+  id: string
   fecha: string
   brazo_relajado: number | null
   brazo_flexionado: number | null
@@ -25,6 +26,7 @@ interface DataPoint {
 
 interface PerimetersChartProps {
   data: DataPoint[]
+  onConsultaClick: (id: string) => void
 }
 
 interface DataPointConDelta extends DataPoint {
@@ -95,7 +97,7 @@ function PerimetersTooltip({ active, payload, label }: any) {
   )
 }
 
-export default function PerimetersChart({ data }: PerimetersChartProps) {
+export default function PerimetersChart({ data, onConsultaClick }: PerimetersChartProps) {
   // Filtrar datos válidos
   const validData = data.filter(
     (d) =>
@@ -377,7 +379,14 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
       </div>
 
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={dataConDelta}>
+        <LineChart
+          data={dataConDelta}
+          onClick={(e: any) => {
+            const id = e?.activePayload?.[0]?.payload?.id
+            if (id) onConsultaClick(id)
+          }}
+          style={{ cursor: 'pointer' }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis
             dataKey="fecha"
@@ -397,7 +406,8 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
             dataKey="cintura"
             stroke="#f59e0b"
             strokeWidth={2}
-            dot={{ fill: '#f59e0b', r: 4 }}
+            dot={{ fill: '#f59e0b', r: 5 }}
+            activeDot={{ r: 10, strokeWidth: 0, onClick: (_: any, payload: any) => { if (payload?.payload?.id) onConsultaClick(payload.payload.id) } }}
             name="Cintura"
             connectNulls
           />
@@ -406,7 +416,8 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
             dataKey="cadera_maximo"
             stroke="#ec4899"
             strokeWidth={2}
-            dot={{ fill: '#ec4899', r: 4 }}
+            dot={{ fill: '#ec4899', r: 5 }}
+            activeDot={{ r: 10, strokeWidth: 0, onClick: (_: any, payload: any) => { if (payload?.payload?.id) onConsultaClick(payload.payload.id) } }}
             name="Cadera"
             connectNulls
           />
@@ -415,7 +426,8 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
             dataKey="brazo_relajado"
             stroke="#3b82f6"
             strokeWidth={2}
-            dot={{ fill: '#3b82f6', r: 4 }}
+            dot={{ fill: '#3b82f6', r: 5 }}
+            activeDot={{ r: 10, strokeWidth: 0, onClick: (_: any, payload: any) => { if (payload?.payload?.id) onConsultaClick(payload.payload.id) } }}
             name="Brazo relajado"
             connectNulls
           />
@@ -424,7 +436,8 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
             dataKey="brazo_flexionado"
             stroke="#8b5cf6"
             strokeWidth={2}
-            dot={{ fill: '#8b5cf6', r: 4 }}
+            dot={{ fill: '#8b5cf6', r: 5 }}
+            activeDot={{ r: 10, strokeWidth: 0, onClick: (_: any, payload: any) => { if (payload?.payload?.id) onConsultaClick(payload.payload.id) } }}
             name="Brazo flexionado"
             connectNulls
           />
@@ -433,7 +446,8 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
             dataKey="muslo_maximo"
             stroke="#10b981"
             strokeWidth={2}
-            dot={{ fill: '#10b981', r: 4 }}
+            dot={{ fill: '#10b981', r: 5 }}
+            activeDot={{ r: 10, strokeWidth: 0, onClick: (_: any, payload: any) => { if (payload?.payload?.id) onConsultaClick(payload.payload.id) } }}
             name="Muslo máximo"
             connectNulls
           />
@@ -442,7 +456,8 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
             dataKey="muslo_medio"
             stroke="#14b8a6"
             strokeWidth={2}
-            dot={{ fill: '#14b8a6', r: 4 }}
+            dot={{ fill: '#14b8a6', r: 5 }}
+            activeDot={{ r: 10, strokeWidth: 0, onClick: (_: any, payload: any) => { if (payload?.payload?.id) onConsultaClick(payload.payload.id) } }}
             name="Muslo medio"
             connectNulls
           />
@@ -451,7 +466,8 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
             dataKey="pantorrilla_maximo"
             stroke="#6366f1"
             strokeWidth={2}
-            dot={{ fill: '#6366f1', r: 4 }}
+            dot={{ fill: '#6366f1', r: 5 }}
+            activeDot={{ r: 10, strokeWidth: 0, onClick: (_: any, payload: any) => { if (payload?.payload?.id) onConsultaClick(payload.payload.id) } }}
             name="Pantorrilla"
             connectNulls
           />
