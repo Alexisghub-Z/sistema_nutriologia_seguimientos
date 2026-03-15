@@ -46,6 +46,8 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
     )
   }
 
+  const soloUnPunto = validData.length === 1
+
   // Formatear fecha para el eje X
   const formatearFecha = (fecha: string) => {
     return new Date(fecha).toLocaleDateString('es-MX', {
@@ -92,6 +94,11 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
     <div className={styles.chartContainer}>
       <div className={styles.chartHeader}>
         <h3 className={styles.chartTitle}>Pliegues Cutáneos (mm)</h3>
+        {soloUnPunto && (
+          <p className={styles.singlePointWarning}>
+            Se necesitan al menos 2 consultas con datos para mostrar la evolución.
+          </p>
+        )}
         {sumaActual !== null && (
           <div className={styles.stats}>
             <div className={styles.statItem}>
@@ -125,9 +132,17 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
             style={{ fontSize: '12px' }}
           />
           <YAxis
+            yAxisId="left"
             stroke="#6b7280"
             style={{ fontSize: '12px' }}
-            label={{ value: 'mm', angle: -90, position: 'insideLeft' }}
+            label={{ value: 'mm (pliegues)', angle: -90, position: 'insideLeft', offset: 10 }}
+          />
+          <YAxis
+            yAxisId="right"
+            orientation="right"
+            stroke="#6b7280"
+            style={{ fontSize: '12px' }}
+            label={{ value: 'mm (suma)', angle: 90, position: 'insideRight', offset: 10 }}
           />
           <Tooltip
             contentStyle={{
@@ -140,6 +155,7 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
           />
           <Legend />
           <Line
+            yAxisId="left"
             type="monotone"
             dataKey="pliegue_tricipital"
             stroke="#ef4444"
@@ -149,6 +165,7 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
             connectNulls
           />
           <Line
+            yAxisId="left"
             type="monotone"
             dataKey="pliegue_subescapular"
             stroke="#f59e0b"
@@ -158,6 +175,7 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
             connectNulls
           />
           <Line
+            yAxisId="left"
             type="monotone"
             dataKey="pliegue_bicipital"
             stroke="#10b981"
@@ -167,6 +185,7 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
             connectNulls
           />
           <Line
+            yAxisId="left"
             type="monotone"
             dataKey="pliegue_cresta_iliaca"
             stroke="#3b82f6"
@@ -176,6 +195,7 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
             connectNulls
           />
           <Line
+            yAxisId="left"
             type="monotone"
             dataKey="pliegue_supraespinal"
             stroke="#8b5cf6"
@@ -185,6 +205,7 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
             connectNulls
           />
           <Line
+            yAxisId="left"
             type="monotone"
             dataKey="pliegue_abdominal"
             stroke="#ec4899"
@@ -194,6 +215,7 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
             connectNulls
           />
           <Line
+            yAxisId="right"
             type="monotone"
             dataKey="suma_pliegues"
             stroke="#6b7280"

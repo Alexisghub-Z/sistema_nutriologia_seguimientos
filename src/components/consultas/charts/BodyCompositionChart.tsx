@@ -38,6 +38,8 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
     )
   }
 
+  const soloUnPunto = validData.length === 1
+
   // Formatear fecha para el eje X
   const formatearFecha = (fecha: string) => {
     return new Date(fecha).toLocaleDateString('es-MX', {
@@ -77,6 +79,11 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
     <div className={styles.chartContainer}>
       <div className={styles.chartHeader}>
         <h3 className={styles.chartTitle}>Composición Corporal</h3>
+        {soloUnPunto && (
+          <p className={styles.singlePointWarning}>
+            Se necesitan al menos 2 consultas con datos para mostrar la evolución.
+          </p>
+        )}
         <div className={styles.stats}>
           {grasaActual !== null && (
             <>

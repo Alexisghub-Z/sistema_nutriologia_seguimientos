@@ -56,6 +56,17 @@
   color: var(--color-error);
 }
 
+/* Single point warning */
+.singlePointWarning {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-500);
+  margin: 0 0 var(--spacing-md) 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-gray-50);
+  border-left: 3px solid var(--color-gray-300);
+  border-radius: var(--radius-sm);
+}
+
 /* Empty State */
 .emptyChart {
   display: flex;
