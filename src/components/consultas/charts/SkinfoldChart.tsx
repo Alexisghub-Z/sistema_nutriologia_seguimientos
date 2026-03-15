@@ -54,6 +54,15 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
     })
   }
 
+  // Formatear fecha para el tooltip (incluye año)
+  const formatearFechaTooltip = (fecha: string) => {
+    return new Date(fecha).toLocaleDateString('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+  }
+
   // Calcular suma de pliegues (útil para evaluación antropométrica)
   const dataConSuma = validData.map((d) => {
     const suma = [
@@ -126,6 +135,7 @@ export default function SkinfoldChart({ data }: SkinfoldChartProps) {
               border: '1px solid #e5e7eb',
               borderRadius: '8px',
             }}
+            labelFormatter={formatearFechaTooltip}
             formatter={(value: any) => value?.toFixed(1) + ' mm'}
           />
           <Legend />
