@@ -149,7 +149,7 @@ export default function WeightChart({ data }: WeightChartProps) {
               <span className={styles.statLabel}>Cambio:</span>
               <span
                 className={`${styles.statValue} ${
-                  diferenciaPeso > 0 ? styles.positive : diferenciaPeso < 0 ? styles.negative : ''
+                  diferenciaPeso < 0 ? styles.positive : diferenciaPeso > 0 ? styles.negative : ''
                 }`}
               >
                 {diferenciaPeso > 0 ? '+' : ''}
