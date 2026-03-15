@@ -13,6 +13,7 @@ import {
 import styles from './Charts.module.css'
 
 interface DataPoint {
+  id: string
   fecha: string
   grasa_corporal: number | null
   porcentaje_agua: number | null
@@ -22,7 +23,9 @@ interface DataPoint {
 
 interface BodyCompositionChartProps {
   data: DataPoint[]
+  onConsultaClick: (id: string) => void
 }
+
 
 interface DataPointConDelta extends DataPoint {
   delta_grasa: number | null
@@ -88,7 +91,7 @@ function BodyTooltip({ active, payload, label }: any) {
   )
 }
 
-export default function BodyCompositionChart({ data }: BodyCompositionChartProps) {
+export default function BodyCompositionChart({ data, onConsultaClick }: BodyCompositionChartProps) {
   const validData = data.filter(
     (d) => d.grasa_corporal !== null || d.porcentaje_agua !== null || d.masa_muscular_kg !== null
   )
@@ -217,7 +220,14 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
       </div>
 
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={dataConDelta}>
+        <LineChart
+          data={dataConDelta}
+          onClick={(e: any) => {
+            const id = e?.activePayload?.[0]?.payload?.id
+            if (id) onConsultaClick(id)
+          }}
+          style={{ cursor: 'pointer' }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis
             dataKey="fecha"
@@ -246,7 +256,8 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
             dataKey="grasa_corporal"
             stroke="#ef4444"
             strokeWidth={2}
-            dot={{ fill: '#ef4444', r: 4 }}
+            dot={{ fill: '#ef4444', r: 5 }}
+            activeDot={{ r: 10, strokeWidth: 0, onClick: (_: any, payload: any) => { if (payload?.payload?.id) onConsultaClick(payload.payload.id) } }}
             name="% Grasa"
             connectNulls
           />
@@ -256,7 +267,8 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
             dataKey="porcentaje_agua"
             stroke="#06b6d4"
             strokeWidth={2}
-            dot={{ fill: '#06b6d4', r: 4 }}
+            dot={{ fill: '#06b6d4', r: 5 }}
+            activeDot={{ r: 10, strokeWidth: 0, onClick: (_: any, payload: any) => { if (payload?.payload?.id) onConsultaClick(payload.payload.id) } }}
             name="% Agua"
             connectNulls
           />
@@ -266,7 +278,8 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
             dataKey="masa_muscular_kg"
             stroke="#8b5cf6"
             strokeWidth={2}
-            dot={{ fill: '#8b5cf6', r: 4 }}
+            dot={{ fill: '#8b5cf6', r: 5 }}
+            activeDot={{ r: 10, strokeWidth: 0, onClick: (_: any, payload: any) => { if (payload?.payload?.id) onConsultaClick(payload.payload.id) } }}
             name="Masa Muscular (kg)"
             connectNulls
           />

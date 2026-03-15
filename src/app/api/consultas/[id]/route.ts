@@ -57,6 +57,29 @@ const consultaUpdateSchema = z.object({
   notas_pago: z.string().nullable().optional(),
 })
 
+// GET /api/consultas/[id] - Obtener consulta completa con archivos
+export async function GET(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const user = await getAuthUser()
+  if (!user) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  }
+
+  const { id } = await context.params
+
+  const consulta = await prisma.consulta.findUnique({
+    where: { id },
+    include: {
+      archivos: { orderBy: { createdAt: 'desc' } },
+    },
+  })
+
+  if (!consulta) {
+    return NextResponse.json({ error: 'Consulta no encontrada' }, { status: 404 })
+  }
+
+  return NextResponse.json({ consulta })
+}
+
 // PATCH /api/consultas/[id] - Actualizar consulta existente
 export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {

@@ -13,6 +13,7 @@ import {
 import styles from './Charts.module.css'
 
 interface DataPoint {
+  id: string
   fecha: string
   peso: number | null
   imc: number | null
@@ -20,6 +21,7 @@ interface DataPoint {
 
 interface WeightChartProps {
   data: DataPoint[]
+  onConsultaClick: (id: string) => void
 }
 
 interface DataPointConDelta extends DataPoint {
@@ -89,7 +91,7 @@ function WeightTooltip({ active, payload, label }: any) {
   )
 }
 
-export default function WeightChart({ data }: WeightChartProps) {
+export default function WeightChart({ data, onConsultaClick }: WeightChartProps) {
   const validData = data.filter((d) => d.peso !== null || d.imc !== null)
 
   if (validData.length === 0) {
@@ -161,7 +163,14 @@ export default function WeightChart({ data }: WeightChartProps) {
       </div>
 
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={dataConDelta}>
+        <LineChart
+          data={dataConDelta}
+          onClick={(e: any) => {
+            const id = e?.activePayload?.[0]?.payload?.id
+            if (id) onConsultaClick(id)
+          }}
+          style={{ cursor: 'pointer' }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis
             dataKey="fecha"
@@ -190,7 +199,8 @@ export default function WeightChart({ data }: WeightChartProps) {
             dataKey="peso"
             stroke="#2d9f5d"
             strokeWidth={2}
-            dot={{ fill: '#2d9f5d', r: 4 }}
+            dot={{ fill: '#2d9f5d', r: 5 }}
+            activeDot={{ r: 10, strokeWidth: 0, onClick: (_: any, payload: any) => { if (payload?.payload?.id) onConsultaClick(payload.payload.id) } }}
             name="Peso (kg)"
             connectNulls
           />
@@ -200,7 +210,8 @@ export default function WeightChart({ data }: WeightChartProps) {
             dataKey="imc"
             stroke="#3b82f6"
             strokeWidth={2}
-            dot={{ fill: '#3b82f6', r: 4 }}
+            dot={{ fill: '#3b82f6', r: 5 }}
+            activeDot={{ r: 10, strokeWidth: 0, onClick: (_: any, payload: any) => { if (payload?.payload?.id) onConsultaClick(payload.payload.id) } }}
             name="IMC"
             connectNulls
           />

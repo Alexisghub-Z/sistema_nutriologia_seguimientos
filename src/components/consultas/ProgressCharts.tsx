@@ -5,6 +5,7 @@ import WeightChart from './charts/WeightChart'
 import BodyCompositionChart from './charts/BodyCompositionChart'
 import PerimetersChart from './charts/PerimetersChart'
 import SkinfoldChart from './charts/SkinfoldChart'
+import ConsultaPreviewModal from './ConsultaPreviewModal'
 import Spinner from '@/components/ui/Spinner'
 import Alert from '@/components/ui/Alert'
 import styles from './ProgressCharts.module.css'
@@ -49,6 +50,9 @@ export default function ProgressCharts({ pacienteId }: ProgressChartsProps) {
   const [filterType, setFilterType] = useState<FilterType>('all')
   const [customStartDate, setCustomStartDate] = useState<string>('')
   const [customEndDate, setCustomEndDate] = useState<string>('')
+
+  // Modal de preview de consulta
+  const [previewConsultaId, setPreviewConsultaId] = useState<string | null>(null)
 
   // Preparar datos ordenados por fecha (más antiguo a más reciente para las gráficas)
   const consultasOrdenadas = useMemo(() => {
@@ -315,17 +319,24 @@ export default function ProgressCharts({ pacienteId }: ProgressChartsProps) {
 
       <div className={styles.charts}>
         {/* Peso e IMC */}
-        <WeightChart data={consultasFiltradas} />
+        <WeightChart data={consultasFiltradas} onConsultaClick={setPreviewConsultaId} />
 
         {/* Composición Corporal */}
-        <BodyCompositionChart data={consultasFiltradas} />
+        <BodyCompositionChart data={consultasFiltradas} onConsultaClick={setPreviewConsultaId} />
 
         {/* Perímetros */}
-        <PerimetersChart data={consultasFiltradas} />
+        <PerimetersChart data={consultasFiltradas} onConsultaClick={setPreviewConsultaId} />
 
         {/* Pliegues Cutáneos */}
-        <SkinfoldChart data={consultasFiltradas} />
+        <SkinfoldChart data={consultasFiltradas} onConsultaClick={setPreviewConsultaId} />
       </div>
+
+      {previewConsultaId && (
+        <ConsultaPreviewModal
+          consultaId={previewConsultaId}
+          onClose={() => setPreviewConsultaId(null)}
+        />
+      )}
 
       <div className={styles.footer}>
         <p className={styles.footerText}>
