@@ -56,6 +56,15 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
     })
   }
 
+  // Formatear fecha para el tooltip (incluye año)
+  const formatearFechaTooltip = (fecha: string) => {
+    return new Date(fecha).toLocaleDateString('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+  }
+
   // Calcular estadísticas para todos los perímetros (datos vienen ordenados de más antiguo a más reciente)
   const cinturas = validData.filter((d) => d.cintura !== null).map((d) => d.cintura!)
   const cinturaInicial = cinturas.length > 0 ? cinturas[0] : null
@@ -314,6 +323,7 @@ export default function PerimetersChart({ data }: PerimetersChartProps) {
               border: '1px solid #e5e7eb',
               borderRadius: '8px',
             }}
+            labelFormatter={formatearFechaTooltip}
             formatter={(value: any) => value?.toFixed(1) + ' cm'}
           />
           <Legend />

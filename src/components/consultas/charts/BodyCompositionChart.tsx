@@ -46,6 +46,15 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
     })
   }
 
+  // Formatear fecha para el tooltip (incluye año)
+  const formatearFechaTooltip = (fecha: string) => {
+    return new Date(fecha).toLocaleDateString('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+  }
+
   // Calcular estadísticas (datos vienen ordenados de más antiguo a más reciente)
   const grasas = validData.filter((d) => d.grasa_corporal !== null).map((d) => d.grasa_corporal!)
   const grasaInicial = grasas.length > 0 ? grasas[0] : null // Primer elemento = más antiguo
@@ -175,6 +184,7 @@ export default function BodyCompositionChart({ data }: BodyCompositionChartProps
               border: '1px solid #e5e7eb',
               borderRadius: '8px',
             }}
+            labelFormatter={formatearFechaTooltip}
             formatter={(value: any) => value?.toFixed(1)}
           />
           <Legend />

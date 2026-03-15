@@ -42,6 +42,15 @@ export default function WeightChart({ data }: WeightChartProps) {
     })
   }
 
+  // Formatear fecha para el tooltip (incluye año)
+  const formatearFechaTooltip = (fecha: string) => {
+    return new Date(fecha).toLocaleDateString('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+  }
+
   // Calcular estadísticas (datos vienen ordenados de más antiguo a más reciente)
   const pesos = validData.filter((d) => d.peso !== null).map((d) => d.peso!)
   const pesoInicial = pesos[0]! // Primer elemento = más antiguo
@@ -114,6 +123,7 @@ export default function WeightChart({ data }: WeightChartProps) {
               border: '1px solid #e5e7eb',
               borderRadius: '8px',
             }}
+            labelFormatter={formatearFechaTooltip}
             formatter={(value: any) => value?.toFixed(1)}
           />
           <Legend />
