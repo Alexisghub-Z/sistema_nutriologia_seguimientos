@@ -132,6 +132,28 @@ const PLANTILLAS_APROBADAS: Record<string, PlantillaAprobada | null> = {
 }
 
 /**
+ * Textos reales de las plantillas aprobadas por Meta
+ * Se usan para reconstruir el contenido legible en modo producción
+ * Las variables usan {llaves simples} para ser compatibles con reemplazarVariables()
+ */
+const TEXTOS_PLANTILLAS: Partial<Record<TipoPlantilla, string>> = {
+  [TipoPlantilla.CONFIRMACION]:
+    'Hola {nombre}, tu cita con el nutriologo Paul ha sido agendada.\n\n📅 Fecha: {fecha_cita}\n🕐 Hora: {hora_cita}\n\nPuedes confirmar tu asistencia o cancelarla desde el botón de abajo.',
+  [TipoPlantilla.RECORDATORIO_24H]:
+    'Hola {nombre}, te recordamos que mañana tienes cita con el Nutriólogo Paul.\n📅 Fecha: mañana {fecha_cita}\n🕐 Hora: {hora_cita}\n\nPor favor confirma tu asistencia',
+  [TipoPlantilla.RECORDATORIO_1H]:
+    'Hola {nombre}, tu cita con el Nutriólogo Paul es en 1 hora.⏰\nhora: {hora_cita}\n\nTe esperamos, recuerda llegar puntual. 😊',
+  [TipoPlantilla.AGRADECIMIENTO_CONSULTA]:
+    'Hola {nombre} 👋\n\nGracias por tu consulta de hoy. Fue un placer atenderte 😊\n\nRecuerda seguir tu plan nutricional y cualquier duda estamos aquí para apoyarte.\n\nSíguenos en nuestras redes sociales para tips, recetas y más contenido de nutrición:\nhttps://linktr.ee/ederalvarez.osmo',
+  [TipoPlantilla.SEGUIMIENTO_INICIAL]:
+    'Hola {nombre}, han pasado unos días desde tu consulta con el Nutriólogo Paul. 👋\n¿Cómo te has sentido siguiendo tu plan nutricional?\nSi tienes alguna duda, no dudes en contactar directamente al Nutriólogo Paul.',
+  [TipoPlantilla.SEGUIMIENTO_PREVIO_CITA]:
+    'Hola {nombre}, falta aproximadamente una semana para tu próxima cita el {fecha_cita}\nsi deseas agendar ahora, no dudes en decirmelo',
+  [TipoPlantilla.RECORDATORIO_AGENDAR]:
+    'Hola {nombre}, te recuerdo que tienes una cita próxima agendada para mañana {fecha_cita}.\n\nSi necesitas reagendar o tienes alguna duda o quieres contactar al nutriólogo Paúl Solo escribe: QUIERO HABLAR CON PAÚL\n\n¡Nos vemos mañana!',
+}
+
+/**
  * Formatea una fecha en formato legible en español
  * Ejemplo: "20 de Enero, 2025"
  */
@@ -338,8 +360,16 @@ export async function generarMensaje(
 
     const contentVariables = prepararVariablesAprobadas(tipo, variables)
 
+    // Reconstruir texto legible para mostrar al nutriólogo y dar contexto a la IA
+    let contenido: string | undefined
+    const textoPlantilla = TEXTOS_PLANTILLAS[tipo]
+    if (textoPlantilla) {
+      contenido = reemplazarVariables(textoPlantilla, variables)
+    }
+
     return {
       modo: 'produccion',
+      contenido,
       contentSid,
       contentVariables: JSON.stringify(contentVariables),
     }
