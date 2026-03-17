@@ -85,6 +85,18 @@
   --transition-normal: 300ms ease;
   --transition-slow: 500ms ease;
 
+  /* Enterprise Dashboard tokens */
+  --dash-surface: #ffffff;
+  --dash-surface-alt: #f8faf9;
+  --dash-border: #e5e7eb;
+  --dash-border-subtle: #f0f1f3;
+  --dash-label: #6b7280;
+  --dash-heading: #111827;
+  --dash-body: #4b5563;
+  --dash-radius: 12px;
+  --dash-radius-sm: 8px;
+  --dash-transition: 200ms ease-in-out;
+
   /* Z-Index */
   --z-dropdown: 1000;
   --z-sticky: 1020;

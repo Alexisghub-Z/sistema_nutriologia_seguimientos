@@ -2,9 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Button from '@/components/ui/Button'
-import PaymentStatusChart from '@/components/dashboard/PaymentStatusChart'
-import FinancialMetricsChart from '@/components/dashboard/FinancialMetricsChart'
+import KpiCard from '@/components/dashboard/KpiCard'
+import RevenueAreaChart from '@/components/dashboard/RevenueAreaChart'
+import AppointmentStatusDonut from '@/components/dashboard/AppointmentStatusDonut'
+import ConsultationsBarChart from '@/components/dashboard/ConsultationsBarChart'
+import PatientGrowthChart from '@/components/dashboard/PatientGrowthChart'
+import TodayTimeline from '@/components/dashboard/TodayTimeline'
+import PagosPendientesCard from '@/components/dashboard/PagosPendientesCard'
 import styles from './dashboard.module.css'
 import chartStyles from '@/components/dashboard/Charts.module.css'
 
@@ -27,6 +33,13 @@ interface DashboardStats {
       motivo_consulta: string
     }>
   }
+  citasPeriodo: {
+    total: number
+    completadas: number
+    confirmadas: number
+    pendientes: number
+    canceladas: number
+  }
   consultasEsteMes: number
   tasaAsistencia: number
   mensajesPendientes: number
@@ -37,6 +50,8 @@ interface DashboardStats {
     fecha: string
     peso: number | null
     imc: number | null
+    estado_pago: string | null
+    monto_consulta: number | null
   }>
   finanzas: {
     rango: string
@@ -50,7 +65,21 @@ interface DashboardStats {
     pagosPendientes: {
       cantidad: number
       monto: number
+      deudores: Array<{
+        nombre: string
+        paciente_id: string
+        monto: number
+        consultas: number
+      }>
     }
+  }
+  tendenciaIngresosMensual: Array<{ mes: string; ingresos: number; consultas: number }>
+  tendenciaCitasSemanal: Array<{ semana: string; total: number; completadas: number; canceladas: number }>
+  crecimientoPacientes: Array<{ mes: string; nuevos: number; total: number }>
+  comparacion: {
+    ingresosDelta: number
+    consultasDelta: number
+    asistenciaDelta: number
   }
 }
 
@@ -58,13 +87,14 @@ type RangoFechas = 'hoy' | 'semana' | 'mes' | 'trimestre' | 'anio' | 'personaliz
 
 export default function DashboardPage() {
   const router = useRouter()
+  const { data: session } = useSession()
   const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [loading, setLoading] = useState(true)
   const [rangoSeleccionado, setRangoSeleccionado] = useState<RangoFechas>('mes')
   const [fechaInicio, setFechaInicio] = useState('')
   const [fechaFin, setFechaFin] = useState('')
   const [mostrarFechasPersonalizadas, setMostrarFechasPersonalizadas] = useState(false)
   const [googleCalendarDesconectado, setGoogleCalendarDesconectado] = useState(false)
+  const [flashKey, setFlashKey] = useState(0)
 
   useEffect(() => {
     fetch('/api/google-calendar/status')
@@ -77,47 +107,43 @@ export default function DashboardPage() {
 
   const cargarEstadisticas = async (rango: RangoFechas, inicio?: string, fin?: string) => {
     try {
-      setLoading(true)
       let url = `/api/dashboard/stats?rango=${rango}`
       if (rango === 'personalizado' && inicio && fin) {
         url += `&fechaInicio=${inicio}&fechaFin=${fin}`
       }
-
       const res = await fetch(url)
       const data = await res.json()
       setStats(data)
     } catch (error) {
       console.error('Error al cargar estadísticas:', error)
-    } finally {
-      setLoading(false)
     }
   }
 
   useEffect(() => {
-    cargarEstadisticas(rangoSeleccionado, fechaInicio, fechaFin)
-  }, [rangoSeleccionado, fechaInicio, fechaFin])
+    cargarEstadisticas('mes')
+  }, [])
 
-  const handleRangoChange = (nuevoRango: RangoFechas) => {
+  const handleRangoChange = async (nuevoRango: RangoFechas) => {
     setRangoSeleccionado(nuevoRango)
     if (nuevoRango === 'personalizado') {
       setMostrarFechasPersonalizadas(true)
     } else {
       setMostrarFechasPersonalizadas(false)
+      await cargarEstadisticas(nuevoRango)
+      setFlashKey(k => k + 1)
     }
   }
 
-  const aplicarFechasPersonalizadas = () => {
+  const aplicarFechasPersonalizadas = async () => {
     if (fechaInicio && fechaFin) {
-      cargarEstadisticas('personalizado', fechaInicio, fechaFin)
+      await cargarEstadisticas('personalizado', fechaInicio, fechaFin)
+      setFlashKey(k => k + 1)
     }
   }
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString)
-    return date.toLocaleTimeString('es-MX', {
-      hour: '2-digit',
-      minute: '2-digit',
-    })
+    return date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
   }
 
   const formatDate = (dateString: string) => {
@@ -134,66 +160,65 @@ export default function DashboardPage() {
     if (!stats) return ''
     const inicio = new Date(stats.finanzas.fechaInicio)
     const fin = new Date(stats.finanzas.fechaFin)
-
     return `${inicio.toLocaleDateString('es-MX', {
-      day: 'numeric',
-      month: 'short',
-      timeZone: 'UTC',
+      day: 'numeric', month: 'short', timeZone: 'UTC',
     })} - ${fin.toLocaleDateString('es-MX', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      timeZone: 'UTC',
+      day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
     })}`
   }
 
+  const formatMoney = (n: number) =>
+    '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
   const getEstadoBadgeClass = (cita: any) => {
-    if (cita.estado === 'CANCELADA' || cita.estado_confirmacion === 'CANCELADA_PACIENTE') {
+    if (cita.estado === 'CANCELADA' || cita.estado_confirmacion === 'CANCELADA_PACIENTE')
       return styles.badgeDanger
-    }
-    if (cita.estado === 'COMPLETADA') {
-      return styles.badgeInfo
-    }
-    if (cita.estado_confirmacion === 'CONFIRMADA') {
-      return styles.badgeSuccess
-    }
+    if (cita.estado === 'COMPLETADA') return styles.badgeInfo
+    if (cita.estado_confirmacion === 'CONFIRMADA') return styles.badgeSuccess
     return styles.badgeWarning
   }
 
   const getEstadoLabel = (cita: any) => {
-    if (cita.estado === 'CANCELADA' || cita.estado_confirmacion === 'CANCELADA_PACIENTE') {
+    if (cita.estado === 'CANCELADA' || cita.estado_confirmacion === 'CANCELADA_PACIENTE')
       return 'Cancelada'
-    }
-    if (cita.estado === 'COMPLETADA') {
-      return 'Completada'
-    }
-    if (cita.estado_confirmacion === 'CONFIRMADA') {
-      return 'Confirmada'
-    }
-    if (cita.estado_confirmacion === 'RECORDATORIO_ENVIADO') {
-      return 'Esperando confirmación'
-    }
+    if (cita.estado === 'COMPLETADA') return 'Completada'
+    if (cita.estado_confirmacion === 'CONFIRMADA') return 'Confirmada'
+    if (cita.estado_confirmacion === 'RECORDATORIO_ENVIADO') return 'Esperando confirmación'
     return 'Pendiente'
   }
 
-  if (loading || !stats) {
+  const getPaymentBadgeClass = (estado: string | null) => {
+    if (estado === 'PAGADO') return chartStyles.paymentBadgePagado
+    if (estado === 'PARCIAL') return chartStyles.paymentBadgeParcial
+    return chartStyles.paymentBadgePendiente
+  }
+
+  const getPaymentLabel = (estado: string | null) => {
+    if (estado === 'PAGADO') return 'Pagado'
+    if (estado === 'PARCIAL') return 'Parcial'
+    return 'Pendiente'
+  }
+
+  if (!stats) {
     return (
       <div className={styles.container}>
         <div className={styles.pageHeader}>
-          <h1 className={styles.pageTitle}>Dashboard</h1>
-          <p className={styles.pageSubtitle}>Cargando...</p>
+          <p className={styles.greeting}>Bienvenido, <span className={styles.greetingName}>{session?.user?.name || 'Doctor'}</span></p>
         </div>
       </div>
     )
   }
 
+  const ingresosSparkline = stats.tendenciaIngresosMensual.map(d => d.ingresos)
+  const consultasSparkline = stats.tendenciaCitasSemanal.map(d => d.total)
+  const pacientesSparkline = stats.crecimientoPacientes.map(d => d.nuevos)
+
   return (
     <div className={styles.container}>
-      {/* Header */}
+      {/* Header — Breadcrumb style */}
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.pageTitle}>Dashboard</h1>
-          <p className={styles.pageSubtitle}>Resumen general de tu práctica nutricional</p>
+          <p className={styles.greeting}>Bienvenido, <span className={styles.greetingName}>{session?.user?.name || 'Doctor'}</span></p>
         </div>
         <div className={styles.quickActions}>
           <Button variant="outline" size="small" onClick={() => router.push('/pacientes/nuevo')}>
@@ -226,48 +251,22 @@ export default function DashboardPage() {
       )}
 
       {/* Selector de Rango */}
-      <div className={styles.filterSection}>
-        <div className={styles.filterHeader}>
-          <h3 className={styles.filterTitle}>Período de Análisis</h3>
+      <div className={styles.filterRow}>
+        <div className={styles.filterLeft}>
+          <label className={styles.filterLabel}>Período</label>
+          <select
+            className={styles.rangoSelect}
+            value={rangoSeleccionado}
+            onChange={(e) => handleRangoChange(e.target.value as RangoFechas)}
+          >
+            <option value="hoy">Hoy</option>
+            <option value="semana">Última Semana</option>
+            <option value="mes">Este Mes</option>
+            <option value="trimestre">Último Trimestre</option>
+            <option value="anio">Este Año</option>
+            <option value="personalizado">Personalizado</option>
+          </select>
           <span className={styles.filterSubtitle}>{formatRangoLabel()}</span>
-        </div>
-        <div className={styles.rangoButtons}>
-          <button
-            className={`${styles.rangoButton} ${rangoSeleccionado === 'hoy' ? styles.rangoButtonActive : ''}`}
-            onClick={() => handleRangoChange('hoy')}
-          >
-            Hoy
-          </button>
-          <button
-            className={`${styles.rangoButton} ${rangoSeleccionado === 'semana' ? styles.rangoButtonActive : ''}`}
-            onClick={() => handleRangoChange('semana')}
-          >
-            Última Semana
-          </button>
-          <button
-            className={`${styles.rangoButton} ${rangoSeleccionado === 'mes' ? styles.rangoButtonActive : ''}`}
-            onClick={() => handleRangoChange('mes')}
-          >
-            Este Mes
-          </button>
-          <button
-            className={`${styles.rangoButton} ${rangoSeleccionado === 'trimestre' ? styles.rangoButtonActive : ''}`}
-            onClick={() => handleRangoChange('trimestre')}
-          >
-            Último Trimestre
-          </button>
-          <button
-            className={`${styles.rangoButton} ${rangoSeleccionado === 'anio' ? styles.rangoButtonActive : ''}`}
-            onClick={() => handleRangoChange('anio')}
-          >
-            Este Año
-          </button>
-          <button
-            className={`${styles.rangoButton} ${rangoSeleccionado === 'personalizado' ? styles.rangoButtonActive : ''}`}
-            onClick={() => handleRangoChange('personalizado')}
-          >
-            Personalizado
-          </button>
         </div>
 
         {mostrarFechasPersonalizadas && (
@@ -297,233 +296,96 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Stats Grid - Estadísticas Financieras */}
-      <div className={styles.sectionDivider}>
-        <h2 className={styles.sectionDividerTitle}>Estadísticas Financieras</h2>
-      </div>
-      <div className={styles.statsGrid}>
-        <div className={styles.statCard}>
-          <div className={styles.statIconContainer}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-          <div className={styles.statContent}>
-            <p className={styles.statLabel}>Ingresos del Período</p>
-            <p className={styles.statValue}>
-              ${stats.finanzas.ingresosDelRango.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </p>
-            <p className={styles.statDetail}>{stats.finanzas.totalConsultas} consultas</p>
-          </div>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className={styles.statIconContainer}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-              />
-            </svg>
-          </div>
-          <div className={styles.statContent}>
-            <p className={styles.statLabel}>Promedio por Consulta</p>
-            <p className={styles.statValue}>
-              ${stats.finanzas.promedioConsulta.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </p>
-            <p className={styles.statDetail}>{stats.finanzas.consultasPagadas} pagadas</p>
-          </div>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className={styles.statIconContainer}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-              />
-            </svg>
-          </div>
-          <div className={styles.statContent}>
-            <p className={styles.statLabel}>Ingresos de Hoy</p>
-            <p className={styles.statValue}>
-              ${stats.finanzas.ingresosDeHoy.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </p>
-            <p className={styles.statDetail}>
-              {formatDate(new Date().toISOString())}
-            </p>
-          </div>
-        </div>
-
-        <div className={`${styles.statCard} ${stats.finanzas.pagosPendientes.cantidad > 0 ? styles.statCardWarning : ''}`}>
-          <div className={styles.statIconContainer}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-          <div className={styles.statContent}>
-            <p className={styles.statLabel}>Pagos Pendientes</p>
-            <p className={styles.statValue}>{stats.finanzas.pagosPendientes.cantidad}</p>
-            <p className={styles.statDetail}>
-              ${stats.finanzas.pagosPendientes.monto.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Gráficas Financieras */}
-      <div className={chartStyles.chartsGrid}>
-        <FinancialMetricsChart
-          ingresosDelRango={stats.finanzas.ingresosDelRango}
-          ingresosDeHoy={stats.finanzas.ingresosDeHoy}
-          promedioConsulta={stats.finanzas.promedioConsulta}
-          pagosPendientesMonto={stats.finanzas.pagosPendientes.monto}
+      {/* Fila KPI — dependen del período seleccionado */}
+      <div className={chartStyles.kpiRow}>
+        <KpiCard
+          label="Ingresos del Período"
+          value={formatMoney(stats.finanzas.ingresosDelRango)}
+          detail={`${stats.finanzas.totalConsultas} consultas`}
+          delta={stats.comparacion.ingresosDelta}
+          color="#2d9f5d"
+          sparklineData={ingresosSparkline}
+          flashKey={flashKey}
         />
-        <PaymentStatusChart
-          consultasPagadas={stats.finanzas.consultasPagadas}
-          pagosPendientesCantidad={stats.finanzas.pagosPendientes.cantidad}
-          pagosPendientesMonto={stats.finanzas.pagosPendientes.monto}
-          ingresosDelRango={stats.finanzas.ingresosDelRango}
+        <KpiCard
+          label="Consultas del Período"
+          value={stats.finanzas.totalConsultas.toString()}
+          detail="En el rango seleccionado"
+          delta={stats.comparacion.consultasDelta}
+          color="#2d9f5d"
+          flashKey={flashKey}
+        />
+        <KpiCard
+          label="Promedio/Consulta"
+          value={formatMoney(stats.finanzas.promedioConsulta)}
+          detail={`${stats.finanzas.consultasPagadas} pagadas`}
+          delta={null}
+          color="#247a47"
+          flashKey={flashKey}
+        />
+        <PagosPendientesCard
+          cantidad={stats.finanzas.pagosPendientes.cantidad}
+          monto={stats.finanzas.pagosPendientes.monto}
+          deudores={stats.finanzas.pagosPendientes.deudores}
+          flashKey={flashKey}
         />
       </div>
 
-      {/* Stats Grid - Estadísticas Generales */}
-      <div className={styles.sectionDivider}>
-        <h2 className={styles.sectionDividerTitle}>Estadísticas Generales</h2>
-      </div>
-      <div className={styles.statsGrid}>
-        <div className={styles.statCard}>
-          <div className={styles.statIconContainer}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-              />
-            </svg>
-          </div>
-          <div className={styles.statContent}>
-            <p className={styles.statLabel}>Total Pacientes</p>
-            <p className={styles.statValue}>{stats.totalPacientes}</p>
-          </div>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className={styles.statIconContainer}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
-            </svg>
-          </div>
-          <div className={styles.statContent}>
-            <p className={styles.statLabel}>Citas Hoy</p>
-            <p className={styles.statValue}>{stats.citasHoy.total}</p>
-            <p className={styles.statDetail}>
-              {stats.citasHoy.confirmadas} confirmadas · {stats.citasHoy.pendientes} pendientes
-            </p>
-          </div>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className={styles.statIconContainer}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-          </div>
-          <div className={styles.statContent}>
-            <p className={styles.statLabel}>Consultas este Mes</p>
-            <p className={styles.statValue}>{stats.consultasEsteMes}</p>
-          </div>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className={styles.statIconContainer}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-          <div className={styles.statContent}>
-            <p className={styles.statLabel}>Tasa de Asistencia</p>
-            <p className={styles.statValue}>{stats.tasaAsistencia}%</p>
-            <p className={styles.statDetail}>Últimos 30 días</p>
-          </div>
-        </div>
+      {/* Fila KPI — datos generales (no dependen del período) */}
+      <div className={chartStyles.kpiRow}>
+        <KpiCard
+          label="Ingresos de Hoy"
+          value={formatMoney(stats.finanzas.ingresosDeHoy)}
+          detail={formatDate(new Date().toISOString())}
+          delta={null}
+          color="#4db87a"
+        />
+        <KpiCard
+          label="Total Pacientes"
+          value={stats.totalPacientes.toString()}
+          detail={`${stats.consultasEsteMes} consultas este mes`}
+          delta={null}
+          color="#3b82f6"
+          sparklineData={pacientesSparkline}
+        />
+        <KpiCard
+          label="Tasa de Asistencia"
+          value={`${stats.tasaAsistencia}%`}
+          detail="Últimos 30 días"
+          delta={stats.comparacion.asistenciaDelta}
+          color="#2d9f5d"
+          sparklineData={consultasSparkline}
+        />
       </div>
 
-      {/* Main Content Grid */}
-      <div className={styles.contentGrid}>
-        {/* Citas de Hoy */}
-        <div className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Citas de Hoy</h2>
-            <Button variant="outline" size="small" onClick={() => router.push('/citas')}>
-              Ver todas
-            </Button>
-          </div>
-          <div className={styles.sectionContent}>
-            {stats.citasHoy.detalles.length === 0 ? (
-              <div className={styles.emptyState}>
-                <svg width="48" height="48" viewBox="0 0 20 20" fill="currentColor" opacity="0.3">
-                  <path
-                    fillRule="evenodd"
-                    d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <p>No hay citas programadas para hoy</p>
-              </div>
-            ) : (
-              <div className={styles.citasList}>
-                {stats.citasHoy.detalles.map((cita) => (
-                  <div
-                    key={cita.id}
-                    className={styles.citaItem}
-                    onClick={() => router.push(`/pacientes/${cita.paciente_id}`)}
-                  >
-                    <div className={styles.citaTime}>{formatTime(cita.fecha_hora)}</div>
-                    <div className={styles.citaInfo}>
-                      <p className={styles.citaPaciente}>{cita.paciente}</p>
-                      <p className={styles.citaTipo}>{cita.motivo_consulta}</p>
-                    </div>
-                    <div className={styles.citaEstado}>
-                      <span className={getEstadoBadgeClass(cita)}>{getEstadoLabel(cita)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Gráficas principales: Area chart + Donut */}
+      <div className={chartStyles.mainChartsRow}>
+        <RevenueAreaChart data={stats.tendenciaIngresosMensual} />
+        <AppointmentStatusDonut
+          hoy={{
+            completadas: stats.citasHoy.completadas,
+            confirmadas: stats.citasHoy.confirmadas,
+            pendientes: stats.citasHoy.pendientes,
+            canceladas: stats.citasHoy.canceladas,
+          }}
+          periodo={{
+            completadas: stats.citasPeriodo.completadas,
+            confirmadas: stats.citasPeriodo.confirmadas,
+            pendientes: stats.citasPeriodo.pendientes,
+            canceladas: stats.citasPeriodo.canceladas,
+          }}
+        />
+      </div>
 
+      {/* Gráficas secundarias + Timeline */}
+      <div className={chartStyles.secondaryRow}>
+        <ConsultationsBarChart data={stats.tendenciaCitasSemanal} />
+        <PatientGrowthChart data={stats.crecimientoPacientes} />
+        <TodayTimeline citas={stats.citasHoy.detalles} />
+      </div>
+
+      {/* Tablas enterprise: Últimas consultas + Citas de hoy */}
+      <div className={chartStyles.tablesRow}>
         {/* Últimas Consultas */}
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
@@ -535,66 +397,85 @@ export default function DashboardPage() {
           <div className={styles.sectionContent}>
             {stats.ultimasConsultas.length === 0 ? (
               <div className={styles.emptyState}>
-                <svg width="48" height="48" viewBox="0 0 20 20" fill="currentColor" opacity="0.3">
-                  <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                  <path
-                    fillRule="evenodd"
-                    d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
-                    clipRule="evenodd"
-                  />
-                </svg>
                 <p>No hay consultas registradas</p>
               </div>
             ) : (
-              <div className={styles.consultasList}>
-                {stats.ultimasConsultas.map((consulta) => (
-                  <div
-                    key={consulta.id}
-                    className={styles.consultaItem}
-                    onClick={() => router.push(`/pacientes/${consulta.paciente_id}`)}
-                  >
-                    <div className={styles.consultaInfo}>
-                      <p className={styles.consultaPaciente}>{consulta.paciente}</p>
-                      <p className={styles.consultaFecha}>{formatDate(consulta.fecha)}</p>
-                    </div>
-                    <div className={styles.consultaStats}>
-                      {consulta.peso != null && consulta.peso > 0 && (
-                        <span className={styles.consultaStat}>{consulta.peso} kg</span>
-                      )}
-                      {consulta.imc != null && consulta.imc > 0 && (
-                        <span className={styles.consultaStat}>IMC: {consulta.imc}</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+              <table className={chartStyles.dashTable}>
+                <thead className={chartStyles.dashTableHead}>
+                  <tr>
+                    <th>Paciente</th>
+                    <th>Fecha</th>
+                    <th>Peso</th>
+                    <th>Monto</th>
+                    <th>Pago</th>
+                  </tr>
+                </thead>
+                <tbody className={chartStyles.dashTableBody}>
+                  {stats.ultimasConsultas.map((consulta) => (
+                    <tr
+                      key={consulta.id}
+                      onClick={() => router.push(`/pacientes/${consulta.paciente_id}`)}
+                    >
+                      <td>{consulta.paciente}</td>
+                      <td className={chartStyles.dashTableMuted}>{formatDate(consulta.fecha)}</td>
+                      <td>{consulta.peso != null && consulta.peso > 0 ? `${consulta.peso} kg` : '—'}</td>
+                      <td>{consulta.monto_consulta != null ? formatMoney(consulta.monto_consulta) : '—'}</td>
+                      <td>
+                        <span className={getPaymentBadgeClass(consulta.estado_pago)}>
+                          {getPaymentLabel(consulta.estado_pago)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
+        {/* Citas de Hoy */}
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Citas de Hoy</h2>
+            <Button variant="outline" size="small" onClick={() => router.push('/citas')}>
+              Ver todas
+            </Button>
+          </div>
+          <div className={styles.sectionContent}>
+            {stats.citasHoy.detalles.length === 0 ? (
+              <div className={styles.emptyState}>
+                <p>No hay citas programadas para hoy</p>
               </div>
+            ) : (
+              <table className={chartStyles.dashTable}>
+                <thead className={chartStyles.dashTableHead}>
+                  <tr>
+                    <th>Hora</th>
+                    <th>Paciente</th>
+                    <th>Motivo</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody className={chartStyles.dashTableBody}>
+                  {stats.citasHoy.detalles.map((cita) => (
+                    <tr
+                      key={cita.id}
+                      onClick={() => router.push(`/pacientes/${cita.paciente_id}`)}
+                    >
+                      <td style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{formatTime(cita.fecha_hora)}</td>
+                      <td>{cita.paciente}</td>
+                      <td className={chartStyles.dashTableMuted}>{cita.motivo_consulta}</td>
+                      <td>
+                        <span className={getEstadoBadgeClass(cita)}>{getEstadoLabel(cita)}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
         </div>
       </div>
-
-      {/* Mensajes Pendientes Alert */}
-      {stats.mensajesPendientes > 0 && (
-        <div className={styles.alertBox}>
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className={styles.alertIcon}
-          >
-            <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-          </svg>
-          <div>
-            <p className={styles.alertTitle}>
-              {stats.mensajesPendientes} mensaje(s) de confirmación pendiente(s)
-            </p>
-            <p className={styles.alertText}>
-              Hay pacientes que aún no han confirmado su asistencia
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
