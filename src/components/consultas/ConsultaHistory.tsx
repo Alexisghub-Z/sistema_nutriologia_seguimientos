@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
@@ -9,6 +9,7 @@ import Spinner from '@/components/ui/Spinner'
 import Alert from '@/components/ui/Alert'
 import FilePreviewModal from '@/components/ui/FilePreviewModal'
 import EditarConsultaModal from './EditarConsultaModal'
+import { generarWordConsulta } from '@/lib/utils/generar-word-consulta'
 import styles from './ConsultaHistory.module.css'
 
 interface Consulta {
@@ -100,10 +101,25 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
   } | null>(null)
   const [consultaEditando, setConsultaEditando] = useState<Consulta | null>(null)
   const [editandoEsReciente, setEditandoEsReciente] = useState(false)
+  const [nombrePaciente, setNombrePaciente] = useState('')
+  const [descargandoId, setDescargandoId] = useState<string | null>(null)
+  const nombreFetched = useRef(false)
 
   useEffect(() => {
     fetchConsultas()
   }, [pacienteId, pagination.page])
+
+  useEffect(() => {
+    if (!nombreFetched.current) {
+      nombreFetched.current = true
+      fetch(`/api/pacientes/${pacienteId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.nombre) setNombrePaciente(data.nombre)
+        })
+        .catch(() => {})
+    }
+  }, [pacienteId])
 
   const fetchConsultas = async () => {
     try {
@@ -743,6 +759,31 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
                         <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                       </svg>
                       Editar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="small"
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        setDescargandoId(consulta.id)
+                        try {
+                          await generarWordConsulta(consulta, nombrePaciente || 'Paciente')
+                        } catch (err) {
+                          console.error('Error al generar documento:', err)
+                        } finally {
+                          setDescargandoId(null)
+                        }
+                      }}
+                      disabled={descargandoId === consulta.id}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                        <path
+                          fillRule="evenodd"
+                          d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      {descargandoId === consulta.id ? 'Generando...' : 'Descargar Word'}
                     </Button>
                     <Button
                       variant="outline"
