@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Spinner from '@/components/ui/Spinner'
 import Alert from '@/components/ui/Alert'
 import styles from './ConversationList.module.css'
@@ -34,6 +35,7 @@ export default function ConversationList({
   onSelectConversation,
   refreshKey,
 }: ConversationListProps) {
+  const router = useRouter()
   const [conversaciones, setConversaciones] = useState<Conversacion[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -235,7 +237,15 @@ export default function ConversationList({
               <div className={styles.conversationContent}>
                 <div className={styles.conversationHeader}>
                   <div className={styles.headerContent}>
-                    <h3 className={styles.pacienteNombre}>{conv.nombre}</h3>
+                    <h3
+                      className={`${styles.pacienteNombre} ${conv.tipo === 'PACIENTE' ? styles.pacienteNombreLink : ''}`}
+                      onClick={conv.tipo === 'PACIENTE' ? (e) => {
+                        e.stopPropagation()
+                        router.push(`/pacientes/${conv.id}`)
+                      } : undefined}
+                    >
+                      {conv.nombre}
+                    </h3>
                     <span
                       className={
                         conv.tipo === 'PACIENTE' ? styles.badgePaciente : styles.badgeProspecto

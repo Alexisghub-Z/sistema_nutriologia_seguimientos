@@ -183,6 +183,16 @@
   text-overflow: ellipsis;
 }
 
+.pacienteNombreLink {
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.pacienteNombreLink:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
 .badgePaciente,
 .badgeProspecto {
   display: inline-flex;

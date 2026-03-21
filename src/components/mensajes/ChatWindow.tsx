@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import MessageInput from './MessageInput'
 import Spinner from '@/components/ui/Spinner'
 import Alert from '@/components/ui/Alert'
@@ -35,6 +36,7 @@ interface ChatWindowProps {
 }
 
 export default function ChatWindow({ pacienteId, tipo, onMessageSent, onBack }: ChatWindowProps) {
+  const router = useRouter()
   const [mensajes, setMensajes] = useState<Mensaje[]>([])
   const [paciente, setPaciente] = useState<Paciente | null>(null)
   const [loading, setLoading] = useState(true)
@@ -270,7 +272,10 @@ export default function ChatWindow({ pacienteId, tipo, onMessageSent, onBack }: 
               .toUpperCase()}
           </span>
         </div>
-        <div className={styles.patientInfo}>
+        <div
+          className={`${styles.patientInfo} ${tipo === 'PACIENTE' ? styles.patientInfoLink : ''}`}
+          onClick={tipo === 'PACIENTE' ? () => router.push(`/pacientes/${paciente.id}`) : undefined}
+        >
           <h2 className={styles.patientName}>{paciente.nombre}</h2>
           <p className={styles.patientPhone}>{paciente.telefono}</p>
         </div>
