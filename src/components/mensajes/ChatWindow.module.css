@@ -56,11 +56,28 @@
   gap: var(--spacing-xs);
 }
 
+.patientInfoLink {
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  margin: calc(-1 * var(--spacing-xs)) calc(-1 * var(--spacing-sm));
+  transition: background-color 0.15s ease;
+}
+
+.patientInfoLink:hover {
+  background-color: var(--color-gray-100);
+}
+
+.patientInfoLink:hover .patientName {
+  color: var(--color-primary);
+}
+
 .patientName {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   color: var(--color-gray-900);
   margin: 0;
+  transition: color 0.15s ease;
 }
 
 .patientPhone {
