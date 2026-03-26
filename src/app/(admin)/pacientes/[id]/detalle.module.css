@@ -119,6 +119,8 @@
 
 .statCard {
   padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
 }
 
 .statContent {
@@ -156,6 +158,30 @@
   font-size: var(--font-size-xs);
   color: var(--color-gray-500);
   margin-top: var(--spacing-xs);
+}
+
+.statLink {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-end;
+  gap: 4px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+  background-color: #f0fdf4;
+  padding: 4px 10px;
+  border-radius: var(--radius-full, 9999px);
+  margin-top: var(--spacing-sm);
+  cursor: pointer;
+  text-decoration: none;
+  border: 1px solid #bbf7d0;
+  transition: all 0.15s ease;
+}
+
+.statLink:hover {
+  background-color: #dcfce7;
+  border-color: var(--color-primary);
+  color: #166534;
 }
 
 /* Listas */

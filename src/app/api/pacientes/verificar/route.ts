@@ -1,38 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { z } from 'zod'
+import { normalizarTelefonoMexico } from '@/lib/utils/phone'
 
-// Schema de validación para verificar email
-const verificarEmailSchema = z.object({
-  email: z.string().email('Email inválido'),
-})
+// Schema de validación: acepta email O telefono
+const verificarSchema = z
+  .object({
+    email: z.string().email('Email inválido').optional(),
+    telefono: z.string().optional(),
+  })
+  .refine((data) => data.email || data.telefono, {
+    message: 'Se requiere email o teléfono',
+  })
 
 /**
  * POST /api/pacientes/verificar
- * Verificar si un paciente existe por su email
+ * Verificar si un paciente existe por su email o teléfono
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const validatedData = verificarEmailSchema.parse(body)
+    const validatedData = verificarSchema.parse(body)
 
-    // Buscar paciente por email
-    const paciente = await prisma.paciente.findUnique({
-      where: { email: validatedData.email },
-      select: {
-        nombre: true,
-        email: true,
-        telefono: true,
-        fecha_nacimiento: true,
-      },
-    })
+    let paciente = null
+
+    if (validatedData.telefono) {
+      // Buscar por teléfono (normalizar a E.164)
+      const telefonoNormalizado = normalizarTelefonoMexico(validatedData.telefono)
+      paciente = await prisma.paciente.findUnique({
+        where: { telefono: telefonoNormalizado },
+        select: {
+          nombre: true,
+          email: true,
+          telefono: true,
+          fecha_nacimiento: true,
+        },
+      })
+    } else if (validatedData.email) {
+      // Buscar por email
+      paciente = await prisma.paciente.findUnique({
+        where: { email: validatedData.email },
+        select: {
+          nombre: true,
+          email: true,
+          telefono: true,
+          fecha_nacimiento: true,
+        },
+      })
+    }
 
     if (!paciente) {
-      // Paciente no existe
       return NextResponse.json({ existe: false }, { status: 200 })
     }
 
-    // Paciente existe - retornar sus datos
     console.log(`✅ Paciente encontrado: ${paciente.email}`)
 
     return NextResponse.json(
@@ -49,7 +69,7 @@ export async function POST(request: NextRequest) {
     )
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Email inválido', details: error.errors }, { status: 400 })
+      return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
     }
 
     console.error('Error al verificar paciente:', error)

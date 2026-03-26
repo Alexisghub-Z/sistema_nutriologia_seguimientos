@@ -38,6 +38,7 @@ export default function AgendarCitaPage() {
   // Estado para paciente existente
   const [pacienteExistente, setPacienteExistente] = useState<PacienteExistente | null>(null)
   const [emailIngresado, setEmailIngresado] = useState('')
+  const [telefonoIngresado, setTelefonoIngresado] = useState('')
   const [citaActiva, setCitaActiva] = useState<CitaActiva | null>(null)
 
   // Estado para validación de teléfono y fecha
@@ -198,6 +199,8 @@ export default function AgendarCitaPage() {
     setError('')
     setPacienteExistente(null)
     setEmailIngresado('')
+    setTelefonoIngresado('')
+    setCitaActiva(null)
   }
 
   const volverAPaso2 = () => {
@@ -205,15 +208,25 @@ export default function AgendarCitaPage() {
     setError('')
   }
 
-  // Verificar si el email existe en la base de datos
-  const verificarEmail = async (e: React.FormEvent) => {
+  // Verificar si el paciente existe en la base de datos (por email o teléfono)
+  const verificarPaciente = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Normalizar email: minúsculas y trim
     const emailNormalizado = emailIngresado.toLowerCase().trim()
+    const telefonoLimpio = telefonoIngresado.replace(/\D/g, '')
 
-    if (!emailNormalizado || !emailNormalizado.includes('@')) {
-      setError('Por favor, ingresa un email válido')
+    const tieneEmail = emailNormalizado.length > 0 && emailNormalizado.includes('@')
+    const tieneTelefono = telefonoLimpio.length === 10
+
+    // Validaciones
+    if (!tieneEmail && !tieneTelefono) {
+      if (telefonoLimpio.length > 0) {
+        setError('El número debe tener 10 dígitos')
+      } else if (emailNormalizado.length > 0) {
+        setError('Ingresa un email válido')
+      } else {
+        setError('Ingresa tu email o número de celular')
+      }
       return
     }
 
@@ -222,17 +235,22 @@ export default function AgendarCitaPage() {
     setCitaActiva(null)
 
     try {
+      // Construir payload: uno u otro (el campo único solo permite uno a la vez)
+      const payload: { email?: string; telefono?: string } = tieneTelefono
+        ? { telefono: telefonoLimpio }
+        : { email: emailNormalizado }
+
       // 1. Verificar si el paciente existe
       const responseVerificar = await fetch('/api/pacientes/verificar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailNormalizado }),
+        body: JSON.stringify(payload),
       })
 
       const dataVerificar = await responseVerificar.json()
 
       if (!responseVerificar.ok) {
-        setError(dataVerificar.error || 'Error al verificar email')
+        setError(dataVerificar.error || 'Error al verificar')
         return
       }
 
@@ -241,26 +259,21 @@ export default function AgendarCitaPage() {
         const responseCitaActiva = await fetch('/api/pacientes/cita-activa', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: emailNormalizado }),
+          body: JSON.stringify(payload),
         })
 
         const dataCitaActiva = await responseCitaActiva.json()
 
         if (responseCitaActiva.ok && dataCitaActiva.existe && dataCitaActiva.cita) {
-          // Tiene cita activa - mostrar advertencia
           setCitaActiva(dataCitaActiva.cita)
-          // No avanzar al paso 3, quedarse en paso 2 con advertencia
           return
         }
 
         // No tiene cita activa - continuar normalmente
         setPacienteExistente(dataVerificar.paciente)
 
-        // Formatear fecha de nacimiento
         const fechaNacimiento = new Date(dataVerificar.paciente.fecha_nacimiento)
         const fechaFormateada = fechaNacimiento.toISOString().split('T')[0] || ''
-
-        // Extraer teléfono y validar
         const telefonoExtraido = extraerDigitosTelefono(dataVerificar.paciente.telefono)
 
         setFormData({
@@ -272,13 +285,15 @@ export default function AgendarCitaPage() {
           tipo_cita: 'PRESENCIAL',
         })
 
-        // Marcar teléfono como válido si tiene 10 dígitos
         setTelefonoValido(telefonoExtraido.length === 10)
-
-        // Validar fecha de nacimiento
         validarFechaNacimiento(fechaFormateada)
       } else {
-        // Paciente nuevo - solo pre-llenar email
+        // Paciente no encontrado
+        if (tieneTelefono) {
+          setError('No encontramos un paciente con este número. Usa tu email para registrarte.')
+          return
+        }
+        // Paciente nuevo por email
         setPacienteExistente(null)
         setFormData({
           ...formData,
@@ -393,7 +408,7 @@ export default function AgendarCitaPage() {
           <div className={styles.progressLine}></div>
           <div className={`${styles.step} ${paso >= 2 ? styles.stepActive : ''}`}>
             <div className={styles.stepNumber}>2</div>
-            <span>Tu email</span>
+            <span>Identificación</span>
           </div>
           <div className={styles.progressLine}></div>
           <div className={`${styles.step} ${paso >= 3 ? styles.stepActive : ''}`}>
@@ -444,10 +459,10 @@ export default function AgendarCitaPage() {
           </div>
         )}
 
-        {/* Paso 2: Verificar email */}
+        {/* Paso 2: Verificar identidad */}
         {paso === 2 && (
           <div className={`${styles.paso} fade-in`} data-scroll-reveal>
-            <h2 className={styles.pasoTitle}>Ingresa tu email</h2>
+            <h2 className={styles.pasoTitle}>Identifícate</h2>
 
             <div className={styles.resumenCompacto}>
               <span>{formatearFecha(fechaSeleccionada)}</span>
@@ -456,38 +471,53 @@ export default function AgendarCitaPage() {
             </div>
 
             <div className={styles.emailVerificacion}>
-              <p className={styles.emailVerificacionTexto}>Ingresa tu email para continuar:</p>
+              <p className={styles.emailVerificacionTexto}>
+                Ingresa tu email o número de celular para continuar
+              </p>
 
               <div className={styles.emailInstrucciones}>
                 <div className={styles.instruccionItem}>
                   <span className={styles.instruccionIcono}>✓</span>
                   <span>
-                    Si es tu <strong>primera cita</strong>, usa tu email personal y lo recordaremos
-                    para futuras consultas
+                    Si es tu <strong>primera cita</strong>, usa tu email para registrarte
                   </span>
                 </div>
                 <div className={styles.instruccionItem}>
                   <span className={styles.instruccionIcono}>✓</span>
                   <span>
-                    Si <strong>ya agendaste antes</strong>, usa el mismo email y cargaremos tus
-                    datos automáticamente
+                    Si <strong>ya eres paciente</strong>, puedes usar tu email o tu celular a 10 dígitos
                   </span>
                 </div>
               </div>
 
-              <form onSubmit={verificarEmail} className={styles.emailForm}>
+              <form onSubmit={verificarPaciente} className={styles.emailForm}>
                 <div className={styles.formGroup}>
-                  <label htmlFor="email_verificar">Tu Email</label>
+                  <label htmlFor="identificador">Email o celular</label>
                   <input
-                    type="email"
-                    id="email_verificar"
-                    value={emailIngresado}
-                    onChange={(e) => setEmailIngresado(e.target.value.toLowerCase().trim())}
-                    required
-                    placeholder="ejemplo@email.com"
+                    type="text"
+                    id="identificador"
+                    value={emailIngresado || telefonoIngresado}
+                    onChange={(e) => {
+                      const valor = e.target.value
+                      // Si solo tiene dígitos → es teléfono
+                      if (/^\d*$/.test(valor)) {
+                        setTelefonoIngresado(valor.slice(0, 10))
+                        setEmailIngresado('')
+                      } else {
+                        // Si tiene letras o @ → es email
+                        setEmailIngresado(valor.toLowerCase().trim())
+                        setTelefonoIngresado('')
+                      }
+                    }}
+                    placeholder="ejemplo@email.com o 9511301554"
                     className={styles.emailInput}
+                    autoComplete="email tel"
                   />
-                  <small>Este email te identificará en nuestro sistema</small>
+                  <small>
+                    {telefonoIngresado.length > 0
+                      ? `${telefonoIngresado.length}/10 dígitos`
+                      : 'Tu email o número de celular a 10 dígitos'}
+                  </small>
                 </div>
 
                 {error && <div className={styles.error}>{error}</div>}
@@ -565,7 +595,7 @@ export default function AgendarCitaPage() {
                     <button
                       type="submit"
                       className={styles.btnPrimary}
-                      disabled={verificandoEmail || !emailIngresado}
+                      disabled={verificandoEmail || (!emailIngresado && !telefonoIngresado)}
                     >
                       {verificandoEmail ? 'Verificando...' : 'Continuar'}
                     </button>
