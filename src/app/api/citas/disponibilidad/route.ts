@@ -62,6 +62,9 @@ export async function GET(request: NextRequest) {
     if (diaSemana === 6 && config.horario_sabado_inicio && config.horario_sabado_fin) {
       horarioInicio = config.horario_sabado_inicio
       horarioFin = config.horario_sabado_fin
+    } else if (diaSemana === 0 && config.horario_domingo_inicio && config.horario_domingo_fin) {
+      horarioInicio = config.horario_domingo_inicio
+      horarioFin = config.horario_domingo_fin
     }
 
     if (fechaSolicitada < new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate())) {

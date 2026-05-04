@@ -14,6 +14,8 @@ interface Configuracion {
   horario_fin: string
   horario_sabado_inicio: string | null
   horario_sabado_fin: string | null
+  horario_domingo_inicio: string | null
+  horario_domingo_fin: string | null
   duracion_cita_default: number
   dias_laborales: string
   dias_anticipacion_max: number
@@ -99,6 +101,8 @@ export default function ConfiguracionCalendarioPage() {
           horario_fin: config.horario_fin,
           horario_sabado_inicio: config.horario_sabado_inicio || null,
           horario_sabado_fin: config.horario_sabado_fin || null,
+          horario_domingo_inicio: config.horario_domingo_inicio || null,
+          horario_domingo_fin: config.horario_domingo_fin || null,
           duracion_cita_default: parseInt(config.duracion_cita_default.toString()),
           dias_laborales: config.dias_laborales,
           dias_anticipacion_max: parseInt(config.dias_anticipacion_max.toString()),
@@ -232,6 +236,41 @@ export default function ConfiguracionCalendarioPage() {
                     }
                   />
                   <small>Última hora disponible para iniciar una consulta el sábado</small>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Horarios Domingo */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Horarios de Domingo (Opcional)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={styles.formGrid}>
+                <div className={styles.formGroup}>
+                  <label htmlFor="horario_domingo_inicio">Hora de inicio (Domingo)</label>
+                  <input
+                    type="time"
+                    id="horario_domingo_inicio"
+                    value={config.horario_domingo_inicio || ''}
+                    onChange={(e) =>
+                      handleInputChange('horario_domingo_inicio', e.target.value || null)
+                    }
+                  />
+                  <small>Si no se especifica, usa el horario de Lunes-Viernes</small>
+                </div>
+                <div className={styles.formGroup}>
+                  <label htmlFor="horario_domingo_fin">Hora de fin (Domingo)</label>
+                  <input
+                    type="time"
+                    id="horario_domingo_fin"
+                    value={config.horario_domingo_fin || ''}
+                    onChange={(e) =>
+                      handleInputChange('horario_domingo_fin', e.target.value || null)
+                    }
+                  />
+                  <small>Última hora disponible para iniciar una consulta el domingo</small>
                 </div>
               </div>
             </CardContent>

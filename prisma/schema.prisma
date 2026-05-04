@@ -406,6 +406,8 @@ model ConfiguracionGeneral {
   horario_fin                     String   @default("20:00") // HH:mm (Lunes-Viernes)
   horario_sabado_inicio           String?  // HH:mm - Horario especial para sábado
   horario_sabado_fin              String?  // HH:mm - Horario especial para sábado
+  horario_domingo_inicio          String?  // HH:mm - Horario especial para domingo
+  horario_domingo_fin             String?  // HH:mm - Horario especial para domingo
   duracion_cita_default           Int      @default(60) // minutos
   intervalo_entre_citas           Int      @default(0) // minutos de descanso
   dias_laborales                  String   @default("1,2,3,4,5") // 0=Dom, 1=Lun, ..., 6=Sab
