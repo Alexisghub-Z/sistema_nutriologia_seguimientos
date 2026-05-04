@@ -81,6 +81,17 @@ interface DashboardStats {
     consultasDelta: number
     asistenciaDelta: number
   }
+  pacientesInactivos: {
+    dias: number
+    lista: Array<{
+      id: string
+      nombre: string
+      telefono: string
+      ultima_consulta: string | null
+      dias_inactivo: number
+      nunca_ha_venido: boolean
+    }>
+  }
 }
 
 type RangoFechas = 'hoy' | 'semana' | 'mes' | 'trimestre' | 'anio' | 'personalizado'
@@ -95,6 +106,7 @@ export default function DashboardPage() {
   const [mostrarFechasPersonalizadas, setMostrarFechasPersonalizadas] = useState(false)
   const [googleCalendarDesconectado, setGoogleCalendarDesconectado] = useState(false)
   const [flashKey, setFlashKey] = useState(0)
+  const [diasInactividad, setDiasInactividad] = useState(180)
 
   useEffect(() => {
     fetch('/api/google-calendar/status')
@@ -105,9 +117,9 @@ export default function DashboardPage() {
       .catch(() => setGoogleCalendarDesconectado(true))
   }, [])
 
-  const cargarEstadisticas = async (rango: RangoFechas, inicio?: string, fin?: string) => {
+  const cargarEstadisticas = async (rango: RangoFechas, inicio?: string, fin?: string, dias?: number) => {
     try {
-      let url = `/api/dashboard/stats?rango=${rango}`
+      let url = `/api/dashboard/stats?rango=${rango}&diasInactividad=${dias ?? diasInactividad}`
       if (rango === 'personalizado' && inicio && fin) {
         url += `&fechaInicio=${inicio}&fechaFin=${fin}`
       }
@@ -121,7 +133,18 @@ export default function DashboardPage() {
 
   useEffect(() => {
     cargarEstadisticas('mes')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const handleDiasInactividadChange = async (dias: number) => {
+    setDiasInactividad(dias)
+    await cargarEstadisticas(
+      rangoSeleccionado,
+      rangoSeleccionado === 'personalizado' ? fechaInicio : undefined,
+      rangoSeleccionado === 'personalizado' ? fechaFin : undefined,
+      dias
+    )
+  }
 
   const handleRangoChange = async (nuevoRango: RangoFechas) => {
     setRangoSeleccionado(nuevoRango)
@@ -474,6 +497,109 @@ export default function DashboardPage() {
               </table>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Pacientes Inactivos */}
+      <div className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>
+            Pacientes Inactivos
+            {stats.pacientesInactivos.lista.length > 0 && (
+              <span className={styles.sectionBadge}>{stats.pacientesInactivos.lista.length}</span>
+            )}
+          </h2>
+          <div className={styles.sectionHeaderActions}>
+            <select
+              className={styles.rangoSelect}
+              value={diasInactividad}
+              onChange={(e) => handleDiasInactividadChange(Number(e.target.value))}
+            >
+              <option value={30}>Sin consulta +30 días</option>
+              <option value={60}>Sin consulta +60 días</option>
+              <option value={90}>Sin consulta +90 días</option>
+              <option value={180}>Sin consulta +6 meses</option>
+            </select>
+          </div>
+        </div>
+        <div className={styles.sectionContent}>
+          {stats.pacientesInactivos.lista.length === 0 ? (
+            <div className={styles.emptyState}>
+              <p>Todos los pacientes han tenido consulta reciente</p>
+            </div>
+          ) : (
+            <table className={chartStyles.dashTable}>
+              <thead className={chartStyles.dashTableHead}>
+                <tr>
+                  <th>Paciente</th>
+                  <th>Última consulta</th>
+                  <th>Días inactivo</th>
+                  <th style={{ textAlign: 'right' }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody className={chartStyles.dashTableBody}>
+                {stats.pacientesInactivos.lista.map((p) => {
+                  const urgencia =
+                    p.dias_inactivo >= 90
+                      ? styles.diasBadgeDanger
+                      : p.dias_inactivo >= 60
+                      ? styles.diasBadgeWarning
+                      : styles.diasBadgeInfo
+                  const telefonoDigits = (p.telefono || '').replace(/\D/g, '')
+                  const waHref = telefonoDigits
+                    ? `https://wa.me/${telefonoDigits.startsWith('52') ? telefonoDigits : '52' + telefonoDigits}`
+                    : '#'
+                  return (
+                    <tr key={p.id}>
+                      <td>
+                        <span
+                          className={styles.pacienteLink}
+                          onClick={() => router.push(`/pacientes/${p.id}`)}
+                        >
+                          {p.nombre}
+                        </span>
+                      </td>
+                      <td className={chartStyles.dashTableMuted}>
+                        {p.nunca_ha_venido ? 'Nunca ha asistido' : p.ultima_consulta ? formatDate(p.ultima_consulta) : '—'}
+                      </td>
+                      <td>
+                        <span className={`${styles.diasBadge} ${urgencia}`}>
+                          {p.dias_inactivo} días
+                        </span>
+                      </td>
+                      <td>
+                        <div className={styles.inactiveActions}>
+                          <button
+                            className={styles.actionBtn}
+                            onClick={() => router.push(`/pacientes/${p.id}`)}
+                            title="Ver expediente"
+                          >
+                            Expediente
+                          </button>
+                          <a
+                            className={`${styles.actionBtn} ${styles.actionBtnWa}`}
+                            href={waHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Enviar WhatsApp"
+                          >
+                            WhatsApp
+                          </a>
+                          <button
+                            className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}
+                            onClick={() => router.push(`/pacientes/${p.id}?accion=agendar`)}
+                            title="Agendar cita"
+                          >
+                            Agendar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>

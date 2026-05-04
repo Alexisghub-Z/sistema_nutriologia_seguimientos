@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     const rangoParam = searchParams.get('rango') || 'mes'
     const fechaInicioParam = searchParams.get('fechaInicio')
     const fechaFinParam = searchParams.get('fechaFin')
+    const diasInactividad = parseInt(searchParams.get('diasInactividad') || '180', 10)
 
     // Fecha de hoy (inicio y fin del día)
     const hoy = new Date()
@@ -77,6 +78,10 @@ export async function GET(request: NextRequest) {
     hace28Dias.setDate(hace28Dias.getDate() - 28)
     hace28Dias.setHours(0, 0, 0, 0)
 
+    // Fecha de corte para pacientes inactivos
+    const haceXDiasInactivos = new Date()
+    haceXDiasInactivos.setDate(haceXDiasInactivos.getDate() - diasInactividad)
+
     // Calcular período anterior (misma duración, justo antes)
     const duracionMs = fechaFin.getTime() - fechaInicio.getTime()
     const periodoAnteriorInicio = new Date(fechaInicio.getTime() - duracionMs)
@@ -101,6 +106,7 @@ export async function GET(request: NextRequest) {
       consultasPeriodoAnterior,
       citasPeriodoAnterior,
       citasDelPeriodo,
+      pacientesInactivosRaw,
     ] = await Promise.all([
       // Total de pacientes
       prisma.paciente.count(),
@@ -301,6 +307,28 @@ export async function GET(request: NextRequest) {
         select: {
           estado: true,
           estado_confirmacion: true,
+        },
+      }),
+
+      // Pacientes inactivos: sin consultas recientes en los últimos X días
+      prisma.paciente.findMany({
+        where: {
+          consultas: {
+            none: {
+              fecha: { gte: haceXDiasInactivos },
+            },
+          },
+        },
+        select: {
+          id: true,
+          nombre: true,
+          telefono: true,
+          createdAt: true,
+          consultas: {
+            orderBy: { fecha: 'desc' },
+            take: 1,
+            select: { fecha: true },
+          },
         },
       }),
     ])
@@ -504,6 +532,24 @@ export async function GET(request: NextRequest) {
       (c) => c.estado === 'CANCELADA' || c.estado_confirmacion === 'CANCELADA_PACIENTE'
     ).length
 
+    // Formatear pacientes inactivos y ordenar de más a menos días
+    const pacientesInactivos = pacientesInactivosRaw
+      .map((p) => {
+        const ultimaFecha = p.consultas[0]?.fecha ?? null
+        const referencia = ultimaFecha ? new Date(ultimaFecha).getTime() : new Date(p.createdAt).getTime()
+        const diasInactivo = Math.floor((Date.now() - referencia) / 86400000)
+        return {
+          id: p.id,
+          nombre: p.nombre,
+          telefono: p.telefono,
+          ultima_consulta: ultimaFecha,
+          dias_inactivo: diasInactivo,
+          nunca_ha_venido: ultimaFecha === null,
+        }
+      })
+      .sort((a, b) => b.dias_inactivo - a.dias_inactivo)
+      .slice(0, 15)
+
     return NextResponse.json({
       totalPacientes,
       citasHoy: {
@@ -547,6 +593,10 @@ export async function GET(request: NextRequest) {
         ingresosDelta,
         consultasDelta,
         asistenciaDelta,
+      },
+      pacientesInactivos: {
+        dias: diasInactividad,
+        lista: pacientesInactivos,
       },
     })
   } catch (error) {
