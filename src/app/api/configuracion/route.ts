@@ -33,6 +33,16 @@ const configuracionSchema = z.object({
     .regex(/^\d{2}:\d{2}$/)
     .optional()
     .nullable(),
+  horario_domingo_inicio: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .optional()
+    .nullable(),
+  horario_domingo_fin: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .optional()
+    .nullable(),
   duracion_cita_default: z.number().int().min(15).max(240).optional(),
   dias_laborales: z.string().optional(),
   dias_anticipacion_max: z.number().int().min(1).max(90).optional(),
