@@ -97,6 +97,130 @@
   transform: translateX(4px);
 }
 
+/* Recursos del Servidor */
+.recursosCard {
+  margin-top: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.recursosHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+}
+
+.recursosTitulo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--color-text);
+}
+
+.recursosTitulo h3 {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+}
+
+.recursosRefresh {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-xs);
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  transition: all var(--transition-fast);
+}
+
+.recursosRefresh:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.recursosRefresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.girando {
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.recursosGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-xl);
+}
+
+.metrica {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.metricaHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.metricaLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.metricaPct {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.barraFondo {
+  height: 8px;
+  background: var(--color-gray-100);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.barraRelleno {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.4s ease;
+}
+
+.barraVerde { background: #22c55e; }
+.barraAmarilla { background: #f59e0b; }
+.barraRoja { background: #ef4444; }
+
+.metricaValor {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.recursosLoading {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  padding: var(--spacing-md) 0;
+}
+
+.recursosError {
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+  padding: var(--spacing-md) 0;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .container {
@@ -118,6 +242,11 @@
   .grid {
     grid-template-columns: 1fr;
     gap: var(--spacing-md);
+  }
+
+  .recursosGrid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
   }
 
   .configCard {
