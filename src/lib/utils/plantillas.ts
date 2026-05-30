@@ -120,7 +120,7 @@ const PLANTILLAS_APROBADAS: Record<string, PlantillaAprobada | null> = {
   [TipoPlantilla.RECORDATORIO_AGENDAR]: process.env.TEMPLATE_RECORDATORIO_AGENDAR_SID
     ? {
         contentSid: process.env.TEMPLATE_RECORDATORIO_AGENDAR_SID,
-        variables: ['nombre', 'fecha_cita', 'url_portal'],
+        variables: ['nombre', 'fecha_cita', 'hora_cita'],
       }
     : null,
   [TipoPlantilla.AGRADECIMIENTO_CONSULTA]: process.env.TEMPLATE_AGRADECIMIENTO_CONSULTA_SID
@@ -150,7 +150,7 @@ const TEXTOS_PLANTILLAS: Partial<Record<TipoPlantilla, string>> = {
   [TipoPlantilla.SEGUIMIENTO_PREVIO_CITA]:
     'Hola {nombre}, falta aproximadamente una semana para tu próxima cita el {fecha_cita}\nsi deseas agendar ahora, no dudes en decirmelo',
   [TipoPlantilla.RECORDATORIO_AGENDAR]:
-    'Hola {nombre}, te recuerdo que tienes una cita próxima agendada para mañana {fecha_cita}.\n\nSi necesitas reagendar o tienes alguna duda o quieres contactar al nutriólogo Paúl Solo escribe: QUIERO HABLAR CON PAÚL\n\n¡Nos vemos mañana!',
+    'Hola {nombre}, te recuerdo que tienes una cita programada para el día {fecha_cita} a las {hora_cita}.\nSi deseas confirmar y agendar esta cita ahora, solo responde *Sí* a este mensaje 😉.\nRecuerda usar tu correo o tu número de celular para identificarte.',
 }
 
 /**
@@ -355,6 +355,20 @@ export async function generarMensaje(
     const contentSid = obtenerContentSid(tipo)
 
     if (!contentSid) {
+      // Fallback: si la plantilla aún no está aprobada/configurada en Meta pero
+      // tenemos su texto plano, enviarlo como mensaje libre en vez de fallar el job.
+      // Útil para desplegar a prod mientras Meta valida una plantilla nueva
+      // (ej: RECORDATORIO_AGENDAR con la variable de hora).
+      const textoPlantilla = TEXTOS_PLANTILLAS[tipo]
+      if (textoPlantilla) {
+        console.warn(
+          `⚠️  Sin contentSid para ${tipo}; enviando texto plano (plantilla pendiente de aprobación en Meta)`
+        )
+        return {
+          modo: 'sandbox',
+          contenido: reemplazarVariables(textoPlantilla, variables),
+        }
+      }
       throw new Error(`No se encontró contentSid para plantilla tipo: ${tipo}`)
     }
 

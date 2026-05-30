@@ -55,6 +55,22 @@ function toDateInputValue(value: string | null | undefined): string {
   return value.slice(0, 10)
 }
 
+// Extrae la hora (HH:mm en UTC) de un proxima_cita guardado.
+// Devuelve '' si es el mediodía-UTC por defecto (sin hora específica).
+function toHoraInputValue(value: string | null | undefined): string {
+  if (!value) return ''
+  const d = new Date(value)
+  const esMediodiaUTC =
+    d.getUTCHours() === 12 &&
+    d.getUTCMinutes() === 0 &&
+    d.getUTCSeconds() === 0 &&
+    d.getUTCMilliseconds() === 0
+  if (esMediodiaUTC) return ''
+  const hh = String(d.getUTCHours()).padStart(2, '0')
+  const mm = String(d.getUTCMinutes()).padStart(2, '0')
+  return `${hh}:${mm}`
+}
+
 function toNumberInput(value: number | null | undefined): string {
   if (value === null || value === undefined) return ''
   return String(value)
@@ -185,6 +201,9 @@ export default function EditarConsultaModal({
   const [objetivo, setObjetivo] = useState('')
   const [plan, setPlan] = useState('')
   const [proximaCita, setProximaCita] = useState('')
+  const [proximaCitaHora, setProximaCitaHora] = useState('')
+  const [horariosProxima, setHorariosProxima] = useState<string[]>([])
+  const [cargandoHorarios, setCargandoHorarios] = useState(false)
   const [montoConsulta, setMontoConsulta] = useState('')
   const [metodoPago, setMetodoPago] = useState('')
   const [estadoPago, setEstadoPago] = useState('')
@@ -221,6 +240,7 @@ export default function EditarConsultaModal({
     setObjetivo(consulta.objetivo ?? '')
     setPlan(consulta.plan ?? '')
     setProximaCita(toDateInputValue(consulta.proxima_cita))
+    setProximaCitaHora(toHoraInputValue(consulta.proxima_cita))
     setMontoConsulta(toMontoInput(consulta.monto_consulta))
     setMetodoPago(consulta.metodo_pago ?? '')
     setEstadoPago(consulta.estado_pago ?? '')
@@ -237,6 +257,30 @@ export default function EditarConsultaModal({
       document.body.style.overflow = ''
     }
   }, [consulta])
+
+  // Cargar horarios disponibles cuando cambia la fecha de próxima cita
+  useEffect(() => {
+    if (!proximaCita) {
+      setHorariosProxima([])
+      return
+    }
+    let cancelado = false
+    setCargandoHorarios(true)
+    fetch(`/api/citas/disponibilidad?fecha=${proximaCita}`)
+      .then((res) => (res.ok ? res.json() : { horarios: [] }))
+      .then((data) => {
+        if (!cancelado) setHorariosProxima(data.horarios || [])
+      })
+      .catch(() => {
+        if (!cancelado) setHorariosProxima([])
+      })
+      .finally(() => {
+        if (!cancelado) setCargandoHorarios(false)
+      })
+    return () => {
+      cancelado = true
+    }
+  }, [proximaCita])
 
   if (!consulta) return null
 
@@ -341,7 +385,12 @@ export default function EditarConsultaModal({
       observaciones: observaciones || null,
       objetivo: objetivo || null,
       plan: plan || null,
-      ...(esConsultaReciente ? { proxima_cita: proximaCita || null } : {}),
+      ...(esConsultaReciente
+        ? {
+            proxima_cita: proximaCita || null,
+            proxima_cita_hora: proximaCita ? proximaCitaHora || null : null,
+          }
+        : {}),
       monto_consulta: parseOptionalNumber(montoConsulta),
       metodo_pago: metodoPago || null,
       estado_pago: estadoPago || null,
@@ -633,9 +682,39 @@ export default function EditarConsultaModal({
                     className={styles.input}
                     value={proximaCita}
                     min={today}
-                    onChange={(e) => setProximaCita(e.target.value)}
+                    onChange={(e) => {
+                      setProximaCita(e.target.value)
+                      setProximaCitaHora('')
+                    }}
                   />
                   <span className={styles.fieldHint}>Debe ser una fecha futura</span>
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="proxima_cita_hora">Hora (opcional)</label>
+                  <select
+                    id="proxima_cita_hora"
+                    className={styles.input}
+                    value={proximaCitaHora}
+                    onChange={(e) => setProximaCitaHora(e.target.value)}
+                    disabled={!proximaCita || cargandoHorarios}
+                  >
+                    <option value="">
+                      {!proximaCita
+                        ? 'Elige primero la fecha'
+                        : cargandoHorarios
+                          ? 'Cargando horarios...'
+                          : 'Sin hora específica'}
+                    </option>
+                    {proximaCitaHora && !horariosProxima.includes(proximaCitaHora) && (
+                      <option value={proximaCitaHora}>{proximaCitaHora} (actual)</option>
+                    )}
+                    {horariosProxima.map((hora) => (
+                      <option key={hora} value={hora}>
+                        {hora}
+                      </option>
+                    ))}
+                  </select>
+                  <span className={styles.fieldHint}>Si la asignas, la IA podrá agendar a esa hora</span>
                 </div>
               </div>
             )}
