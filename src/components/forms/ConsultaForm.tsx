@@ -87,11 +87,37 @@ export default function ConsultaForm({
     objetivo: '',
     plan: '',
     proxima_cita: '',
+    proxima_cita_hora: '',
     monto_consulta: '',
     metodo_pago: 'EFECTIVO',
     estado_pago: 'PAGADO',
     notas_pago: '',
   })
+
+  // Horarios disponibles para la próxima cita sugerida
+  const [horariosProxima, setHorariosProxima] = useState<string[]>([])
+  const [cargandoHorarios, setCargandoHorarios] = useState(false)
+
+  const cargarHorariosProxima = async (fecha: string) => {
+    if (!fecha) {
+      setHorariosProxima([])
+      return
+    }
+    setCargandoHorarios(true)
+    try {
+      const res = await fetch(`/api/citas/disponibilidad?fecha=${fecha}`)
+      if (res.ok) {
+        const data = await res.json()
+        setHorariosProxima(data.horarios || [])
+      } else {
+        setHorariosProxima([])
+      }
+    } catch {
+      setHorariosProxima([])
+    } finally {
+      setCargandoHorarios(false)
+    }
+  }
 
   // Validación en tiempo real
   const validateField = (name: string, value: string) => {
@@ -204,6 +230,12 @@ export default function ConsultaForm({
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
 
+    // Al cambiar la fecha de próxima cita, recargar horarios y limpiar la hora elegida
+    if (name === 'proxima_cita') {
+      setFormData((prev) => ({ ...prev, proxima_cita_hora: '' }))
+      cargarHorariosProxima(value)
+    }
+
     // Validar en tiempo real solo para campos numéricos
     const numericFields = [
       'peso', 'talla', 'grasa_corporal', 'porcentaje_agua', 'masa_muscular_kg', 'grasa_visceral',
@@ -290,6 +322,7 @@ export default function ConsultaForm({
         objetivo: formData.objetivo || undefined,
         plan: formData.plan || undefined,
         proxima_cita: formData.proxima_cita || undefined,
+        proxima_cita_hora: formData.proxima_cita_hora || undefined,
       }
 
       // Agregar mediciones numéricas si tienen valor
@@ -1121,20 +1154,50 @@ export default function ConsultaForm({
       {/* Seguimiento */}
       <div className={styles.section}>
         <h3 className={styles.sectionTitle}>Seguimiento</h3>
-        <div className={styles.formGroup}>
-          <label htmlFor="proxima_cita" className={styles.label}>
-            Próxima Cita Sugerida
-          </label>
-          <input
-            type="date"
-            id="proxima_cita"
-            name="proxima_cita"
-            value={formData.proxima_cita}
-            onChange={handleChange}
-            className={styles.input}
-            min={new Date().toISOString().split('T')[0]}
-            disabled={loading}
-          />
+        <div className={styles.gridTwo}>
+          <div className={styles.formGroup}>
+            <label htmlFor="proxima_cita" className={styles.label}>
+              Próxima Cita Sugerida (fecha)
+            </label>
+            <input
+              type="date"
+              id="proxima_cita"
+              name="proxima_cita"
+              value={formData.proxima_cita}
+              onChange={handleChange}
+              className={styles.input}
+              min={new Date().toISOString().split('T')[0]}
+              disabled={loading}
+            />
+          </div>
+          <div className={styles.formGroup}>
+            <label htmlFor="proxima_cita_hora" className={styles.label}>
+              Hora (opcional)
+            </label>
+            <select
+              id="proxima_cita_hora"
+              name="proxima_cita_hora"
+              value={formData.proxima_cita_hora}
+              onChange={handleChange}
+              className={styles.input}
+              disabled={loading || !formData.proxima_cita || cargandoHorarios}
+            >
+              <option value="">
+                {!formData.proxima_cita
+                  ? 'Elige primero la fecha'
+                  : cargandoHorarios
+                    ? 'Cargando horarios...'
+                    : horariosProxima.length === 0
+                      ? 'Sin horarios disponibles'
+                      : 'Sin hora específica'}
+              </option>
+              {horariosProxima.map((hora) => (
+                <option key={hora} value={hora}>
+                  {hora}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 

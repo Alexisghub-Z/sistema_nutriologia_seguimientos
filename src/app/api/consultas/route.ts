@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import { z } from 'zod'
 import { getCache, setCache, deleteCache, deleteCachePattern, CacheKeys } from '@/lib/redis'
 import { programarAgradecimientoConsulta } from '@/lib/queue/messages'
+import { construirProximaCita } from '@/lib/utils/proxima-cita'
 
 // Schema de validación para crear consulta
 const consultaSchema = z.object({
@@ -51,6 +52,10 @@ const consultaSchema = z.object({
   objetivo: z.string().optional(),
   plan: z.string().optional(),
   proxima_cita: z.string().optional(),
+  proxima_cita_hora: z
+    .string()
+    .regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:mm)')
+    .optional(),
 
   // Información financiera
   monto_consulta: z.number().positive().optional(),
@@ -270,10 +275,11 @@ export async function POST(request: NextRequest) {
         observaciones: validatedData.observaciones,
         objetivo: validatedData.objetivo,
         plan: validatedData.plan,
-        // Parsear como mediodía UTC para evitar desplazamiento de día por zona horaria
-        proxima_cita: validatedData.proxima_cita
-          ? new Date(`${validatedData.proxima_cita}T12:00:00.000Z`)
-          : null,
+        // Combinar fecha + hora (si hay); sin hora se guarda como mediodía UTC
+        proxima_cita: construirProximaCita(
+          validatedData.proxima_cita,
+          validatedData.proxima_cita_hora
+        ),
 
         // Información financiera
         monto_consulta: validatedData.monto_consulta,

@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import { z } from 'zod'
 import { deleteCachePattern, CacheKeys, deleteCache } from '@/lib/redis'
 import { cancelarJobsSeguimiento, programarSeguimiento } from '@/lib/queue/messages'
+import { construirProximaCita } from '@/lib/utils/proxima-cita'
 
 const consultaUpdateSchema = z.object({
   fecha: z
@@ -49,6 +50,11 @@ const consultaUpdateSchema = z.object({
 
   // Próxima cita
   proxima_cita: z.string().nullable().optional(),
+  proxima_cita_hora: z
+    .string()
+    .regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:mm)')
+    .nullable()
+    .optional(),
 
   // Información financiera
   monto_consulta: z.number().positive().nullable().optional(),
@@ -161,10 +167,11 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     if (validatedData.objetivo !== undefined) updateData.objetivo = validatedData.objetivo
     if (validatedData.plan !== undefined) updateData.plan = validatedData.plan
     if (validatedData.proxima_cita !== undefined) {
-      // Parsear como mediodía UTC para evitar desplazamiento de día por zona horaria
-      updateData.proxima_cita = validatedData.proxima_cita
-        ? new Date(`${validatedData.proxima_cita}T12:00:00.000Z`)
-        : null
+      // Combinar fecha + hora (si hay); sin hora se guarda como mediodía UTC
+      updateData.proxima_cita = construirProximaCita(
+        validatedData.proxima_cita,
+        validatedData.proxima_cita_hora
+      )
     }
     if (validatedData.monto_consulta !== undefined) updateData.monto_consulta = validatedData.monto_consulta
     if (validatedData.metodo_pago !== undefined) updateData.metodo_pago = validatedData.metodo_pago
@@ -179,9 +186,10 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
 
     // Si cambia proxima_cita y hay seguimiento activo, reprogramar los jobs
     if (validatedData.proxima_cita !== undefined && existingConsulta.seguimiento_programado) {
-      const nuevaFecha = validatedData.proxima_cita
-        ? new Date(`${validatedData.proxima_cita}T12:00:00.000Z`)
-        : null
+      const nuevaFecha = construirProximaCita(
+        validatedData.proxima_cita,
+        validatedData.proxima_cita_hora
+      )
 
       // Cancelar jobs actuales
       await cancelarJobsSeguimiento(id)
