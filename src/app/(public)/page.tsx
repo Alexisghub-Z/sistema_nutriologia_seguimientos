@@ -697,7 +697,7 @@ export default function Home() {
           {/* Mapa */}
           <div className={`${styles.mapaContainer} fade-in`} data-scroll-reveal>
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d820.0879227936847!2d-96.71241669999999!3d17.0586389!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTfCsDAzJzMxLjEiTiA5NsKwNDInNDQuNyJX!5e1!3m2!1ses!2smx!4v1770946253898!5m2!1ses!2smx"
+              src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d6570.373872235327!2d-96.7212905883789!3d17.068025588989258!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85c7223bbe3d113f%3A0xcfe9ff036942d7f3!2sOSMO%20%2F%20Red%20OSMO%20Oaxaca!5e1!3m2!1ses!2smx!4v1780181234866!5m2!1ses!2smx"
               width="100%"
               height="450"
               style={{ border: 0 }}
@@ -712,9 +712,9 @@ export default function Home() {
             <div className={styles.contactoCard}>
               <h3>Ubicación</h3>
               <p>
-                Oaxaca de Juárez
+                Humboldt 302, Ruta Independencia
                 <br />
-                Oaxaca, México
+                Centro, 68000 Oaxaca de Juárez, Oax.
                 <br />
                 Consulta privada
               </p>
