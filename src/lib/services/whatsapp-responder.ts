@@ -228,12 +228,30 @@ function esAfirmacionParaAgendar(mensaje: string): boolean {
   const afirmaciones = [
     'si', 'sii', 'siii', 'sip', 'simon',
     'claro', 'va', 'dale', 'ok', 'okay', 'esta bien', 'esta perfecto',
-    'confirmo', 'confirmar', 'agendala', 'agendar', 'agenda', 'agendar cita',
+    'confirmo', 'confirmar', 'confirmar cita', 'agendala', 'agendar', 'agenda', 'agendar cita',
     'quiero agendar', 'si quiero', 'si por favor', 'si porfavor', 'de acuerdo',
     '1', 'si agenda', 'si agendala',
   ]
 
   return afirmaciones.includes(m)
+}
+
+/**
+ * Detecta si el mensaje pide elegir/cambiar a otro horario (botón "Elegir otro horario").
+ */
+function esPeticionOtroHorario(mensaje: string): boolean {
+  const m = mensaje
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // quitar acentos
+
+  const opciones = [
+    'elegir otro horario', 'otro horario', 'otra hora', 'cambiar horario',
+    'cambiar hora', 'otro dia', 'otra fecha', 'prefiero otro horario',
+  ]
+
+  return opciones.includes(m)
 }
 
 /**
@@ -247,9 +265,27 @@ async function intentarAgendarCitaSugerida(
   nombrePaciente: string,
   contexto: PacienteContexto
 ): Promise<ResultadoProcesamiento | null> {
-  // Solo si tiene sugerida (con hora), no tiene ya cita real, y afirma agendar
+  // Solo aplica si tiene cita sugerida y NO tiene ya una cita real
   if (!contexto.tiene_proxima_cita_sugerida) return null
   if (contexto.tiene_cita_proxima) return null
+
+  const nombreCortoBtn = nombrePaciente.split(' ')[0]
+
+  // Botón "Elegir otro horario": ofrecer el link de agendar sin crear cita
+  if (esPeticionOtroHorario(mensaje)) {
+    const { agendar: urlAgendar } = (await import('@/lib/knowledge-base')).KNOWLEDGE_BASE.urls
+    return {
+      respuesta:
+        `Claro ${nombreCortoBtn} 😊. Puedes elegir el día y la hora que más te convenga aquí:\n${urlAgendar}\n\n` +
+        `Recuerda usar tu correo o número de celular para identificarte.`,
+      debe_responder_automaticamente: true,
+      debe_derivar_humano: false,
+      razon: 'Paciente pidió elegir otro horario para su cita sugerida',
+      metadata: { fuente: 'sistema' },
+    }
+  }
+
+  // A partir de aquí, solo continuamos si el paciente confirma agendar
   if (!esAfirmacionParaAgendar(mensaje)) return null
 
   // Recuperar la consulta sugerida con su proxima_cita real (Date)

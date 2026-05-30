@@ -425,7 +425,7 @@ export async function obtenerRespuestaIA(
       } else if (pacienteContexto?.tiene_proxima_cita_sugerida) {
         const fechaSug = pacienteContexto.fecha_sugerida || ''
         const horaSug = pacienteContexto.hora_sugerida || ''
-        contextoSistema += `El nutriólogo le sugirió una próxima cita para el ${fechaSug}${horaSug ? ` a las ${horaSug}` : ''}. Si quiere agendarla, dile que solo responda *Sí* a este chat y se la agendas de inmediato a ese horario. NO le des el link de agendar salvo que quiera otro día u hora distinta.\n`
+        contextoSistema += `El nutriólogo le sugirió una próxima cita para el ${fechaSug}${horaSug ? ` a las ${horaSug}` : ''}. Si quiere agendarla a esa hora, dile que responda *Confirmar cita* (o *Sí*) y se la agendas de inmediato. Si prefiere otro horario, que responda *Elegir otro horario* y le das el link de agendar. NO le des el link salvo que quiera un día u hora distinta.\n`
       } else {
         contextoSistema += `Quiere agendar. Dale el link: ${KNOWLEDGE_BASE.urls.agendar}\n`
         if (pacienteContexto && !pacienteContexto.es_paciente_nuevo) {
