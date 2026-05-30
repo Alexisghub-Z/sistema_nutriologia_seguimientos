@@ -74,6 +74,10 @@ export interface PacienteContexto {
   ultima_consulta_fecha?: string
   peso_ultima_consulta?: number
   imc_ultima_consulta?: number
+  // Próxima cita SUGERIDA por el nutriólogo (aún no agendada como cita real)
+  tiene_proxima_cita_sugerida?: boolean
+  fecha_sugerida?: string
+  hora_sugerida?: string
 }
 
 /**
@@ -418,6 +422,10 @@ export async function obtenerRespuestaIA(
         if (urlGestion) {
           contextoSistema += `Si quiere cambiar fecha: ${urlGestion}\n`
         }
+      } else if (pacienteContexto?.tiene_proxima_cita_sugerida) {
+        const fechaSug = pacienteContexto.fecha_sugerida || ''
+        const horaSug = pacienteContexto.hora_sugerida || ''
+        contextoSistema += `El nutriólogo le sugirió una próxima cita para el ${fechaSug}${horaSug ? ` a las ${horaSug}` : ''}. Si quiere agendarla, dile que solo responda *Sí* a este chat y se la agendas de inmediato a ese horario. NO le des el link de agendar salvo que quiera otro día u hora distinta.\n`
       } else {
         contextoSistema += `Quiere agendar. Dale el link: ${KNOWLEDGE_BASE.urls.agendar}\n`
         if (pacienteContexto && !pacienteContexto.es_paciente_nuevo) {
