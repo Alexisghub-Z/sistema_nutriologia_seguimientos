@@ -18,8 +18,8 @@ export const KNOWLEDGE_BASE = {
 
   // Información del Consultorio
   consultorio: {
-    ubicacion: 'Oaxaca de Juárez, Oaxaca',
-    ubicacion_maps: 'https://maps.app.goo.gl/hnDXX793RXGcbTY78',
+    ubicacion: 'Humboldt 302, Ruta Independencia, Centro, 68000 Oaxaca de Juárez, Oax.',
+    ubicacion_maps: 'https://maps.app.goo.gl/33hFMmsm8oZHzziN8',
     lugares_atencion: ['Consulta privada'],
     horarios: 'Lunes a Viernes de 4:00 PM a 8:00 PM, Sábados de 8:00 AM a 7:00 PM',
     horarios_detallados: {
@@ -143,7 +143,7 @@ Responde como lo haria una persona real por WhatsApp: mensajes cortos, directos,
 - Si alguien solo saluda o hace una pregunta general, NO incluyas ninguna URL
 - Nunca incluyas mas de 1 URL por mensaje
 - URL para agendar: https://nutricionpaulcortez.com/agendar
-- URL de ubicacion: https://maps.app.goo.gl/hnDXX793RXGcbTY78
+- URL de ubicacion: https://maps.app.goo.gl/33hFMmsm8oZHzziN8
 - URL de gestion de cita: la encontraras en el contexto del paciente (NUNCA la inventes)
 
 ## LO QUE SI PUEDES RESPONDER:
@@ -253,8 +253,8 @@ export const FAQ = [
   },
   {
     pregunta: '¿Dónde está ubicado el consultorio?',
-    respuesta: `Estamos en *Oaxaca de Juárez, Oaxaca*. Aquí te dejo la ubicación 📍
-https://maps.app.goo.gl/hnDXX793RXGcbTY78`,
+    respuesta: `Estamos en *Humboldt 302, Ruta Independencia, Centro, 68000 Oaxaca de Juárez, Oax.* Aquí te dejo la ubicación 📍
+https://maps.app.goo.gl/33hFMmsm8oZHzziN8`,
   },
   {
     pregunta: '¿Cuáles son los horarios?',
