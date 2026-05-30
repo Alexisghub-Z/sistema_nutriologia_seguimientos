@@ -46,6 +46,20 @@ export async function procesarMensajeEntrante(
       }
     }
 
+    // PASO 1.5: Si el paciente tiene una próxima cita SUGERIDA (con hora) y
+    // confirma agendar, crear la cita real automáticamente.
+    const contextoPaciente = await obtenerContextoPaciente(pacienteId)
+    const resultadoAgendar = await intentarAgendarCitaSugerida(
+      mensajePaciente,
+      pacienteId,
+      nombrePaciente,
+      contextoPaciente
+    )
+    if (resultadoAgendar) {
+      console.log('📅 Cita sugerida agendada automáticamente por confirmación del paciente')
+      return resultadoAgendar
+    }
+
     // PASO 2: Buscar en FAQ (tiene prioridad sobre derivación por palabras clave)
     const respuestaFAQ = buscarEnFAQ(mensajePaciente)
     if (respuestaFAQ) {
@@ -93,8 +107,8 @@ export async function procesarMensajeEntrante(
       }
     }
 
-    // Obtener contexto del paciente
-    const contexto = await obtenerContextoPaciente(pacienteId)
+    // Reutilizar el contexto del paciente ya obtenido en el PASO 1.5
+    const contexto = contextoPaciente
 
     // Obtener historial reciente de conversación
     const historial = await obtenerHistorialConversacion(pacienteId)
@@ -201,6 +215,108 @@ async function esRespuestaARecordatorio(mensaje: string, pacienteId: string): Pr
 }
 
 /**
+ * Detecta si el mensaje es una afirmación para agendar la cita sugerida.
+ * Ej: "sí", "si", "claro", "agéndala", "1", "confirmo".
+ */
+function esAfirmacionParaAgendar(mensaje: string): boolean {
+  const m = mensaje
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // quitar acentos
+
+  const afirmaciones = [
+    'si', 'sii', 'siii', 'sip', 'simon',
+    'claro', 'va', 'dale', 'ok', 'okay', 'esta bien', 'esta perfecto',
+    'confirmo', 'confirmar', 'agendala', 'agendar', 'agenda', 'agendar cita',
+    'quiero agendar', 'si quiero', 'si por favor', 'si porfavor', 'de acuerdo',
+    '1', 'si agenda', 'si agendala',
+  ]
+
+  return afirmaciones.includes(m)
+}
+
+/**
+ * Si el paciente tiene una próxima cita SUGERIDA (con hora) y confirma agendar,
+ * crea la cita real automáticamente. Devuelve un resultado de procesamiento si
+ * actuó, o null si no aplica (para que el flujo continúe normalmente).
+ */
+async function intentarAgendarCitaSugerida(
+  mensaje: string,
+  pacienteId: string,
+  nombrePaciente: string,
+  contexto: PacienteContexto
+): Promise<ResultadoProcesamiento | null> {
+  // Solo si tiene sugerida (con hora), no tiene ya cita real, y afirma agendar
+  if (!contexto.tiene_proxima_cita_sugerida) return null
+  if (contexto.tiene_cita_proxima) return null
+  if (!esAfirmacionParaAgendar(mensaje)) return null
+
+  // Recuperar la consulta sugerida con su proxima_cita real (Date)
+  const inicioDiaHoy = new Date()
+  inicioDiaHoy.setHours(0, 0, 0, 0)
+
+  const consultaSugerida = await prisma.consulta.findFirst({
+    where: {
+      paciente_id: pacienteId,
+      proxima_cita: { gte: inicioDiaHoy },
+    },
+    orderBy: { fecha: 'desc' },
+    select: { proxima_cita: true },
+  })
+
+  if (!consultaSugerida?.proxima_cita) return null
+
+  const nombreCorto = nombrePaciente.split(' ')[0]
+  const { agendar: urlAgendar } = (await import('@/lib/knowledge-base')).KNOWLEDGE_BASE.urls
+
+  try {
+    const { crearCitaParaPaciente } = await import('@/lib/services/citas')
+    const resultado = await crearCitaParaPaciente({
+      pacienteId,
+      fechaHora: consultaSugerida.proxima_cita,
+      motivoConsulta: 'Consulta de seguimiento',
+      tipoCita: 'PRESENCIAL',
+    })
+
+    if (resultado.ok) {
+      const fecha = contexto.fecha_sugerida ?? ''
+      const hora = contexto.hora_sugerida ?? ''
+      return {
+        respuesta:
+          `¡Listo ${nombreCorto}! 🎉 Tu cita quedó agendada para el ${fecha}${hora ? ` a las ${hora}` : ''}.\n\n` +
+          `Te enviaremos un recordatorio antes de tu cita. Si necesitas cambiarla, escríbenos. ¡Te esperamos! 😊`,
+        debe_responder_automaticamente: true,
+        debe_derivar_humano: false,
+        razon: 'Cita agendada automáticamente desde recordatorio de próxima cita sugerida',
+        metadata: { fuente: 'sistema' },
+      }
+    }
+
+    // Horario ocupado / ya tiene cita / error → ofrecer link manual
+    return {
+      respuesta:
+        `${nombreCorto}, no pude agendar a ese horario porque ya no está disponible 😕.\n\n` +
+        `Puedes elegir otro horario fácilmente aquí: ${urlAgendar}`,
+      debe_responder_automaticamente: true,
+      debe_derivar_humano: false,
+      razon: `No se pudo agendar automáticamente: ${resultado.motivo}`,
+      metadata: { fuente: 'sistema' },
+    }
+  } catch (error) {
+    console.error('Error al agendar cita sugerida automáticamente:', error)
+    return {
+      respuesta:
+        `${nombreCorto}, tuve un problema al agendar tu cita. Puedes hacerlo aquí: ${urlAgendar}`,
+      debe_responder_automaticamente: true,
+      debe_derivar_humano: false,
+      razon: 'Error al agendar automáticamente',
+      metadata: { fuente: 'sistema' },
+    }
+  }
+}
+
+/**
  * Genera mensaje de derivación a humano
  */
 function generarMensajeDerivacion(nombrePaciente: string, mensajeOriginal: string): string {
@@ -293,10 +409,49 @@ async function obtenerContextoPaciente(pacienteId: string): Promise<PacienteCont
   // Determinar si es paciente nuevo (menos de 2 consultas)
   const esPacienteNuevo = totalConsultas < 2
 
+  // Buscar próxima cita SUGERIDA por el nutriólogo (consulta más reciente con
+  // proxima_cita futura). Solo es "agendable automáticamente" si el paciente
+  // NO tiene ya una cita real próxima.
+  let tieneProximaCitaSugerida = false
+  let fechaSugerida: string | undefined
+  let horaSugerida: string | undefined
+
+  if (!proximaCita) {
+    const consultaSugerida = await prisma.consulta.findFirst({
+      where: {
+        paciente_id: pacienteId,
+        proxima_cita: { gte: inicioDiaHoy },
+      },
+      orderBy: { fecha: 'desc' },
+      select: { proxima_cita: true },
+    })
+
+    if (consultaSugerida?.proxima_cita) {
+      const { proximaCitaTieneHora } = await import('@/lib/utils/proxima-cita')
+      // Solo agendable si tiene hora específica asignada por el nutriólogo
+      if (proximaCitaTieneHora(consultaSugerida.proxima_cita)) {
+        tieneProximaCitaSugerida = true
+        fechaSugerida = new Date(consultaSugerida.proxima_cita).toLocaleDateString('es-MX', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          timeZone: 'UTC',
+        })
+        const hh = String(consultaSugerida.proxima_cita.getUTCHours()).padStart(2, '0')
+        const mm = String(consultaSugerida.proxima_cita.getUTCMinutes()).padStart(2, '0')
+        horaSugerida = `${hh}:${mm}`
+      }
+    }
+  }
+
   return {
     nombre: paciente.nombre,
     email: paciente.email ?? undefined,
     tiene_cita_proxima: !!proximaCita,
+    tiene_proxima_cita_sugerida: tieneProximaCitaSugerida,
+    fecha_sugerida: fechaSugerida,
+    hora_sugerida: horaSugerida,
     fecha_proxima_cita: proximaCita
       ? new Date(proximaCita.fecha_hora).toLocaleDateString('es-MX', {
           weekday: 'long',

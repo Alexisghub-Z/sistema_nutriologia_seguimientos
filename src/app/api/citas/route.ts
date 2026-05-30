@@ -2,18 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth-utils'
 import prisma from '@/lib/prisma'
 import { z } from 'zod'
-import { randomBytes } from 'crypto'
-import { deleteCache, CacheKeys } from '@/lib/redis'
-import {
-  syncCitaWithGoogleCalendar,
-  isGoogleCalendarConfigured,
-} from '@/lib/services/google-calendar'
-import {
-  programarConfirmacion,
-  programarRecordatorio24h,
-  programarRecordatorio1h,
-  programarMarcarNoAsistio,
-} from '@/lib/queue/messages'
+import { crearCitaParaPaciente } from '@/lib/services/citas'
 
 // Schema de validación para crear cita
 const citaSchema = z.object({
@@ -79,256 +68,37 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = citaSchema.parse(body)
 
-    // Verificar si el paciente ya tiene una cita activa (PENDIENTE y futura)
-    const citaActiva = await prisma.cita.findFirst({
-      where: {
-        paciente_id: validatedData.paciente_id,
-        estado: 'PENDIENTE',
-        fecha_hora: {
-          gte: new Date(), // Solo citas futuras
-        },
-      },
-      select: {
-        id: true,
-        codigo_cita: true,
-        fecha_hora: true,
-        motivo_consulta: true,
-      },
+    const resultado = await crearCitaParaPaciente({
+      pacienteId: validatedData.paciente_id,
+      fechaHora: new Date(validatedData.fecha_hora),
+      duracionMinutos: validatedData.duracion_minutos,
+      motivoConsulta: validatedData.motivo_consulta,
+      tipoCita: validatedData.tipo_cita,
+      confirmadaPorAdmin: validatedData.confirmada_por_admin,
     })
 
-    if (citaActiva) {
-      return NextResponse.json(
-        {
-          error: 'El paciente ya tiene una cita pendiente',
-          mensaje:
-            'Solo se permite una cita activa por paciente. Cancela o completa la cita actual antes de crear una nueva.',
-          cita_existente: {
-            codigo: citaActiva.codigo_cita,
-            fecha: citaActiva.fecha_hora,
-            motivo: citaActiva.motivo_consulta,
-          },
-        },
-        { status: 409 }
-      )
-    }
-
-    // Validar disponibilidad del horario
-    const fechaHoraCita = new Date(validatedData.fecha_hora)
-    const config = await prisma.configuracionGeneral.findFirst()
-
-    if (config) {
-      const inicioDia = new Date(fechaHoraCita)
-      inicioDia.setHours(0, 0, 0, 0)
-      const finDia = new Date(fechaHoraCita)
-      finDia.setHours(23, 59, 59, 999)
-
-      const citasExistentes = await prisma.cita.findMany({
-        where: {
-          fecha_hora: { gte: inicioDia, lte: finDia },
-          estado: { not: 'CANCELADA' },
-        },
-        select: { fecha_hora: true, duracion_minutos: true },
-      })
-
-      const finCitaNueva = new Date(fechaHoraCita.getTime() + validatedData.duracion_minutos * 60000)
-
-      const hayConflicto = citasExistentes.some((cita) => {
-        const inicioCita = new Date(cita.fecha_hora)
-        const finCita = new Date(inicioCita.getTime() + cita.duracion_minutos * 60000)
-        return (
-          (fechaHoraCita >= inicioCita && fechaHoraCita < finCita) ||
-          (finCitaNueva > inicioCita && finCitaNueva <= finCita) ||
-          (fechaHoraCita <= inicioCita && finCitaNueva >= finCita)
-        )
-      })
-
-      if (hayConflicto && citasExistentes.length >= config.citas_simultaneas_max) {
+    if (!resultado.ok) {
+      if (resultado.motivo === 'ya_tiene_cita') {
         return NextResponse.json(
-          { error: 'Este horario ya no está disponible. Por favor, elige otro.' },
+          {
+            error: 'El paciente ya tiene una cita pendiente',
+            mensaje:
+              'Solo se permite una cita activa por paciente. Cancela o completa la cita actual antes de crear una nueva.',
+            cita_existente: resultado.citaExistente,
+          },
           { status: 409 }
         )
       }
+      if (resultado.motivo === 'ocupado') {
+        return NextResponse.json({ error: resultado.mensaje }, { status: 409 })
+      }
+      if (resultado.motivo === 'pasada') {
+        return NextResponse.json({ error: resultado.mensaje }, { status: 400 })
+      }
+      return NextResponse.json({ error: 'Error al crear cita', details: resultado.mensaje }, { status: 500 })
     }
 
-    // Generar código único para la cita (necesario para que el chatbot pueda dar URL de gestión)
-    let codigoCita = randomBytes(4).toString('hex').toUpperCase().substring(0, 8)
-    while (await prisma.cita.findUnique({ where: { codigo_cita: codigoCita } })) {
-      codigoCita = randomBytes(4).toString('hex').toUpperCase().substring(0, 8)
-    }
-
-    // Crear cita
-    const cita = await prisma.cita.create({
-      data: {
-        paciente_id: validatedData.paciente_id,
-        fecha_hora: new Date(validatedData.fecha_hora),
-        duracion_minutos: validatedData.duracion_minutos,
-        motivo_consulta: validatedData.motivo_consulta,
-        tipo_cita: validatedData.tipo_cita,
-        estado: 'PENDIENTE',
-        codigo_cita: codigoCita,
-        // Si fue confirmada por admin, marcarla como confirmada desde el inicio
-        confirmada_por_paciente: validatedData.confirmada_por_admin,
-        estado_confirmacion: validatedData.confirmada_por_admin ? 'CONFIRMADA' : 'PENDIENTE',
-        fecha_confirmacion: validatedData.confirmada_por_admin ? new Date() : null,
-      },
-      include: {
-        paciente: {
-          select: {
-            id: true,
-            nombre: true,
-            email: true,
-            telefono: true,
-          },
-        },
-      },
-    })
-
-    // Invalidar caché del paciente
-    await deleteCache(CacheKeys.patientDetail(validatedData.paciente_id))
-    console.log(
-      '🗑️  Cache invalidated: patient detail after appointment created',
-      validatedData.paciente_id
-    )
-
-    // Cancelar TODOS los recordatorios antiguos del paciente (citas anteriores)
-    try {
-      const { mensajesQueue } = await import('@/lib/queue/messages')
-      const jobs = await mensajesQueue.getJobs(['waiting', 'delayed'])
-
-      let recordatoriosCancelados = 0
-
-      // Buscar jobs de recordatorios de OTRAS citas del mismo paciente
-      for (const job of jobs) {
-        // Jobs de recordatorios tienen citaId
-        if (job.data.citaId && job.data.citaId !== cita.id) {
-          // Verificar si es del mismo paciente
-          const citaDelJob = await prisma.cita.findUnique({
-            where: { id: job.data.citaId },
-            select: { paciente_id: true },
-          })
-
-          if (citaDelJob && citaDelJob.paciente_id === validatedData.paciente_id) {
-            await job.remove()
-            recordatoriosCancelados++
-            console.log(`🗑️  Recordatorio cancelado de cita antigua: ${job.data.citaId}`)
-          }
-        }
-      }
-
-      if (recordatoriosCancelados > 0) {
-        console.log(`✅ ${recordatoriosCancelados} recordatorio(s) de citas antiguas cancelados`)
-      }
-    } catch (recordatoriosError) {
-      console.error('Error al cancelar recordatorios antiguos:', recordatoriosError)
-      // No fallar la creación de la cita si hay error
-    }
-
-    // Cancelar seguimientos programados si la fecha de la cita es cercana a alguna próxima cita sugerida
-    try {
-      const fechaCita = new Date(validatedData.fecha_hora)
-
-      // Buscar consultas del paciente que tengan próxima cita sugerida cercana (±3 días)
-      const inicioPeriodo = new Date(fechaCita)
-      inicioPeriodo.setDate(inicioPeriodo.getDate() - 3)
-
-      const finPeriodo = new Date(fechaCita)
-      finPeriodo.setDate(finPeriodo.getDate() + 3)
-
-      const consultasConSeguimiento = await prisma.consulta.findMany({
-        where: {
-          paciente_id: validatedData.paciente_id,
-          seguimiento_programado: true,
-          proxima_cita: {
-            gte: inicioPeriodo,
-            lte: finPeriodo,
-          },
-        },
-      })
-
-      if (consultasConSeguimiento.length > 0) {
-        // Cancelar jobs de seguimiento
-        const { mensajesQueue } = await import('@/lib/queue/messages')
-        const jobs = await mensajesQueue.getJobs(['waiting', 'delayed'])
-
-        for (const consulta of consultasConSeguimiento) {
-          // Buscar y cancelar jobs de esta consulta
-          for (const job of jobs) {
-            if (job.data.consultaId === consulta.id) {
-              await job.remove()
-              console.log(`🗑️  Job de seguimiento cancelado para consulta: ${consulta.id}`)
-            }
-          }
-
-          // Actualizar flag en BD
-          await prisma.consulta.update({
-            where: { id: consulta.id },
-            data: { seguimiento_programado: false },
-          })
-        }
-
-        console.log(
-          `✅ ${consultasConSeguimiento.length} seguimiento(s) cancelado(s) automáticamente - paciente agendó cita`
-        )
-      }
-    } catch (seguimientoError) {
-      console.error('Error al cancelar seguimientos:', seguimientoError)
-      // No fallar la creación de la cita si hay error al cancelar seguimientos
-    }
-
-    // Sincronizar con Google Calendar si está configurado
-    try {
-      const isConfigured = await isGoogleCalendarConfigured()
-      if (isConfigured) {
-        await syncCitaWithGoogleCalendar(cita.id)
-        console.log('📅 Cita sincronizada con Google Calendar:', cita.id)
-      }
-    } catch (calendarError) {
-      console.error('Error al sincronizar con Google Calendar:', calendarError)
-      // No fallar la creación de la cita si hay error en la sincronización
-    }
-
-    // Programar mensajes automáticos
-    try {
-      const config = await prisma.configuracionGeneral.findFirst()
-      const fechaCita = new Date(validatedData.fecha_hora)
-
-      // Solo enviar confirmación automática si NO fue confirmada por admin
-      if (config?.confirmacion_automatica_activa && !validatedData.confirmada_por_admin) {
-        await programarConfirmacion(cita.id)
-        console.log('📧 Mensaje de confirmación programado')
-      } else if (validatedData.confirmada_por_admin) {
-        console.log('✅ Cita pre-confirmada por admin - no se envía mensaje de confirmación')
-      }
-
-      // Los recordatorios se envían siempre (tanto para citas admin como públicas)
-      if (config?.recordatorio_24h_activo) {
-        await programarRecordatorio24h(cita.id, fechaCita)
-      }
-      if (config?.recordatorio_1h_activo) {
-        await programarRecordatorio1h(cita.id, fechaCita)
-      }
-
-      // Programar auto-marcar como NO_ASISTIO 2h después de la cita
-      await programarMarcarNoAsistio(cita.id, fechaCita)
-    } catch (queueError) {
-      console.error('Error al programar mensajes:', queueError)
-      // No fallar la creación de la cita si hay error en los jobs
-    }
-
-    // Cancelar recordatorios de agendar si el paciente ya agendó
-    try {
-      const { cancelarRecordatoriosAgendar } = await import('@/lib/queue/messages')
-      await cancelarRecordatoriosAgendar(
-        validatedData.paciente_id,
-        new Date(validatedData.fecha_hora)
-      )
-      console.log('🗑️  Recordatorios de agendar cancelados (paciente agendó cita desde admin)')
-    } catch (cancelError) {
-      console.error('Error al cancelar recordatorios:', cancelError)
-      // No fallar la creación de la cita si hay error al cancelar
-    }
-
-    return NextResponse.json(cita, { status: 201 })
+    return NextResponse.json(resultado.cita, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
