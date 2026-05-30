@@ -150,7 +150,7 @@ const TEXTOS_PLANTILLAS: Partial<Record<TipoPlantilla, string>> = {
   [TipoPlantilla.SEGUIMIENTO_PREVIO_CITA]:
     'Hola {nombre}, falta aproximadamente una semana para tu próxima cita el {fecha_cita}\nsi deseas agendar ahora, no dudes en decirmelo',
   [TipoPlantilla.RECORDATORIO_AGENDAR]:
-    'Hola {nombre}, te recuerdo que tienes una cita programada para el día {fecha_cita} a las {hora_cita}.\nSi deseas confirmar y agendar esta cita ahora, solo responde *Sí* a este mensaje 😉.\nRecuerda usar tu correo o tu número de celular para identificarte.',
+    'Hola {nombre}, te recuerdo que el nutriólogo Paul te sugirió una próxima cita para el {fecha_cita} a las {hora_cita}.\n\n¿Deseas confirmarla a esa hora o prefieres elegir otro horario?',
 }
 
 /**
