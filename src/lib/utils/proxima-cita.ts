@@ -29,13 +29,32 @@ export function construirProximaCita(
 /**
  * Indica si un `proxima_cita` tiene hora específica (no es el mediodía-UTC por defecto).
  * Útil para decidir si mostrar/usar la hora en recordatorios.
+ *
+ * El valor "sin hora" se guarda SIEMPRE como `T12:00:00.000Z` (mediodía UTC),
+ * por eso la detección compara contra UTC. Cuando SÍ hay hora, se guardó con
+ * `new Date(y, m-1, d, h, min)` (hora local del servidor) — ese caso casi nunca
+ * cae exactamente en 12:00:00.000Z, así que la comparación funciona.
  */
 export function proximaCitaTieneHora(fecha: Date): boolean {
-  // El valor por defecto sin hora es exactamente 12:00:00.000 UTC.
   return !(
     fecha.getUTCHours() === 12 &&
     fecha.getUTCMinutes() === 0 &&
     fecha.getUTCSeconds() === 0 &&
     fecha.getUTCMilliseconds() === 0
   )
+}
+
+/**
+ * Extrae la hora de un `proxima_cita` en formato "HH:mm", usando la MISMA
+ * convención con la que se guardó en `construirProximaCita` (hora local del
+ * servidor vía `new Date(y, m-1, d, h, min)`).
+ *
+ * Por eso se leen `getHours()/getMinutes()` (hora local), NO los `getUTC*`.
+ * Devuelve '' si la cita no tiene hora específica.
+ */
+export function extraerHoraProximaCita(fecha: Date): string {
+  if (!proximaCitaTieneHora(fecha)) return ''
+  const hh = String(fecha.getHours()).padStart(2, '0')
+  const mm = String(fecha.getMinutes()).padStart(2, '0')
+  return `${hh}:${mm}`
 }

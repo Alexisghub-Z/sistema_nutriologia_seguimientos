@@ -55,7 +55,9 @@ function toDateInputValue(value: string | null | undefined): string {
   return value.slice(0, 10)
 }
 
-// Extrae la hora (HH:mm en UTC) de un proxima_cita guardado.
+// Extrae la hora (HH:mm) de un proxima_cita guardado.
+// La hora se guardó en hora local del servidor (mismo huso que el navegador del
+// nutriólogo), por eso se leen getHours()/getMinutes() locales, NO los getUTC*.
 // Devuelve '' si es el mediodía-UTC por defecto (sin hora específica).
 function toHoraInputValue(value: string | null | undefined): string {
   if (!value) return ''
@@ -66,8 +68,8 @@ function toHoraInputValue(value: string | null | undefined): string {
     d.getUTCSeconds() === 0 &&
     d.getUTCMilliseconds() === 0
   if (esMediodiaUTC) return ''
-  const hh = String(d.getUTCHours()).padStart(2, '0')
-  const mm = String(d.getUTCMinutes()).padStart(2, '0')
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
   return `${hh}:${mm}`
 }
 
