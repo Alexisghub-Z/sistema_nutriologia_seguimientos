@@ -463,20 +463,21 @@ async function obtenerContextoPaciente(pacienteId: string): Promise<PacienteCont
     })
 
     if (consultaSugerida?.proxima_cita) {
-      const { proximaCitaTieneHora } = await import('@/lib/utils/proxima-cita')
+      const { proximaCitaTieneHora, extraerHoraProximaCita } = await import(
+        '@/lib/utils/proxima-cita'
+      )
       // Solo agendable si tiene hora específica asignada por el nutriólogo
       if (proximaCitaTieneHora(consultaSugerida.proxima_cita)) {
         tieneProximaCitaSugerida = true
+        // La hora se guardó en hora local del servidor, así que la fecha se lee
+        // también en hora local (sin forzar UTC) para que coincidan día y hora.
         fechaSugerida = new Date(consultaSugerida.proxima_cita).toLocaleDateString('es-MX', {
           weekday: 'long',
           year: 'numeric',
           month: 'long',
           day: 'numeric',
-          timeZone: 'UTC',
         })
-        const hh = String(consultaSugerida.proxima_cita.getUTCHours()).padStart(2, '0')
-        const mm = String(consultaSugerida.proxima_cita.getUTCMinutes()).padStart(2, '0')
-        horaSugerida = `${hh}:${mm}`
+        horaSugerida = extraerHoraProximaCita(consultaSugerida.proxima_cita)
       }
     }
   }

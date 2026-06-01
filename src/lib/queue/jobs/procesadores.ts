@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma'
 import { sendWhatsAppMessage } from '@/lib/services/twilio'
 import { generarMensaje, TipoPlantilla, VariablesPlantilla } from '@/lib/utils/plantillas'
-import { proximaCitaTieneHora } from '@/lib/utils/proxima-cita'
+import { extraerHoraProximaCita } from '@/lib/utils/proxima-cita'
 
 // URL para recibir Status Callbacks de Twilio
 // En producción NEXT_PUBLIC_APP_URL debe estar definida; Twilio no puede alcanzar localhost
@@ -648,13 +648,10 @@ export async function procesarRecordatorioAgendar(consultaId: string): Promise<v
     const urlPortal =
       config?.url_portal || process.env.NEXT_PUBLIC_APP_URL || 'https://portal.example.com'
 
-    // Extraer la hora (HH:mm en UTC) si la próxima cita tiene hora específica asignada
-    let horaProximaCita = ''
-    if (consulta.proxima_cita && proximaCitaTieneHora(consulta.proxima_cita)) {
-      const hh = String(consulta.proxima_cita.getUTCHours()).padStart(2, '0')
-      const mm = String(consulta.proxima_cita.getUTCMinutes()).padStart(2, '0')
-      horaProximaCita = `${hh}:${mm}`
-    }
+    // Extraer la hora (HH:mm) en la misma convención con la que se guardó
+    const horaProximaCita = consulta.proxima_cita
+      ? extraerHoraProximaCita(consulta.proxima_cita)
+      : ''
 
     const variables: VariablesPlantilla = {
       nombre: consulta.paciente.nombre,
