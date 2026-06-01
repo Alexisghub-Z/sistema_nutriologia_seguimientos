@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma'
 import { sendWhatsAppMessage } from '@/lib/services/twilio'
 import { generarMensaje, TipoPlantilla, VariablesPlantilla } from '@/lib/utils/plantillas'
-import { extraerHoraProximaCita } from '@/lib/utils/proxima-cita'
+import { extraerHoraProximaCita, horaEnMexico } from '@/lib/utils/proxima-cita'
 
 // URL para recibir Status Callbacks de Twilio
 // En producción NEXT_PUBLIC_APP_URL debe estar definida; Twilio no puede alcanzar localhost
@@ -43,7 +43,7 @@ export async function procesarConfirmacion(citaId: string): Promise<void> {
 
     // Extraer hora de la fecha
     const fechaCita = new Date(cita.fecha_hora)
-    const hora = fechaCita.toTimeString().substring(0, 5) // HH:mm
+    const hora = horaEnMexico(fechaCita) // HH:mm
 
     // Preparar variables
     const variables: VariablesPlantilla = {
@@ -133,7 +133,7 @@ export async function procesarRecordatorio24h(citaId: string): Promise<void> {
     }
 
     const fechaCita = new Date(cita.fecha_hora)
-    const hora = fechaCita.toTimeString().substring(0, 5)
+    const hora = horaEnMexico(fechaCita)
 
     const variables: VariablesPlantilla = {
       nombre: cita.paciente.nombre,
@@ -212,7 +212,7 @@ export async function procesarRecordatorio1h(citaId: string): Promise<void> {
     }
 
     const fechaCita = new Date(cita.fecha_hora)
-    const hora = fechaCita.toTimeString().substring(0, 5)
+    const hora = horaEnMexico(fechaCita)
 
     const variables: VariablesPlantilla = {
       nombre: cita.paciente.nombre,

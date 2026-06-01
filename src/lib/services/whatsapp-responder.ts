@@ -1,6 +1,7 @@
 import { obtenerRespuestaIA, isOpenAIConfigured, type PacienteContexto } from './openai-assistant'
 import { buscarEnFAQ, requiereDerivacion } from '@/lib/knowledge-base'
 import prisma from '@/lib/prisma'
+import { horaEnMexico } from '@/lib/utils/proxima-cita'
 
 /**
  * Resultado del procesamiento de un mensaje
@@ -357,7 +358,7 @@ async function intentarAgendarCitaSugerida(
  */
 function generarMensajeDerivacion(nombrePaciente: string, mensajeOriginal: string): string {
   const nombreCorto = nombrePaciente.split(' ')[0]
-  const hora = new Date().getHours()
+  const hora = parseInt(horaEnMexico(new Date()).split(':')[0]!, 10)
 
   let saludo = 'Hola'
   if (hora >= 5 && hora < 12) saludo = 'Buenos días'
@@ -469,13 +470,13 @@ async function obtenerContextoPaciente(pacienteId: string): Promise<PacienteCont
       // Solo agendable si tiene hora específica asignada por el nutriólogo
       if (proximaCitaTieneHora(consultaSugerida.proxima_cita)) {
         tieneProximaCitaSugerida = true
-        // La hora se guardó en hora local del servidor, así que la fecha se lee
-        // también en hora local (sin forzar UTC) para que coincidan día y hora.
+        // Fecha y hora SIEMPRE en zona horaria de México (no del servidor)
         fechaSugerida = new Date(consultaSugerida.proxima_cita).toLocaleDateString('es-MX', {
           weekday: 'long',
           year: 'numeric',
           month: 'long',
           day: 'numeric',
+          timeZone: 'America/Mexico_City',
         })
         horaSugerida = extraerHoraProximaCita(consultaSugerida.proxima_cita)
       }

@@ -1,11 +1,28 @@
 /**
+ * Zona horaria del consultorio. CDMX es UTC-6 fijo (México abolió el horario
+ * de verano en 2022), por eso el offset constante es seguro.
+ */
+export const TZ_MX = 'America/Mexico_City'
+const OFFSET_MX_HORAS = 6 // UTC-6
+
+/**
+ * Construye un Date que representa una fecha+hora EN HORA DE MÉXICO,
+ * independientemente de la zona horaria del servidor (prod corre en Berlin).
+ *
+ * Ej: ('2026-06-10', '16:00') → 16:00 México = 22:00 UTC → Date(2026-06-10T22:00:00Z).
+ */
+export function construirFechaHoraMexico(fecha: string, hora: string): Date {
+  const [year, month, day] = fecha.split('-').map(Number)
+  const [hour, minute] = hora.split(':').map(Number)
+  return new Date(Date.UTC(year!, month! - 1, day!, hour! + OFFSET_MX_HORAS, minute!, 0))
+}
+
+/**
  * Construye el DateTime de `proxima_cita` a partir de una fecha (YYYY-MM-DD)
  * y una hora opcional (HH:mm).
  *
- * - Si se proporciona hora: combina fecha + hora usando la misma convención que
- *   el sistema de citas (`new Date(y, m-1, d, h, min)`), es decir, en la zona
- *   horaria del servidor, para que sea consistente con cómo se crean y leen las
- *   citas reales (ver `/api/citas/publica`).
+ * - Si se proporciona hora: combina fecha + hora interpretadas SIEMPRE como
+ *   hora de México (no depende del TZ del servidor), vía `construirFechaHoraMexico`.
  * - Si NO se proporciona hora: se guarda como mediodía UTC (`T12:00:00.000Z`)
  *   para evitar desplazamiento de día por zona horaria, igual que antes.
  *
@@ -18,9 +35,7 @@ export function construirProximaCita(
   if (!fecha) return null
 
   if (hora) {
-    const [year, month, day] = fecha.split('-').map(Number)
-    const [hour, minute] = hora.split(':').map(Number)
-    return new Date(year!, month! - 1, day!, hour!, minute!)
+    return construirFechaHoraMexico(fecha, hora)
   }
 
   return new Date(`${fecha}T12:00:00.000Z`)
@@ -45,16 +60,27 @@ export function proximaCitaTieneHora(fecha: Date): boolean {
 }
 
 /**
- * Extrae la hora de un `proxima_cita` en formato "HH:mm", usando la MISMA
- * convención con la que se guardó en `construirProximaCita` (hora local del
- * servidor vía `new Date(y, m-1, d, h, min)`).
- *
- * Por eso se leen `getHours()/getMinutes()` (hora local), NO los `getUTC*`.
+ * Extrae la hora "HH:mm" (24h) de cualquier Date, SIEMPRE en hora de México,
+ * sin importar la zona horaria del servidor. Usa Intl.DateTimeFormat.
+ */
+export function horaEnMexico(fecha: Date): string {
+  const p = new Intl.DateTimeFormat('es-MX', {
+    timeZone: TZ_MX,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(fecha)
+  const hh = p.find((x) => x.type === 'hour')?.value ?? '00'
+  const mm = p.find((x) => x.type === 'minute')?.value ?? '00'
+  // Intl puede devolver "24" para medianoche en algunos entornos; normalizar.
+  return `${hh === '24' ? '00' : hh}:${mm}`
+}
+
+/**
+ * Extrae la hora de un `proxima_cita` en formato "HH:mm" (hora de México).
  * Devuelve '' si la cita no tiene hora específica.
  */
 export function extraerHoraProximaCita(fecha: Date): string {
   if (!proximaCitaTieneHora(fecha)) return ''
-  const hh = String(fecha.getHours()).padStart(2, '0')
-  const mm = String(fecha.getMinutes()).padStart(2, '0')
-  return `${hh}:${mm}`
+  return horaEnMexico(fecha)
 }
