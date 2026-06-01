@@ -2,6 +2,7 @@ import { obtenerRespuestaIA, isOpenAIConfigured, type PacienteContexto } from '.
 import { buscarEnFAQ, requiereDerivacion } from '@/lib/knowledge-base'
 import prisma from '@/lib/prisma'
 import { horaEnMexico } from '@/lib/utils/proxima-cita'
+import { formatearHora } from '@/lib/utils/plantillas'
 
 /**
  * Resultado del procesamiento de un mensaje
@@ -318,7 +319,8 @@ async function intentarAgendarCitaSugerida(
 
     if (resultado.ok) {
       const fecha = contexto.fecha_sugerida ?? ''
-      const hora = contexto.hora_sugerida ?? ''
+      // hora_sugerida viene en 24h ("15:00"); mostrarla en 12h ("3:00 PM")
+      const hora = contexto.hora_sugerida ? formatearHora(contexto.hora_sugerida) : ''
       return {
         respuesta:
           `¡Listo ${nombreCorto}! 🎉 Tu cita quedó agendada para el ${fecha}${hora ? ` a las ${hora}` : ''}.\n\n` +
