@@ -157,27 +157,42 @@ const TEXTOS_PLANTILLAS: Partial<Record<TipoPlantilla, string>> = {
  * Formatea una fecha en formato legible en español
  * Ejemplo: "20 de Enero, 2025"
  */
+const MESES = [
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
+]
+
+/**
+ * Extrae día/mes/año de un Date en hora de México (no del servidor).
+ * Prod corre en Berlin, por eso se ancla explícitamente la zona horaria.
+ */
+function partesFechaEnMexico(fecha: Date): { dia: number; mes: number; año: number } {
+  const parts = new Intl.DateTimeFormat('es-MX', {
+    timeZone: 'America/Mexico_City',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+  }).formatToParts(fecha)
+  return {
+    dia: Number(parts.find((p) => p.type === 'day')?.value),
+    mes: Number(parts.find((p) => p.type === 'month')?.value) - 1,
+    año: Number(parts.find((p) => p.type === 'year')?.value),
+  }
+}
+
 export function formatearFecha(fecha: Date): string {
-  const meses = [
-    'Enero',
-    'Febrero',
-    'Marzo',
-    'Abril',
-    'Mayo',
-    'Junio',
-    'Julio',
-    'Agosto',
-    'Septiembre',
-    'Octubre',
-    'Noviembre',
-    'Diciembre',
-  ]
-
-  const dia = fecha.getDate()
-  const mes = meses[fecha.getMonth()]
-  const año = fecha.getFullYear()
-
-  return `${dia} de ${mes}, ${año}`
+  const { dia, mes, año } = partesFechaEnMexico(fecha)
+  return `${dia} de ${MESES[mes]}, ${año}`
 }
 
 /**
@@ -186,17 +201,16 @@ export function formatearFecha(fecha: Date): string {
  */
 export function formatearFechaRelativa(fecha: Date): string {
   const hoy = new Date()
-  const mañana = new Date(hoy)
-  mañana.setDate(mañana.getDate() + 1)
+  const mañana = new Date(hoy.getTime() + 24 * 60 * 60 * 1000)
 
-  // Normalizar fechas a medianoche para comparación
-  const fechaNormalizada = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate())
-  const hoyNormalizado = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
-  const mañanaNormalizado = new Date(mañana.getFullYear(), mañana.getMonth(), mañana.getDate())
+  // Comparar día/mes/año en hora de México (no del servidor)
+  const f = partesFechaEnMexico(fecha)
+  const h = partesFechaEnMexico(hoy)
+  const m = partesFechaEnMexico(mañana)
 
-  if (fechaNormalizada.getTime() === hoyNormalizado.getTime()) {
+  if (f.dia === h.dia && f.mes === h.mes && f.año === h.año) {
     return 'Hoy'
-  } else if (fechaNormalizada.getTime() === mañanaNormalizado.getTime()) {
+  } else if (f.dia === m.dia && f.mes === m.mes && f.año === m.año) {
     return 'Mañana'
   } else {
     return formatearFecha(fecha)

@@ -55,10 +55,9 @@ function toDateInputValue(value: string | null | undefined): string {
   return value.slice(0, 10)
 }
 
-// Extrae la hora (HH:mm) de un proxima_cita guardado.
-// La hora se guardó en hora local del servidor (mismo huso que el navegador del
-// nutriólogo), por eso se leen getHours()/getMinutes() locales, NO los getUTC*.
-// Devuelve '' si es el mediodía-UTC por defecto (sin hora específica).
+// Extrae la hora (HH:mm) de un proxima_cita guardado, SIEMPRE en hora de México
+// (no depende del huso del navegador ni del servidor). Devuelve '' si es el
+// mediodía-UTC por defecto (sin hora específica).
 function toHoraInputValue(value: string | null | undefined): string {
   if (!value) return ''
   const d = new Date(value)
@@ -68,9 +67,15 @@ function toHoraInputValue(value: string | null | undefined): string {
     d.getUTCSeconds() === 0 &&
     d.getUTCMilliseconds() === 0
   if (esMediodiaUTC) return ''
-  const hh = String(d.getHours()).padStart(2, '0')
-  const mm = String(d.getMinutes()).padStart(2, '0')
-  return `${hh}:${mm}`
+  const p = new Intl.DateTimeFormat('es-MX', {
+    timeZone: 'America/Mexico_City',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(d)
+  const hh = p.find((x) => x.type === 'hour')?.value ?? '00'
+  const mm = p.find((x) => x.type === 'minute')?.value ?? '00'
+  return `${hh === '24' ? '00' : hh}:${mm}`
 }
 
 function toNumberInput(value: number | null | undefined): string {

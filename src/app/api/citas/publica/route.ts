@@ -16,6 +16,7 @@ import {
 import { normalizarTelefonoMexico } from '@/lib/utils/phone'
 import { deleteCache, CacheKeys } from '@/lib/redis'
 import { citasPublicasLimiter, getClientIp, checkRateLimit } from '@/lib/rate-limit'
+import { construirFechaHoraMexico } from '@/lib/utils/proxima-cita'
 
 // Schema de validación para crear cita pública
 const citaPublicaSchema = z.object({
@@ -74,10 +75,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = citaPublicaSchema.parse(body)
 
-    // Combinar fecha y hora
-    const [year, month, day] = validatedData.fecha_cita.split('-').map(Number)
-    const [hour, minute] = validatedData.hora_cita.split(':').map(Number)
-    const fechaHoraCita = new Date(year!, month! - 1, day!, hour!, minute!)
+    // Combinar fecha y hora interpretadas SIEMPRE como hora de México
+    // (no depende del TZ del servidor; prod corre en Berlin).
+    const fechaHoraCita = construirFechaHoraMexico(
+      validatedData.fecha_cita,
+      validatedData.hora_cita
+    )
 
     // Validar que la fecha/hora no sea pasada
     if (fechaHoraCita < new Date()) {
@@ -214,9 +217,10 @@ export async function POST(request: NextRequest) {
 
     // Crear cita dentro de transaction para evitar race condition de overbooking
     const cita = await prisma.$transaction(async (tx) => {
-      // Verificar disponibilidad del horario dentro de la transacción
-      const inicioDia = new Date(year!, month! - 1, day!, 0, 0, 0)
-      const finDia = new Date(year!, month! - 1, day!, 23, 59, 59)
+      // Verificar disponibilidad del horario dentro de la transacción.
+      // Rango del día en hora de México (UTC-6): 00:00→06:00Z, 23:59→05:59Z del día siguiente.
+      const inicioDia = construirFechaHoraMexico(validatedData.fecha_cita, '00:00')
+      const finDia = new Date(construirFechaHoraMexico(validatedData.fecha_cita, '23:59').getTime() + 59 * 1000)
 
       const citasExistentes = await tx.cita.findMany({
         where: {
