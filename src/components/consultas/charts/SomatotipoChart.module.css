@@ -1,0 +1,440 @@
+.grid {
+  display: grid;
+  grid-template-columns: minmax(340px, 1.15fr) minmax(280px, 1fr);
+  gap: var(--spacing-xl);
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.colCarta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.cartaWrap {
+  position: relative;
+}
+
+.carta {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cartaZoom {
+  cursor: zoom-out;
+}
+
+/* Botón de acercar/alejar sobre la carta */
+.controlesZoom {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.btnZoom {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
+  background-color: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-full);
+  padding: 5px 12px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.btnZoom:hover {
+  background-color: var(--color-gray-50);
+  border-color: var(--color-gray-300);
+}
+
+/* ── Barra de navegación time-lapse ── */
+.navBar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background-color: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+}
+
+.navBtn {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--color-gray-700);
+  background-color: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.navBtn:hover:not(:disabled) {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+.navBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.chips {
+  display: flex;
+  gap: 5px;
+  flex: 1;
+  overflow-x: auto;
+  padding: 2px;
+  justify-content: center;
+}
+
+.chip {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-600);
+  background-color: var(--color-white);
+  border: 1.5px solid var(--color-gray-300);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.chip:hover {
+  transform: scale(1.12);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.chipActivo {
+  color: var(--color-white);
+  transform: scale(1.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+
+/* ── Detalle de la consulta seleccionada ── */
+.selDetalle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background-color: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+}
+
+.selHead {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.selN {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-white);
+  border-radius: var(--radius-full);
+}
+
+.selTitulo {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-900);
+}
+
+.selFecha {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}
+
+.selSoma {
+  margin-left: auto;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.selBtn {
+  align-self: flex-start;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.selBtn:hover {
+  text-decoration: underline;
+}
+
+/* ── Contorno y ejes ── */
+.contorno {
+  fill: color-mix(in srgb, var(--color-primary) 4%, white);
+  stroke: var(--color-gray-300);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.eje {
+  stroke: var(--color-gray-300);
+  stroke-width: 1.5;
+}
+
+.tickNum {
+  font-size: 9px;
+  font-family: sans-serif;
+  fill: var(--color-gray-400);
+}
+
+.centro {
+  fill: var(--color-gray-500);
+}
+
+.origenLabel {
+  font-size: 9px;
+  fill: var(--color-gray-400);
+}
+
+.polo {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+.poloMeso {
+  fill: #16a34a;
+}
+.poloEndo {
+  fill: #dc2626;
+}
+.poloEcto {
+  fill: #2563eb;
+}
+
+/* ── Trayectoria y puntos ── */
+.trayectoria {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 2.5;
+  stroke-opacity: 0.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.trayectoriaTenue {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 2;
+  stroke-opacity: 0.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.puntoGroup {
+  cursor: pointer;
+}
+
+.halo {
+  fill: var(--color-primary);
+  fill-opacity: 0.13;
+}
+
+.puntoBorde {
+  stroke: white;
+  stroke-width: 2.5;
+  transition: r 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.puntoNumClaro {
+  fill: white;
+  font-size: 11px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.puntoNumOscuro {
+  fill: var(--color-gray-700);
+  font-size: 11px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+/* ── Columna de análisis ── */
+.colPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.interpretacion {
+  background-color: color-mix(in srgb, var(--color-primary) 8%, white);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, white);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-800);
+  line-height: 1.5;
+}
+
+.tarjeta {
+  background-color: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.tarjetaHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--spacing-sm);
+}
+
+.tarjetaTitulo {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--color-gray-500);
+}
+
+.tarjetaNota {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-400);
+}
+
+.subhead {
+  margin: var(--spacing-md) 0 var(--spacing-xs) 0;
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--color-gray-200);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--color-gray-500);
+}
+
+.fila {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 3px 0;
+}
+
+.filaDot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.filaLabel {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-700);
+}
+
+.delta,
+.valorFijo {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.valorFijo {
+  color: var(--color-gray-900);
+}
+
+.favorable {
+  color: #16a34a;
+}
+.desfavorable {
+  color: #dc2626;
+}
+.neutral {
+  color: var(--color-gray-500);
+}
+
+/* ── Métricas SAM / ritmo ── */
+.metricas {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.metrica {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background-color: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.metricaLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-600);
+}
+
+.metricaValor {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-gray-900);
+  font-variant-numeric: tabular-nums;
+}
+
+.metricaUnidad {
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  color: var(--color-gray-400);
+}
+
+.metricaNota {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}
+
+.perfil {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-700);
+}
+
+.perfil b {
+  color: var(--color-primary);
+}

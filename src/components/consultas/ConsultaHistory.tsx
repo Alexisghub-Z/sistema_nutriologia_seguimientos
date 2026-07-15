@@ -10,6 +10,11 @@ import Alert from '@/components/ui/Alert'
 import FilePreviewModal from '@/components/ui/FilePreviewModal'
 import EditarConsultaModal from './EditarConsultaModal'
 import { generarWordConsulta } from '@/lib/utils/generar-word-consulta'
+import {
+  calcularSomatotipo,
+  clasificarSomatotipo,
+  formatearSomatotipo,
+} from '@/lib/utils/somatotipo'
 import styles from './ConsultaHistory.module.css'
 
 interface Consulta {
@@ -34,6 +39,8 @@ interface Consulta {
   muslo_maximo: number | null
   muslo_medio: number | null
   pantorrilla_maximo: number | null
+  diametro_humero: number | null
+  diametro_femur: number | null
 
   // Pliegues cutáneos
   pliegue_tricipital: number | null
@@ -42,6 +49,7 @@ interface Consulta {
   pliegue_cresta_iliaca: number | null
   pliegue_supraespinal: number | null
   pliegue_abdominal: number | null
+  pliegue_pantorrilla: number | null
 
   notas: string | null
   diagnostico: string | null
@@ -446,9 +454,11 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
                     consulta.cadera_maximo ||
                     consulta.muslo_maximo ||
                     consulta.muslo_medio ||
-                    consulta.pantorrilla_maximo) && (
+                    consulta.pantorrilla_maximo ||
+                    consulta.diametro_humero ||
+                    consulta.diametro_femur) && (
                     <div className={styles.section}>
-                      <h5 className={styles.sectionTitle}>Perímetros (cm)</h5>
+                      <h5 className={styles.sectionTitle}>Perímetros y diámetros (cm)</h5>
                       <div className={styles.mediciones}>
                         {consulta.brazo_relajado && (
                           <div className={styles.medicion}>
@@ -500,6 +510,22 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
                             </span>
                           </div>
                         )}
+                        {consulta.diametro_humero && (
+                          <div className={styles.medicion}>
+                            <span className={styles.medicionLabel}>Diámetro húmero:</span>
+                            <span className={styles.medicionValue}>
+                              {consulta.diametro_humero} cm
+                            </span>
+                          </div>
+                        )}
+                        {consulta.diametro_femur && (
+                          <div className={styles.medicion}>
+                            <span className={styles.medicionLabel}>Diámetro fémur:</span>
+                            <span className={styles.medicionValue}>
+                              {consulta.diametro_femur} cm
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -510,7 +536,8 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
                     consulta.pliegue_bicipital ||
                     consulta.pliegue_cresta_iliaca ||
                     consulta.pliegue_supraespinal ||
-                    consulta.pliegue_abdominal) && (
+                    consulta.pliegue_abdominal ||
+                    consulta.pliegue_pantorrilla) && (
                     <div className={styles.section}>
                       <h5 className={styles.sectionTitle}>Pliegues Cutáneos (mm)</h5>
                       <div className={styles.mediciones}>
@@ -562,9 +589,38 @@ export default function ConsultaHistory({ pacienteId }: ConsultaHistoryProps) {
                             </span>
                           </div>
                         )}
+                        {consulta.pliegue_pantorrilla && (
+                          <div className={styles.medicion}>
+                            <span className={styles.medicionLabel}>P. Pantorrilla:</span>
+                            <span className={styles.medicionValue}>
+                              {consulta.pliegue_pantorrilla} mm
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
+
+                  {/* Somatotipo (Heath-Carter) — solo si hay datos completos */}
+                  {(() => {
+                    const soma = calcularSomatotipo(consulta)
+                    if (!soma) return null
+                    return (
+                      <div className={styles.section}>
+                        <h5 className={styles.sectionTitle}>Somatotipo (Heath-Carter)</h5>
+                        <div className={styles.mediciones}>
+                          <div className={styles.medicion}>
+                            <span className={styles.medicionLabel}>Endo – Meso – Ecto:</span>
+                            <span className={styles.medicionValue}>{formatearSomatotipo(soma)}</span>
+                          </div>
+                          <div className={styles.medicion}>
+                            <span className={styles.medicionLabel}>Clasificación:</span>
+                            <span className={styles.medicionValue}>{clasificarSomatotipo(soma)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })()}
 
                   {/* Diagnóstico y tratamiento médico */}
                   {consulta.diagnostico && (

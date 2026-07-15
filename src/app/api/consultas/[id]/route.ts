@@ -31,6 +31,10 @@ const consultaUpdateSchema = z.object({
   muslo_medio: z.number().min(10).max(240).nullable().optional(),
   pantorrilla_maximo: z.number().min(10).max(160).nullable().optional(),
 
+  // Diámetros óseos (cm) — somatotipo
+  diametro_humero: z.number().min(3).max(25).nullable().optional(),
+  diametro_femur: z.number().min(3).max(25).nullable().optional(),
+
   // Pliegues cutáneos (mm)
   pliegue_tricipital: z.number().min(0.5).max(120).nullable().optional(),
   pliegue_subescapular: z.number().min(0.5).max(120).nullable().optional(),
@@ -38,6 +42,7 @@ const consultaUpdateSchema = z.object({
   pliegue_cresta_iliaca: z.number().min(0.5).max(120).nullable().optional(),
   pliegue_supraespinal: z.number().min(0.5).max(120).nullable().optional(),
   pliegue_abdominal: z.number().min(0.5).max(120).nullable().optional(),
+  pliegue_pantorrilla: z.number().min(0.5).max(120).nullable().optional(),
 
   // Notas clínicas
   notas: z.string().nullable().optional(),
@@ -153,12 +158,15 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     if (validatedData.muslo_maximo !== undefined) updateData.muslo_maximo = validatedData.muslo_maximo
     if (validatedData.muslo_medio !== undefined) updateData.muslo_medio = validatedData.muslo_medio
     if (validatedData.pantorrilla_maximo !== undefined) updateData.pantorrilla_maximo = validatedData.pantorrilla_maximo
+    if (validatedData.diametro_humero !== undefined) updateData.diametro_humero = validatedData.diametro_humero
+    if (validatedData.diametro_femur !== undefined) updateData.diametro_femur = validatedData.diametro_femur
     if (validatedData.pliegue_tricipital !== undefined) updateData.pliegue_tricipital = validatedData.pliegue_tricipital
     if (validatedData.pliegue_subescapular !== undefined) updateData.pliegue_subescapular = validatedData.pliegue_subescapular
     if (validatedData.pliegue_bicipital !== undefined) updateData.pliegue_bicipital = validatedData.pliegue_bicipital
     if (validatedData.pliegue_cresta_iliaca !== undefined) updateData.pliegue_cresta_iliaca = validatedData.pliegue_cresta_iliaca
     if (validatedData.pliegue_supraespinal !== undefined) updateData.pliegue_supraespinal = validatedData.pliegue_supraespinal
     if (validatedData.pliegue_abdominal !== undefined) updateData.pliegue_abdominal = validatedData.pliegue_abdominal
+    if (validatedData.pliegue_pantorrilla !== undefined) updateData.pliegue_pantorrilla = validatedData.pliegue_pantorrilla
     if (validatedData.notas !== undefined) updateData.notas = validatedData.notas
     if (validatedData.diagnostico !== undefined) updateData.diagnostico = validatedData.diagnostico
     if (validatedData.antecedentes_familiares !== undefined) updateData.antecedentes_familiares = validatedData.antecedentes_familiares

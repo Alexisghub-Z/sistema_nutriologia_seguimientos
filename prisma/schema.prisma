@@ -226,6 +226,10 @@ model Consulta {
   muslo_medio        Float?   // cm
   pantorrilla_maximo Float?   // cm
 
+  // Diámetros óseos (cm) — para somatotipo Heath-Carter
+  diametro_humero    Float?   // cm, biepicondíleo de húmero
+  diametro_femur     Float?   // cm, biepicondíleo de fémur
+
   // Pliegues cutáneos (mm)
   pliegue_tricipital    Float?   // mm
   pliegue_subescapular  Float?   // mm
@@ -233,6 +237,7 @@ model Consulta {
   pliegue_cresta_iliaca Float?   // mm
   pliegue_supraespinal  Float?   // mm
   pliegue_abdominal     Float?   // mm
+  pliegue_pantorrilla   Float?   // mm, pantorrilla medial (somatotipo)
 
   // Notas del nutriólogo
   notas                   String?  @db.Text // Hábitos alimenticios
