@@ -95,12 +95,15 @@ export default function AgregarConsultaHistoricaPage() {
     muslo_maximo: '',
     muslo_medio: '',
     pantorrilla_maximo: '',
+    diametro_humero: '',
+    diametro_femur: '',
     pliegue_tricipital: '',
     pliegue_subescapular: '',
     pliegue_bicipital: '',
     pliegue_cresta_iliaca: '',
     pliegue_supraespinal: '',
     pliegue_abdominal: '',
+    pliegue_pantorrilla: '',
     notas: '',
     diagnostico: '',
     antecedentes_familiares: '',
@@ -173,12 +176,19 @@ export default function AgregarConsultaHistoricaPage() {
         if (num < 10) return 'Mínimo 10 cm'
         if (num > 160) return 'Máximo 160 cm'
         break
+      case 'diametro_humero':
+      case 'diametro_femur':
+        if (isNaN(num)) return 'Debe ser un número'
+        if (num < 3) return 'Mínimo 3 cm'
+        if (num > 25) return 'Máximo 25 cm'
+        break
       case 'pliegue_tricipital':
       case 'pliegue_subescapular':
       case 'pliegue_bicipital':
       case 'pliegue_cresta_iliaca':
       case 'pliegue_supraespinal':
       case 'pliegue_abdominal':
+      case 'pliegue_pantorrilla':
         if (isNaN(num)) return 'Debe ser un número'
         if (num < 0.5) return 'Mínimo 0.5 mm'
         if (num > 120) return 'Máximo 120 mm'
@@ -243,12 +253,15 @@ export default function AgregarConsultaHistoricaPage() {
         muslo_maximo: pf(formData.muslo_maximo),
         muslo_medio: pf(formData.muslo_medio),
         pantorrilla_maximo: pf(formData.pantorrilla_maximo),
+        diametro_humero: pf(formData.diametro_humero),
+        diametro_femur: pf(formData.diametro_femur),
         pliegue_tricipital: pf(formData.pliegue_tricipital),
         pliegue_subescapular: pf(formData.pliegue_subescapular),
         pliegue_bicipital: pf(formData.pliegue_bicipital),
         pliegue_cresta_iliaca: pf(formData.pliegue_cresta_iliaca),
         pliegue_supraespinal: pf(formData.pliegue_supraespinal),
         pliegue_abdominal: pf(formData.pliegue_abdominal),
+        pliegue_pantorrilla: pf(formData.pliegue_pantorrilla),
         notas: formData.notas || undefined,
         diagnostico: formData.diagnostico || undefined,
         antecedentes_familiares: formData.antecedentes_familiares || undefined,
@@ -708,6 +721,42 @@ export default function AgregarConsultaHistoricaPage() {
               />
               {fieldErrors.pantorrilla_maximo && <span className={styles.errorText}>{fieldErrors.pantorrilla_maximo}</span>}
             </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="diametro_humero" className={styles.label}>
+                Diámetro Húmero (cm)
+              </label>
+              <input
+                type="number"
+                id="diametro_humero"
+                name="diametro_humero"
+                value={formData.diametro_humero}
+                onChange={(e) => handleNumericChange('diametro_humero', e.target.value)}
+                className={inputClass('diametro_humero')}
+                step="0.1"
+                min="0"
+                disabled={loading}
+              />
+              {fieldErrors.diametro_humero && <span className={styles.errorText}>{fieldErrors.diametro_humero}</span>}
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="diametro_femur" className={styles.label}>
+                Diámetro Fémur (cm)
+              </label>
+              <input
+                type="number"
+                id="diametro_femur"
+                name="diametro_femur"
+                value={formData.diametro_femur}
+                onChange={(e) => handleNumericChange('diametro_femur', e.target.value)}
+                className={inputClass('diametro_femur')}
+                step="0.1"
+                min="0"
+                disabled={loading}
+              />
+              {fieldErrors.diametro_femur && <span className={styles.errorText}>{fieldErrors.diametro_femur}</span>}
+            </div>
           </div>
         </section>
 
@@ -824,6 +873,24 @@ export default function AgregarConsultaHistoricaPage() {
                 disabled={loading}
               />
               {fieldErrors.pliegue_abdominal && <span className={styles.errorText}>{fieldErrors.pliegue_abdominal}</span>}
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="pliegue_pantorrilla" className={styles.label}>
+                P. Pantorrilla
+              </label>
+              <input
+                type="number"
+                id="pliegue_pantorrilla"
+                name="pliegue_pantorrilla"
+                value={formData.pliegue_pantorrilla}
+                onChange={(e) => handleNumericChange('pliegue_pantorrilla', e.target.value)}
+                className={inputClass('pliegue_pantorrilla')}
+                step="0.1"
+                min="0"
+                disabled={loading}
+              />
+              {fieldErrors.pliegue_pantorrilla && <span className={styles.errorText}>{fieldErrors.pliegue_pantorrilla}</span>}
             </div>
           </div>
         </section>

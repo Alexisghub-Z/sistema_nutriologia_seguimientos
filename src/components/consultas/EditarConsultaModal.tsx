@@ -22,12 +22,15 @@ interface ConsultaDetalle {
   muslo_maximo: number | null
   muslo_medio: number | null
   pantorrilla_maximo: number | null
+  diametro_humero: number | null
+  diametro_femur: number | null
   pliegue_tricipital: number | null
   pliegue_subescapular: number | null
   pliegue_bicipital: number | null
   pliegue_cresta_iliaca: number | null
   pliegue_supraespinal: number | null
   pliegue_abdominal: number | null
+  pliegue_pantorrilla: number | null
   notas: string | null
   diagnostico: string | null
   antecedentes_familiares: string | null
@@ -153,12 +156,19 @@ function validateField(name: string, value: string): string {
       if (numValue < 10) return 'Mínimo 10 cm'
       if (numValue > 160) return 'Máximo 160 cm'
       break
+    case 'diametro_humero':
+    case 'diametro_femur':
+      if (isNaN(numValue)) return 'Debe ser un número'
+      if (numValue < 3) return 'Mínimo 3 cm'
+      if (numValue > 25) return 'Máximo 25 cm'
+      break
     case 'pliegue_tricipital':
     case 'pliegue_subescapular':
     case 'pliegue_bicipital':
     case 'pliegue_cresta_iliaca':
     case 'pliegue_supraespinal':
     case 'pliegue_abdominal':
+    case 'pliegue_pantorrilla':
       if (isNaN(numValue)) return 'Debe ser un número'
       if (numValue < 0.5) return 'Mínimo 0.5 mm'
       if (numValue > 120) return 'Máximo 120 mm'
@@ -194,12 +204,15 @@ export default function EditarConsultaModal({
   const [musloMaximo, setMusloMaximo] = useState('')
   const [musloMedio, setMusloMedio] = useState('')
   const [pantorrillaMaximo, setPantorrillaMaximo] = useState('')
+  const [diametroHumero, setDiametroHumero] = useState('')
+  const [diametroFemur, setDiametroFemur] = useState('')
   const [pliegue_tricipital, setPliegue_tricipital] = useState('')
   const [pliegue_subescapular, setPliegue_subescapular] = useState('')
   const [pliegue_bicipital, setPliegue_bicipital] = useState('')
   const [pliegue_cresta_iliaca, setPliegue_cresta_iliaca] = useState('')
   const [pliegue_supraespinal, setPliegue_supraespinal] = useState('')
   const [pliegue_abdominal, setPliegue_abdominal] = useState('')
+  const [pliegue_pantorrilla, setPliegue_pantorrilla] = useState('')
   const [notas, setNotas] = useState('')
   const [diagnostico, setDiagnostico] = useState('')
   const [antecedentes_familiares, setAntecedentesFamiliares] = useState('')
@@ -233,12 +246,15 @@ export default function EditarConsultaModal({
     setMusloMaximo(toNumberInput(consulta.muslo_maximo))
     setMusloMedio(toNumberInput(consulta.muslo_medio))
     setPantorrillaMaximo(toNumberInput(consulta.pantorrilla_maximo))
+    setDiametroHumero(toNumberInput(consulta.diametro_humero))
+    setDiametroFemur(toNumberInput(consulta.diametro_femur))
     setPliegue_tricipital(toNumberInput(consulta.pliegue_tricipital))
     setPliegue_subescapular(toNumberInput(consulta.pliegue_subescapular))
     setPliegue_bicipital(toNumberInput(consulta.pliegue_bicipital))
     setPliegue_cresta_iliaca(toNumberInput(consulta.pliegue_cresta_iliaca))
     setPliegue_supraespinal(toNumberInput(consulta.pliegue_supraespinal))
     setPliegue_abdominal(toNumberInput(consulta.pliegue_abdominal))
+    setPliegue_pantorrilla(toNumberInput(consulta.pliegue_pantorrilla))
     setNotas(consulta.notas ?? '')
     setDiagnostico(consulta.diagnostico ?? '')
     setAntecedentesFamiliares(consulta.antecedentes_familiares ?? '')
@@ -306,12 +322,15 @@ export default function EditarConsultaModal({
     muslo_maximo: setMusloMaximo,
     muslo_medio: setMusloMedio,
     pantorrilla_maximo: setPantorrillaMaximo,
+    diametro_humero: setDiametroHumero,
+    diametro_femur: setDiametroFemur,
     pliegue_tricipital: setPliegue_tricipital,
     pliegue_subescapular: setPliegue_subescapular,
     pliegue_bicipital: setPliegue_bicipital,
     pliegue_cresta_iliaca: setPliegue_cresta_iliaca,
     pliegue_supraespinal: setPliegue_supraespinal,
     pliegue_abdominal: setPliegue_abdominal,
+    pliegue_pantorrilla: setPliegue_pantorrilla,
   }
 
   const handleNumericChange = (name: string, value: string) => {
@@ -379,12 +398,15 @@ export default function EditarConsultaModal({
       muslo_maximo: parseOptionalNumber(musloMaximo),
       muslo_medio: parseOptionalNumber(musloMedio),
       pantorrilla_maximo: parseOptionalNumber(pantorrillaMaximo),
+      diametro_humero: parseOptionalNumber(diametroHumero),
+      diametro_femur: parseOptionalNumber(diametroFemur),
       pliegue_tricipital: parseOptionalNumber(pliegue_tricipital),
       pliegue_subescapular: parseOptionalNumber(pliegue_subescapular),
       pliegue_bicipital: parseOptionalNumber(pliegue_bicipital),
       pliegue_cresta_iliaca: parseOptionalNumber(pliegue_cresta_iliaca),
       pliegue_supraespinal: parseOptionalNumber(pliegue_supraespinal),
       pliegue_abdominal: parseOptionalNumber(pliegue_abdominal),
+      pliegue_pantorrilla: parseOptionalNumber(pliegue_pantorrilla),
       notas: notas || null,
       diagnostico: diagnostico || null,
       antecedentes_familiares: antecedentes_familiares || null,
@@ -549,6 +571,8 @@ export default function EditarConsultaModal({
                 { id: 'muslo_maximo',        label: 'Muslo máximo',        val: musloMaximo,        set: setMusloMaximo },
                 { id: 'muslo_medio',         label: 'Muslo medio',         val: musloMedio,         set: setMusloMedio },
                 { id: 'pantorrilla_maximo',  label: 'Pantorrilla máximo',  val: pantorrillaMaximo,  set: setPantorrillaMaximo },
+                { id: 'diametro_humero',     label: 'Diámetro húmero',     val: diametroHumero,     set: setDiametroHumero },
+                { id: 'diametro_femur',      label: 'Diámetro fémur',      val: diametroFemur,      set: setDiametroFemur },
               ].map(({ id, label, val }) => (
                 <div key={id} className={styles.field}>
                   <label className={styles.label} htmlFor={id}>{label}</label>
@@ -577,6 +601,7 @@ export default function EditarConsultaModal({
                 { id: 'pliegue_cresta_iliaca', label: 'Cresta ilíaca', val: pliegue_cresta_iliaca },
                 { id: 'pliegue_supraespinal',  label: 'Supraespinal',  val: pliegue_supraespinal },
                 { id: 'pliegue_abdominal',     label: 'Abdominal',     val: pliegue_abdominal },
+                { id: 'pliegue_pantorrilla',   label: 'Pantorrilla',   val: pliegue_pantorrilla },
               ].map(({ id, label, val }) => (
                 <div key={id} className={styles.field}>
                   <label className={styles.label} htmlFor={id}>{label}</label>

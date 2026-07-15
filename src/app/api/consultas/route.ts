@@ -35,6 +35,10 @@ const consultaSchema = z.object({
   muslo_medio: z.number().min(10).max(240).optional(),        // 10-240 cm (duplicado)
   pantorrilla_maximo: z.number().min(10).max(160).optional(), // 10-160 cm (duplicado)
 
+  // Diámetros óseos (cm) — somatotipo
+  diametro_humero: z.number().min(3).max(25).optional(),
+  diametro_femur: z.number().min(3).max(25).optional(),
+
   // Pliegues cutáneos (mm)
   pliegue_tricipital: z.number().min(0.5).max(120).optional(),      // 0.5-120 mm (duplicado)
   pliegue_subescapular: z.number().min(0.5).max(120).optional(),    // 0.5-120 mm (duplicado)
@@ -42,6 +46,7 @@ const consultaSchema = z.object({
   pliegue_cresta_iliaca: z.number().min(0.5).max(120).optional(),   // 0.5-120 mm (duplicado)
   pliegue_supraespinal: z.number().min(0.5).max(120).optional(),    // 0.5-120 mm (duplicado)
   pliegue_abdominal: z.number().min(0.5).max(120).optional(),       // 0.5-120 mm (duplicado)
+  pliegue_pantorrilla: z.number().min(0.5).max(120).optional(),     // 0.5-120 mm (somatotipo)
 
   // Notas
   notas: z.string().optional(),
@@ -120,12 +125,15 @@ export async function GET(request: NextRequest) {
           muslo_maximo: true,
           muslo_medio: true,
           pantorrilla_maximo: true,
+          diametro_humero: true,
+          diametro_femur: true,
           pliegue_tricipital: true,
           pliegue_subescapular: true,
           pliegue_bicipital: true,
           pliegue_cresta_iliaca: true,
           pliegue_supraespinal: true,
           pliegue_abdominal: true,
+          pliegue_pantorrilla: true,
         },
       })
 
@@ -259,6 +267,10 @@ export async function POST(request: NextRequest) {
         muslo_medio: validatedData.muslo_medio,
         pantorrilla_maximo: validatedData.pantorrilla_maximo,
 
+        // Diámetros óseos
+        diametro_humero: validatedData.diametro_humero,
+        diametro_femur: validatedData.diametro_femur,
+
         // Pliegues cutáneos
         pliegue_tricipital: validatedData.pliegue_tricipital,
         pliegue_subescapular: validatedData.pliegue_subescapular,
@@ -266,6 +278,7 @@ export async function POST(request: NextRequest) {
         pliegue_cresta_iliaca: validatedData.pliegue_cresta_iliaca,
         pliegue_supraespinal: validatedData.pliegue_supraespinal,
         pliegue_abdominal: validatedData.pliegue_abdominal,
+        pliegue_pantorrilla: validatedData.pliegue_pantorrilla,
 
         // Notas
         notas: validatedData.notas,

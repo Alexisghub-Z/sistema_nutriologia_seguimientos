@@ -32,6 +32,10 @@ const consultaHistoricaSchema = z.object({
   muslo_medio: z.number().positive().optional(),
   pantorrilla_maximo: z.number().positive().optional(),
 
+  // Diámetros óseos (cm) — somatotipo
+  diametro_humero: z.number().positive().optional(),
+  diametro_femur: z.number().positive().optional(),
+
   // Pliegues cutáneos
   pliegue_tricipital: z.number().positive().optional(),
   pliegue_subescapular: z.number().positive().optional(),
@@ -39,6 +43,7 @@ const consultaHistoricaSchema = z.object({
   pliegue_cresta_iliaca: z.number().positive().optional(),
   pliegue_supraespinal: z.number().positive().optional(),
   pliegue_abdominal: z.number().positive().optional(),
+  pliegue_pantorrilla: z.number().positive().optional(),
 
   // Notas
   notas: z.string().optional(),
@@ -107,6 +112,10 @@ export async function POST(request: NextRequest) {
         muslo_medio: validatedData.muslo_medio,
         pantorrilla_maximo: validatedData.pantorrilla_maximo,
 
+        // Diámetros óseos
+        diametro_humero: validatedData.diametro_humero,
+        diametro_femur: validatedData.diametro_femur,
+
         // Pliegues cutáneos
         pliegue_tricipital: validatedData.pliegue_tricipital,
         pliegue_subescapular: validatedData.pliegue_subescapular,
@@ -114,6 +123,7 @@ export async function POST(request: NextRequest) {
         pliegue_cresta_iliaca: validatedData.pliegue_cresta_iliaca,
         pliegue_supraespinal: validatedData.pliegue_supraespinal,
         pliegue_abdominal: validatedData.pliegue_abdominal,
+        pliegue_pantorrilla: validatedData.pliegue_pantorrilla,
 
         // Notas
         notas: validatedData.notas,

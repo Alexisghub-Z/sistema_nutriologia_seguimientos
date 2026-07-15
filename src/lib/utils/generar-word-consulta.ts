@@ -15,6 +15,11 @@ import {
   TextWrappingType,
 } from 'docx'
 import { saveAs } from 'file-saver'
+import {
+  calcularSomatotipo,
+  clasificarSomatotipo,
+  formatearSomatotipo,
+} from '@/lib/utils/somatotipo'
 
 // ── Cargar imágenes ──
 
@@ -46,12 +51,15 @@ interface ConsultaData {
   muslo_maximo: number | null
   muslo_medio: number | null
   pantorrilla_maximo: number | null
+  diametro_humero: number | null
+  diametro_femur: number | null
   pliegue_tricipital: number | null
   pliegue_subescapular: number | null
   pliegue_bicipital: number | null
   pliegue_cresta_iliaca: number | null
   pliegue_supraespinal: number | null
   pliegue_abdominal: number | null
+  pliegue_pantorrilla: number | null
   notas: string | null
   diagnostico: string | null
   antecedentes_familiares: string | null
@@ -358,9 +366,11 @@ export async function generarWordConsulta(
   if (consulta.muslo_maximo) perimetros.push({ label: 'Muslo máximo', valor: `${consulta.muslo_maximo} cm` })
   if (consulta.muslo_medio) perimetros.push({ label: 'Muslo medio', valor: `${consulta.muslo_medio} cm` })
   if (consulta.pantorrilla_maximo) perimetros.push({ label: 'Pantorrilla máximo', valor: `${consulta.pantorrilla_maximo} cm` })
+  if (consulta.diametro_humero) perimetros.push({ label: 'Diámetro húmero', valor: `${consulta.diametro_humero} cm` })
+  if (consulta.diametro_femur) perimetros.push({ label: 'Diámetro fémur', valor: `${consulta.diametro_femur} cm` })
 
   if (perimetros.length > 0) {
-    children.push(crearTituloSeccion('Perímetros'))
+    children.push(crearTituloSeccion('Perímetros y diámetros'))
     children.push(crearTablaMediciones(perimetros))
   }
 
@@ -372,10 +382,23 @@ export async function generarWordConsulta(
   if (consulta.pliegue_cresta_iliaca) pliegues.push({ label: 'P. Cresta ilíaca', valor: `${consulta.pliegue_cresta_iliaca} mm` })
   if (consulta.pliegue_supraespinal) pliegues.push({ label: 'P. Supraespinal', valor: `${consulta.pliegue_supraespinal} mm` })
   if (consulta.pliegue_abdominal) pliegues.push({ label: 'P. Abdominal', valor: `${consulta.pliegue_abdominal} mm` })
+  if (consulta.pliegue_pantorrilla) pliegues.push({ label: 'P. Pantorrilla', valor: `${consulta.pliegue_pantorrilla} mm` })
 
   if (pliegues.length > 0) {
     children.push(crearTituloSeccion('Pliegues Cutáneos'))
     children.push(crearTablaMediciones(pliegues))
+  }
+
+  // ── Somatotipo (Heath-Carter) ──
+  const soma = calcularSomatotipo(consulta)
+  if (soma) {
+    children.push(crearTituloSeccion('Somatotipo (Heath-Carter)'))
+    children.push(
+      crearTablaMediciones([
+        { label: 'Endo – Meso – Ecto', valor: formatearSomatotipo(soma) },
+        { label: 'Clasificación', valor: clasificarSomatotipo(soma) },
+      ])
+    )
   }
 
   // ── Notas Clínicas (7 secciones) ──

@@ -5,6 +5,7 @@ import WeightChart from './charts/WeightChart'
 import BodyCompositionChart from './charts/BodyCompositionChart'
 import PerimetersChart from './charts/PerimetersChart'
 import SkinfoldChart from './charts/SkinfoldChart'
+import SomatotipoChart from './charts/SomatotipoChart'
 import ConsultaPreviewModal from './ConsultaPreviewModal'
 import Spinner from '@/components/ui/Spinner'
 import Alert from '@/components/ui/Alert'
@@ -27,12 +28,15 @@ interface Consulta {
   muslo_maximo: number | null
   muslo_medio: number | null
   pantorrilla_maximo: number | null
+  diametro_humero: number | null
+  diametro_femur: number | null
   pliegue_tricipital: number | null
   pliegue_subescapular: number | null
   pliegue_bicipital: number | null
   pliegue_cresta_iliaca: number | null
   pliegue_supraespinal: number | null
   pliegue_abdominal: number | null
+  pliegue_pantorrilla: number | null
 }
 
 interface ProgressChartsProps {
@@ -329,6 +333,9 @@ export default function ProgressCharts({ pacienteId }: ProgressChartsProps) {
 
         {/* Pliegues Cutáneos */}
         <SkinfoldChart data={consultasFiltradas} onConsultaClick={setPreviewConsultaId} />
+
+        {/* Somatotipo (Heath-Carter) */}
+        <SomatotipoChart data={consultasFiltradas} onConsultaClick={setPreviewConsultaId} />
       </div>
 
       {previewConsultaId && (

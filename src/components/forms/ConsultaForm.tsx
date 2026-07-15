@@ -73,12 +73,15 @@ export default function ConsultaForm({
     muslo_maximo: '',
     muslo_medio: '',
     pantorrilla_maximo: '',
+    diametro_humero: '',
+    diametro_femur: '',
     pliegue_tricipital: '',
     pliegue_subescapular: '',
     pliegue_bicipital: '',
     pliegue_cresta_iliaca: '',
     pliegue_supraespinal: '',
     pliegue_abdominal: '',
+    pliegue_pantorrilla: '',
     notas: '',
     diagnostico: '',
     antecedentes_familiares: '',
@@ -199,6 +202,14 @@ export default function ConsultaForm({
         else if (numValue > 160) errorMessage = 'Máximo 160 cm'
         break
 
+      // Diámetros óseos
+      case 'diametro_humero':
+      case 'diametro_femur':
+        if (isNaN(numValue)) errorMessage = 'Debe ser un número'
+        else if (numValue < 3) errorMessage = 'Mínimo 3 cm'
+        else if (numValue > 25) errorMessage = 'Máximo 25 cm'
+        break
+
       // Pliegues cutáneos
       case 'pliegue_tricipital':
       case 'pliegue_subescapular':
@@ -206,6 +217,7 @@ export default function ConsultaForm({
       case 'pliegue_cresta_iliaca':
       case 'pliegue_supraespinal':
       case 'pliegue_abdominal':
+      case 'pliegue_pantorrilla':
         if (isNaN(numValue)) errorMessage = 'Debe ser un número'
         else if (numValue < 0.5) errorMessage = 'Mínimo 0.5 mm'
         else if (numValue > 120) errorMessage = 'Máximo 120 mm'
@@ -241,8 +253,9 @@ export default function ConsultaForm({
       'peso', 'talla', 'grasa_corporal', 'porcentaje_agua', 'masa_muscular_kg', 'grasa_visceral',
       'brazo_relajado', 'brazo_flexionado', 'cintura', 'cadera_maximo',
       'muslo_maximo', 'muslo_medio', 'pantorrilla_maximo',
+      'diametro_humero', 'diametro_femur',
       'pliegue_tricipital', 'pliegue_subescapular', 'pliegue_bicipital',
-      'pliegue_cresta_iliaca', 'pliegue_supraespinal', 'pliegue_abdominal'
+      'pliegue_cresta_iliaca', 'pliegue_supraespinal', 'pliegue_abdominal', 'pliegue_pantorrilla'
     ]
 
     if (numericFields.includes(name)) {
@@ -281,12 +294,15 @@ export default function ConsultaForm({
         formData.muslo_maximo ||
         formData.muslo_medio ||
         formData.pantorrilla_maximo ||
+        formData.diametro_humero ||
+        formData.diametro_femur ||
         formData.pliegue_tricipital ||
         formData.pliegue_subescapular ||
         formData.pliegue_bicipital ||
         formData.pliegue_cresta_iliaca ||
         formData.pliegue_supraespinal ||
         formData.pliegue_abdominal ||
+        formData.pliegue_pantorrilla ||
         formData.notas ||
         formData.diagnostico ||
         formData.antecedentes_familiares ||
@@ -340,6 +356,8 @@ export default function ConsultaForm({
       if (formData.muslo_medio) data.muslo_medio = parseFloat(formData.muslo_medio)
       if (formData.pantorrilla_maximo)
         data.pantorrilla_maximo = parseFloat(formData.pantorrilla_maximo)
+      if (formData.diametro_humero) data.diametro_humero = parseFloat(formData.diametro_humero)
+      if (formData.diametro_femur) data.diametro_femur = parseFloat(formData.diametro_femur)
       if (formData.pliegue_tricipital)
         data.pliegue_tricipital = parseFloat(formData.pliegue_tricipital)
       if (formData.pliegue_subescapular)
@@ -352,6 +370,8 @@ export default function ConsultaForm({
         data.pliegue_supraespinal = parseFloat(formData.pliegue_supraespinal)
       if (formData.pliegue_abdominal)
         data.pliegue_abdominal = parseFloat(formData.pliegue_abdominal)
+      if (formData.pliegue_pantorrilla)
+        data.pliegue_pantorrilla = parseFloat(formData.pliegue_pantorrilla)
 
       // Agregar información financiera
       if (formData.monto_consulta) data.monto_consulta = parseFloat(formData.monto_consulta)
@@ -812,6 +832,50 @@ export default function ConsultaForm({
               <span className={styles.errorText}>{fieldErrors.pantorrilla_maximo}</span>
             )}
           </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="diametro_humero" className={styles.label}>
+              Diámetro húmero
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              id="diametro_humero"
+              name="diametro_humero"
+              value={formData.diametro_humero}
+              onChange={handleChange}
+              className={`${styles.input} ${fieldErrors.diametro_humero ? styles.inputError : ''}`}
+              disabled={loading}
+              placeholder="3-25 cm"
+              min="3"
+              max="25"
+            />
+            {fieldErrors.diametro_humero && (
+              <span className={styles.errorText}>{fieldErrors.diametro_humero}</span>
+            )}
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="diametro_femur" className={styles.label}>
+              Diámetro fémur
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              id="diametro_femur"
+              name="diametro_femur"
+              value={formData.diametro_femur}
+              onChange={handleChange}
+              className={`${styles.input} ${fieldErrors.diametro_femur ? styles.inputError : ''}`}
+              disabled={loading}
+              placeholder="3-25 cm"
+              min="3"
+              max="25"
+            />
+            {fieldErrors.diametro_femur && (
+              <span className={styles.errorText}>{fieldErrors.diametro_femur}</span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -948,6 +1012,28 @@ export default function ConsultaForm({
             />
             {fieldErrors.pliegue_abdominal && (
               <span className={styles.errorText}>{fieldErrors.pliegue_abdominal}</span>
+            )}
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="pliegue_pantorrilla" className={styles.label}>
+              P. Pantorrilla
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              id="pliegue_pantorrilla"
+              name="pliegue_pantorrilla"
+              value={formData.pliegue_pantorrilla}
+              onChange={handleChange}
+              className={`${styles.input} ${fieldErrors.pliegue_pantorrilla ? styles.inputError : ''}`}
+              disabled={loading}
+              placeholder="0.5-120 mm"
+              min="0.5"
+              max="120"
+            />
+            {fieldErrors.pliegue_pantorrilla && (
+              <span className={styles.errorText}>{fieldErrors.pliegue_pantorrilla}</span>
             )}
           </div>
         </div>
