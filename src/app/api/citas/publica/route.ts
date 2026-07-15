@@ -333,6 +333,25 @@ export async function POST(request: NextRequest) {
       // No fallar la creación de la cita si hay error al cancelar
     }
 
+    // Notificar al nutriólogo de la nueva cita (best-effort, no bloquea)
+    try {
+      const { notificarNuevaCita } = await import('@/lib/services/notificaciones')
+      await notificarNuevaCita({
+        id: cita.id,
+        codigo_cita: cita.codigo_cita,
+        fecha_hora: cita.fecha_hora,
+        tipo_cita: cita.tipo_cita,
+        motivo_consulta: cita.motivo_consulta,
+        paciente: {
+          nombre: cita.paciente.nombre,
+          telefono: cita.paciente.telefono,
+          email: cita.paciente.email,
+        },
+      })
+    } catch (notifError) {
+      console.error('Error al notificar nueva cita:', notifError)
+    }
+
     console.log(`✅ Cita creada desde portal público: ${cita.id} (${cita.codigo_cita})`)
 
     return NextResponse.json(

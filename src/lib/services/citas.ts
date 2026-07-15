@@ -19,6 +19,11 @@ export interface CrearCitaInput {
   motivoConsulta: string
   tipoCita?: 'PRESENCIAL' | 'EN_LINEA'
   confirmadaPorAdmin?: boolean
+  /**
+   * Notificar al nutriólogo de la nueva cita. Solo cuando la agenda el PACIENTE
+   * (IA de WhatsApp, agendado público). El admin NO notifica: él ya sabe que la creó.
+   */
+  notificarNueva?: boolean
 }
 
 export type CrearCitaResultado =
@@ -237,6 +242,27 @@ export async function crearCitaParaPaciente(
       await cancelarRecordatoriosAgendar(pacienteId, fechaHora)
     } catch (cancelError) {
       console.error('Error al cancelar recordatorios de agendar:', cancelError)
+    }
+
+    // Notificar al nutriólogo SOLO si la cita la agendó el paciente (no el admin).
+    if (input.notificarNueva) {
+      try {
+        const { notificarNuevaCita } = await import('@/lib/services/notificaciones')
+        await notificarNuevaCita({
+          id: cita.id,
+          codigo_cita: cita.codigo_cita,
+          fecha_hora: cita.fecha_hora,
+          tipo_cita: cita.tipo_cita,
+          motivo_consulta: cita.motivo_consulta,
+          paciente: {
+            nombre: cita.paciente.nombre,
+            telefono: cita.paciente.telefono,
+            email: cita.paciente.email,
+          },
+        })
+      } catch (notifError) {
+        console.error('Error al notificar nueva cita:', notifError)
+      }
     }
 
     return { ok: true, cita }

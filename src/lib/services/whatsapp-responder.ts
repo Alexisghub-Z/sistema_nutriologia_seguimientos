@@ -315,6 +315,7 @@ async function intentarAgendarCitaSugerida(
       fechaHora: consultaSugerida.proxima_cita,
       motivoConsulta: 'Consulta de seguimiento',
       tipoCita: 'PRESENCIAL',
+      notificarNueva: true, // la agenda el paciente por WhatsApp → avisar al nutriólogo
     })
 
     if (resultado.ok) {
