@@ -423,6 +423,16 @@ model ConfiguracionGeneral {
   // Configuración financiera
   precio_consulta_default         Decimal  @default(500.00) @db.Decimal(10,2)
 
+  // Notificaciones por email al nutriólogo (Resend).
+  // El remitente y la API key son internos (variables de entorno). Desde la UI
+  // el nutriólogo edita el correo destino y qué avisos quiere recibir.
+  notif_email_activa              Boolean  @default(false) // interruptor maestro
+  notif_email_destino             String?  // correo que recibe los avisos (editable en UI)
+  notif_nueva_cita                Boolean  @default(true)
+  notif_cancelacion               Boolean  @default(true)
+  notif_reagendamiento            Boolean  @default(true)
+  notif_confirmacion              Boolean  @default(true)
+
   createdAt                       DateTime @default(now())
   updatedAt                       DateTime @updatedAt
 
