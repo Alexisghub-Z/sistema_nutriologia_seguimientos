@@ -27,7 +27,13 @@
     "test:escalabilidad": "node scripts/test-escalabilidad.js",
     "monitor:queue": "node scripts/bull-board.js",
     "monitor:redis": "node scripts/redis-monitor.js",
-    "test:api": "bash tests/quick-api-test.sh"
+    "test:api": "bash tests/quick-api-test.sh",
+    "demo:chats": "tsx scripts/demo-conversaciones.ts",
+    "demo:chats:live": "tsx scripts/demo-conversaciones.ts --live",
+    "demo:chats:limpiar": "tsx scripts/demo-conversaciones.ts --limpiar",
+    "demo:seguimiento": "tsx scripts/demo-conversaciones.ts --seguimiento",
+    "demo:consultas": "tsx scripts/demo-conversaciones.ts --consultas",
+    "demo:consultas:limpiar": "tsx scripts/demo-conversaciones.ts --consultas-limpiar"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",
