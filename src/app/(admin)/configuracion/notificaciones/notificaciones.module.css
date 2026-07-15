@@ -1,0 +1,72 @@
+.filaSwitch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-md) 0;
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.filaSwitch:last-child {
+  border-bottom: none;
+}
+
+.filaSwitch strong {
+  font-size: var(--font-size-md);
+  color: var(--color-gray-900);
+}
+
+.hint {
+  margin: 2px 0 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-500);
+}
+
+/* Switch */
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 46px;
+  height: 26px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-gray-300);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  padding: 0;
+}
+
+.switchOn {
+  background-color: var(--color-primary);
+}
+
+.switchDisabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.switchKnob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.switchOn .switchKnob {
+  transform: translateX(20px);
+}
+
+.testMsg {
+  margin-top: var(--spacing-md);
+}
+
+.testNota {
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}

@@ -47,6 +47,15 @@ const configuracionSchema = z.object({
   dias_laborales: z.string().optional(),
   dias_anticipacion_max: z.number().int().min(1).max(90).optional(),
   horas_anticipacion_min: z.number().int().min(0).max(72).optional(),
+
+  // Notificaciones por email. El remitente y la API key son internos (env vars);
+  // aquí van el correo destino y las preferencias editables desde la UI.
+  notif_email_activa: z.boolean().optional(),
+  notif_email_destino: z.string().email('Correo inválido').or(z.literal('')).optional().nullable(),
+  notif_nueva_cita: z.boolean().optional(),
+  notif_cancelacion: z.boolean().optional(),
+  notif_reagendamiento: z.boolean().optional(),
+  notif_confirmacion: z.boolean().optional(),
 })
 
 // GET /api/configuracion - Obtener configuración general
@@ -82,6 +91,9 @@ export async function GET() {
           citas_simultaneas_max: 1,
           dias_anticipacion_max: 30,
           horas_anticipacion_min: 2,
+
+          // Notificaciones (desactivadas hasta que se configure el correo)
+          notif_email_activa: false,
         },
       })
     }
@@ -110,6 +122,10 @@ export async function PUT(request: NextRequest) {
     // Agregar valores fijos para campos eliminados de la UI
     const dataWithDefaults = {
       ...validatedData,
+      // Normalizar correo destino vacío a null
+      ...(validatedData.notif_email_destino !== undefined
+        ? { notif_email_destino: validatedData.notif_email_destino || null }
+        : {}),
       intervalo_entre_citas: 0, // Sin intervalo entre citas
       citas_simultaneas_max: 1, // Solo 1 cita a la vez
     }
