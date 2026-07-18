@@ -1,0 +1,84 @@
+# ============================================================
+# Plantilla de despliegue POR CLIENTE (app + worker)
+# ============================================================
+# Cada cliente corre su propia app y worker, con su propia base de
+# datos (Neon) y su propia carpeta de archivos (object storage).
+# La base de datos y Redis NO viven aquí: la BD es externa (Neon) y
+# Redis es el compartido del proxy (deploy/traefik.yml).
+#
+# NO se edita este archivo por cliente. La configuración de cada
+# cliente vive en deploy/clientes/<cliente>.env (generado por el
+# script deploy/nuevo-cliente.sh).
+#
+# Cada cliente tiene su PROPIO Redis (aislamiento total de caché y
+# colas — el código usa nombres de key/cola fijos, así que un Redis
+# compartido mezclaría datos entre clientes). Es un contenedor ligero.
+#
+# Uso manual (normalmente lo hace el script):
+#   docker compose -f deploy/cliente.compose.yml \
+#     --env-file deploy/clientes/<cliente>.env \
+#     -p <cliente> up -d --build
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: ${CLIENTE}-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - web
+
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: nutriologo-app:latest
+    container_name: ${CLIENTE}-app
+    restart: unless-stopped
+    env_file:
+      - clientes/${CLIENTE}.env
+    environment:
+      - NODE_ENV=production
+      - TZ=America/Mexico_City
+    networks:
+      - web
+    depends_on:
+      - redis
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.${CLIENTE}.rule=Host(`${DOMINIO}`)'
+      - 'traefik.http.routers.${CLIENTE}.entrypoints=websecure'
+      - 'traefik.http.routers.${CLIENTE}.tls.certresolver=le'
+      - 'traefik.http.services.${CLIENTE}.loadbalancer.server.port=3000'
+
+  worker:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: builder
+    image: nutriologo-worker:latest
+    container_name: ${CLIENTE}-worker
+    restart: unless-stopped
+    command: ['npx', 'tsx', 'src/lib/queue/worker.ts']
+    env_file:
+      - clientes/${CLIENTE}.env
+    environment:
+      - NODE_ENV=production
+      - TZ=America/Mexico_City
+    depends_on:
+      - redis
+    networks:
+      - web
+
+networks:
+  web:
+    external: true
+
+volumes:
+  redis_data:

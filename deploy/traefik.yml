@@ -1,0 +1,49 @@
+# ============================================================
+# Traefik — reverse proxy compartido para TODOS los clientes
+# ============================================================
+# Se levanta UNA sola vez en el VPS. Enruta cada dominio de cliente
+# a su contenedor correspondiente y emite/renueva certificados SSL
+# automáticamente con Let's Encrypt.
+#
+# Uso:
+#   1. Editar el email de ACME abajo (para avisos de Let's Encrypt).
+#   2. docker network create web        (red compartida, una vez)
+#   3. docker compose -f deploy/traefik.yml up -d
+#
+# Cada cliente se conecta a esta red "web" y declara sus reglas de
+# ruteo con labels (ver deploy/cliente.compose.yml).
+
+services:
+  traefik:
+    image: traefik:v3.1
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      - '--providers.docker=true'
+      - '--providers.docker.exposedbydefault=false'
+      - '--providers.docker.network=web'
+      - '--entrypoints.web.address=:80'
+      - '--entrypoints.websecure.address=:443'
+      # Redirigir todo HTTP → HTTPS
+      - '--entrypoints.web.http.redirections.entrypoint.to=websecure'
+      - '--entrypoints.web.http.redirections.entrypoint.scheme=https'
+      # Let's Encrypt (certificados SSL automáticos)
+      - '--certificatesresolvers.le.acme.email=${ACME_EMAIL:-tu-correo@ejemplo.com}'
+      - '--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json'
+      - '--certificatesresolvers.le.acme.httpchallenge=true'
+      - '--certificatesresolvers.le.acme.httpchallenge.entrypoint=web'
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_letsencrypt:/letsencrypt
+    networks:
+      - web
+
+networks:
+  web:
+    external: true
+
+volumes:
+  traefik_letsencrypt:
