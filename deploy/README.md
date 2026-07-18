@@ -43,18 +43,27 @@ número de WhatsApp en Twilio; (c) apunta su dominio (registro A) a la IP del VP
 ./deploy/nuevo-cliente.sh dra-martinez citas.dra-martinez.com
 ```
 
-El script:
+El script (interactivo — pide DATABASE_URL, datos de Twilio y del admin):
 1. Genera `deploy/clientes/dra-martinez.env` (con un `NEXTAUTH_SECRET` único).
 2. Aplica el esquema Prisma a la BD del cliente (`prisma db push`).
-3. Levanta sus contenedores conectados a Traefik.
+3. **Crea el usuario admin del nutriólogo** (si no das contraseña, genera una
+   aleatoria y la muestra una sola vez — guárdala).
+4. Levanta sus contenedores conectados a Traefik.
 
 En ~1 minuto Traefik emite el certificado y el cliente queda en
-`https://citas.dra-martinez.com`.
+`https://citas.dra-martinez.com`, con el nutriólogo ya pudiendo entrar.
 
 ### Falta manual tras el alta
-- Crear el usuario admin del cliente (seed o script de usuario).
-- El nutriólogo entra y conecta su Google Calendar desde `/configuracion`.
+- El nutriólogo entra con su email/contraseña y conecta su Google Calendar desde
+  `/configuracion`.
 - Configurar el webhook de Twilio de su número → `https://<dominio>/api/webhooks/twilio`.
+
+### Crear/resetear el admin a mano (si hace falta)
+```bash
+ADMIN_EMAIL=doc@ejemplo.com ADMIN_NOMBRE="Dra. Martínez" ADMIN_PASSWORD=... \
+  DATABASE_URL="<url-neon-del-cliente>" npx tsx prisma/crear-admin.ts
+```
+Es idempotente (upsert): si el usuario ya existe, actualiza su contraseña.
 
 ## Operación
 
