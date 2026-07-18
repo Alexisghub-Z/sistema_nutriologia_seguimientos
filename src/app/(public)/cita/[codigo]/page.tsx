@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
+import { useConfigPublica } from '@/hooks/useConfigPublica'
 import styles from './cita.module.css'
 
 interface Paciente {
@@ -28,6 +29,7 @@ interface Cita {
 }
 
 export default function CitaPage({ params }: { params: Promise<{ codigo: string }> }) {
+  const { nombreConsultorio } = useConfigPublica()
   const resolvedParams = use(params)
   const codigo = resolvedParams.codigo
 
@@ -273,7 +275,7 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
           <button onClick={() => router.push('/')} className={styles.backButton}>
             ← Volver
           </button>
-          <h1>Nutriólogo Paul</h1>
+          <h1>{nombreConsultorio}</h1>
         </div>
 
         <div className={styles.citaCard}>

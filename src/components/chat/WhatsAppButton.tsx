@@ -1,12 +1,16 @@
 'use client'
 
+import { useConfigPublica } from '@/hooks/useConfigPublica'
 import styles from './WhatsAppButton.module.css'
 
 export default function WhatsAppButton() {
-  const numeroWhatsApp = '5219514577514' // Número del asistente IA
+  const { whatsappPublico } = useConfigPublica()
+
+  // Si no hay WhatsApp configurado, no mostrar el botón
+  if (!whatsappPublico) return null
 
   const abrirWhatsApp = () => {
-    const url = `https://wa.me/${numeroWhatsApp}`
+    const url = `https://wa.me/${whatsappPublico}`
     window.open(url, '_blank')
   }
 

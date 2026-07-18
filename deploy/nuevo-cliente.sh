@@ -58,6 +58,7 @@ read -rp "DATABASE_URL (de Neon para este cliente): " DATABASE_URL
 read -rp "TWILIO_ACCOUNT_SID: " TWILIO_ACCOUNT_SID
 read -rp "TWILIO_AUTH_TOKEN: " TWILIO_AUTH_TOKEN
 read -rp "TWILIO_WHATSAPP_NUMBER (ej: whatsapp:+521...): " TWILIO_WHATSAPP_NUMBER
+read -rp "Nombre del consultorio (ej: Nutrición Dra. Martínez): " NOMBRE_SITIO
 echo "── Usuario administrador del nutriólogo ──"
 read -rp "Email del admin (login del nutriólogo): " ADMIN_EMAIL
 read -rp "Nombre del admin: " ADMIN_NOMBRE
@@ -72,6 +73,7 @@ mkdir -p "$DIR/clientes"
 sed \
   -e "s|{{CLIENTE}}|${CLIENTE}|g" \
   -e "s|{{DOMINIO}}|${DOMINIO}|g" \
+  -e "s|{{NOMBRE_SITIO}}|${NOMBRE_SITIO}|g" \
   -e "s|{{NEXTAUTH_SECRET}}|${NEXTAUTH_SECRET}|g" \
   -e "s|{{DATABASE_URL}}|${DATABASE_URL}|g" \
   -e "s|{{S3_ENDPOINT}}|${S3_ENDPOINT}|g" \

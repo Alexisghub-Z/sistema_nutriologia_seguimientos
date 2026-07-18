@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
+import { useConfigPublica } from '@/hooks/useConfigPublica'
 import CalendarioCitas from '@/components/calendario/CalendarioCitas'
 import { extraerDigitosTelefono } from '@/lib/utils/phone'
 import styles from './agendar.module.css'
@@ -25,6 +26,7 @@ interface CitaActiva {
 }
 
 export default function AgendarCitaPage() {
+  const { nombreConsultorio } = useConfigPublica()
   const router = useRouter()
   const [paso, setPaso] = useState<1 | 2 | 3>(1)
   const [loading, setLoading] = useState(false)
@@ -377,7 +379,7 @@ export default function AgendarCitaPage() {
       {/* Top Header */}
       <div className={styles.topHeader}>
         <div className={styles.logo}>
-          <span className={styles.logoText}>Nutriólogo Paul</span>
+          <span className={styles.logoText}>{nombreConsultorio}</span>
         </div>
         <button onClick={() => router.push('/')} className={styles.backButton}>
           Volver

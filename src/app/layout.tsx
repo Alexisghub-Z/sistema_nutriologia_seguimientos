@@ -5,23 +5,26 @@ import SessionProvider from '@/components/providers/SessionProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
+// Nombre/URL del sitio configurables por env (por cliente al desplegar).
+// Fallback a los valores de Paul para no alterar su producción actual.
+const NOMBRE_SITIO = process.env.NEXT_PUBLIC_NOMBRE_SITIO || 'Nutrición Paul Cortes'
+const URL_SITIO = process.env.NEXT_PUBLIC_APP_URL || 'https://nutricionpaulcortez.com'
+
 export const metadata: Metadata = {
   title: {
-    default: 'Nutrición Paul Cortes',
-    template: '%s | Nutrición Paul Cortes',
+    default: NOMBRE_SITIO,
+    template: `%s | ${NOMBRE_SITIO}`,
   },
-  description: 'Consulta nutricional profesional en Oaxaca. Más de 10 años de experiencia ayudándote a mejorar tu salud y alcanzar tus objetivos.',
-  keywords: ['nutriólogo', 'nutrición', 'Oaxaca', 'Paul Cortes', 'consulta nutricional', 'plan alimenticio'],
-  authors: [{ name: 'Paul Cortes' }],
-  creator: 'Paul Cortes',
-  metadataBase: new URL('https://nutricionpaulcortez.com'),
+  description: 'Consulta nutricional profesional. Agenda tu cita y da seguimiento a tu progreso.',
+  keywords: ['nutriólogo', 'nutrición', 'consulta nutricional', 'plan alimenticio'],
+  metadataBase: new URL(URL_SITIO),
   openGraph: {
     type: 'website',
     locale: 'es_MX',
-    url: 'https://nutricionpaulcortez.com',
-    title: 'Nutrición Paul Cortes',
-    description: 'Consulta nutricional profesional en Oaxaca',
-    siteName: 'Nutrición Paul Cortes',
+    url: URL_SITIO,
+    title: NOMBRE_SITIO,
+    description: 'Consulta nutricional profesional',
+    siteName: NOMBRE_SITIO,
   },
 }
 
