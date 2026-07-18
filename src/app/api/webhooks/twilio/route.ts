@@ -88,10 +88,10 @@ export async function POST(request: NextRequest) {
 
     if (mensajeExistentePaciente || mensajeExistenteProspecto) {
       console.log('⏭️ Webhook duplicado ignorado (MessageSid ya existe):', messageSid)
-      return new NextResponse(
-        `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`,
-        { status: 200, headers: { 'Content-Type': 'text/xml' } }
-      )
+      return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`, {
+        status: 200,
+        headers: { 'Content-Type': 'text/xml' },
+      })
     }
 
     // Extraer número de teléfono (remover prefijo whatsapp:)
@@ -104,9 +104,9 @@ export async function POST(request: NextRequest) {
     const paciente = await prisma.paciente.findFirst({
       where: {
         OR: [
-          { telefono: phoneNumber },           // Formato exacto de Twilio
-          { telefono: `+521${digitos10}` },    // Formato normalizado (+521 + 10 dígitos)
-          { telefono: digitos10 },             // Solo 10 dígitos
+          { telefono: phoneNumber }, // Formato exacto de Twilio
+          { telefono: `+521${digitos10}` }, // Formato normalizado (+521 + 10 dígitos)
+          { telefono: digitos10 }, // Solo 10 dígitos
         ],
       },
     })
@@ -147,9 +147,8 @@ export async function POST(request: NextRequest) {
       }
 
       // Importar servicio de prospectos
-      const { procesarMensajeProspecto, guardarLogRespuestaProspecto } = await import(
-        '@/lib/services/prospecto-responder'
-      )
+      const { procesarMensajeProspecto, guardarLogRespuestaProspecto } =
+        await import('@/lib/services/prospecto-responder')
 
       // Buscar o crear prospecto (upsert previene race condition en webhooks duplicados)
       const prospecto = await prisma.prospecto.upsert({
@@ -351,9 +350,8 @@ Te esperamos! 🌟`
     // PROCESAR CON IA (si no hay respuesta automática)
     // ========================================
     if (!respuestaAutomatica && body && body.trim()) {
-      const { procesarMensajeEntrante, guardarLogRespuestaIA } = await import(
-        '@/lib/services/whatsapp-responder'
-      )
+      const { procesarMensajeEntrante, guardarLogRespuestaIA } =
+        await import('@/lib/services/whatsapp-responder')
 
       console.log('🤖 Procesando mensaje con sistema de IA...')
 

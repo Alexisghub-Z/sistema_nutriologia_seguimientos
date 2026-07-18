@@ -62,6 +62,20 @@ export async function procesarMensajeEntrante(
       return resultadoAgendar
     }
 
+    // PASO 1.6: Cancelación de cita por chat (con doble confirmación vía historial)
+    const historialConv = await obtenerHistorialConversacion(pacienteId)
+    const resultadoCancelar = await intentarCancelarCita(
+      mensajePaciente,
+      pacienteId,
+      nombrePaciente,
+      contextoPaciente,
+      historialConv
+    )
+    if (resultadoCancelar) {
+      console.log('🚫 Cancelación de cita procesada por chat')
+      return resultadoCancelar
+    }
+
     // PASO 2: Buscar en FAQ (tiene prioridad sobre derivación por palabras clave)
     const respuestaFAQ = buscarEnFAQ(mensajePaciente)
     if (respuestaFAQ) {
@@ -109,11 +123,9 @@ export async function procesarMensajeEntrante(
       }
     }
 
-    // Reutilizar el contexto del paciente ya obtenido en el PASO 1.5
+    // Reutilizar el contexto y el historial ya obtenidos en los pasos previos
     const contexto = contextoPaciente
-
-    // Obtener historial reciente de conversación
-    const historial = await obtenerHistorialConversacion(pacienteId)
+    const historial = historialConv
 
     // Consultar a la IA
     const respuestaIA = await obtenerRespuestaIA(mensajePaciente, contexto, historial)
@@ -221,18 +233,36 @@ async function esRespuestaARecordatorio(mensaje: string, pacienteId: string): Pr
  * Ej: "sí", "si", "claro", "agéndala", "1", "confirmo".
  */
 function esAfirmacionParaAgendar(mensaje: string): boolean {
-  const m = mensaje
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '') // quitar acentos
+  const m = mensaje.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') // quitar acentos
 
   const afirmaciones = [
-    'si', 'sii', 'siii', 'sip', 'simon',
-    'claro', 'va', 'dale', 'ok', 'okay', 'esta bien', 'esta perfecto',
-    'confirmo', 'confirmar', 'confirmar cita', 'agendala', 'agendar', 'agenda', 'agendar cita',
-    'quiero agendar', 'si quiero', 'si por favor', 'si porfavor', 'de acuerdo',
-    '1', 'si agenda', 'si agendala',
+    'si',
+    'sii',
+    'siii',
+    'sip',
+    'simon',
+    'claro',
+    'va',
+    'dale',
+    'ok',
+    'okay',
+    'esta bien',
+    'esta perfecto',
+    'confirmo',
+    'confirmar',
+    'confirmar cita',
+    'agendala',
+    'agendar',
+    'agenda',
+    'agendar cita',
+    'quiero agendar',
+    'si quiero',
+    'si por favor',
+    'si porfavor',
+    'de acuerdo',
+    '1',
+    'si agenda',
+    'si agendala',
   ]
 
   return afirmaciones.includes(m)
@@ -242,15 +272,17 @@ function esAfirmacionParaAgendar(mensaje: string): boolean {
  * Detecta si el mensaje pide elegir/cambiar a otro horario (botón "Elegir otro horario").
  */
 function esPeticionOtroHorario(mensaje: string): boolean {
-  const m = mensaje
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '') // quitar acentos
+  const m = mensaje.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') // quitar acentos
 
   const opciones = [
-    'elegir otro horario', 'otro horario', 'otra hora', 'cambiar horario',
-    'cambiar hora', 'otro dia', 'otra fecha', 'prefiero otro horario',
+    'elegir otro horario',
+    'otro horario',
+    'otra hora',
+    'cambiar horario',
+    'cambiar hora',
+    'otro dia',
+    'otra fecha',
+    'prefiero otro horario',
   ]
 
   return opciones.includes(m)
@@ -346,13 +378,194 @@ async function intentarAgendarCitaSugerida(
   } catch (error) {
     console.error('Error al agendar cita sugerida automáticamente:', error)
     return {
-      respuesta:
-        `${nombreCorto}, tuve un problema al agendar tu cita. Puedes hacerlo aquí: ${urlAgendar}`,
+      respuesta: `${nombreCorto}, tuve un problema al agendar tu cita. Puedes hacerlo aquí: ${urlAgendar}`,
       debe_responder_automaticamente: true,
       debe_derivar_humano: false,
       razon: 'Error al agendar automáticamente',
       metadata: { fuente: 'sistema' },
     }
+  }
+}
+
+// Marcador invisible en la pregunta de confirmación de cancelación, para
+// reconocer en el historial que el turno anterior pidió confirmar la cancelación.
+const MARCADOR_CONFIRMAR_CANCELAR = 'quieres cancelar tu cita'
+
+/** Detecta intención de cancelar la cita (primer turno). */
+function esPeticionCancelar(mensaje: string): boolean {
+  const m = mensaje.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  const frases = [
+    'cancelar',
+    'cancelar cita',
+    'cancelar mi cita',
+    'quiero cancelar',
+    'cancela mi cita',
+    'ya no puedo ir',
+    'ya no podre ir',
+    'no podre asistir',
+    'no puedo asistir',
+    'no voy a poder ir',
+    'no podre ir',
+    'ya no voy a poder',
+    'dar de baja mi cita',
+  ]
+  return frases.some((f) => m.includes(f))
+}
+
+/** Detecta una afirmación ("sí", "sí cancélala", "confirmo", "correcto", etc.). */
+function esAfirmacionGenerica(mensaje: string): boolean {
+  // Normalizar: minúsculas, sin acentos y sin signos de puntuación
+  const m = mensaje
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[.,!¡?¿;:]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  // Coincidencia exacta con afirmaciones simples
+  const exactas = [
+    'si',
+    'sii',
+    'siii',
+    'sip',
+    'simon',
+    'claro',
+    'va',
+    'dale',
+    'ok',
+    'okay',
+    'confirmo',
+    'confirmar',
+    'correcto',
+    'asi es',
+    'esta bien',
+    'de acuerdo',
+    'cancelala',
+    'cancela',
+    '1',
+    'obvio',
+    'sale',
+  ]
+  if (exactas.includes(m)) return true
+
+  // Afirmación + intención de cancelar en la misma frase
+  // (ej: "si cancelala", "sí por favor cancela", "dale cancela")
+  const empiezaAfirmando = /^(si|sip|claro|dale|ok|okay|confirmo|va|sale|obvio)\b/.test(m)
+  const mencionaCancelar = /\bcancel/.test(m)
+  if (empiezaAfirmando && (mencionaCancelar || m.split(' ').length <= 3)) return true
+
+  // "sí por favor" y variantes
+  if (/^si\s+(por\s+favor|porfavor|adelante|hazlo|quiero)\b/.test(m)) return true
+
+  return false
+}
+
+/** ¿El último mensaje del asistente fue la pregunta de confirmación de cancelación? */
+function ultimoFueConfirmarCancelar(
+  historial: Array<{ role: 'user' | 'assistant'; content: string }>
+): boolean {
+  for (let i = historial.length - 1; i >= 0; i--) {
+    if (historial[i]!.role === 'assistant') {
+      return historial[i]!.content.toLowerCase().includes(MARCADOR_CONFIRMAR_CANCELAR)
+    }
+  }
+  return false
+}
+
+/**
+ * Cancelación de cita por chat con doble confirmación:
+ * - Turno 1 (el paciente pide cancelar): pregunta si está seguro (NO cancela).
+ * - Turno 2 (el paciente confirma y el turno previo fue la pregunta): cancela.
+ * Devuelve un resultado si actuó, o null para que el flujo continúe.
+ */
+async function intentarCancelarCita(
+  mensaje: string,
+  pacienteId: string,
+  nombrePaciente: string,
+  contexto: PacienteContexto,
+  historial: Array<{ role: 'user' | 'assistant'; content: string }>
+): Promise<ResultadoProcesamiento | null> {
+  const nombreCorto = nombrePaciente.split(' ')[0]
+  const pidioCancelar = esPeticionCancelar(mensaje)
+  const confirmoTrasPregunta =
+    esAfirmacionGenerica(mensaje) && ultimoFueConfirmarCancelar(historial)
+
+  if (!pidioCancelar && !confirmoTrasPregunta) return null
+
+  // Sin cita próxima activa: no hay nada que cancelar
+  if (!contexto.tiene_cita_proxima) {
+    // Solo respondemos aquí si el paciente pidió cancelar explícitamente
+    if (!pidioCancelar) return null
+    return {
+      respuesta: `${nombreCorto}, no encuentro ninguna cita activa a tu nombre para cancelar. Si quieres, puedo ayudarte a agendar una nueva 😊`,
+      debe_responder_automaticamente: true,
+      debe_derivar_humano: false,
+      razon: 'Petición de cancelar sin cita activa',
+      metadata: { fuente: 'sistema' },
+    }
+  }
+
+  const fecha = contexto.fecha_proxima_cita ?? 'tu próxima cita'
+  const hora = contexto.hora_proxima_cita ? ` a las ${contexto.hora_proxima_cita}` : ''
+
+  // Turno 2: confirmó tras la pregunta → cancelar de verdad
+  if (confirmoTrasPregunta) {
+    try {
+      // Ubicar la cita a cancelar: por código si lo tenemos, si no la pendiente futura
+      let citaId: string | undefined
+      const codigo: string | undefined = contexto.codigo_cita
+      if (!codigo) {
+        const inicioDia = new Date()
+        inicioDia.setHours(0, 0, 0, 0)
+        const pendiente = await prisma.cita.findFirst({
+          where: { paciente_id: pacienteId, estado: 'PENDIENTE', fecha_hora: { gte: inicioDia } },
+          orderBy: { fecha_hora: 'asc' },
+          select: { id: true },
+        })
+        citaId = pendiente?.id
+      }
+      if (!codigo && !citaId) return null
+
+      const { cancelarCitaParaPaciente } = await import('@/lib/services/citas')
+      const resultado = await cancelarCitaParaPaciente(codigo ? { codigo } : { citaId })
+      if (resultado.ok) {
+        return {
+          respuesta: `Listo ${nombreCorto}, cancelé tu cita del ${fecha}${hora}. Cuando quieras agendar de nuevo aquí estoy 😊`,
+          debe_responder_automaticamente: true,
+          debe_derivar_humano: false,
+          razon: 'Cita cancelada por el paciente vía chat (confirmada)',
+          metadata: { fuente: 'sistema' },
+        }
+      }
+      // No se pudo cancelar (no encontrada / error) → derivar suavemente
+      return {
+        respuesta: `${nombreCorto}, tuve un problema al cancelar tu cita. Por favor contáctanos al *951 130 1554* y lo resolvemos enseguida 🙏`,
+        debe_responder_automaticamente: true,
+        debe_derivar_humano: true,
+        razon: `No se pudo cancelar: ${resultado.motivo}`,
+        metadata: { fuente: 'sistema' },
+      }
+    } catch (error) {
+      console.error('Error al cancelar cita por chat:', error)
+      return {
+        respuesta: `${nombreCorto}, tuve un problema técnico al cancelar. Escríbenos al *951 130 1554* y lo vemos 🙏`,
+        debe_responder_automaticamente: true,
+        debe_derivar_humano: true,
+        razon: 'Error técnico al cancelar por chat',
+        metadata: { fuente: 'sistema' },
+      }
+    }
+  }
+
+  // Turno 1: pidió cancelar → pedir confirmación (el marcador va en el texto)
+  return {
+    respuesta: `${nombreCorto}, ¿seguro que quieres cancelar tu cita del ${fecha}${hora}? Responde *SÍ* para confirmar la cancelación 🗓️`,
+    debe_responder_automaticamente: true,
+    debe_derivar_humano: false,
+    razon: 'Solicitud de confirmación para cancelar cita',
+    metadata: { fuente: 'sistema' },
   }
 }
 
@@ -467,9 +680,8 @@ async function obtenerContextoPaciente(pacienteId: string): Promise<PacienteCont
     })
 
     if (consultaSugerida?.proxima_cita) {
-      const { proximaCitaTieneHora, extraerHoraProximaCita } = await import(
-        '@/lib/utils/proxima-cita'
-      )
+      const { proximaCitaTieneHora, extraerHoraProximaCita } =
+        await import('@/lib/utils/proxima-cita')
       // Solo agendable si tiene hora específica asignada por el nutriólogo
       if (proximaCitaTieneHora(consultaSugerida.proxima_cita)) {
         tieneProximaCitaSugerida = true
