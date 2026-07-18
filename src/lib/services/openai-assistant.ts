@@ -89,7 +89,15 @@ export interface RespuestaIA {
   confidence: number
   razonamiento?: string
   tokens_usados?: number
-  intencion_detectada?: 'gestionar_cita' | 'agendar' | 'precios' | 'horarios' | 'historial' | 'urgencia' | 'consulta_general' | 'derivar'
+  intencion_detectada?:
+    | 'gestionar_cita'
+    | 'agendar'
+    | 'precios'
+    | 'horarios'
+    | 'historial'
+    | 'urgencia'
+    | 'consulta_general'
+    | 'derivar'
   nivel_urgencia?: 'baja' | 'media' | 'alta'
 }
 
@@ -127,7 +135,8 @@ function generarContextoSistema(pacienteContexto?: PacienteContexto): string {
   const esSabado = dia === 6
 
   if (esDomingo) {
-    estadoConsultorio = '🔴 CERRADO - El consultorio no atiende los domingos. Abre mañana lunes a las 4:00 PM.'
+    estadoConsultorio =
+      '🔴 CERRADO - El consultorio no atiende los domingos. Abre mañana lunes a las 4:00 PM.'
   } else if (esLunesViernes) {
     if (hora >= 16 && hora < 20) {
       estadoConsultorio = '🟢 ABIERTO - Horario de atención: 4:00 PM a 8:00 PM'
@@ -222,7 +231,15 @@ function generarContextoSistema(pacienteContexto?: PacienteContexto): string {
  * Detecta la intención del usuario en su mensaje
  */
 function detectarIntencion(mensaje: string): {
-  intencion: 'gestionar_cita' | 'agendar' | 'precios' | 'horarios' | 'historial' | 'urgencia' | 'consulta_general' | 'derivar'
+  intencion:
+    | 'gestionar_cita'
+    | 'agendar'
+    | 'precios'
+    | 'horarios'
+    | 'historial'
+    | 'urgencia'
+    | 'consulta_general'
+    | 'derivar'
   nivel_urgencia: 'baja' | 'media' | 'alta'
 } {
   const mensajeNormalizado = mensaje.toLowerCase()
@@ -292,7 +309,17 @@ function detectarIntencion(mensaje: string): {
   }
 
   // Detectar pregunta de precios
-  const palabrasPrecios = ['precio', 'costo', 'cuanto cuesta', 'cuánto cuesta', 'cuanto cobran', 'cuánto cobran', 'pagar', 'cobrar', 'vale la consulta']
+  const palabrasPrecios = [
+    'precio',
+    'costo',
+    'cuanto cuesta',
+    'cuánto cuesta',
+    'cuanto cobran',
+    'cuánto cobran',
+    'pagar',
+    'cobrar',
+    'vale la consulta',
+  ]
   if (palabrasPrecios.some((palabra) => mensajeNormalizado.includes(palabra))) {
     return {
       intencion: 'precios',
@@ -339,16 +366,24 @@ function detectarIntencion(mensaje: string): {
     }
   }
 
-  // Detectar necesidad de derivar (temas nutricionales/médicos)
+  // Detectar necesidad de derivar (consejo nutricional específico o temas clínicos).
+  // No incluye 'mi plan'/'mi dieta' sueltos: hablar del plan en general lo atiende
+  // la IA con acompañamiento.
   const palabrasDerivar = [
-    'puedo comer',
-    'debo comer',
-    'mi plan',
-    'mi dieta',
+    'qué puedo comer',
+    'que puedo comer',
+    'qué debo comer',
+    'que debo comer',
+    'cuántas calorías',
+    'cuantas calorias',
+    'me duele',
     'dolor',
     'síntoma',
+    'sintoma',
     'enfermedad',
     'medicamento',
+    'mis análisis',
+    'mis estudios',
   ]
   if (palabrasDerivar.some((palabra) => mensajeNormalizado.includes(palabra))) {
     return {
@@ -569,21 +604,28 @@ function analizarSiDebeDeriviar(respuestaIA: string, mensajeOriginal: string): b
   ]
 
   // Verificar si la IA menciona derivación
-  const mencionaDerivacion = frasesDerivacion.some((frase) =>
-    respuestaNormalizada.includes(frase)
-  )
+  const mencionaDerivacion = frasesDerivacion.some((frase) => respuestaNormalizada.includes(frase))
 
-  // Palabras clave nutricionales/médicas en el mensaje original
+  // Palabras clave que SÍ requieren al profesional (alineadas con PALABRAS_DERIVAR).
+  // Se quitaron 'mi plan'/'mi dieta' como disparadores duros: preguntar por el plan
+  // en general lo maneja la IA con acompañamiento; solo se deriva ante consejo
+  // nutricional específico o temas clínicos.
   const palabrasCriticas = [
-    'puedo comer',
-    'mi dieta',
-    'mi plan',
-    'qué comer',
+    'qué puedo comer',
+    'que puedo comer',
+    'qué debo comer',
+    'que debo comer',
     'cuántas calorías',
+    'cuantas calorias',
+    'me duele',
     'síntoma',
+    'sintoma',
     'dolor',
     'enfermedad',
     'medicamento',
+    'mis análisis',
+    'mis estudios',
+    'mis resultados',
   ]
 
   const contienePalabrasCriticas = palabrasCriticas.some((palabra) =>
