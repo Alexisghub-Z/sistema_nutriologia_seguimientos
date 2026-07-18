@@ -58,6 +58,10 @@ read -rp "DATABASE_URL (de Neon para este cliente): " DATABASE_URL
 read -rp "TWILIO_ACCOUNT_SID: " TWILIO_ACCOUNT_SID
 read -rp "TWILIO_AUTH_TOKEN: " TWILIO_AUTH_TOKEN
 read -rp "TWILIO_WHATSAPP_NUMBER (ej: whatsapp:+521...): " TWILIO_WHATSAPP_NUMBER
+echo "── Usuario administrador del nutriólogo ──"
+read -rp "Email del admin (login del nutriólogo): " ADMIN_EMAIL
+read -rp "Nombre del admin: " ADMIN_NOMBRE
+read -rp "Contraseña (vacío = generar aleatoria segura): " ADMIN_PASSWORD
 
 # Generar un NEXTAUTH_SECRET único por cliente
 NEXTAUTH_SECRET="$(openssl rand -base64 32)"
@@ -90,9 +94,18 @@ echo "✅ Generado $DESTINO"
 
 # Aplicar migraciones de esquema a la BD del cliente (crea las tablas)
 echo "── Aplicando esquema a la BD del cliente ──"
-DATABASE_URL="$DATABASE_URL" npx prisma db push --skip-generate || {
+if DATABASE_URL="$DATABASE_URL" npx prisma db push --skip-generate; then
+  # Crear el usuario admin del nutriólogo en su BD
+  echo "── Creando usuario administrador ──"
+  DATABASE_URL="$DATABASE_URL" \
+  ADMIN_EMAIL="$ADMIN_EMAIL" \
+  ADMIN_NOMBRE="$ADMIN_NOMBRE" \
+  ADMIN_PASSWORD="$ADMIN_PASSWORD" \
+    npx tsx "$DIR/../prisma/crear-admin.ts" || echo "⚠️  No se pudo crear el admin. Créalo luego con prisma/crear-admin.ts"
+else
   echo "⚠️  No se pudo aplicar el esquema. Revisa la DATABASE_URL. El .env quedó generado."
-}
+  echo "   (No se creó el usuario admin porque la BD no está lista.)"
+fi
 
 echo ""
 echo "── Levantando contenedores del cliente ──"
@@ -104,7 +117,8 @@ if [[ "${LEVANTAR:-N}" =~ ^[Yy]$ ]]; then
   echo ""
   echo "🎉 Cliente '$CLIENTE' desplegado en https://$DOMINIO"
   echo "   Traefik emitirá el certificado SSL en unos segundos."
-  echo "   Falta: crear el usuario admin y que el nutriólogo conecte su Google Calendar."
+  echo "   Falta: el nutriólogo entra con su email/contraseña, conecta su Google"
+  echo "   Calendar en /configuracion y se configura el webhook de Twilio."
 else
   echo "Cuando quieras levantarlo:"
   echo "  docker compose -f deploy/cliente.compose.yml --env-file $DESTINO -p $CLIENTE up -d --build"
