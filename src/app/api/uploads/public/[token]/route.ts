@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCache, deleteCache } from '@/lib/redis'
-import { readFile } from 'fs/promises'
-import { existsSync } from 'fs'
 import path from 'path'
+import { leerArchivo } from '@/lib/storage'
 
 export async function GET(_request: NextRequest, context: { params: Promise<{ token: string }> }) {
   const { token } = await context.params
@@ -21,15 +20,13 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ to
     return NextResponse.json({ error: 'Ruta no permitida' }, { status: 403 })
   }
 
-  const absolutePath = path.join(process.cwd(), 'uploads', filePath)
-
-  if (!existsSync(absolutePath)) {
+  // Leer del object storage (S3) o disco local. filePath ya es la key (consultas/...)
+  const fileBuffer = await leerArchivo(filePath)
+  if (!fileBuffer) {
     return NextResponse.json({ error: 'Archivo no encontrado' }, { status: 404 })
   }
 
-  const fileBuffer = await readFile(absolutePath)
-
-  const ext = path.extname(absolutePath).toLowerCase()
+  const ext = path.extname(filePath).toLowerCase()
   const mimeTypes: Record<string, string> = {
     '.pdf': 'application/pdf',
     '.jpg': 'image/jpeg',
@@ -44,10 +41,10 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ to
 
   const mimeType = mimeTypes[ext] || 'application/octet-stream'
 
-  return new NextResponse(fileBuffer, {
+  return new NextResponse(new Uint8Array(fileBuffer), {
     headers: {
       'Content-Type': mimeType,
-      'Content-Disposition': `inline; filename="${path.basename(absolutePath)}"`,
+      'Content-Disposition': `inline; filename="${path.basename(filePath)}"`,
     },
   })
 }

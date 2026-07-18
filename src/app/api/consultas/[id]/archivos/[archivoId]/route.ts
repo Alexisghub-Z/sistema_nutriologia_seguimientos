@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth-utils'
 import prisma from '@/lib/prisma'
-import { unlink } from 'fs/promises'
-import path from 'path'
 import { deleteCache, deleteCachePattern, CacheKeys } from '@/lib/redis'
+import { borrarArchivo, rutaArchivoAKey } from '@/lib/storage'
 
 /**
  * DELETE /api/consultas/[id]/archivos/[archivoId]
@@ -46,12 +45,11 @@ export async function DELETE(
       )
     }
 
-    // Eliminar archivo físico del servidor
+    // Eliminar el archivo del storage (S3 o disco local). No bloquea si falla.
     try {
-      const filePath = path.join(process.cwd(), archivo.ruta_archivo)
-      await unlink(filePath)
+      await borrarArchivo(rutaArchivoAKey(archivo.ruta_archivo))
     } catch (fileError) {
-      console.error('Error al eliminar archivo físico:', fileError)
+      console.error('Error al eliminar archivo del storage:', fileError)
       // Continuar con la eliminación del registro aunque falle el archivo físico
     }
 

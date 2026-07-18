@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth-utils'
-import { writeFile, mkdir } from 'fs/promises'
-import { existsSync } from 'fs'
 import path from 'path'
 import { randomBytes } from 'crypto'
+import { guardarArchivo } from '@/lib/storage'
 
 // Tamaño máximo: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024
@@ -62,18 +61,11 @@ export async function POST(request: NextRequest) {
     const randomName = randomBytes(16).toString('hex')
     const fileName = `${randomName}${extension}`
 
-    // Crear carpeta si no existe
-    const uploadDir = path.join(process.cwd(), 'uploads', 'consultas', consultaId)
-
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true })
-    }
-
-    // Guardar archivo
-    const filePath = path.join(uploadDir, fileName)
+    // Guardar en object storage (S3) o disco local según configuración
+    const key = `consultas/${consultaId}/${fileName}`
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-    await writeFile(filePath, buffer)
+    await guardarArchivo(key, buffer, file.type)
 
     // Retornar información del archivo
     return NextResponse.json({
