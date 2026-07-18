@@ -1,0 +1,3 @@
+# Nunca subir secretos reales de clientes ni la base compartida
+base.env
+clientes/*.env
