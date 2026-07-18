@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth-utils'
 import prisma from '@/lib/prisma'
-import { writeFile, mkdir } from 'fs/promises'
-import { existsSync } from 'fs'
 import path from 'path'
 import { randomBytes } from 'crypto'
 import { deleteCachePattern, deleteCache, CacheKeys } from '@/lib/redis'
+import { guardarArchivo } from '@/lib/storage'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
@@ -64,18 +63,11 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     const randomName = randomBytes(16).toString('hex')
     const fileName = `${randomName}${extension}`
 
-    // Crear carpeta
-    const uploadDir = path.join(process.cwd(), 'uploads', 'consultas', consultaId)
-
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true })
-    }
-
-    // Guardar archivo físico
-    const filePath = path.join(uploadDir, fileName)
+    // Guardar en object storage (S3) o disco local según configuración
+    const key = `consultas/${consultaId}/${fileName}`
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-    await writeFile(filePath, buffer)
+    await guardarArchivo(key, buffer, file.type)
 
     // Guardar registro en base de datos
     const archivo = await prisma.archivoAdjunto.create({

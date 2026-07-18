@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth-utils'
-import { readFile } from 'fs/promises'
-import { existsSync } from 'fs'
 import path from 'path'
+import { leerArchivo } from '@/lib/storage'
 
 export async function GET(_request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   try {
@@ -14,19 +13,22 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ pa
 
     const params = await context.params
 
-    // Construir ruta del archivo
-    const filePath = path.join(process.cwd(), 'uploads', ...params.path)
+    // Rechazar cualquier intento de path traversal
+    if (params.path.some((seg) => seg.includes('..'))) {
+      return NextResponse.json({ error: 'Ruta no permitida' }, { status: 403 })
+    }
 
-    // Verificar que el archivo existe
-    if (!existsSync(filePath)) {
+    // Key lógica (ej: consultas/<id>/<archivo>)
+    const key = params.path.join('/')
+
+    // Leer del object storage (S3) o disco local
+    const fileBuffer = await leerArchivo(key)
+    if (!fileBuffer) {
       return NextResponse.json({ error: 'Archivo no encontrado' }, { status: 404 })
     }
 
-    // Leer el archivo
-    const fileBuffer = await readFile(filePath)
-
     // Detectar tipo MIME basado en extensión
-    const ext = path.extname(filePath).toLowerCase()
+    const ext = path.extname(key).toLowerCase()
     const mimeTypes: Record<string, string> = {
       '.pdf': 'application/pdf',
       '.jpg': 'image/jpeg',
@@ -40,10 +42,10 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ pa
     const mimeType = mimeTypes[ext] || 'application/octet-stream'
 
     // Retornar el archivo
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
         'Content-Type': mimeType,
-        'Content-Disposition': `inline; filename="${path.basename(filePath)}"`,
+        'Content-Disposition': `inline; filename="${path.basename(key)}"`,
       },
     })
   } catch (error) {
