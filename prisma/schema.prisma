@@ -405,6 +405,9 @@ model ConfiguracionGeneral {
   // URLs del sistema
   url_portal                      String?
   nombre_consultorio              String   @default("Consultorio")
+  // Número de WhatsApp que muestran las páginas públicas (botón flotante).
+  // Formato solo dígitos con lada, ej: 5219511234567
+  whatsapp_publico                String?
 
   // Configuración del calendario
   horario_inicio                  String   @default("16:00") // HH:mm (Lunes-Viernes)

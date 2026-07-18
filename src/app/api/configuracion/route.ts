@@ -13,6 +13,7 @@ const configuracionSchema = z.object({
   confirmacion_automatica_activa: z.boolean().optional(),
   url_portal: z.string().url().optional().nullable(),
   nombre_consultorio: z.string().min(1).optional(),
+  whatsapp_publico: z.string().optional().nullable(),
 
   // Configuración de calendario
   horario_inicio: z

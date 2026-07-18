@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useConfigPublica } from '@/hooks/useConfigPublica'
 import styles from './mis-citas.module.css'
 
 export default function MisCitasPage() {
+  const { nombreConsultorio } = useConfigPublica()
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -56,7 +58,7 @@ export default function MisCitasPage() {
       {/* Top Header */}
       <div className={styles.topHeader}>
         <div className={styles.logo}>
-          <span className={styles.logoText}>Nutriólogo Paul</span>
+          <span className={styles.logoText}>{nombreConsultorio}</span>
         </div>
         <button onClick={() => router.push('/')} className={styles.backButton}>
           Volver

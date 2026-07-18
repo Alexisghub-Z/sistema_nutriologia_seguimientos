@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useConfigPublica } from '@/hooks/useConfigPublica'
 import styles from './mi-progreso.module.css'
 import ProgresoCharts from './components/ProgresoCharts'
 
@@ -25,6 +26,7 @@ interface ProgresoData {
 type Vista = 'entrada' | 'cargando' | 'progreso' | 'no_encontrado'
 
 export default function MiProgresoPage() {
+  const { nombreConsultorio } = useConfigPublica()
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -82,7 +84,7 @@ export default function MiProgresoPage() {
       <main className={styles.main}>
         <div className={styles.topHeader}>
           <div className={styles.logo}>
-            <span className={styles.logoText}>Nutriólogo Paul</span>
+            <span className={styles.logoText}>{nombreConsultorio}</span>
           </div>
           <button onClick={() => router.push('/')} className={styles.backButton}>
             Volver
@@ -102,7 +104,7 @@ export default function MiProgresoPage() {
       <main className={styles.main}>
         <div className={styles.topHeader}>
           <div className={styles.logo}>
-            <span className={styles.logoText}>Nutriólogo Paul</span>
+            <span className={styles.logoText}>{nombreConsultorio}</span>
           </div>
           <button onClick={() => { setVista('entrada'); setProgresoData(null) }} className={styles.backButton}>
             Cambiar email
@@ -132,7 +134,7 @@ export default function MiProgresoPage() {
     <main className={styles.main}>
       <div className={styles.topHeader}>
         <div className={styles.logo}>
-          <span className={styles.logoText}>Nutriólogo Paul</span>
+          <span className={styles.logoText}>{nombreConsultorio}</span>
         </div>
         <button onClick={() => router.push('/')} className={styles.backButton}>
           Volver
