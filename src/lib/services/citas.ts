@@ -1,8 +1,9 @@
 import prisma from '@/lib/prisma'
 import { randomBytes } from 'crypto'
-import { deleteCache, CacheKeys } from '@/lib/redis'
+import { deleteCache, deleteCachePattern, CacheKeys } from '@/lib/redis'
 import {
   syncCitaWithGoogleCalendar,
+  unsyncCitaFromGoogleCalendar,
   isGoogleCalendarConfigured,
 } from '@/lib/services/google-calendar'
 import {
@@ -10,6 +11,7 @@ import {
   programarRecordatorio24h,
   programarRecordatorio1h,
   programarMarcarNoAsistio,
+  cancelarJobsCita,
 } from '@/lib/queue/messages'
 
 export interface CrearCitaInput {
@@ -28,7 +30,12 @@ export interface CrearCitaInput {
 
 export type CrearCitaResultado =
   | { ok: true; cita: Awaited<ReturnType<typeof crearRegistroCita>> }
-  | { ok: false; motivo: 'ya_tiene_cita' | 'ocupado' | 'pasada' | 'error'; mensaje: string; citaExistente?: { codigo: string | null; fecha: Date } }
+  | {
+      ok: false
+      motivo: 'ya_tiene_cita' | 'ocupado' | 'pasada' | 'error'
+      mensaje: string
+      citaExistente?: { codigo: string | null; fecha: Date }
+    }
 
 async function crearRegistroCita(
   input: Required<Pick<CrearCitaInput, 'pacienteId' | 'fechaHora' | 'motivoConsulta'>> &
@@ -65,15 +72,8 @@ async function crearRegistroCita(
  * Reutilizable tanto por el endpoint autenticado POST /api/citas como por el
  * agendamiento automático de la IA en WhatsApp.
  */
-export async function crearCitaParaPaciente(
-  input: CrearCitaInput
-): Promise<CrearCitaResultado> {
-  const {
-    pacienteId,
-    fechaHora,
-    duracionMinutos = 60,
-    confirmadaPorAdmin = false,
-  } = input
+export async function crearCitaParaPaciente(input: CrearCitaInput): Promise<CrearCitaResultado> {
+  const { pacienteId, fechaHora, duracionMinutos = 60, confirmadaPorAdmin = false } = input
 
   try {
     // No permitir citas en el pasado
@@ -268,6 +268,95 @@ export async function crearCitaParaPaciente(
     return { ok: true, cita }
   } catch (error) {
     console.error('Error al crear cita (servicio):', error)
+    return {
+      ok: false,
+      motivo: 'error',
+      mensaje: error instanceof Error ? error.message : 'Error desconocido',
+    }
+  }
+}
+
+export type CancelarCitaResultado =
+  | { ok: true; cita: { id: string; codigo_cita: string | null; fecha_hora: Date } }
+  | { ok: false; motivo: 'no_encontrada' | 'ya_cancelada' | 'error'; mensaje: string }
+
+/**
+ * Cancela la cita de un paciente encapsulando toda la lógica de negocio:
+ * marca CANCELADA/CANCELADA_PACIENTE, cancela los jobs de mensajería, elimina
+ * el evento de Google Calendar, invalida caché y notifica al nutriólogo.
+ *
+ * Reutilizable por el endpoint público /api/citas/codigo/[codigo] y por la
+ * cancelación automática de la IA en WhatsApp.
+ */
+export async function cancelarCitaParaPaciente(where: {
+  citaId?: string
+  codigo?: string
+}): Promise<CancelarCitaResultado> {
+  try {
+    const cita = await prisma.cita.findFirst({
+      where: where.citaId ? { id: where.citaId } : { codigo_cita: where.codigo },
+      include: {
+        paciente: { select: { id: true, nombre: true, telefono: true, email: true } },
+      },
+    })
+
+    if (!cita) {
+      return { ok: false, motivo: 'no_encontrada', mensaje: 'No se encontró la cita' }
+    }
+    if (cita.estado === 'CANCELADA') {
+      return { ok: false, motivo: 'ya_cancelada', mensaje: 'La cita ya estaba cancelada' }
+    }
+
+    await prisma.cita.update({
+      where: { id: cita.id },
+      data: { estado: 'CANCELADA', estado_confirmacion: 'CANCELADA_PACIENTE' },
+    })
+
+    // Cancelar jobs de mensajería pendientes
+    try {
+      await cancelarJobsCita(cita.id)
+    } catch (jobError) {
+      console.error('Error al cancelar jobs de la cita cancelada:', jobError)
+    }
+
+    // Eliminar evento de Google Calendar si existe
+    try {
+      if (cita.google_event_id && (await isGoogleCalendarConfigured())) {
+        await unsyncCitaFromGoogleCalendar(cita.id)
+      }
+    } catch (calendarError) {
+      console.error('Error al eliminar evento de Google Calendar:', calendarError)
+    }
+
+    // Invalidar caché
+    await deleteCache(CacheKeys.patientDetail(cita.paciente.id))
+    await deleteCachePattern('patients:list:*')
+
+    // Notificar al nutriólogo
+    try {
+      const { notificarCancelacion } = await import('@/lib/services/notificaciones')
+      await notificarCancelacion({
+        id: cita.id,
+        codigo_cita: cita.codigo_cita,
+        fecha_hora: cita.fecha_hora,
+        tipo_cita: cita.tipo_cita,
+        motivo_consulta: cita.motivo_consulta,
+        paciente: {
+          nombre: cita.paciente.nombre,
+          telefono: cita.paciente.telefono,
+          email: cita.paciente.email,
+        },
+      })
+    } catch (notifError) {
+      console.error('Error al notificar cancelación:', notifError)
+    }
+
+    return {
+      ok: true,
+      cita: { id: cita.id, codigo_cita: cita.codigo_cita, fecha_hora: cita.fecha_hora },
+    }
+  } catch (error) {
+    console.error('Error al cancelar cita (servicio):', error)
     return {
       ok: false,
       motivo: 'error',
