@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Build "standalone": genera .next/standalone/server.js para Docker (lo que
+  // espera el Dockerfile). Produce imágenes mucho más ligeras al incluir solo
+  // las dependencias usadas. No afecta `npm run dev` ni `npm start` no-Docker.
+  output: 'standalone',
   images: {
     remotePatterns: [
       {
