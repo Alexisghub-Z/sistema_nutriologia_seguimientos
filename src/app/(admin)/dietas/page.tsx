@@ -102,7 +102,8 @@ export default function DietasPage() {
   }, [resultado])
 
   const setEquivalente = (id: GrupoSMAEId, valor: string) => {
-    const n = valor === '' ? 0 : Math.max(0, Math.floor(Number(valor)))
+    // Permite medios equivalentes: redondea al 0.5 más cercano.
+    const n = valor === '' ? 0 : Math.max(0, Math.round(Number(valor) * 2) / 2)
     setEquivalentes((e) => ({ ...e, [id]: n }))
   }
 
@@ -521,7 +522,7 @@ export default function DietasPage() {
                               type="range"
                               min={0}
                               max={15}
-                              step={1}
+                              step={0.5}
                               className={styles.equivSlider}
                               value={n}
                               onChange={(e) => setEquivalente(g.id, e.target.value)}
@@ -530,10 +531,10 @@ export default function DietasPage() {
                             <span className={styles.equivValor}>{n}</span>
                           </div>
                         </td>
-                        <td className={styles.tdNum}>{n ? (g.hco * n).toFixed(0) : '—'}</td>
-                        <td className={styles.tdNum}>{n ? (g.proteina * n).toFixed(0) : '—'}</td>
-                        <td className={styles.tdNum}>{n ? (g.lipidos * n).toFixed(0) : '—'}</td>
-                        <td className={styles.tdNum}>{n ? (g.kcal * n).toFixed(0) : '—'}</td>
+                        <td className={styles.tdNum}>{n ? fmtNum(g.hco * n) : '—'}</td>
+                        <td className={styles.tdNum}>{n ? fmtNum(g.proteina * n) : '—'}</td>
+                        <td className={styles.tdNum}>{n ? fmtNum(g.lipidos * n) : '—'}</td>
+                        <td className={styles.tdNum}>{n ? fmtNum(g.kcal * n) : '—'}</td>
                       </tr>
                     )
                   })}
@@ -606,6 +607,12 @@ export default function DietasPage() {
       )}
     </div>
   )
+}
+
+// Muestra un número sin decimales si es entero, o con 1 decimal si no
+// (los medios equivalentes producen aportes fraccionarios como 7.5).
+function fmtNum(n: number): string {
+  return Number.isInteger(n) ? String(n) : n.toFixed(1)
 }
 
 // Formatea una diferencia con signo explícito.
