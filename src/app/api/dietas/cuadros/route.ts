@@ -1,0 +1,138 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/auth-utils'
+import prisma from '@/lib/prisma'
+import { z } from 'zod'
+import { calcularCuadroDietosintetico, type EntradaCuadro } from '@/lib/utils/dietosintetico'
+
+/**
+ * Cuadro dietosintético
+ * ------------------------------------------------------------
+ * POST  /api/dietas/cuadros           Calcula un cuadro; si guardar=true, lo persiste.
+ * GET   /api/dietas/cuadros?paciente_id=...   Lista los cuadros de un paciente.
+ */
+
+const cuadroSchema = z.object({
+  paciente_id: z.string().min(1, 'Paciente requerido'),
+  consulta_id: z.string().optional(),
+
+  peso: z.number().min(2.5).max(500),
+  talla_cm: z.number().min(25).max(260),
+  edad: z.number().int().min(1).max(120),
+  sexo: z.enum(['MASCULINO', 'FEMENINO']),
+  nivel_actividad: z.enum(['SEDENTARIO', 'LIGERO', 'MODERADO', 'ACTIVO', 'MUY_ACTIVO']),
+  objetivo: z.enum(['BAJAR_PESO', 'MANTENER', 'SUBIR_PESO']),
+
+  pct_proteina: z.number().min(5).max(60).default(25),
+  pct_grasa: z.number().min(10).max(60).default(25),
+  pct_carbohidrato: z.number().min(10).max(70).default(50),
+  ajuste_kcal_custom: z.number().int().min(-1500).max(1500).nullable().optional(),
+
+  notas: z.string().max(2000).optional(),
+
+  // Si es true, guarda el cuadro en la BD. Si false (default), solo calcula.
+  guardar: z.boolean().default(false),
+})
+
+export async function POST(request: NextRequest) {
+  const user = await getAuthUser()
+  if (!user) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  }
+
+  const body = await request.json()
+  const parsed = cuadroSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'Datos inválidos', detalles: parsed.error.flatten().fieldErrors },
+      { status: 400 }
+    )
+  }
+  const data = parsed.data
+
+  // Verificar que el paciente existe
+  const paciente = await prisma.paciente.findUnique({
+    where: { id: data.paciente_id },
+    select: { id: true },
+  })
+  if (!paciente) {
+    return NextResponse.json({ error: 'Paciente no encontrado' }, { status: 404 })
+  }
+
+  // Correr los cálculos (el módulo valida y puede lanzar sobre datos imposibles)
+  let resultado
+  try {
+    const entrada: EntradaCuadro = {
+      peso: data.peso,
+      tallaCm: data.talla_cm,
+      edad: data.edad,
+      sexo: data.sexo,
+      nivelActividad: data.nivel_actividad,
+      objetivo: data.objetivo,
+      distribucionMacros: {
+        proteina: data.pct_proteina,
+        grasa: data.pct_grasa,
+        carbohidrato: data.pct_carbohidrato,
+      },
+      ajusteObjetivoCustom: data.ajuste_kcal_custom ?? undefined,
+    }
+    resultado = calcularCuadroDietosintetico(entrada)
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : 'Error al calcular el cuadro' },
+      { status: 400 }
+    )
+  }
+
+  // Si no se pide guardar, devolvemos solo el cálculo (para la vista previa)
+  if (!data.guardar) {
+    return NextResponse.json({ resultado }, { status: 200 })
+  }
+
+  // Guardar el cuadro (inputs + resultados calculados)
+  const cuadro = await prisma.cuadroDietosintetico.create({
+    data: {
+      paciente_id: data.paciente_id,
+      consulta_id: data.consulta_id ?? null,
+      peso: data.peso,
+      talla_cm: data.talla_cm,
+      edad: data.edad,
+      sexo: data.sexo,
+      nivel_actividad: data.nivel_actividad,
+      objetivo: data.objetivo,
+      pct_proteina: data.pct_proteina,
+      pct_grasa: data.pct_grasa,
+      pct_carbohidrato: data.pct_carbohidrato,
+      ajuste_kcal_custom: data.ajuste_kcal_custom ?? null,
+      geb: resultado.geb,
+      get: resultado.get,
+      kcal_meta: resultado.kcalMeta,
+      imc: resultado.imc,
+      peso_ideal: resultado.pesoIdeal,
+      proteina_g: resultado.macros.proteina.gramos,
+      grasa_g: resultado.macros.grasa.gramos,
+      carbohidrato_g: resultado.macros.carbohidrato.gramos,
+      notas: data.notas ?? null,
+    },
+  })
+
+  return NextResponse.json({ cuadro, resultado }, { status: 201 })
+}
+
+export async function GET(request: NextRequest) {
+  const user = await getAuthUser()
+  if (!user) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  }
+
+  const pacienteId = request.nextUrl.searchParams.get('paciente_id')
+  if (!pacienteId) {
+    return NextResponse.json({ error: 'paciente_id requerido' }, { status: 400 })
+  }
+
+  const cuadros = await prisma.cuadroDietosintetico.findMany({
+    where: { paciente_id: pacienteId },
+    orderBy: { createdAt: 'desc' },
+  })
+
+  return NextResponse.json({ cuadros }, { status: 200 })
+}

@@ -41,7 +41,9 @@ function lanza(fn: () => unknown, etiqueta: string) {
   } catch {
     lanzo = true
   }
-  console.log(`${lanzo ? '✅' : '❌'} ${etiqueta}: ${lanzo ? 'lanzó error como se esperaba' : 'NO lanzó error'}`)
+  console.log(
+    `${lanzo ? '✅' : '❌'} ${etiqueta}: ${lanzo ? 'lanzó error como se esperaba' : 'NO lanzó error'}`
+  )
   if (!lanzo) fallos++
 }
 
@@ -96,7 +98,10 @@ aprox(
 )
 
 console.log('\n── Validaciones (deben lanzar error) ──')
-lanza(() => distribuirMacros(2000, { proteina: 30, grasa: 30, carbohidrato: 30 }), 'Macros que no suman 100')
+lanza(
+  () => distribuirMacros(2000, { proteina: 30, grasa: 30, carbohidrato: 30 }),
+  'Macros que no suman 100'
+)
 lanza(
   () =>
     calcularCuadroDietosintetico({
