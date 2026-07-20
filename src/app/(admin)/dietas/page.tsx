@@ -1,7 +1,15 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Button from '@/components/ui/Button'
+import {
+  GRUPOS_SMAE,
+  sumarEquivalentes,
+  calcularDiferencia,
+  cuadroDistribucion,
+  type Equivalentes,
+  type GrupoSMAEId,
+} from '@/lib/utils/smae'
 import styles from './dietas.module.css'
 
 interface PacienteLite {
@@ -64,11 +72,39 @@ export default function DietasPage() {
   const [paciente, setPaciente] = useState<PacienteLite | null>(null)
   const [form, setForm] = useState({ ...FORM_INICIAL })
   const [resultado, setResultado] = useState<ResultadoCuadro | null>(null)
+  const [equivalentes, setEquivalentes] = useState<Equivalentes>({})
   const [calculando, setCalculando] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
   const [exito, setExito] = useState('')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Totales y diferencia del SMAE, recalculados en vivo mientras el nutriólogo
+  // ajusta los equivalentes de cada grupo.
+  const totalesSmae = useMemo(() => sumarEquivalentes(equivalentes), [equivalentes])
+  const diferenciaSmae = useMemo(() => {
+    if (!resultado) return null
+    return calcularDiferencia(totalesSmae, {
+      kcalMeta: resultado.kcalMeta,
+      hco_g: resultado.macros.carbohidrato.gramos,
+      proteina_g: resultado.macros.proteina.gramos,
+      lipidos_g: resultado.macros.grasa.gramos,
+    })
+  }, [totalesSmae, resultado])
+  const distribucion = useMemo(() => {
+    if (!resultado) return null
+    return cuadroDistribucion(
+      resultado.kcalMeta,
+      resultado.macros.carbohidrato.porcentaje,
+      resultado.macros.grasa.porcentaje,
+      resultado.macros.proteina.porcentaje
+    )
+  }, [resultado])
+
+  const setEquivalente = (id: GrupoSMAEId, valor: string) => {
+    const n = valor === '' ? 0 : Math.max(0, Math.floor(Number(valor)))
+    setEquivalentes((e) => ({ ...e, [id]: n }))
+  }
 
   // Buscar pacientes (autocompletado)
   useEffect(() => {
@@ -96,6 +132,7 @@ export default function DietasPage() {
     setResultados([])
     setQuery('')
     setResultado(null)
+    setEquivalentes({})
     setError('')
     setExito('')
     setForm({ ...FORM_INICIAL })
@@ -119,6 +156,7 @@ export default function DietasPage() {
   const cambiarPaciente = () => {
     setPaciente(null)
     setResultado(null)
+    setEquivalentes({})
     setForm({ ...FORM_INICIAL })
     setError('')
     setExito('')
@@ -147,6 +185,7 @@ export default function DietasPage() {
     pct_proteina: Number(form.pct_proteina),
     pct_grasa: Number(form.pct_grasa),
     pct_carbohidrato: Number(form.pct_carbohidrato),
+    equivalentes,
     notas: form.notas || undefined,
     guardar,
   })
@@ -448,6 +487,134 @@ export default function DietasPage() {
           </div>
         </div>
       )}
+
+      {/* Distribución por equivalentes (SMAE) — aparece al calcular */}
+      {paciente && resultado && diferenciaSmae && distribucion && (
+        <>
+          <div className={styles.card} style={{ marginTop: 'var(--spacing-lg)' }}>
+            <h2 className={styles.cardTitle}>Distribución por grupos (SMAE)</h2>
+            <p className={styles.smaeAyuda}>
+              Ajusta el número de equivalentes de cada grupo hasta que la diferencia con la meta
+              tienda a cero.
+            </p>
+            <div className={styles.tablaWrap}>
+              <table className={styles.tablaSmae}>
+                <thead>
+                  <tr>
+                    <th className={styles.thGrupo}>Grupo</th>
+                    <th>Equiv.</th>
+                    <th>HCO</th>
+                    <th>Prot</th>
+                    <th>Líp</th>
+                    <th>Kcal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {GRUPOS_SMAE.map((g) => {
+                    const n = equivalentes[g.id] ?? 0
+                    return (
+                      <tr key={g.id}>
+                        <td className={styles.tdGrupo}>{g.nombre}</td>
+                        <td>
+                          <input
+                            type="number"
+                            min={0}
+                            className={styles.equivInput}
+                            value={n === 0 ? '' : n}
+                            onChange={(e) => setEquivalente(g.id, e.target.value)}
+                            placeholder="0"
+                          />
+                        </td>
+                        <td className={styles.tdNum}>{n ? (g.hco * n).toFixed(0) : '—'}</td>
+                        <td className={styles.tdNum}>{n ? (g.proteina * n).toFixed(0) : '—'}</td>
+                        <td className={styles.tdNum}>{n ? (g.lipidos * n).toFixed(0) : '—'}</td>
+                        <td className={styles.tdNum}>{n ? (g.kcal * n).toFixed(0) : '—'}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className={styles.filaTotal}>
+                    <td className={styles.tdGrupo}>TOTAL</td>
+                    <td></td>
+                    <td className={styles.tdNum}>{totalesSmae.hco.toFixed(0)}</td>
+                    <td className={styles.tdNum}>{totalesSmae.proteina.toFixed(0)}</td>
+                    <td className={styles.tdNum}>{totalesSmae.lipidos.toFixed(0)}</td>
+                    <td className={styles.tdNum}>{totalesSmae.kcal.toFixed(0)}</td>
+                  </tr>
+                  <tr className={styles.filaMeta}>
+                    <td className={styles.tdGrupo}>META</td>
+                    <td></td>
+                    <td className={styles.tdNum}>
+                      {resultado.macros.carbohidrato.gramos.toFixed(0)}
+                    </td>
+                    <td className={styles.tdNum}>{resultado.macros.proteina.gramos.toFixed(0)}</td>
+                    <td className={styles.tdNum}>{resultado.macros.grasa.gramos.toFixed(0)}</td>
+                    <td className={styles.tdNum}>{resultado.kcalMeta.toFixed(0)}</td>
+                  </tr>
+                  <tr className={styles.filaDif}>
+                    <td className={styles.tdGrupo}>DIFERENCIA</td>
+                    <td></td>
+                    <td className={celdaDif(diferenciaSmae.hco)}>{fmtDif(diferenciaSmae.hco)}</td>
+                    <td className={celdaDif(diferenciaSmae.proteina)}>
+                      {fmtDif(diferenciaSmae.proteina)}
+                    </td>
+                    <td className={celdaDif(diferenciaSmae.lipidos)}>
+                      {fmtDif(diferenciaSmae.lipidos)}
+                    </td>
+                    <td className={celdaDif(diferenciaSmae.kcal, 30)}>
+                      {fmtDif(diferenciaSmae.kcal)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          {/* Cuadro de distribución final */}
+          <div className={styles.card} style={{ marginTop: 'var(--spacing-lg)' }}>
+            <h2 className={styles.cardTitle}>Cuadro de distribución</h2>
+            <div className={styles.tablaWrap}>
+              <table className={styles.tablaSmae}>
+                <thead>
+                  <tr>
+                    <th className={styles.thGrupo}></th>
+                    <th>Porcentaje</th>
+                    <th>Kcal</th>
+                    <th>Gramos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {distribucion.map((fila) => (
+                    <tr key={fila.nombre}>
+                      <td className={styles.tdGrupo}>{fila.nombre}</td>
+                      <td className={styles.tdNum}>{fila.porcentaje}%</td>
+                      <td className={styles.tdNum}>{fila.kcal}</td>
+                      <td className={styles.tdNum}>{fila.gramos}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
+}
+
+// Formatea una diferencia con signo explícito.
+function fmtDif(n: number): string {
+  if (n === 0) return '0'
+  return n > 0 ? `+${n}` : `${n}`
+}
+
+// Clase de color según qué tan lejos está la diferencia de cero.
+// Verde si está dentro de la tolerancia; ámbar si está cerca; rojo si está lejos.
+function celdaDif(n: number, tolerancia = 5): string {
+  const abs = Math.abs(n)
+  const base = styles.tdNum
+  if (abs <= tolerancia) return `${base} ${styles.difOk}`
+  if (abs <= tolerancia * 3) return `${base} ${styles.difCerca}`
+  return `${base} ${styles.difLejos}`
 }

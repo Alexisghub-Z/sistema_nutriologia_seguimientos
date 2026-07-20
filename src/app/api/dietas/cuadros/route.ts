@@ -3,6 +3,17 @@ import { getAuthUser } from '@/lib/auth-utils'
 import prisma from '@/lib/prisma'
 import { z } from 'zod'
 import { calcularCuadroDietosintetico, type EntradaCuadro } from '@/lib/utils/dietosintetico'
+import {
+  GRUPOS_SMAE,
+  sumarEquivalentes,
+  calcularDiferencia,
+  type Equivalentes,
+  type GrupoSMAEId,
+} from '@/lib/utils/smae'
+
+// IDs válidos de grupos del SMAE, para validar el objeto de equivalentes.
+const GRUPO_IDS = GRUPOS_SMAE.map((g) => g.id) as [GrupoSMAEId, ...GrupoSMAEId[]]
+const equivalentesSchema = z.record(z.enum(GRUPO_IDS), z.number().min(0).max(99)).optional()
 
 /**
  * Cuadro dietosintético
@@ -28,6 +39,9 @@ const cuadroSchema = z.object({
   ajuste_kcal_custom: z.number().int().min(-1500).max(1500).nullable().optional(),
 
   notas: z.string().max(2000).optional(),
+
+  // Distribución por grupos del SMAE (nº de equivalentes por grupo).
+  equivalentes: equivalentesSchema,
 
   // Si es true, guarda el cuadro en la BD. Si false (default), solo calcula.
   guardar: z.boolean().default(false),
@@ -83,9 +97,20 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  // Distribución por equivalentes SMAE: sumamos aportes y comparamos con la meta.
+  const equivalentes = (data.equivalentes ?? {}) as Equivalentes
+  const totalesSmae = sumarEquivalentes(equivalentes)
+  const diferenciaSmae = calcularDiferencia(totalesSmae, {
+    kcalMeta: resultado.kcalMeta,
+    hco_g: resultado.macros.carbohidrato.gramos,
+    proteina_g: resultado.macros.proteina.gramos,
+    lipidos_g: resultado.macros.grasa.gramos,
+  })
+  const smae = { totales: totalesSmae, diferencia: diferenciaSmae }
+
   // Si no se pide guardar, devolvemos solo el cálculo (para la vista previa)
   if (!data.guardar) {
-    return NextResponse.json({ resultado }, { status: 200 })
+    return NextResponse.json({ resultado, smae }, { status: 200 })
   }
 
   // Guardar el cuadro (inputs + resultados calculados)
@@ -111,11 +136,12 @@ export async function POST(request: NextRequest) {
       proteina_g: resultado.macros.proteina.gramos,
       grasa_g: resultado.macros.grasa.gramos,
       carbohidrato_g: resultado.macros.carbohidrato.gramos,
+      equivalentes: Object.keys(equivalentes).length ? equivalentes : undefined,
       notas: data.notas ?? null,
     },
   })
 
-  return NextResponse.json({ cuadro, resultado }, { status: 201 })
+  return NextResponse.json({ cuadro, resultado, smae }, { status: 201 })
 }
 
 export async function GET(request: NextRequest) {

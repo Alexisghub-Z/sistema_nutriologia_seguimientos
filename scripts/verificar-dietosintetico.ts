@@ -17,6 +17,7 @@ import {
   calcularCuadroDietosintetico,
   DISTRIBUCION_MACROS_DEFAULT,
 } from '../src/lib/utils/dietosintetico'
+import { sumarEquivalentes, calcularDiferencia, cuadroDistribucion } from '../src/lib/utils/smae'
 
 let fallos = 0
 
@@ -129,6 +130,38 @@ aprox(cuadro.get, 2759, 1, 'Cuadro.get')
 aprox(cuadro.kcalMeta, 2259, 1, 'Cuadro.kcalMeta')
 igual(cuadro.clasificacionImc, 'Normal', 'Cuadro.clasificacionImc')
 console.log('  Resumen:', JSON.stringify(cuadro, null, 0))
+
+console.log('\n── SMAE: suma de equivalentes ──')
+// 3 verduras (25) + 2 frutas (60) + 4 cereales SG (70) = 75+120+280 = 475 kcal
+// HCO: 3*4 + 2*15 + 4*15 = 12+30+60 = 102
+// Prot: 3*2 + 0 + 4*2 = 6+8 = 14
+// Lip: 0
+const tot = sumarEquivalentes({ VERDURAS: 3, FRUTAS: 2, CEREALES_SG: 4 })
+aprox(tot.kcal, 475, 0, 'SMAE kcal (3V+2F+4CerSG)')
+aprox(tot.hco, 102, 0, 'SMAE HCO')
+aprox(tot.proteina, 14, 0, 'SMAE proteína')
+aprox(tot.lipidos, 0, 0, 'SMAE lípidos')
+// Grupo vacío no aporta
+const tot0 = sumarEquivalentes({})
+aprox(tot0.kcal, 0, 0, 'SMAE sin equivalentes = 0')
+
+console.log('\n── SMAE: diferencia contra meta ──')
+// meta 500 kcal, HCO 100g; totales 475 kcal, HCO 102 → dif -25 kcal, +2 HCO
+const dif = calcularDiferencia(
+  { hco: 102, proteina: 14, lipidos: 0, kcal: 475 },
+  { kcalMeta: 500, hco_g: 100, proteina_g: 20, lipidos_g: 10 }
+)
+aprox(dif.kcal, -25, 0, 'Diferencia kcal (falta 25)')
+aprox(dif.hco, 2, 0, 'Diferencia HCO (+2)')
+aprox(dif.proteina, -6, 0, 'Diferencia proteína (-6)')
+
+console.log('\n── SMAE: cuadro de distribución ──')
+// 2000 kcal, HCO 50% → 1000 kcal / 4 = 250 g; Lip 25% → 500/9 = 55.6; Pro 25% → 500/4 = 125
+const dist = cuadroDistribucion(2000, 50, 25, 25)
+aprox(dist[0]!.gramos, 250, 0.1, 'Distribución HCO gramos')
+aprox(dist[1]!.gramos, 55.6, 0.2, 'Distribución Lípidos gramos')
+aprox(dist[2]!.gramos, 125, 0.1, 'Distribución Proteína gramos')
+igual(dist[3]!.nombre, 'HCO simples (máx.)', 'Distribución incluye HCO simples')
 
 console.log(`\n${'─'.repeat(40)}`)
 if (fallos === 0) {

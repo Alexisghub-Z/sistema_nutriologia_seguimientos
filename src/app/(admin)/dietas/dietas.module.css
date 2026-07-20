@@ -272,6 +272,95 @@
   color: var(--color-gray-700);
 }
 
+/* Tabla SMAE */
+.smaeAyuda {
+  color: var(--color-gray-500);
+  font-size: 0.85rem;
+  margin: 0 0 var(--spacing-md);
+}
+
+.tablaWrap {
+  overflow-x: auto;
+}
+
+.tablaSmae {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.tablaSmae th,
+.tablaSmae td {
+  padding: 0.4rem 0.6rem;
+  text-align: right;
+  border-bottom: 1px solid var(--color-gray-100);
+  white-space: nowrap;
+}
+
+.tablaSmae thead th {
+  color: var(--color-gray-500);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+  border-bottom: 2px solid var(--color-gray-200);
+}
+
+.thGrupo,
+.tdGrupo {
+  text-align: left !important;
+  font-weight: 600;
+  color: var(--color-gray-800);
+}
+
+.tdNum {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-gray-700);
+}
+
+.equivInput {
+  width: 56px;
+  padding: 0.3rem 0.4rem;
+  text-align: right;
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.equivInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.filaTotal td {
+  border-top: 2px solid var(--color-gray-300);
+  font-weight: 700;
+  color: var(--color-gray-900);
+}
+
+.filaMeta td {
+  color: var(--color-gray-500);
+  font-style: italic;
+}
+
+.filaDif td {
+  font-weight: 700;
+  border-bottom: none;
+}
+
+.difOk {
+  color: #16a34a;
+}
+
+.difCerca {
+  color: #d97706;
+}
+
+.difLejos {
+  color: #dc2626;
+}
+
 .error {
   color: #dc2626;
   font-size: 0.9rem;
