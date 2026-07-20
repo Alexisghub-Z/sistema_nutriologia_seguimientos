@@ -580,6 +580,10 @@ model CuadroDietosintetico {
   grasa_g        Float
   carbohidrato_g Float
 
+  // Distribución por grupos del SMAE: nº de equivalentes elegidos por el
+  // nutriólogo, como JSON { VERDURAS: 3, FRUTAS: 2, ... }. Ver src/lib/utils/smae.ts
+  equivalentes Json?
+
   notas String? @db.Text // Observaciones del nutriólogo sobre el cuadro
 
   createdAt DateTime @default(now())
