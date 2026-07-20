@@ -502,7 +502,7 @@ export default function DietasPage() {
                 <thead>
                   <tr>
                     <th className={styles.thGrupo}>Grupo</th>
-                    <th>Equiv.</th>
+                    <th className={styles.thEquiv}>Equivalentes</th>
                     <th>HCO</th>
                     <th>Prot</th>
                     <th>Líp</th>
@@ -516,14 +516,19 @@ export default function DietasPage() {
                       <tr key={g.id}>
                         <td className={styles.tdGrupo}>{g.nombre}</td>
                         <td>
-                          <input
-                            type="number"
-                            min={0}
-                            className={styles.equivInput}
-                            value={n === 0 ? '' : n}
-                            onChange={(e) => setEquivalente(g.id, e.target.value)}
-                            placeholder="0"
-                          />
+                          <div className={styles.equivControl}>
+                            <input
+                              type="range"
+                              min={0}
+                              max={15}
+                              step={1}
+                              className={styles.equivSlider}
+                              value={n}
+                              onChange={(e) => setEquivalente(g.id, e.target.value)}
+                              aria-label={`Equivalentes de ${g.nombre}`}
+                            />
+                            <span className={styles.equivValor}>{n}</span>
+                          </div>
                         </td>
                         <td className={styles.tdNum}>{n ? (g.hco * n).toFixed(0) : '—'}</td>
                         <td className={styles.tdNum}>{n ? (g.proteina * n).toFixed(0) : '—'}</td>
