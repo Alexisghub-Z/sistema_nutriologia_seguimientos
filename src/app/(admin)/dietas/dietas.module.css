@@ -1,0 +1,285 @@
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+}
+
+.header {
+  margin-bottom: var(--spacing-xl);
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-gray-900);
+  margin: 0 0 var(--spacing-xs);
+}
+
+.subtitle {
+  color: var(--color-gray-600);
+  margin: 0;
+}
+
+/* Selector de paciente */
+.buscador {
+  position: relative;
+  margin-bottom: var(--spacing-xl);
+}
+
+.buscadorInput {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  background: white;
+}
+
+.buscadorInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 34 197 94), 0.15);
+}
+
+.resultados {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 20;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.resultadoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0.65rem 1rem;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.resultadoItem:hover {
+  background: var(--color-gray-50);
+}
+
+.resultadoNombre {
+  font-weight: 600;
+  color: var(--color-gray-900);
+}
+
+.resultadoEmail {
+  font-size: 0.8rem;
+  color: var(--color-gray-500);
+}
+
+.pacienteSel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: 0.75rem 1rem;
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.pacienteSelNombre {
+  font-weight: 600;
+  color: var(--color-gray-900);
+}
+
+.cambiarBtn {
+  font-size: 0.85rem;
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* Layout de dos columnas: formulario + resultado */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-lg);
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: white;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+}
+
+.cardTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-gray-900);
+  margin: 0 0 var(--spacing-md);
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: var(--spacing-md);
+}
+
+.formGroup label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-gray-700);
+}
+
+.formGroup input,
+.formGroup select,
+.formGroup textarea {
+  padding: 0.55rem 0.7rem;
+  font-size: 0.95rem;
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  background: white;
+  font-family: inherit;
+}
+
+.formGroup input:focus,
+.formGroup select:focus,
+.formGroup textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.macrosRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--spacing-sm);
+}
+
+.macrosSuma {
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+.macrosSumaOk {
+  color: var(--color-primary);
+}
+
+.macrosSumaError {
+  color: #dc2626;
+}
+
+.acciones {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+/* Panel de resultado */
+.resultadoVacio {
+  color: var(--color-gray-500);
+  text-align: center;
+  padding: var(--spacing-xl) 0;
+}
+
+.metricaFila {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.metricaLabel {
+  color: var(--color-gray-600);
+  font-size: 0.9rem;
+}
+
+.metricaValor {
+  font-weight: 700;
+  color: var(--color-gray-900);
+}
+
+.metricaDestacada .metricaValor {
+  font-size: 1.35rem;
+  color: var(--color-primary);
+}
+
+.macrosGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.macroCard {
+  background: var(--color-gray-50);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  text-align: center;
+}
+
+.macroNombre {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-gray-500);
+  font-weight: 600;
+}
+
+.macroGramos {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-gray-900);
+  margin: 4px 0 0;
+}
+
+.macroKcal {
+  font-size: 0.78rem;
+  color: var(--color-gray-500);
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: var(--color-gray-100);
+  color: var(--color-gray-700);
+}
+
+.error {
+  color: #dc2626;
+  font-size: 0.9rem;
+  margin-top: var(--spacing-sm);
+}
+
+.exito {
+  color: var(--color-primary);
+  font-weight: 600;
+  margin-top: var(--spacing-sm);
+}

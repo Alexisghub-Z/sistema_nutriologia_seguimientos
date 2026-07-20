@@ -155,15 +155,10 @@ export function distribuirMacros(
 ): MacrosCalculados {
   const suma = distribucion.proteina + distribucion.grasa + distribucion.carbohidrato
   if (Math.abs(suma - 100) > 0.5) {
-    throw new Error(
-      `Los porcentajes de macronutrientes deben sumar 100 (suman ${suma}).`
-    )
+    throw new Error(`Los porcentajes de macronutrientes deben sumar 100 (suman ${suma}).`)
   }
 
-  const calcMacro = (
-    porcentaje: number,
-    kcalGramo: number
-  ): MacroCalculado => {
+  const calcMacro = (porcentaje: number, kcalGramo: number): MacroCalculado => {
     const kcal = redondear((kcalMeta * porcentaje) / 100)
     const gramos = redondear(kcal / kcalGramo, 1)
     return { gramos, kcal, porcentaje }

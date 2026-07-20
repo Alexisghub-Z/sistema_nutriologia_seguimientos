@@ -39,6 +39,19 @@ const menuItems = [
     ),
   },
   {
+    name: 'Dietas',
+    href: '/dietas',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+        <path
+          fillRule="evenodd"
+          d="M3 3a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V3zm0 5a1 1 0 011-1h6a1 1 0 011 1v8a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm10 0a1 1 0 011-1h2a1 1 0 011 1v8a1 1 0 01-1 1h-2a1 1 0 01-1-1V8z"
+          clipRule="evenodd"
+        />
+      </svg>
+    ),
+  },
+  {
     name: 'Mensajes',
     href: '/mensajes',
     icon: (
