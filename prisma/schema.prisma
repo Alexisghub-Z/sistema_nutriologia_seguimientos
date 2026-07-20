@@ -46,11 +46,12 @@ model Paciente {
   updatedAt        DateTime @updatedAt
 
   // Relaciones
-  citas           Cita[]
-  consultas       Consulta[]
-  mensajes        MensajeWhatsApp[]
-  configuraciones ConfiguracionMensajePaciente[]
-  prospecto_origen Prospecto? // Si se convirtió desde prospecto
+  citas                   Cita[]
+  consultas               Consulta[]
+  mensajes                MensajeWhatsApp[]
+  configuraciones         ConfiguracionMensajePaciente[]
+  prospecto_origen        Prospecto? // Si se convirtió desde prospecto
+  cuadros_dietosinteticos CuadroDietosintetico[]
 
   // Índices para búsquedas y ordenamiento
   @@index([email])
@@ -66,26 +67,26 @@ model Paciente {
 // ============================================
 
 model Prospecto {
-  id                       String   @id @default(cuid())
-  telefono                 String   @unique
-  nombre                   String?  // Opcional, pueden darlo después
-  primer_contacto          DateTime @default(now())
-  ultimo_contacto          DateTime @default(now())
-  total_mensajes           Int      @default(0)
-  estado                   EstadoProspecto @default(ACTIVO)
+  id              String          @id @default(cuid())
+  telefono        String          @unique
+  nombre          String? // Opcional, pueden darlo después
+  primer_contacto DateTime        @default(now())
+  ultimo_contacto DateTime        @default(now())
+  total_mensajes  Int             @default(0)
+  estado          EstadoProspecto @default(ACTIVO)
 
   // Si se convierte en paciente
-  convertido_a_paciente_id String?  @unique
+  convertido_a_paciente_id String?   @unique
   fecha_conversion         DateTime?
 
   // Notas del nutriólogo
-  notas                    String?  @db.Text
+  notas String? @db.Text
 
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relaciones
-  convertido_a_paciente Paciente? @relation(fields: [convertido_a_paciente_id], references: [id], onDelete: SetNull)
+  convertido_a_paciente Paciente?          @relation(fields: [convertido_a_paciente_id], references: [id], onDelete: SetNull)
   mensajes              MensajeProspecto[]
 
   @@index([telefono])
@@ -95,22 +96,22 @@ model Prospecto {
 }
 
 enum EstadoProspecto {
-  ACTIVO       // Puede seguir preguntando
-  REGISTRADO   // Se convirtió en paciente
-  BLOQUEADO    // Bloqueado por spam o abuso
+  ACTIVO // Puede seguir preguntando
+  REGISTRADO // Se convirtió en paciente
+  BLOQUEADO // Bloqueado por spam o abuso
 }
 
 model MensajeProspecto {
-  id           String            @id @default(cuid())
+  id           String           @id @default(cuid())
   prospecto_id String
   direccion    DireccionMensaje
-  contenido    String            @db.Text
-  twilio_sid   String?           @unique
-  estado       EstadoMensaje     @default(ENVIADO)
-  leido        Boolean           @default(false)
+  contenido    String           @db.Text
+  twilio_sid   String?          @unique
+  estado       EstadoMensaje    @default(ENVIADO)
+  leido        Boolean          @default(false)
   media_url    String?
   media_type   String?
-  createdAt    DateTime          @default(now())
+  createdAt    DateTime         @default(now())
 
   // Relaciones
   prospecto Prospecto @relation(fields: [prospecto_id], references: [id], onDelete: Cascade)
@@ -127,31 +128,31 @@ model MensajeProspecto {
 // ============================================
 
 model Cita {
-  id                 String     @id @default(cuid())
-  paciente_id        String
-  fecha_hora         DateTime
-  duracion_minutos   Int        @default(60)
-  motivo_consulta    String     @db.Text
-  tipo_cita          TipoCita   @default(PRESENCIAL)
-  estado             EstadoCita @default(PENDIENTE)
-  google_event_id    String?    @unique // ID del evento en Google Calendar
+  id               String     @id @default(cuid())
+  paciente_id      String
+  fecha_hora       DateTime
+  duracion_minutos Int        @default(60)
+  motivo_consulta  String     @db.Text
+  tipo_cita        TipoCita   @default(PRESENCIAL)
+  estado           EstadoCita @default(PENDIENTE)
+  google_event_id  String?    @unique // ID del evento en Google Calendar
 
   // Sistema de confirmación y seguimiento
-  codigo_cita                   String?  @unique // Código único para acceso público
-  estado_confirmacion           EstadoConfirmacion @default(PENDIENTE)
-  confirmada_por_paciente       Boolean  @default(false)
-  fecha_confirmacion            DateTime?
-  recordatorio_confirmacion_enviado Boolean @default(false)
-  recordatorio_24h_enviado      Boolean  @default(false)
-  recordatorio_1h_enviado       Boolean  @default(false)
-  seguimiento_enviado           Boolean  @default(false)
-  solicitud_cancelacion         Boolean  @default(false) // Paciente solicitó cancelar
+  codigo_cita                       String?            @unique // Código único para acceso público
+  estado_confirmacion               EstadoConfirmacion @default(PENDIENTE)
+  confirmada_por_paciente           Boolean            @default(false)
+  fecha_confirmacion                DateTime?
+  recordatorio_confirmacion_enviado Boolean            @default(false)
+  recordatorio_24h_enviado          Boolean            @default(false)
+  recordatorio_1h_enviado           Boolean            @default(false)
+  seguimiento_enviado               Boolean            @default(false)
+  solicitud_cancelacion             Boolean            @default(false) // Paciente solicitó cancelar
 
-  createdAt          DateTime   @default(now())
-  updatedAt          DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relaciones
-  paciente          Paciente                      @relation(fields: [paciente_id], references: [id], onDelete: Cascade)
+  paciente          Paciente                  @relation(fields: [paciente_id], references: [id], onDelete: Cascade)
   consulta          Consulta?
   configuracion_msg ConfiguracionMensajeCita?
 
@@ -182,16 +183,16 @@ enum TipoCita {
 }
 
 enum EstadoConfirmacion {
-  PENDIENTE        // No se ha enviado recordatorio
-  RECORDATORIO_ENVIADO  // Recordatorio enviado, esperando respuesta
-  CONFIRMADA       // Paciente confirmó asistencia
-  NO_CONFIRMADA    // Paciente no respondió (asumimos que va)
+  PENDIENTE // No se ha enviado recordatorio
+  RECORDATORIO_ENVIADO // Recordatorio enviado, esperando respuesta
+  CONFIRMADA // Paciente confirmó asistencia
+  NO_CONFIRMADA // Paciente no respondió (asumimos que va)
   CANCELADA_PACIENTE // Paciente canceló
 }
 
 enum TipoSeguimiento {
-  SOLO_RECORDATORIO    // Solo recordatorio para agendar cita
-  SOLO_SEGUIMIENTO     // Solo mensaje de seguimiento post-consulta
+  SOLO_RECORDATORIO // Solo recordatorio para agendar cita
+  SOLO_SEGUIMIENTO // Solo mensaje de seguimiento post-consulta
   RECORDATORIO_Y_SEGUIMIENTO // Ambos mensajes combinados
 }
 
@@ -200,72 +201,73 @@ enum TipoSeguimiento {
 // ============================================
 
 model Consulta {
-  id            String   @id @default(cuid())
-  cita_id       String?  @unique // Opcional para consultas históricas sin cita
-  paciente_id   String
-  fecha         DateTime
-  motivo        String?  // Motivo de la consulta
+  id          String   @id @default(cuid())
+  cita_id     String?  @unique // Opcional para consultas históricas sin cita
+  paciente_id String
+  fecha       DateTime
+  motivo      String? // Motivo de la consulta
 
   // Mediciones corporales básicas
-  peso               Float?   // kg
-  talla              Float?   // metros (se mantiene para calcular IMC)
-  imc                Float?   // Calculado automáticamente
+  peso  Float? // kg
+  talla Float? // metros (se mantiene para calcular IMC)
+  imc   Float? // Calculado automáticamente
 
   // Composición corporal
-  grasa_corporal     Float?   // porcentaje
-  porcentaje_agua    Float?   // porcentaje de agua
-  masa_muscular_kg   Float?   // masa muscular en kg
-  grasa_visceral     Float?   // grasa visceral en número
+  grasa_corporal   Float? // porcentaje
+  porcentaje_agua  Float? // porcentaje de agua
+  masa_muscular_kg Float? // masa muscular en kg
+  grasa_visceral   Float? // grasa visceral en número
 
   // Perímetros
-  brazo_relajado     Float?   // cm
-  brazo_flexionado   Float?   // cm
-  cintura            Float?   // cm
-  cadera_maximo      Float?   // cm
-  muslo_maximo       Float?   // cm
-  muslo_medio        Float?   // cm
-  pantorrilla_maximo Float?   // cm
+  brazo_relajado     Float? // cm
+  brazo_flexionado   Float? // cm
+  cintura            Float? // cm
+  cadera_maximo      Float? // cm
+  muslo_maximo       Float? // cm
+  muslo_medio        Float? // cm
+  pantorrilla_maximo Float? // cm
 
   // Diámetros óseos (cm) — para somatotipo Heath-Carter
-  diametro_humero    Float?   // cm, biepicondíleo de húmero
-  diametro_femur     Float?   // cm, biepicondíleo de fémur
+  diametro_humero Float? // cm, biepicondíleo de húmero
+  diametro_femur  Float? // cm, biepicondíleo de fémur
 
   // Pliegues cutáneos (mm)
-  pliegue_tricipital    Float?   // mm
-  pliegue_subescapular  Float?   // mm
-  pliegue_bicipital     Float?   // mm
-  pliegue_cresta_iliaca Float?   // mm
-  pliegue_supraespinal  Float?   // mm
-  pliegue_abdominal     Float?   // mm
-  pliegue_pantorrilla   Float?   // mm, pantorrilla medial (somatotipo)
+  pliegue_tricipital    Float? // mm
+  pliegue_subescapular  Float? // mm
+  pliegue_bicipital     Float? // mm
+  pliegue_cresta_iliaca Float? // mm
+  pliegue_supraespinal  Float? // mm
+  pliegue_abdominal     Float? // mm
+  pliegue_pantorrilla   Float? // mm, pantorrilla medial (somatotipo)
 
   // Notas del nutriólogo
-  notas                   String?  @db.Text // Hábitos alimenticios
-  diagnostico             String?  @db.Text // Diagnóstico y tratamiento médico
-  antecedentes_familiares String?  @db.Text // Antecedentes familiares
-  estudios_laboratorio    String?  @db.Text // Estudios de laboratorio
-  observaciones           String?  @db.Text // Hábitos de ejercicio
-  objetivo                String?  @db.Text // Objetivos de tratamiento
-  plan                    String?  @db.Text // Plan nutricional
+  notas                   String? @db.Text // Hábitos alimenticios
+  diagnostico             String? @db.Text // Diagnóstico y tratamiento médico
+  antecedentes_familiares String? @db.Text // Antecedentes familiares
+  estudios_laboratorio    String? @db.Text // Estudios de laboratorio
+  observaciones           String? @db.Text // Hábitos de ejercicio
+  objetivo                String? @db.Text // Objetivos de tratamiento
+  plan                    String? @db.Text // Plan nutricional
 
   // Seguimiento
-  proxima_cita           DateTime?         // Próxima cita sugerida
-  seguimiento_programado Boolean           @default(false) // Si hay recordatorio programado
-  tipo_seguimiento       TipoSeguimiento?  // Tipo de mensaje a enviar
+  proxima_cita           DateTime? // Próxima cita sugerida
+  seguimiento_programado Boolean          @default(false) // Si hay recordatorio programado
+  tipo_seguimiento       TipoSeguimiento? // Tipo de mensaje a enviar
 
   // Información financiera
-  monto_consulta  Decimal?     @db.Decimal(10,2) // null = usa precio_consulta_default
-  metodo_pago     MetodoPago?  @default(EFECTIVO)
-  estado_pago     EstadoPago   @default(PAGADO)
-  notas_pago      String?      // Opcional: "Pagó con cambio de $500"
+  monto_consulta Decimal?    @db.Decimal(10, 2) // null = usa precio_consulta_default
+  metodo_pago    MetodoPago? @default(EFECTIVO)
+  estado_pago    EstadoPago  @default(PAGADO)
+  notas_pago     String? // Opcional: "Pagó con cambio de $500"
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relaciones
-  cita     Cita?            @relation(fields: [cita_id], references: [id], onDelete: Cascade)
-  paciente Paciente         @relation(fields: [paciente_id], references: [id], onDelete: Cascade)
-  archivos ArchivoAdjunto[]
+  cita                    Cita?                  @relation(fields: [cita_id], references: [id], onDelete: Cascade)
+  paciente                Paciente               @relation(fields: [paciente_id], references: [id], onDelete: Cascade)
+  archivos                ArchivoAdjunto[]
+  cuadros_dietosinteticos CuadroDietosintetico[]
 
   // Índices simples
   @@index([paciente_id])
@@ -281,16 +283,16 @@ model Consulta {
 // ============================================
 
 model ArchivoAdjunto {
-  id              String            @id @default(cuid())
+  id              String           @id @default(cuid())
   consulta_id     String
-  categoria       CategoriaArchivo  @default(OTRO)
+  categoria       CategoriaArchivo @default(OTRO)
   nombre_original String
-  nombre_archivo  String            // Nombre sanitizado en servidor
+  nombre_archivo  String // Nombre sanitizado en servidor
   ruta_archivo    String
   tipo_mime       String
   tamanio_bytes   Int
-  descripcion     String?           // Descripción opcional del archivo
-  createdAt       DateTime          @default(now())
+  descripcion     String? // Descripción opcional del archivo
+  createdAt       DateTime         @default(now())
 
   // Relaciones
   consulta Consulta @relation(fields: [consulta_id], references: [id], onDelete: Cascade)
@@ -306,13 +308,13 @@ model ArchivoAdjunto {
 }
 
 enum CategoriaArchivo {
-  LABORATORIO       // Análisis de sangre, orina, etc.
-  ESTUDIO_MEDICO    // Rayos X, ultrasonido, etc.
-  FOTO_PROGRESO     // Fotos del paciente
-  PLAN_ALIMENTICIO  // PDFs de planes
-  RECETA            // Recetas médicas
-  DOCUMENTO         // Documentos generales
-  OTRO             // Otros archivos
+  LABORATORIO // Análisis de sangre, orina, etc.
+  ESTUDIO_MEDICO // Rayos X, ultrasonido, etc.
+  FOTO_PROGRESO // Fotos del paciente
+  PLAN_ALIMENTICIO // PDFs de planes
+  RECETA // Recetas médicas
+  DOCUMENTO // Documentos generales
+  OTRO // Otros archivos
 }
 
 // ============================================
@@ -320,17 +322,17 @@ enum CategoriaArchivo {
 // ============================================
 
 model MensajeWhatsApp {
-  id          String            @id @default(cuid())
+  id          String           @id @default(cuid())
   paciente_id String
   direccion   DireccionMensaje
-  contenido   String            @db.Text
+  contenido   String           @db.Text
   tipo        TipoMensaje
-  twilio_sid  String?           @unique
-  estado      EstadoMensaje     @default(ENVIADO)
-  leido       Boolean           @default(false)
-  media_url   String?           // URL del archivo multimedia (imagen, video, audio, documento)
-  media_type  String?           // Tipo MIME del archivo (image/jpeg, video/mp4, etc)
-  createdAt   DateTime          @default(now())
+  twilio_sid  String?          @unique
+  estado      EstadoMensaje    @default(ENVIADO)
+  leido       Boolean          @default(false)
+  media_url   String? // URL del archivo multimedia (imagen, video, audio, documento)
+  media_type  String? // Tipo MIME del archivo (image/jpeg, video/mp4, etc)
+  createdAt   DateTime         @default(now())
 
   // Relaciones
   paciente Paciente @relation(fields: [paciente_id], references: [id], onDelete: Cascade)
@@ -359,13 +361,13 @@ enum TipoMensaje {
 }
 
 enum EstadoMensaje {
-  PENDIENTE      // Mensaje guardado en BD, esperando procesamiento de Twilio
-  EN_COLA        // Twilio lo recibió y está en cola (queued)
-  ENVIADO        // Twilio lo envió (sent)
-  ENTREGADO      // WhatsApp lo entregó al destinatario (delivered)
-  LEIDO          // Destinatario lo leyó (read)
-  FALLIDO        // Falló el envío (failed)
-  NO_ENTREGADO   // No se pudo entregar (undelivered)
+  PENDIENTE // Mensaje guardado en BD, esperando procesamiento de Twilio
+  EN_COLA // Twilio lo recibió y está en cola (queued)
+  ENVIADO // Twilio lo envió (sent)
+  ENTREGADO // WhatsApp lo entregó al destinatario (delivered)
+  LEIDO // Destinatario lo leyó (read)
+  FALLIDO // Falló el envío (failed)
+  NO_ENTREGADO // No se pudo entregar (undelivered)
 }
 
 // ============================================
@@ -373,13 +375,13 @@ enum EstadoMensaje {
 // ============================================
 
 model PlantillaMensaje {
-  id          String   @id @default(cuid())
-  nombre      String // Ej: "Recordatorio de Cita", "Confirmación"
-  tipo        TipoMensaje
-  contenido   String   @db.Text
-  activa      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String      @id @default(cuid())
+  nombre    String // Ej: "Recordatorio de Cita", "Confirmación"
+  tipo      TipoMensaje
+  contenido String      @db.Text
+  activa    Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 
   @@map("plantillas_mensaje")
 }
@@ -389,52 +391,52 @@ model PlantillaMensaje {
 // ============================================
 
 model ConfiguracionGeneral {
-  id                              String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // Recordatorios
-  recordatorio_24h_activo         Boolean  @default(true)
-  recordatorio_1h_activo          Boolean  @default(true)
+  recordatorio_24h_activo Boolean @default(true)
+  recordatorio_1h_activo  Boolean @default(true)
 
   // Seguimiento post-consulta
-  seguimiento_activo              Boolean  @default(true)
-  seguimiento_dias_despues        Int      @default(2)
+  seguimiento_activo       Boolean @default(true)
+  seguimiento_dias_despues Int     @default(2)
 
   // Confirmación automática al crear cita
-  confirmacion_automatica_activa  Boolean  @default(true)
+  confirmacion_automatica_activa Boolean @default(true)
 
   // URLs del sistema
-  url_portal                      String?
-  nombre_consultorio              String   @default("Consultorio")
+  url_portal         String?
+  nombre_consultorio String  @default("Consultorio")
 
   // Configuración del calendario
-  horario_inicio                  String   @default("16:00") // HH:mm (Lunes-Viernes)
-  horario_fin                     String   @default("20:00") // HH:mm (Lunes-Viernes)
-  horario_sabado_inicio           String?  // HH:mm - Horario especial para sábado
-  horario_sabado_fin              String?  // HH:mm - Horario especial para sábado
-  horario_domingo_inicio          String?  // HH:mm - Horario especial para domingo
-  horario_domingo_fin             String?  // HH:mm - Horario especial para domingo
-  duracion_cita_default           Int      @default(60) // minutos
-  intervalo_entre_citas           Int      @default(0) // minutos de descanso
-  dias_laborales                  String   @default("1,2,3,4,5") // 0=Dom, 1=Lun, ..., 6=Sab
-  citas_simultaneas_max           Int      @default(1) // Cuántas citas al mismo tiempo
-  dias_anticipacion_max           Int      @default(30) // Máximo días para agendar
-  horas_anticipacion_min          Int      @default(24) // Mínimo horas de anticipación
+  horario_inicio         String  @default("16:00") // HH:mm (Lunes-Viernes)
+  horario_fin            String  @default("20:00") // HH:mm (Lunes-Viernes)
+  horario_sabado_inicio  String? // HH:mm - Horario especial para sábado
+  horario_sabado_fin     String? // HH:mm - Horario especial para sábado
+  horario_domingo_inicio String? // HH:mm - Horario especial para domingo
+  horario_domingo_fin    String? // HH:mm - Horario especial para domingo
+  duracion_cita_default  Int     @default(60) // minutos
+  intervalo_entre_citas  Int     @default(0) // minutos de descanso
+  dias_laborales         String  @default("1,2,3,4,5") // 0=Dom, 1=Lun, ..., 6=Sab
+  citas_simultaneas_max  Int     @default(1) // Cuántas citas al mismo tiempo
+  dias_anticipacion_max  Int     @default(30) // Máximo días para agendar
+  horas_anticipacion_min Int     @default(24) // Mínimo horas de anticipación
 
   // Configuración financiera
-  precio_consulta_default         Decimal  @default(500.00) @db.Decimal(10,2)
+  precio_consulta_default Decimal @default(500.00) @db.Decimal(10, 2)
 
   // Notificaciones por email al nutriólogo (Resend).
   // El remitente y la API key son internos (variables de entorno). Desde la UI
   // el nutriólogo edita el correo destino y qué avisos quiere recibir.
-  notif_email_activa              Boolean  @default(false) // interruptor maestro
-  notif_email_destino             String?  // correo que recibe los avisos (editable en UI)
-  notif_nueva_cita                Boolean  @default(true)
-  notif_cancelacion               Boolean  @default(true)
-  notif_reagendamiento            Boolean  @default(true)
-  notif_confirmacion              Boolean  @default(true)
+  notif_email_activa   Boolean @default(false) // interruptor maestro
+  notif_email_destino  String? // correo que recibe los avisos (editable en UI)
+  notif_nueva_cita     Boolean @default(true)
+  notif_cancelacion    Boolean @default(true)
+  notif_reagendamiento Boolean @default(true)
+  notif_confirmacion   Boolean @default(true)
 
-  createdAt                       DateTime @default(now())
-  updatedAt                       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("configuracion_general")
 }
@@ -466,15 +468,15 @@ model ConfiguracionMensajeCita {
 // ============================================
 
 model ConfiguracionMensajePaciente {
-  id                  String       @id @default(cuid())
+  id                  String      @id @default(cuid())
   paciente_id         String
   tipo_mensaje        TipoMensaje
-  activo              Boolean      @default(true)
+  activo              Boolean     @default(true)
   frecuencia_dias     Int?
   ultima_ejecucion    DateTime?
   siguiente_ejecucion DateTime?
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
 
   // Relaciones
   paciente Paciente @relation(fields: [paciente_id], references: [id], onDelete: Cascade)
@@ -490,14 +492,14 @@ model ConfiguracionMensajePaciente {
 // ============================================
 
 model PlantillaWhatsApp {
-  id         String              @id @default(cuid())
-  nombre     String              @unique
+  id         String             @id @default(cuid())
+  nombre     String             @unique
   categoria  CategoriaPlantilla
-  contenido  String              @db.Text
-  twilio_sid String?             @unique
-  activa     Boolean             @default(true)
-  createdAt  DateTime            @default(now())
-  updatedAt  DateTime            @updatedAt
+  contenido  String             @db.Text
+  twilio_sid String?            @unique
+  activa     Boolean            @default(true)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
 
   @@index([categoria])
   @@index([activa])
@@ -536,4 +538,78 @@ model ConfiguracionSistema {
   updatedAt   DateTime @updatedAt
 
   @@map("configuracion_sistema")
+}
+
+// ============================================
+// DIETAS — CUADRO DIETOSINTÉTICO
+// ============================================
+// Base científica de una dieta. Guarda los datos que captura el nutriólogo
+// (peso, talla, edad, actividad, objetivo) y los resultados calculados por
+// src/lib/utils/dietosintetico.ts (GEB, GET, kcal meta, macros).
+// De aquí parte la IA para proponer la dieta (Fase 2+).
+
+model CuadroDietosintetico {
+  id          String  @id @default(cuid())
+  paciente_id String
+  consulta_id String? // Opcional: en qué consulta se calculó
+
+  // --- Datos de entrada (los captura el nutriólogo) ---
+  peso            Float // kg
+  talla_cm        Float // cm
+  edad            Int // años (se guarda al momento del cálculo)
+  sexo            SexoBiologico
+  nivel_actividad NivelActividad
+  objetivo        ObjetivoDieta
+
+  // Distribución de macros usada (% del total calórico). Configurable.
+  pct_proteina       Float @default(25)
+  pct_grasa          Float @default(25)
+  pct_carbohidrato   Float @default(50)
+  // Ajuste calórico custom sobre el GET (null = usa el default por objetivo)
+  ajuste_kcal_custom Int?
+
+  // --- Resultados calculados (se recalculan y guardan al capturar) ---
+  geb        Float // Gasto energético basal (kcal/día)
+  get        Float // Gasto energético total (kcal/día)
+  kcal_meta  Float // kcal meta/día
+  imc        Float
+  peso_ideal Float
+
+  // Gramos de cada macronutriente al día
+  proteina_g     Float
+  grasa_g        Float
+  carbohidrato_g Float
+
+  notas String? @db.Text // Observaciones del nutriólogo sobre el cuadro
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relaciones
+  paciente Paciente  @relation(fields: [paciente_id], references: [id], onDelete: Cascade)
+  consulta Consulta? @relation(fields: [consulta_id], references: [id], onDelete: SetNull)
+
+  @@index([paciente_id])
+  @@index([consulta_id])
+  @@index([paciente_id, createdAt]) // Historial de cuadros del paciente
+  @@map("cuadros_dietosinteticos")
+}
+
+enum SexoBiologico {
+  MASCULINO
+  FEMENINO
+}
+
+enum NivelActividad {
+  SEDENTARIO
+  LIGERO
+  MODERADO
+  ACTIVO
+  MUY_ACTIVO
+}
+
+enum ObjetivoDieta {
+  BAJAR_PESO
+  MANTENER
+  SUBIR_PESO
 }
