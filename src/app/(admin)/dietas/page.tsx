@@ -7,10 +7,19 @@ import {
   sumarEquivalentes,
   calcularDiferencia,
   cuadroDistribucion,
+  resumenTiempo,
+  validarDistribucion,
+  TIEMPOS_DEFAULT,
   type Equivalentes,
   type GrupoSMAEId,
+  type TiempoComida,
+  type DistribucionTiempos,
 } from '@/lib/utils/smae'
 import styles from './dietas.module.css'
+
+// Genera un id único simple para un tiempo de comida nuevo.
+let contadorTiempo = 100
+const nuevoIdTiempo = () => `t${++contadorTiempo}`
 
 interface PacienteLite {
   id: string
@@ -95,6 +104,14 @@ export default function DietasPage() {
   const [exito, setExito] = useState('')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Pestaña activa: 'cuadro' (dietosintético) | 'tiempos' (distribución).
+  const [pestana, setPestana] = useState<'cuadro' | 'tiempos'>('cuadro')
+  // Tiempos de comida y su reparto de equivalentes.
+  const [tiempos, setTiempos] = useState<TiempoComida[]>(() =>
+    TIEMPOS_DEFAULT.map((t) => ({ ...t }))
+  )
+  const [reparto, setReparto] = useState<DistribucionTiempos>({})
+
   // Kcal calculada por el sistema (Mifflin × actividad ± objetivo).
   const kcalCalculada = resultado?.kcalMeta ?? 0
   // Kcal meta efectiva: la manual si el nutriólogo la sobrescribió, si no la calculada.
@@ -132,6 +149,39 @@ export default function DietasPage() {
     setEquivalentes((e) => ({ ...e, [id]: n }))
   }
 
+  // --- Distribución en tiempos de comida (pestaña 2) ---
+
+  // Grupos que el nutriólogo definió con equivalentes > 0 (los únicos a repartir).
+  const gruposConEquiv = useMemo(
+    () => GRUPOS_SMAE.filter((g) => (equivalentes[g.id] ?? 0) > 0),
+    [equivalentes]
+  )
+
+  // Cuadre por grupo: repartido vs total.
+  const cuadres = useMemo(() => validarDistribucion(equivalentes, reparto), [equivalentes, reparto])
+  const cuadreDe = (grupo: GrupoSMAEId) => cuadres.find((c) => c.grupo === grupo)
+
+  // Asigna equivalentes de un grupo a un tiempo (celda de la matriz).
+  const setCelda = (tiempoId: string, grupo: GrupoSMAEId, valor: string) => {
+    const n = valor === '' ? 0 : Math.max(0, Math.round(Number(valor) * 2) / 2)
+    setReparto((r) => ({ ...r, [tiempoId]: { ...(r[tiempoId] ?? {}), [grupo]: n } }))
+  }
+
+  const agregarTiempo = () => {
+    setTiempos((ts) => [...ts, { id: nuevoIdTiempo(), nombre: `Tiempo ${ts.length + 1}` }])
+  }
+  const renombrarTiempo = (id: string, nombre: string) => {
+    setTiempos((ts) => ts.map((t) => (t.id === id ? { ...t, nombre } : t)))
+  }
+  const eliminarTiempo = (id: string) => {
+    setTiempos((ts) => ts.filter((t) => t.id !== id))
+    setReparto((r) => {
+      const copia = { ...r }
+      delete copia[id]
+      return copia
+    })
+  }
+
   // Buscar pacientes (autocompletado)
   useEffect(() => {
     if (paciente) return
@@ -161,6 +211,9 @@ export default function DietasPage() {
     setEquivalentes({})
     setPct({ ...PCT_DEFAULT })
     setKcalOverride(null)
+    setReparto({})
+    setTiempos(TIEMPOS_DEFAULT.map((t) => ({ ...t })))
+    setPestana('cuadro')
     setError('')
     setExito('')
     setForm({ ...FORM_INICIAL })
@@ -188,6 +241,9 @@ export default function DietasPage() {
     setEquivalentes({})
     setPct({ ...PCT_DEFAULT })
     setKcalOverride(null)
+    setReparto({})
+    setTiempos(TIEMPOS_DEFAULT.map((t) => ({ ...t })))
+    setPestana('cuadro')
     setForm({ ...FORM_INICIAL })
     setError('')
     setExito('')
@@ -220,6 +276,7 @@ export default function DietasPage() {
     pct_carbohidrato: pct.hco,
     kcal_meta_manual: kcalEditada ? kcalMeta : undefined,
     equivalentes,
+    distribucion_tiempos: Object.keys(reparto).length ? { tiempos, reparto } : undefined,
     notas: form.notas || undefined,
     guardar,
   })
@@ -330,7 +387,27 @@ export default function DietasPage() {
         </div>
       )}
 
+      {/* Pestañas */}
       {paciente && (
+        <div className={styles.tabs}>
+          <button
+            className={`${styles.tab} ${pestana === 'cuadro' ? styles.tabActivo : ''}`}
+            onClick={() => setPestana('cuadro')}
+          >
+            Cuadro dietosintético
+          </button>
+          <button
+            className={`${styles.tab} ${pestana === 'tiempos' ? styles.tabActivo : ''}`}
+            onClick={() => setPestana('tiempos')}
+            disabled={!resultado}
+            title={!resultado ? 'Primero calcula el cuadro' : ''}
+          >
+            Distribución en tiempos
+          </button>
+        </div>
+      )}
+
+      {paciente && pestana === 'cuadro' && (
         <div className={styles.grid}>
           {/* Columna izquierda: datos del nutriólogo */}
           <div className={styles.card}>
@@ -639,7 +716,7 @@ export default function DietasPage() {
       )}
 
       {/* Distribución por equivalentes (SMAE) — aparece al calcular */}
-      {paciente && resultado && diferenciaSmae && distribucion && (
+      {paciente && pestana === 'cuadro' && resultado && diferenciaSmae && distribucion && (
         <>
           <div className={styles.card} style={{ marginTop: 'var(--spacing-lg)' }}>
             <h2 className={styles.cardTitle}>Distribución por grupos (SMAE)</h2>
@@ -726,6 +803,114 @@ export default function DietasPage() {
             </div>
           </div>
         </>
+      )}
+
+      {/* PESTAÑA 2: Distribución en tiempos de comida */}
+      {paciente && pestana === 'tiempos' && resultado && (
+        <div className={styles.tiemposWrap}>
+          <div className={styles.tiemposHeader}>
+            <div>
+              <h2 className={styles.cardTitle}>Distribución en tiempos de comida</h2>
+              <p className={styles.smaeAyuda}>
+                Reparte los equivalentes de cada grupo entre los tiempos de comida. Cada tarjeta
+                muestra su aporte y avisa si un grupo quedó completo.
+              </p>
+            </div>
+            <Button variant="secondary" onClick={agregarTiempo}>
+              + Agregar tiempo
+            </Button>
+          </div>
+
+          {gruposConEquiv.length === 0 ? (
+            <p className={styles.resultadoVacio}>
+              Primero define equivalentes en la pestaña <strong>Cuadro dietosintético</strong>.
+            </p>
+          ) : (
+            <div className={styles.tiemposGrid}>
+              {tiempos.map((t) => {
+                const equivTiempo = reparto[t.id] ?? {}
+                const res = resumenTiempo(equivTiempo)
+                return (
+                  <div key={t.id} className={styles.tiempoCard}>
+                    <div className={styles.tiempoTitulo}>
+                      <input
+                        className={styles.tiempoNombre}
+                        value={t.nombre}
+                        onChange={(e) => renombrarTiempo(t.id, e.target.value)}
+                        aria-label="Nombre del tiempo de comida"
+                      />
+                      {tiempos.length > 1 && (
+                        <button
+                          className={styles.tiempoEliminar}
+                          onClick={() => eliminarTiempo(t.id)}
+                          title="Eliminar tiempo"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Resumen nutricional del tiempo */}
+                    <div className={styles.tiempoResumen}>
+                      <div className={styles.tiempoEnergia}>{res.kcal} kcal</div>
+                      <div className={styles.tiempoMacros}>
+                        <span>Pro {res.proteina} g</span>
+                        <span>Líp {res.lipidos} g</span>
+                        <span>HCO {res.hco} g</span>
+                      </div>
+                    </div>
+
+                    {/* Inputs de equivalentes por grupo */}
+                    <div className={styles.tiempoGrupos}>
+                      {gruposConEquiv.map((g) => (
+                        <div key={g.id} className={styles.tiempoFila}>
+                          <span className={styles.tiempoGrupoNombre}>{g.nombre}</span>
+                          <input
+                            type="number"
+                            step={0.5}
+                            min={0}
+                            className={styles.tiempoInput}
+                            value={equivTiempo[g.id] || ''}
+                            onChange={(e) => setCelda(t.id, g.id, e.target.value)}
+                            placeholder="0"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Cuadre por grupo */}
+          {gruposConEquiv.length > 0 && (
+            <div className={styles.card} style={{ marginTop: 'var(--spacing-lg)' }}>
+              <h3 className={styles.subCardTitle}>Cuadre por grupo</h3>
+              <div className={styles.cuadreGrid}>
+                {gruposConEquiv.map((g) => {
+                  const c = cuadreDe(g.id)
+                  const completo = c?.completo ?? false
+                  return (
+                    <div key={g.id} className={styles.cuadreItem}>
+                      <span className={styles.cuadreNombre}>{g.nombre}</span>
+                      <span className={completo ? styles.difOk : styles.difLejos}>
+                        {c?.repartido ?? 0} / {c?.total ?? 0} {completo ? '✓' : '✗'}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+              <div className={styles.acciones}>
+                <Button onClick={guardar} disabled={guardando}>
+                  {guardando ? 'Guardando…' : 'Guardar dieta'}
+                </Button>
+              </div>
+              {error && <p className={styles.error}>{error}</p>}
+              {exito && <p className={styles.exito}>{exito}</p>}
+            </div>
+          )}
+        </div>
       )}
     </div>
   )

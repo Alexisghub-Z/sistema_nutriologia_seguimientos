@@ -107,6 +107,177 @@
   font-weight: 600;
 }
 
+/* Pestañas */
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--color-gray-200);
+  margin-bottom: var(--spacing-lg);
+}
+
+.tab {
+  padding: 0.65rem 1.25rem;
+  border: none;
+  background: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-gray-500);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+}
+
+.tab:hover:not(:disabled) {
+  color: var(--color-gray-800);
+}
+
+.tab:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tabActivo {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+/* Pestaña 2: distribución en tiempos */
+.tiemposHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.tiemposGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.tiempoCard {
+  background: white;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.tiempoTitulo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.tiempoNombre {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-gray-900);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0.2rem 0.35rem;
+  background: transparent;
+}
+
+.tiempoNombre:hover,
+.tiempoNombre:focus {
+  border-color: var(--color-gray-300);
+  outline: none;
+  background: var(--color-gray-50);
+}
+
+.tiempoEliminar {
+  border: none;
+  background: none;
+  color: var(--color-gray-400);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.3rem;
+}
+
+.tiempoEliminar:hover {
+  color: #dc2626;
+}
+
+.tiempoResumen {
+  background: var(--color-gray-50);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm);
+}
+
+.tiempoEnergia {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.tiempoMacros {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+  color: var(--color-gray-600);
+  margin-top: 2px;
+}
+
+.tiempoGrupos {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tiempoFila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tiempoGrupoNombre {
+  font-size: 0.82rem;
+  color: var(--color-gray-700);
+  flex: 1;
+}
+
+.tiempoInput {
+  width: 54px;
+  padding: 0.25rem 0.4rem;
+  text-align: right;
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tiempoInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* Cuadre por grupo */
+.cuadreGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.5rem var(--spacing-lg);
+}
+
+.cuadreItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--color-gray-100);
+  font-size: 0.88rem;
+}
+
+.cuadreNombre {
+  color: var(--color-gray-700);
+}
+
 /* Layout de dos columnas: formulario + resultado */
 .grid {
   display: grid;

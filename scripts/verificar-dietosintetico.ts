@@ -18,7 +18,14 @@ import {
   calcularCuadroDietosintetico,
   DISTRIBUCION_MACROS_DEFAULT,
 } from '../src/lib/utils/dietosintetico'
-import { sumarEquivalentes, calcularDiferencia, cuadroDistribucion } from '../src/lib/utils/smae'
+import {
+  sumarEquivalentes,
+  calcularDiferencia,
+  cuadroDistribucion,
+  resumenTiempo,
+  repartidoDeGrupo,
+  validarDistribucion,
+} from '../src/lib/utils/smae'
 
 let fallos = 0
 
@@ -179,6 +186,32 @@ aprox(dist[0]!.gramos, 250, 0.1, 'Distribución HCO gramos')
 aprox(dist[1]!.gramos, 55.6, 0.2, 'Distribución Lípidos gramos')
 aprox(dist[2]!.gramos, 125, 0.1, 'Distribución Proteína gramos')
 igual(dist[3]!.nombre, 'HCO simples (máx.)', 'Distribución incluye HCO simples')
+
+console.log('\n── SMAE: distribución en tiempos de comida ──')
+// Resumen de un tiempo: 2 cereales SG (70 c/u) + 1 fruta (60) = 200 kcal
+const rt = resumenTiempo({ CEREALES_SG: 2, FRUTAS: 1 })
+aprox(rt.kcal, 200, 0, 'Resumen tiempo kcal (2 cer + 1 fruta)')
+aprox(rt.hco, 45, 0, 'Resumen tiempo HCO') // 2*15 + 1*15 = 45
+// Reparto de cereales entre desayuno(2) y comida(3) = 5
+const distribucion = {
+  t1: { CEREALES_SG: 2, VERDURAS: 1 },
+  t3: { CEREALES_SG: 3, VERDURAS: 2 },
+}
+aprox(repartidoDeGrupo(distribucion, 'CEREALES_SG'), 5, 0, 'Repartido cereales (2+3)')
+aprox(repartidoDeGrupo(distribucion, 'VERDURAS'), 3, 0, 'Repartido verduras (1+2)')
+// Validación: total cereales 5 (completo), verduras 4 pero repartidas 3 (incompleto)
+const cuadres = validarDistribucion({ CEREALES_SG: 5, VERDURAS: 4 }, distribucion)
+const cer = cuadres.find((c) => c.grupo === 'CEREALES_SG')!
+const ver = cuadres.find((c) => c.grupo === 'VERDURAS')!
+igual(cer.completo, true, 'Cereales cuadra (5/5)')
+igual(ver.completo, false, 'Verduras NO cuadra (3/4)')
+aprox(ver.repartido, 3, 0, 'Verduras repartido = 3')
+// Grupos sin total no aparecen
+igual(
+  validarDistribucion({ CEREALES_SG: 5 }, distribucion).length,
+  1,
+  'Solo valida grupos con total > 0'
+)
 
 console.log(`\n${'─'.repeat(40)}`)
 if (fallos === 0) {

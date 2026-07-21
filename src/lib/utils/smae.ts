@@ -135,6 +135,89 @@ export function sumarEquivalentes(equivalentes: Equivalentes): TotalesMacro {
   }
 }
 
+// ============================================================
+// Distribución en tiempos de comida
+// ============================================================
+// El nutriólogo reparte los equivalentes totales de cada grupo entre varios
+// tiempos de comida (configurables: Desayuno, Colación, Comida, etc.).
+
+/** Un tiempo de comida con nombre editable. */
+export interface TiempoComida {
+  id: string // identificador estable (ej. "t1")
+  nombre: string // "Desayuno", "Colación 1", "Pre-entreno"...
+}
+
+/** Reparto: para cada tiempo, cuántos equivalentes de cada grupo lleva. */
+export type DistribucionTiempos = Record<string, Equivalentes> // { "t1": { VERDURAS: 1, ... } }
+
+/** Tiempos de comida por defecto (los 5 clásicos del SMAE). */
+export const TIEMPOS_DEFAULT: TiempoComida[] = [
+  { id: 't1', nombre: 'Desayuno' },
+  { id: 't2', nombre: 'Colación 1' },
+  { id: 't3', nombre: 'Comida' },
+  { id: 't4', nombre: 'Colación 2' },
+  { id: 't5', nombre: 'Cena' },
+]
+
+/**
+ * Resumen nutricional de un tiempo de comida (los equivalentes que se le
+ * asignaron). Reutiliza sumarEquivalentes.
+ *
+ * @param equivalentesTiempo equivalentes por grupo asignados a ese tiempo
+ */
+export function resumenTiempo(equivalentesTiempo: Equivalentes): TotalesMacro {
+  return sumarEquivalentes(equivalentesTiempo)
+}
+
+/**
+ * Suma cuántos equivalentes de un grupo se repartieron entre todos los tiempos.
+ *
+ * @param distribucion reparto por tiempo
+ * @param grupo grupo del SMAE
+ * @returns total de equivalentes repartidos de ese grupo
+ */
+export function repartidoDeGrupo(distribucion: DistribucionTiempos, grupo: GrupoSMAEId): number {
+  let suma = 0
+  for (const tiempoId of Object.keys(distribucion)) {
+    suma += distribucion[tiempoId]?.[grupo] ?? 0
+  }
+  return Math.round(suma * 2) / 2 // medios equivalentes
+}
+
+/** Estado del cuadre de un grupo: lo repartido vs el total disponible. */
+export interface CuadreGrupo {
+  grupo: GrupoSMAEId
+  total: number // equivalentes definidos en la pestaña 1
+  repartido: number // equivalentes repartidos en los tiempos
+  completo: boolean // repartido === total
+}
+
+/**
+ * Valida, para cada grupo con equivalentes, cuántos se repartieron vs el total.
+ * Solo considera grupos con total > 0 (los que el nutriólogo definió).
+ *
+ * @param totales      equivalentes totales por grupo (pestaña 1)
+ * @param distribucion reparto por tiempo (pestaña 2)
+ */
+export function validarDistribucion(
+  totales: Equivalentes,
+  distribucion: DistribucionTiempos
+): CuadreGrupo[] {
+  const cuadres: CuadreGrupo[] = []
+  for (const grupo of GRUPOS_SMAE) {
+    const total = totales[grupo.id] ?? 0
+    if (!total) continue
+    const repartido = repartidoDeGrupo(distribucion, grupo.id)
+    cuadres.push({
+      grupo: grupo.id,
+      total,
+      repartido,
+      completo: Math.abs(repartido - total) < 0.001,
+    })
+  }
+  return cuadres
+}
+
 export interface MetaMacros {
   kcalMeta: number
   hco_g: number
