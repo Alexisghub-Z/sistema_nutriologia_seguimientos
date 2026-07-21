@@ -415,6 +415,92 @@ export default function DietasPage() {
 
             {error && <p className={styles.error}>{error}</p>}
             {exito && <p className={styles.exito}>{exito}</p>}
+
+            {/* Cuadro de distribución — % editables, junto a lo que se edita */}
+            {distribucion && (
+              <>
+                <h3 className={styles.subCardTitle}>Cuadro de distribución</h3>
+                <p className={styles.smaeAyuda}>
+                  Ajusta el % de cada macronutriente; recalcula kcal, gramos y la META de la tabla
+                  de abajo.
+                </p>
+                <div className={styles.tablaWrap}>
+                  <table className={`${styles.tablaSmae} ${styles.tablaDist}`}>
+                    <thead>
+                      <tr>
+                        <th className={styles.thDistNombre}></th>
+                        <th>Porcentaje</th>
+                        <th>Kcal</th>
+                        <th>Gramos</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className={styles.tdGrupo}>HCO</td>
+                        <td className={styles.tdPct}>
+                          <input
+                            type="number"
+                            className={styles.pctInput}
+                            value={pct.hco}
+                            onChange={(e) => setPctCampo('hco', e.target.value)}
+                            aria-label="Porcentaje de HCO"
+                          />
+                          <span className={styles.pctSigno}>%</span>
+                        </td>
+                        <td className={styles.tdNum}>{distribucion[0]!.kcal}</td>
+                        <td className={styles.tdNum}>{distribucion[0]!.gramos}</td>
+                      </tr>
+                      <tr>
+                        <td className={styles.tdGrupo}>Lípidos</td>
+                        <td className={styles.tdPct}>
+                          <input
+                            type="number"
+                            className={styles.pctInput}
+                            value={pct.lip}
+                            onChange={(e) => setPctCampo('lip', e.target.value)}
+                            aria-label="Porcentaje de lípidos"
+                          />
+                          <span className={styles.pctSigno}>%</span>
+                        </td>
+                        <td className={styles.tdNum}>{distribucion[1]!.kcal}</td>
+                        <td className={styles.tdNum}>{distribucion[1]!.gramos}</td>
+                      </tr>
+                      <tr>
+                        <td className={styles.tdGrupo}>Proteína</td>
+                        <td className={styles.tdPct}>
+                          <input
+                            type="number"
+                            className={styles.pctInput}
+                            value={pct.pro}
+                            onChange={(e) => setPctCampo('pro', e.target.value)}
+                            aria-label="Porcentaje de proteína"
+                          />
+                          <span className={styles.pctSigno}>%</span>
+                        </td>
+                        <td className={styles.tdNum}>{distribucion[2]!.kcal}</td>
+                        <td className={styles.tdNum}>{distribucion[2]!.gramos}</td>
+                      </tr>
+                      <tr className={styles.filaMeta}>
+                        <td className={styles.tdGrupo}>HCO simples (máx.)</td>
+                        <td className={styles.tdNum}>{distribucion[3]!.porcentaje}%</td>
+                        <td className={styles.tdNum}>{distribucion[3]!.kcal}</td>
+                        <td className={styles.tdNum}>{distribucion[3]!.gramos}</td>
+                      </tr>
+                    </tbody>
+                    <tfoot>
+                      <tr className={styles.filaTotal}>
+                        <td className={styles.tdGrupo}>Suma</td>
+                        <td className={pctOk ? styles.difOk : styles.difLejos}>
+                          {sumaPct}% {pctOk ? '✓' : '(≠100)'}
+                        </td>
+                        <td className={styles.tdNum}></td>
+                        <td className={styles.tdNum}></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Columna derecha: resultado calculado */}
@@ -475,107 +561,23 @@ export default function DietasPage() {
                 </div>
 
                 {distribucion && (
-                  <>
-                    <div className={styles.macrosGrid}>
-                      <div className={styles.macroCard}>
-                        <div className={styles.macroNombre}>Proteína</div>
-                        <p className={styles.macroGramos}>{distribucion[2]!.gramos} g</p>
-                        <span className={styles.macroKcal}>{distribucion[2]!.kcal} kcal</span>
-                      </div>
-                      <div className={styles.macroCard}>
-                        <div className={styles.macroNombre}>Grasa</div>
-                        <p className={styles.macroGramos}>{distribucion[1]!.gramos} g</p>
-                        <span className={styles.macroKcal}>{distribucion[1]!.kcal} kcal</span>
-                      </div>
-                      <div className={styles.macroCard}>
-                        <div className={styles.macroNombre}>Carbohidrato</div>
-                        <p className={styles.macroGramos}>{distribucion[0]!.gramos} g</p>
-                        <span className={styles.macroKcal}>{distribucion[0]!.kcal} kcal</span>
-                      </div>
+                  <div className={styles.macrosGrid}>
+                    <div className={styles.macroCard}>
+                      <div className={styles.macroNombre}>Proteína</div>
+                      <p className={styles.macroGramos}>{distribucion[2]!.gramos} g</p>
+                      <span className={styles.macroKcal}>{distribucion[2]!.kcal} kcal</span>
                     </div>
-
-                    {/* Cuadro de distribución — % editables, junto al resultado */}
-                    <h3 className={styles.subCardTitle}>Cuadro de distribución</h3>
-                    <p className={styles.smaeAyuda}>
-                      Ajusta el % de cada macronutriente; recalcula kcal, gramos y la META de la
-                      tabla de abajo.
-                    </p>
-                    <div className={styles.tablaWrap}>
-                      <table className={`${styles.tablaSmae} ${styles.tablaDist}`}>
-                        <thead>
-                          <tr>
-                            <th className={styles.thDistNombre}></th>
-                            <th>Porcentaje</th>
-                            <th>Kcal</th>
-                            <th>Gramos</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td className={styles.tdGrupo}>HCO</td>
-                            <td className={styles.tdPct}>
-                              <input
-                                type="number"
-                                className={styles.pctInput}
-                                value={pct.hco}
-                                onChange={(e) => setPctCampo('hco', e.target.value)}
-                                aria-label="Porcentaje de HCO"
-                              />
-                              <span className={styles.pctSigno}>%</span>
-                            </td>
-                            <td className={styles.tdNum}>{distribucion[0]!.kcal}</td>
-                            <td className={styles.tdNum}>{distribucion[0]!.gramos}</td>
-                          </tr>
-                          <tr>
-                            <td className={styles.tdGrupo}>Lípidos</td>
-                            <td className={styles.tdPct}>
-                              <input
-                                type="number"
-                                className={styles.pctInput}
-                                value={pct.lip}
-                                onChange={(e) => setPctCampo('lip', e.target.value)}
-                                aria-label="Porcentaje de lípidos"
-                              />
-                              <span className={styles.pctSigno}>%</span>
-                            </td>
-                            <td className={styles.tdNum}>{distribucion[1]!.kcal}</td>
-                            <td className={styles.tdNum}>{distribucion[1]!.gramos}</td>
-                          </tr>
-                          <tr>
-                            <td className={styles.tdGrupo}>Proteína</td>
-                            <td className={styles.tdPct}>
-                              <input
-                                type="number"
-                                className={styles.pctInput}
-                                value={pct.pro}
-                                onChange={(e) => setPctCampo('pro', e.target.value)}
-                                aria-label="Porcentaje de proteína"
-                              />
-                              <span className={styles.pctSigno}>%</span>
-                            </td>
-                            <td className={styles.tdNum}>{distribucion[2]!.kcal}</td>
-                            <td className={styles.tdNum}>{distribucion[2]!.gramos}</td>
-                          </tr>
-                          <tr className={styles.filaMeta}>
-                            <td className={styles.tdGrupo}>HCO simples (máx.)</td>
-                            <td className={styles.tdNum}>{distribucion[3]!.porcentaje}%</td>
-                            <td className={styles.tdNum}>{distribucion[3]!.kcal}</td>
-                            <td className={styles.tdNum}>{distribucion[3]!.gramos}</td>
-                          </tr>
-                        </tbody>
-                        <tfoot>
-                          <tr className={styles.filaTotal}>
-                            <td className={styles.tdGrupo}>Suma</td>
-                            <td className={pctOk ? styles.difOk : styles.difLejos}>
-                              {sumaPct}% {pctOk ? '✓' : '(≠100)'}
-                            </td>
-                            <td className={styles.tdNum}></td>
-                            <td className={styles.tdNum}></td>
-                          </tr>
-                        </tfoot>
-                      </table>
+                    <div className={styles.macroCard}>
+                      <div className={styles.macroNombre}>Grasa</div>
+                      <p className={styles.macroGramos}>{distribucion[1]!.gramos} g</p>
+                      <span className={styles.macroKcal}>{distribucion[1]!.kcal} kcal</span>
                     </div>
-                  </>
+                    <div className={styles.macroCard}>
+                      <div className={styles.macroNombre}>Carbohidrato</div>
+                      <p className={styles.macroGramos}>{distribucion[0]!.gramos} g</p>
+                      <span className={styles.macroKcal}>{distribucion[0]!.kcal} kcal</span>
+                    </div>
+                  </div>
                 )}
               </>
             )}
