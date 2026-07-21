@@ -357,8 +357,8 @@
 /* Layout de dos columnas: formulario (más ancho) + resultado (compacto) */
 .grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-  gap: var(--spacing-lg);
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: var(--spacing-xl);
   align-items: start;
 }
 
