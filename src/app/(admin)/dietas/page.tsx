@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import Button from '@/components/ui/Button'
 import { clasificarIMC } from '@/lib/utils/dietosintetico'
 import {
@@ -127,6 +128,10 @@ export default function DietasPage() {
   const [historial, setHistorial] = useState<CuadroHistorial[]>([])
   const [cargandoHistorial, setCargandoHistorial] = useState(false)
 
+  // Modal de confirmación antes de guardar.
+  const [confirmando, setConfirmando] = useState(false)
+  const [noVolverAvisar, setNoVolverAvisar] = useState(false)
+
   // Kcal calculada por el sistema (Mifflin × actividad ± objetivo).
   const kcalCalculada = resultado?.kcalMeta ?? 0
   // Kcal meta efectiva: la manual si el nutriólogo la sobrescribió, si no la calculada.
@@ -198,6 +203,13 @@ export default function DietasPage() {
   }
 
   // Buscar pacientes (autocompletado)
+  // Preferencia persistida: si el nutriólogo pidió no volver a ver el aviso.
+  useEffect(() => {
+    if (localStorage.getItem('dietas.omitirAvisoGuardar') === '1') {
+      setNoVolverAvisar(true)
+    }
+  }, [])
+
   useEffect(() => {
     if (paciente) return
     if (query.trim().length < 2) {
@@ -408,6 +420,29 @@ export default function DietasPage() {
     }
   }
 
+  // ¿Ya hay algo repartido en tiempos de comida?
+  const tieneDistribucion = Object.keys(reparto).some((tid) =>
+    Object.values(reparto[tid] ?? {}).some((n) => (n ?? 0) > 0)
+  )
+
+  // Al presionar guardar: muestra el aviso salvo que el usuario lo haya omitido.
+  const intentarGuardar = () => {
+    if (noVolverAvisar) {
+      guardar()
+    } else {
+      setConfirmando(true)
+    }
+  }
+
+  // Confirma desde el modal: persiste la preferencia y guarda.
+  const confirmarGuardar = () => {
+    if (noVolverAvisar) {
+      localStorage.setItem('dietas.omitirAvisoGuardar', '1')
+    }
+    setConfirmando(false)
+    guardar()
+  }
+
   const guardar = async () => {
     setError('')
     setExito('')
@@ -421,7 +456,7 @@ export default function DietasPage() {
       const data = await res.json()
       if (res.ok) {
         setResultado(data.resultado)
-        setExito('Cuadro guardado como nueva versión.')
+        setExito('Dieta guardada como nueva versión.')
         if (paciente) cargarHistorial(paciente.id) // refresca el historial
       } else {
         setError(data.error || 'Error al guardar')
@@ -660,8 +695,13 @@ export default function DietasPage() {
               <Button onClick={calcular} disabled={!datosMinimos || calculando}>
                 {calculando ? 'Calculando…' : 'Calcular'}
               </Button>
-              <Button variant="secondary" onClick={guardar} disabled={!resultado || guardando}>
-                {guardando ? 'Guardando…' : 'Guardar cuadro'}
+              <Button
+                variant="secondary"
+                onClick={() => setPestana('tiempos')}
+                disabled={!resultado}
+                title={!resultado ? 'Primero calcula el cuadro' : ''}
+              >
+                Continuar a distribución →
               </Button>
             </div>
 
@@ -1071,8 +1111,8 @@ export default function DietasPage() {
               </div>
 
               <div className={styles.acciones}>
-                <Button onClick={guardar} disabled={guardando}>
-                  {guardando ? 'Guardando…' : 'Guardar dieta'}
+                <Button onClick={intentarGuardar} disabled={guardando}>
+                  {guardando ? 'Guardando…' : 'Guardar dieta completa'}
                 </Button>
               </div>
               {error && <p className={styles.error}>{error}</p>}
@@ -1081,6 +1121,42 @@ export default function DietasPage() {
           )}
         </div>
       )}
+
+      {/* Modal de confirmación antes de guardar */}
+      {confirmando &&
+        createPortal(
+          <div className={styles.modalOverlay} onClick={() => setConfirmando(false)}>
+            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+              <h3 className={styles.modalTitulo}>Guardar dieta</h3>
+              <p className={styles.modalTexto}>
+                Se guardará como una <strong>versión nueva</strong> (no reemplaza las anteriores).
+                Incluye el cuadro dietosintético, los equivalentes
+                {tieneDistribucion ? ' y la distribución en tiempos de comida.' : '.'}
+              </p>
+              {!tieneDistribucion && (
+                <p className={styles.modalAviso}>
+                  ⚠ Todavía no has repartido los equivalentes en tiempos de comida. Puedes guardar
+                  igual y completarlo después.
+                </p>
+              )}
+              <label className={styles.modalCheck}>
+                <input
+                  type="checkbox"
+                  checked={noVolverAvisar}
+                  onChange={(e) => setNoVolverAvisar(e.target.checked)}
+                />
+                No volver a mostrar este aviso
+              </label>
+              <div className={styles.modalAcciones}>
+                <Button variant="secondary" onClick={() => setConfirmando(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={confirmarGuardar}>Guardar</Button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   )
 }
