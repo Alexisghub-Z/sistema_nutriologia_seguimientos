@@ -354,10 +354,10 @@
   font-size: 0.85rem;
 }
 
-/* Layout de dos columnas: formulario + resultado */
+/* Layout de dos columnas: formulario (más ancho) + resultado (compacto) */
 .grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   gap: var(--spacing-lg);
   align-items: start;
 }
@@ -477,22 +477,25 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding: 0.5rem 0;
+  gap: 0.5rem;
+  padding: 0.45rem 0;
   border-bottom: 1px solid var(--color-gray-100);
 }
 
 .metricaLabel {
   color: var(--color-gray-600);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
 }
 
 .metricaValor {
   font-weight: 700;
   color: var(--color-gray-900);
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .metricaDestacada .metricaValor {
-  font-size: 1.35rem;
+  font-size: 1.2rem;
   color: var(--color-primary);
 }
 
