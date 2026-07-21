@@ -37,6 +37,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'paciente_id requerido' }, { status: 400 })
   }
 
+  // Opcional: prellenar desde una consulta específica (dieta ligada a consulta).
+  const consultaId = request.nextUrl.searchParams.get('consulta_id')
+
   const paciente = await prisma.paciente.findUnique({
     where: { id: pacienteId },
     select: { id: true, nombre: true, fecha_nacimiento: true },
@@ -45,29 +48,54 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Paciente no encontrado' }, { status: 404 })
   }
 
-  // Última consulta con peso/talla/composición registrados
-  const ultimaConsulta = await prisma.consulta.findFirst({
-    where: { paciente_id: pacienteId },
-    orderBy: { fecha: 'desc' },
-    select: { peso: true, talla: true, grasa_corporal: true, masa_muscular_kg: true, fecha: true },
-  })
+  // Consulta base: la indicada por consulta_id, o la última si no se pide una.
+  const consultaBase = consultaId
+    ? await prisma.consulta.findFirst({
+        where: { id: consultaId, paciente_id: pacienteId },
+        select: {
+          peso: true,
+          talla: true,
+          grasa_corporal: true,
+          masa_muscular_kg: true,
+          fecha: true,
+        },
+      })
+    : await prisma.consulta.findFirst({
+        where: { paciente_id: pacienteId },
+        orderBy: { fecha: 'desc' },
+        select: {
+          peso: true,
+          talla: true,
+          grasa_corporal: true,
+          masa_muscular_kg: true,
+          fecha: true,
+        },
+      })
 
   // Masa libre de grasa (para Katch-McArdle / Cunningham): preferimos calcularla
   // desde el % de grasa corporal; si no hay, usamos la masa muscular como aproximación.
   let mlgKg: number | null = null
-  if (ultimaConsulta?.peso && ultimaConsulta.grasa_corporal != null) {
-    mlgKg = Math.round(ultimaConsulta.peso * (1 - ultimaConsulta.grasa_corporal / 100) * 10) / 10
-  } else if (ultimaConsulta?.masa_muscular_kg != null) {
-    mlgKg = ultimaConsulta.masa_muscular_kg
+  if (consultaBase?.peso && consultaBase.grasa_corporal != null) {
+    mlgKg = Math.round(consultaBase.peso * (1 - consultaBase.grasa_corporal / 100) * 10) / 10
+  } else if (consultaBase?.masa_muscular_kg != null) {
+    mlgKg = consultaBase.masa_muscular_kg
   }
+
+  // Lista de consultas del paciente para el selector "basar dieta en consulta".
+  const consultas = await prisma.consulta.findMany({
+    where: { paciente_id: pacienteId },
+    orderBy: { fecha: 'desc' },
+    select: { id: true, fecha: true, peso: true, motivo: true },
+  })
 
   return NextResponse.json({
     nombre: paciente.nombre,
     edad: calcularEdad(paciente.fecha_nacimiento),
     // Consulta.talla está en METROS; el cuadro trabaja en cm.
-    peso: ultimaConsulta?.peso ?? null,
-    talla_cm: ultimaConsulta?.talla ? Math.round(ultimaConsulta.talla * 100) : null,
+    peso: consultaBase?.peso ?? null,
+    talla_cm: consultaBase?.talla ? Math.round(consultaBase.talla * 100) : null,
     mlg_kg: mlgKg,
-    fecha_ultima_consulta: ultimaConsulta?.fecha ?? null,
+    fecha_consulta_base: consultaBase?.fecha ?? null,
+    consultas,
   })
 }

@@ -71,6 +71,15 @@ export default function DetallePacientePage() {
     consultasPagadas: number
     consultasPendientes: number
   } | null>(null)
+  const [dietas, setDietas] = useState<
+    Array<{
+      id: string
+      createdAt: string
+      kcal_meta: number
+      objetivo: string
+      consulta_id: string | null
+    }>
+  >([])
 
   useEffect(() => {
     const fetchPaciente = async () => {
@@ -102,8 +111,21 @@ export default function DetallePacientePage() {
       }
     }
 
+    const fetchDietas = async () => {
+      try {
+        const response = await fetch(`/api/dietas/cuadros?paciente_id=${pacienteId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setDietas(data.cuadros ?? [])
+        }
+      } catch (err) {
+        console.error('Error al cargar dietas:', err)
+      }
+    }
+
     fetchPaciente()
     fetchEstadisticasFinancieras()
+    fetchDietas()
   }, [pacienteId])
 
   const cargarDetalleCita = async (citaId: string) => {
@@ -546,7 +568,11 @@ export default function DetallePacientePage() {
             >
               Ver mensajes
               <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                  clipRule="evenodd"
+                />
               </svg>
             </a>
           </Card>
@@ -578,7 +604,12 @@ export default function DetallePacientePage() {
                 </span>
                 {estadisticasFinancieras && estadisticasFinancieras.totalPendiente > 0 && (
                   <span className={styles.statSubtext}>
-                    ${estadisticasFinancieras.totalPendiente.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} pendientes
+                    $
+                    {estadisticasFinancieras.totalPendiente.toLocaleString('es-MX', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{' '}
+                    pendientes
                   </span>
                 )}
               </div>
@@ -829,6 +860,64 @@ export default function DetallePacientePage() {
           </CardContent>
         </Card>
 
+        {/* Dietas del paciente */}
+        <Card className={styles.consultasCard}>
+          <CardHeader>
+            <div className={styles.dietasHeader}>
+              <CardTitle>Dietas</CardTitle>
+              <button className={styles.nuevaDietaBtn} onClick={() => router.push('/dietas')}>
+                + Nueva dieta
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {dietas.length === 0 ? (
+              <div className={styles.emptyState}>
+                <p>No hay dietas registradas</p>
+              </div>
+            ) : (
+              <div className={styles.consultasList}>
+                {dietas.map((dieta, index) => {
+                  const consultaLigada = dieta.consulta_id
+                    ? paciente.consultas.find((c) => c.id === dieta.consulta_id)
+                    : null
+                  return (
+                    <div
+                      key={dieta.id}
+                      className={styles.consultaItem}
+                      onClick={() => router.push('/dietas')}
+                    >
+                      <div className={styles.consultaHeader}>
+                        <div className={styles.consultaFecha}>
+                          <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                            <path
+                              fillRule="evenodd"
+                              d="M3 3a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V3zm0 5a1 1 0 011-1h6a1 1 0 011 1v8a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm10 0a1 1 0 011-1h2a1 1 0 011 1v8a1 1 0 01-1 1h-2a1 1 0 01-1-1V8z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          {formatearFecha(dieta.createdAt)}
+                          {index === 0 && <Badge variant="info">Más reciente</Badge>}
+                        </div>
+                        <Badge variant="secondary">{Math.round(dieta.kcal_meta)} kcal</Badge>
+                      </div>
+                      <div className={styles.dietaMeta}>
+                        {consultaLigada ? (
+                          <span className={styles.dietaLigada}>
+                            Ligada a la consulta del {formatearFecha(consultaLigada.fecha)}
+                          </span>
+                        ) : (
+                          <span className={styles.dietaSuelta}>Dieta suelta (sin consulta)</span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Panel de Seguimiento - Próxima Cita Sugerida */}
         {paciente.consultas.length > 0 &&
           paciente.consultas[0] &&
@@ -859,8 +948,7 @@ export default function DetallePacientePage() {
                           />
                         </svg>
                         <span>
-                          Próxima cita sugerida:{' '}
-                          <strong>{formatearFecha(proximaCita)}</strong>
+                          Próxima cita sugerida: <strong>{formatearFecha(proximaCita)}</strong>
                         </span>
                       </div>
                       <div className={styles.seguimientoMeta}>

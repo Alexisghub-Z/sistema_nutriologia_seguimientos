@@ -194,6 +194,7 @@ export async function GET(request: NextRequest) {
       objetivo: true,
       geb: true,
       imc: true,
+      consulta_id: true,
     },
   })
 

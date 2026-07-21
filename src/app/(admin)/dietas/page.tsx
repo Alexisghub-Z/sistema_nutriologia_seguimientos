@@ -37,6 +37,13 @@ interface CuadroHistorial {
   imc: number
 }
 
+interface ConsultaLite {
+  id: string
+  fecha: string
+  peso: number | null
+  motivo: string | null
+}
+
 interface MacroResultado {
   gramos: number
   kcal: number
@@ -127,6 +134,10 @@ export default function DietasPage() {
   // Historial de cuadros guardados del paciente.
   const [historial, setHistorial] = useState<CuadroHistorial[]>([])
   const [cargandoHistorial, setCargandoHistorial] = useState(false)
+
+  // Consultas del paciente + consulta en la que se basa la dieta (opcional).
+  const [consultas, setConsultas] = useState<ConsultaLite[]>([])
+  const [consultaId, setConsultaId] = useState<string>('') // '' = dieta suelta
 
   // Modal de confirmación antes de guardar.
   const [confirmando, setConfirmando] = useState(false)
@@ -243,12 +254,15 @@ export default function DietasPage() {
     setPestana('cuadro')
     setError('')
     setExito('')
+    setConsultaId('')
+    setConsultas([])
     setForm({ ...FORM_INICIAL })
-    // Prellenar peso/talla/edad de la última consulta
+    // Prellenar peso/talla/edad de la última consulta + traer sus consultas
     try {
       const res = await fetch(`/api/dietas/cuadros/prellenado?paciente_id=${p.id}`)
       if (res.ok) {
         const data = await res.json()
+        setConsultas(data.consultas ?? [])
         setForm((f) => ({
           ...f,
           peso: data.peso != null ? String(data.peso) : '',
@@ -262,6 +276,30 @@ export default function DietasPage() {
     }
     cargarHistorial(p.id)
   }, [])
+
+  // Cambia la consulta base de la dieta y reprellenar peso/talla/MLG de ESA consulta.
+  const cambiarConsultaBase = async (nuevaConsultaId: string) => {
+    setConsultaId(nuevaConsultaId)
+    setResultado(null) // invalida el cálculo previo
+    if (!paciente) return
+    const url = nuevaConsultaId
+      ? `/api/dietas/cuadros/prellenado?paciente_id=${paciente.id}&consulta_id=${nuevaConsultaId}`
+      : `/api/dietas/cuadros/prellenado?paciente_id=${paciente.id}`
+    try {
+      const res = await fetch(url)
+      if (res.ok) {
+        const data = await res.json()
+        setForm((f) => ({
+          ...f,
+          peso: data.peso != null ? String(data.peso) : '',
+          talla_cm: data.talla_cm != null ? String(data.talla_cm) : '',
+          mlg_kg: data.mlg_kg != null ? String(data.mlg_kg) : '',
+        }))
+      }
+    } catch {
+      /* si falla, quedan los datos actuales */
+    }
+  }
 
   // Carga la lista de cuadros guardados de un paciente.
   const cargarHistorial = async (pacienteId: string) => {
@@ -301,6 +339,7 @@ export default function DietasPage() {
         mlg_kg: c.mlg_kg != null ? String(c.mlg_kg) : '',
         notas: c.notas ?? '',
       })
+      setConsultaId(c.consulta_id ?? '')
       setPct({ hco: c.pct_carbohidrato, lip: c.pct_grasa, pro: c.pct_proteina })
       setEquivalentes((c.equivalentes as Equivalentes) ?? {})
       // Fijamos el resultado con los valores guardados (sin recalcular).
@@ -349,6 +388,8 @@ export default function DietasPage() {
     setPestana('cuadro')
     setForm({ ...FORM_INICIAL })
     setHistorial([])
+    setConsultaId('')
+    setConsultas([])
     setError('')
     setExito('')
   }
@@ -367,6 +408,7 @@ export default function DietasPage() {
 
   const construirPayload = (guardar: boolean) => ({
     paciente_id: paciente!.id,
+    consulta_id: consultaId || undefined,
     peso: Number(form.peso),
     talla_cm: Number(form.talla_cm),
     edad: Number(form.edad),
@@ -569,6 +611,34 @@ export default function DietasPage() {
           {/* Columna izquierda: datos del paciente */}
           <div className={styles.card}>
             <h2 className={styles.cardTitle}>Datos del paciente</h2>
+
+            {consultas.length > 0 && (
+              <div className={styles.formGroup}>
+                <label htmlFor="consultaBase">Basar la dieta en una consulta (opcional)</label>
+                <select
+                  id="consultaBase"
+                  value={consultaId}
+                  onChange={(e) => cambiarConsultaBase(e.target.value)}
+                >
+                  <option value="">Ninguna (dieta suelta) · usa la última consulta</option>
+                  {consultas.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {new Date(c.fecha).toLocaleDateString('es-MX', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                      {c.peso ? ` · ${c.peso} kg` : ''}
+                      {c.motivo ? ` · ${c.motivo}` : ''}
+                    </option>
+                  ))}
+                </select>
+                <small>
+                  Si eliges una, el peso/talla se toman de esa consulta y la dieta queda ligada a
+                  ella.
+                </small>
+              </div>
+            )}
 
             <div className={styles.formRow}>
               <div className={styles.formGroup}>

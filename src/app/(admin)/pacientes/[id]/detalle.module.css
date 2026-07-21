@@ -911,7 +911,7 @@
   background: var(--color-gray-50);
 }
 
-.radioOption input[type="radio"] {
+.radioOption input[type='radio'] {
   width: 16px;
   height: 16px;
   cursor: pointer;
@@ -1001,4 +1001,41 @@
   .seguimientoCard {
     grid-column: span 2;
   }
+}
+
+/* Sección de Dietas del paciente */
+.dietasHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+}
+
+.nuevaDietaBtn {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: none;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.nuevaDietaBtn:hover {
+  background: rgba(var(--color-primary-rgb, 34 197 94), 0.08);
+}
+
+.dietaMeta {
+  margin-top: 4px;
+  font-size: 0.82rem;
+}
+
+.dietaLigada {
+  color: var(--color-primary);
+}
+
+.dietaSuelta {
+  color: var(--color-gray-400);
 }
