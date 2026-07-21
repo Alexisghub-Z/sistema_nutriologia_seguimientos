@@ -623,6 +623,40 @@
   margin: 0 0 var(--spacing-md);
 }
 
+/* Selector de paso entre porciones */
+.pasoSelector {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: var(--spacing-md);
+  padding: 0.4rem 0.75rem;
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+}
+
+.pasoSelector label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-gray-600);
+}
+
+.pasoSelector select {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  background: white;
+  cursor: pointer;
+}
+
+.pasoSelector select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
 .tablaWrap {
   overflow-x: auto;
 }
