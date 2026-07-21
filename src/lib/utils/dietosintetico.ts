@@ -80,21 +80,80 @@ export const KCAL_POR_GRAMO = {
 } as const
 
 /**
- * Calcula el Gasto Energético Basal (GEB) con la fórmula de Mifflin-St Jeor.
+ * Fórmulas disponibles para estimar el gasto energético en reposo (GEB/GER).
+ * - MIFFLIN:       Mifflin-St Jeor. La más usada en adultos con sobrepeso/obesidad.
+ * - HARRIS:        Harris-Benedict revisada (Roza & Shizgal, 1984).
+ * - KATCH:         Katch-McArdle. Requiere masa libre de grasa (MLG).
+ * - CUNNINGHAM:    Cunningham. Requiere MLG; útil en deportistas.
+ */
+export type FormulaGEB = 'MIFFLIN' | 'HARRIS' | 'KATCH' | 'CUNNINGHAM'
+
+/** Las fórmulas que requieren masa libre de grasa (MLG) en kg. */
+export const FORMULAS_REQUIEREN_MLG: FormulaGEB[] = ['KATCH', 'CUNNINGHAM']
+
+/**
+ * Calcula el Gasto Energético Basal (GEB/GER) con la fórmula elegida.
  *
- *   Hombres:  (10 × peso) + (6.25 × talla_cm) − (5 × edad) + 5
- *   Mujeres:  (10 × peso) + (6.25 × talla_cm) − (5 × edad) − 161
+ *   MIFFLIN (Mifflin-St Jeor):
+ *     Hombres:  (10 × peso) + (6.25 × talla) − (5 × edad) + 5
+ *     Mujeres:  (10 × peso) + (6.25 × talla) − (5 × edad) − 161
+ *
+ *   HARRIS (Harris-Benedict revisada):
+ *     Hombres:  (13.397 × peso) + (4.799 × talla) − (5.677 × edad) + 88.362
+ *     Mujeres:  (9.247 × peso) + (3.098 × talla) − (4.330 × edad) + 447.593
+ *
+ *   KATCH (Katch-McArdle):       370 + (21.6 × MLG)
+ *   CUNNINGHAM:                  500 + (22 × MLG)
  *
  * @param peso   Peso en kilogramos
  * @param tallaCm Talla en centímetros
  * @param edad   Edad en años
  * @param sexo   'MASCULINO' | 'FEMENINO'
+ * @param formula Fórmula a usar (por defecto MIFFLIN)
+ * @param mlgKg  Masa libre de grasa en kg (obligatoria para KATCH y CUNNINGHAM)
  * @returns GEB en kcal/día
+ * @throws Error si la fórmula requiere MLG y no se proporciona
  */
-export function calcularGEB(peso: number, tallaCm: number, edad: number, sexo: Sexo): number {
-  const base = 10 * peso + 6.25 * tallaCm - 5 * edad
-  const ajusteSexo = sexo === 'MASCULINO' ? 5 : -161
-  return redondear(base + ajusteSexo)
+export function calcularGEB(
+  peso: number,
+  tallaCm: number,
+  edad: number,
+  sexo: Sexo,
+  formula: FormulaGEB = 'MIFFLIN',
+  mlgKg?: number
+): number {
+  switch (formula) {
+    case 'MIFFLIN': {
+      const base = 10 * peso + 6.25 * tallaCm - 5 * edad
+      return redondear(base + (sexo === 'MASCULINO' ? 5 : -161))
+    }
+    case 'HARRIS': {
+      return sexo === 'MASCULINO'
+        ? redondear(13.397 * peso + 4.799 * tallaCm - 5.677 * edad + 88.362)
+        : redondear(9.247 * peso + 3.098 * tallaCm - 4.33 * edad + 447.593)
+    }
+    case 'KATCH': {
+      if (mlgKg == null || mlgKg <= 0)
+        throw new Error('La fórmula Katch-McArdle requiere la masa libre de grasa (MLG).')
+      return redondear(370 + 21.6 * mlgKg)
+    }
+    case 'CUNNINGHAM': {
+      if (mlgKg == null || mlgKg <= 0)
+        throw new Error('La fórmula Cunningham requiere la masa libre de grasa (MLG).')
+      return redondear(500 + 22 * mlgKg)
+    }
+  }
+}
+
+/**
+ * Calcula la masa libre de grasa (MLG) a partir del peso y el % de grasa corporal.
+ *
+ * @param peso           Peso en kg
+ * @param grasaCorporalPct % de grasa corporal
+ * @returns MLG en kg
+ */
+export function calcularMLG(peso: number, grasaCorporalPct: number): number {
+  return redondear(peso * (1 - grasaCorporalPct / 100), 1)
 }
 
 /**
@@ -220,6 +279,8 @@ export interface EntradaCuadro {
   objetivo: ObjetivoDieta
   distribucionMacros?: DistribucionMacros
   ajusteObjetivoCustom?: number
+  formula?: FormulaGEB // por defecto MIFFLIN
+  mlgKg?: number // masa libre de grasa (obligatoria para KATCH/CUNNINGHAM)
 }
 
 /**
@@ -244,7 +305,14 @@ export interface CuadroDietosintetico {
 export function calcularCuadroDietosintetico(entrada: EntradaCuadro): CuadroDietosintetico {
   validarEntrada(entrada)
 
-  const geb = calcularGEB(entrada.peso, entrada.tallaCm, entrada.edad, entrada.sexo)
+  const geb = calcularGEB(
+    entrada.peso,
+    entrada.tallaCm,
+    entrada.edad,
+    entrada.sexo,
+    entrada.formula ?? 'MIFFLIN',
+    entrada.mlgKg
+  )
   const get = calcularGET(geb, entrada.nivelActividad)
   const kcalMeta = calcularKcalMeta(get, entrada.objetivo, entrada.ajusteObjetivoCustom)
   const imc = calcularIMC(entrada.peso, entrada.tallaCm)

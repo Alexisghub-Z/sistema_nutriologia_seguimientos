@@ -45,12 +45,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Paciente no encontrado' }, { status: 404 })
   }
 
-  // Última consulta con peso/talla registrados
+  // Última consulta con peso/talla/composición registrados
   const ultimaConsulta = await prisma.consulta.findFirst({
     where: { paciente_id: pacienteId },
     orderBy: { fecha: 'desc' },
-    select: { peso: true, talla: true, fecha: true },
+    select: { peso: true, talla: true, grasa_corporal: true, masa_muscular_kg: true, fecha: true },
   })
+
+  // Masa libre de grasa (para Katch-McArdle / Cunningham): preferimos calcularla
+  // desde el % de grasa corporal; si no hay, usamos la masa muscular como aproximación.
+  let mlgKg: number | null = null
+  if (ultimaConsulta?.peso && ultimaConsulta.grasa_corporal != null) {
+    mlgKg = Math.round(ultimaConsulta.peso * (1 - ultimaConsulta.grasa_corporal / 100) * 10) / 10
+  } else if (ultimaConsulta?.masa_muscular_kg != null) {
+    mlgKg = ultimaConsulta.masa_muscular_kg
+  }
 
   return NextResponse.json({
     nombre: paciente.nombre,
@@ -58,6 +67,7 @@ export async function GET(request: NextRequest) {
     // Consulta.talla está en METROS; el cuadro trabaja en cm.
     peso: ultimaConsulta?.peso ?? null,
     talla_cm: ultimaConsulta?.talla ? Math.round(ultimaConsulta.talla * 100) : null,
+    mlg_kg: mlgKg,
     fecha_ultima_consulta: ultimaConsulta?.fecha ?? null,
   })
 }
