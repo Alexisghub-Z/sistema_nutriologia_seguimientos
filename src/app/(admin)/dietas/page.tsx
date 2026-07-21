@@ -696,17 +696,26 @@ export default function DietasPage() {
                   <div className={styles.macrosGrid}>
                     <div className={styles.macroCard}>
                       <div className={styles.macroNombre}>Proteína</div>
-                      <p className={styles.macroGramos}>{distribucion[2]!.gramos} g</p>
+                      <p className={styles.macroGramos}>
+                        {distribucion[2]!.gramos}
+                        <span className={styles.macroUnidad}>g</span>
+                      </p>
                       <span className={styles.macroKcal}>{distribucion[2]!.kcal} kcal</span>
                     </div>
                     <div className={styles.macroCard}>
                       <div className={styles.macroNombre}>Grasa</div>
-                      <p className={styles.macroGramos}>{distribucion[1]!.gramos} g</p>
+                      <p className={styles.macroGramos}>
+                        {distribucion[1]!.gramos}
+                        <span className={styles.macroUnidad}>g</span>
+                      </p>
                       <span className={styles.macroKcal}>{distribucion[1]!.kcal} kcal</span>
                     </div>
                     <div className={styles.macroCard}>
                       <div className={styles.macroNombre}>Carbohidrato</div>
-                      <p className={styles.macroGramos}>{distribucion[0]!.gramos} g</p>
+                      <p className={styles.macroGramos}>
+                        {distribucion[0]!.gramos}
+                        <span className={styles.macroUnidad}>g</span>
+                      </p>
                       <span className={styles.macroKcal}>{distribucion[0]!.kcal} kcal</span>
                     </div>
                   </div>

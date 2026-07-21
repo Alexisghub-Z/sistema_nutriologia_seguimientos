@@ -582,28 +582,40 @@
 .macroCard {
   background: var(--color-gray-50);
   border-radius: var(--radius-md);
-  padding: var(--spacing-md);
+  padding: 0.85rem 0.5rem;
   text-align: center;
+  min-width: 0; /* deja que la celda se encoja sin desbordar el grid */
 }
 
 .macroNombre {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   color: var(--color-gray-500);
   font-weight: 600;
+  line-height: 1.2;
 }
 
 .macroGramos {
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   font-weight: 700;
   color: var(--color-gray-900);
-  margin: 4px 0 0;
+  margin: 6px 0 2px;
+  line-height: 1.1;
+  white-space: nowrap; /* mantiene "141.3 g" en una sola línea */
+}
+
+.macroGramos .macroUnidad {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-gray-500);
+  margin-left: 1px;
 }
 
 .macroKcal {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   color: var(--color-gray-500);
+  white-space: nowrap;
 }
 
 .badge {
