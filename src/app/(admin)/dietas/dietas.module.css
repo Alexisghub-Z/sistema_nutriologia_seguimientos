@@ -357,7 +357,7 @@
 /* Layout de dos columnas: formulario + resultado */
 .grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--spacing-lg);
   align-items: start;
 }
@@ -373,6 +373,7 @@
   border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-lg);
   padding: var(--spacing-lg);
+  min-width: 0; /* respeta el ancho de su columna del grid, no se desborda */
 }
 
 .cardTitle {
@@ -582,38 +583,40 @@
 .macroCard {
   background: var(--color-gray-50);
   border-radius: var(--radius-md);
-  padding: 0.85rem 0.5rem;
+  padding: 0.75rem 0.4rem;
   text-align: center;
   min-width: 0; /* deja que la celda se encoja sin desbordar el grid */
+  overflow: hidden; /* seguridad: nada se sale del card */
 }
 
 .macroNombre {
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   color: var(--color-gray-500);
   font-weight: 600;
   line-height: 1.2;
 }
 
 .macroGramos {
-  font-size: 1.4rem;
+  /* Escala con el ancho disponible para no desbordar la tarjeta angosta */
+  font-size: clamp(0.95rem, 4.5vw, 1.35rem);
   font-weight: 700;
   color: var(--color-gray-900);
   margin: 6px 0 2px;
   line-height: 1.1;
-  white-space: nowrap; /* mantiene "141.3 g" en una sola línea */
+  white-space: nowrap;
 }
 
 .macroGramos .macroUnidad {
-  font-size: 0.85rem;
+  font-size: 0.8em;
   font-weight: 600;
   color: var(--color-gray-500);
   margin-left: 1px;
 }
 
 .macroKcal {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--color-gray-500);
   white-space: nowrap;
 }
