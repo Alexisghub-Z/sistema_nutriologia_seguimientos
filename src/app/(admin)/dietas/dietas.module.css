@@ -284,7 +284,6 @@
 }
 
 .tablaSmae {
-  width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
 }
@@ -311,13 +310,16 @@
   text-align: left !important;
   font-weight: 600;
   color: var(--color-gray-800);
-  width: auto; /* la primera columna absorbe el espacio restante */
+  width: 240px; /* ancho fijo para la primera columna */
   white-space: normal; /* permite que nombres largos hagan wrap */
 }
 
-/* Ancho fijo para que la tabla no salte al aparecer un decimal */
+/* Ancho fijo por columna para que la tabla no salte al aparecer un decimal.
+   min-width fuerza los anchos reales; si no caben, el contenedor hace scroll. */
 .tablaSmae {
   table-layout: fixed;
+  width: 100%;
+  min-width: 780px;
 }
 
 .tdNum {
