@@ -150,37 +150,35 @@
   margin-bottom: var(--spacing-lg);
 }
 
-.tiemposGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: var(--spacing-md);
+/* Tabla de distribución en tiempos (matriz grupos × tiempos) */
+.thTiempo {
+  min-width: 130px;
 }
 
-.tiempoCard {
-  background: white;
-  border: 1px solid var(--color-gray-200);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.tiempoTitulo {
+.thTiempoContenido {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.25rem;
+  justify-content: center;
+}
+
+.thCuadre {
+  min-width: 130px;
 }
 
 .tiempoNombre {
-  flex: 1;
-  font-size: 1rem;
+  width: 100%;
+  min-width: 0;
+  font-size: 0.85rem;
   font-weight: 700;
-  color: var(--color-gray-900);
+  color: var(--color-gray-800);
+  text-transform: none;
+  letter-spacing: 0;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   padding: 0.2rem 0.35rem;
   background: transparent;
+  text-align: center;
 }
 
 .tiempoNombre:hover,
@@ -194,88 +192,30 @@
   border: none;
   background: none;
   color: var(--color-gray-400);
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   line-height: 1;
   cursor: pointer;
-  padding: 0 0.3rem;
+  padding: 0 0.2rem;
+  flex: 0 0 auto;
 }
 
 .tiempoEliminar:hover {
   color: #dc2626;
 }
 
-.tiempoResumen {
-  background: var(--color-gray-50);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-sm);
-}
-
-.tiempoEnergia {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--color-primary);
-}
-
-.tiempoMacros {
-  display: flex;
-  gap: 0.75rem;
-  font-size: 0.82rem;
-  color: var(--color-gray-600);
-  margin-top: 2px;
-}
-
-.tiempoGrupos {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.tiempoFila {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.tiempoGrupoNombre {
-  font-size: 0.82rem;
-  color: var(--color-gray-700);
-  flex: 1;
-}
-
 .tiempoInput {
-  width: 54px;
-  padding: 0.25rem 0.4rem;
+  width: 58px;
+  padding: 0.3rem 0.4rem;
   text-align: right;
   border: 1px solid var(--color-gray-300);
   border-radius: var(--radius-sm);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-variant-numeric: tabular-nums;
 }
 
 .tiempoInput:focus {
   outline: none;
   border-color: var(--color-primary);
-}
-
-/* Cuadre por grupo */
-.cuadreGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 0.5rem var(--spacing-lg);
-}
-
-.cuadreItem {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.35rem 0;
-  border-bottom: 1px solid var(--color-gray-100);
-  font-size: 0.88rem;
-}
-
-.cuadreNombre {
-  color: var(--color-gray-700);
 }
 
 /* Layout de dos columnas: formulario + resultado */

@@ -812,8 +812,8 @@ export default function DietasPage() {
             <div>
               <h2 className={styles.cardTitle}>Distribución en tiempos de comida</h2>
               <p className={styles.smaeAyuda}>
-                Reparte los equivalentes de cada grupo entre los tiempos de comida. Cada tarjeta
-                muestra su aporte y avisa si un grupo quedó completo.
+                Reparte los equivalentes de cada grupo entre los tiempos de comida. La columna final
+                avisa si un grupo quedó completo; el pie muestra el aporte de cada tiempo.
               </p>
             </div>
             <Button variant="secondary" onClick={agregarTiempo}>
@@ -826,81 +826,105 @@ export default function DietasPage() {
               Primero define equivalentes en la pestaña <strong>Cuadro dietosintético</strong>.
             </p>
           ) : (
-            <div className={styles.tiemposGrid}>
-              {tiempos.map((t) => {
-                const equivTiempo = reparto[t.id] ?? {}
-                const res = resumenTiempo(equivTiempo)
-                return (
-                  <div key={t.id} className={styles.tiempoCard}>
-                    <div className={styles.tiempoTitulo}>
-                      <input
-                        className={styles.tiempoNombre}
-                        value={t.nombre}
-                        onChange={(e) => renombrarTiempo(t.id, e.target.value)}
-                        aria-label="Nombre del tiempo de comida"
-                      />
-                      {tiempos.length > 1 && (
-                        <button
-                          className={styles.tiempoEliminar}
-                          onClick={() => eliminarTiempo(t.id)}
-                          title="Eliminar tiempo"
-                        >
-                          ×
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Resumen nutricional del tiempo */}
-                    <div className={styles.tiempoResumen}>
-                      <div className={styles.tiempoEnergia}>{res.kcal} kcal</div>
-                      <div className={styles.tiempoMacros}>
-                        <span>Pro {res.proteina} g</span>
-                        <span>Líp {res.lipidos} g</span>
-                        <span>HCO {res.hco} g</span>
-                      </div>
-                    </div>
-
-                    {/* Inputs de equivalentes por grupo */}
-                    <div className={styles.tiempoGrupos}>
-                      {gruposConEquiv.map((g) => (
-                        <div key={g.id} className={styles.tiempoFila}>
-                          <span className={styles.tiempoGrupoNombre}>{g.nombre}</span>
-                          <input
-                            type="number"
-                            step={0.5}
-                            min={0}
-                            className={styles.tiempoInput}
-                            value={equivTiempo[g.id] || ''}
-                            onChange={(e) => setCelda(t.id, g.id, e.target.value)}
-                            placeholder="0"
-                          />
-                        </div>
+            <>
+              <div className={styles.tablaWrap}>
+                <table className={styles.tablaSmae}>
+                  <thead>
+                    <tr>
+                      <th className={styles.thGrupo}>Grupo</th>
+                      {tiempos.map((t) => (
+                        <th key={t.id} className={styles.thTiempo}>
+                          <div className={styles.thTiempoContenido}>
+                            <input
+                              className={styles.tiempoNombre}
+                              value={t.nombre}
+                              onChange={(e) => renombrarTiempo(t.id, e.target.value)}
+                              aria-label="Nombre del tiempo de comida"
+                            />
+                            {tiempos.length > 1 && (
+                              <button
+                                className={styles.tiempoEliminar}
+                                onClick={() => eliminarTiempo(t.id)}
+                                title="Eliminar tiempo"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+                        </th>
                       ))}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
-          {/* Cuadre por grupo */}
-          {gruposConEquiv.length > 0 && (
-            <div className={styles.card} style={{ marginTop: 'var(--spacing-lg)' }}>
-              <h3 className={styles.subCardTitle}>Cuadre por grupo</h3>
-              <div className={styles.cuadreGrid}>
-                {gruposConEquiv.map((g) => {
-                  const c = cuadreDe(g.id)
-                  const completo = c?.completo ?? false
-                  return (
-                    <div key={g.id} className={styles.cuadreItem}>
-                      <span className={styles.cuadreNombre}>{g.nombre}</span>
-                      <span className={completo ? styles.difOk : styles.difLejos}>
-                        {c?.repartido ?? 0} / {c?.total ?? 0} {completo ? '✓' : '✗'}
-                      </span>
-                    </div>
-                  )
-                })}
+                      <th className={styles.thCuadre}>Repartido / Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {gruposConEquiv.map((g) => {
+                      const c = cuadreDe(g.id)
+                      const completo = c?.completo ?? false
+                      return (
+                        <tr key={g.id}>
+                          <td className={styles.tdGrupo}>{g.nombre}</td>
+                          {tiempos.map((t) => (
+                            <td key={t.id}>
+                              <input
+                                type="number"
+                                step={0.5}
+                                min={0}
+                                className={styles.tiempoInput}
+                                value={reparto[t.id]?.[g.id] || ''}
+                                onChange={(e) => setCelda(t.id, g.id, e.target.value)}
+                                placeholder="0"
+                              />
+                            </td>
+                          ))}
+                          <td className={completo ? styles.difOk : styles.difLejos}>
+                            {c?.repartido ?? 0} / {c?.total ?? 0} {completo ? '✓' : '✗'}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                  <tfoot>
+                    {/* Resumen por tiempo (columna): kcal y macros */}
+                    <tr className={styles.filaTotal}>
+                      <td className={styles.tdGrupo}>Energía</td>
+                      {tiempos.map((t) => (
+                        <td key={t.id} className={styles.tdNum}>
+                          {resumenTiempo(reparto[t.id] ?? {}).kcal} kcal
+                        </td>
+                      ))}
+                      <td></td>
+                    </tr>
+                    <tr className={styles.filaMeta}>
+                      <td className={styles.tdGrupo}>Proteína (g)</td>
+                      {tiempos.map((t) => (
+                        <td key={t.id} className={styles.tdNum}>
+                          {resumenTiempo(reparto[t.id] ?? {}).proteina}
+                        </td>
+                      ))}
+                      <td></td>
+                    </tr>
+                    <tr className={styles.filaMeta}>
+                      <td className={styles.tdGrupo}>Lípidos (g)</td>
+                      {tiempos.map((t) => (
+                        <td key={t.id} className={styles.tdNum}>
+                          {resumenTiempo(reparto[t.id] ?? {}).lipidos}
+                        </td>
+                      ))}
+                      <td></td>
+                    </tr>
+                    <tr className={styles.filaMeta}>
+                      <td className={styles.tdGrupo}>HCO (g)</td>
+                      {tiempos.map((t) => (
+                        <td key={t.id} className={styles.tdNum}>
+                          {resumenTiempo(reparto[t.id] ?? {}).hco}
+                        </td>
+                      ))}
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
               </div>
+
               <div className={styles.acciones}>
                 <Button onClick={guardar} disabled={guardando}>
                   {guardando ? 'Guardando…' : 'Guardar dieta'}
@@ -908,7 +932,7 @@ export default function DietasPage() {
               </div>
               {error && <p className={styles.error}>{error}</p>}
               {exito && <p className={styles.exito}>{exito}</p>}
-            </div>
+            </>
           )}
         </div>
       )}
