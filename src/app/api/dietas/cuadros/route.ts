@@ -183,9 +183,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'paciente_id requerido' }, { status: 400 })
   }
 
+  // Solo los campos para el listado del historial (no todo el cuadro).
   const cuadros = await prisma.cuadroDietosintetico.findMany({
     where: { paciente_id: pacienteId },
     orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      createdAt: true,
+      kcal_meta: true,
+      objetivo: true,
+      geb: true,
+      imc: true,
+    },
   })
 
   return NextResponse.json({ cuadros }, { status: 200 })

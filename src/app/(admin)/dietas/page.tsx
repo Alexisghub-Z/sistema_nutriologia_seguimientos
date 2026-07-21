@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Button from '@/components/ui/Button'
+import { clasificarIMC } from '@/lib/utils/dietosintetico'
 import {
   GRUPOS_SMAE,
   sumarEquivalentes,
@@ -25,6 +26,14 @@ interface PacienteLite {
   id: string
   nombre: string
   email: string
+}
+
+interface CuadroHistorial {
+  id: string
+  createdAt: string
+  kcal_meta: number
+  objetivo: string
+  imc: number
 }
 
 interface MacroResultado {
@@ -113,6 +122,10 @@ export default function DietasPage() {
     TIEMPOS_DEFAULT.map((t) => ({ ...t }))
   )
   const [reparto, setReparto] = useState<DistribucionTiempos>({})
+
+  // Historial de cuadros guardados del paciente.
+  const [historial, setHistorial] = useState<CuadroHistorial[]>([])
+  const [cargandoHistorial, setCargandoHistorial] = useState(false)
 
   // Kcal calculada por el sistema (Mifflin × actividad ± objetivo).
   const kcalCalculada = resultado?.kcalMeta ?? 0
@@ -235,7 +248,83 @@ export default function DietasPage() {
     } catch {
       /* si falla, el nutriólogo llena a mano */
     }
+    cargarHistorial(p.id)
   }, [])
+
+  // Carga la lista de cuadros guardados de un paciente.
+  const cargarHistorial = async (pacienteId: string) => {
+    setCargandoHistorial(true)
+    try {
+      const res = await fetch(`/api/dietas/cuadros?paciente_id=${pacienteId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setHistorial(data.cuadros ?? [])
+      }
+    } catch {
+      /* silencioso */
+    } finally {
+      setCargandoHistorial(false)
+    }
+  }
+
+  // Abre un cuadro guardado y repuebla toda la pantalla.
+  const cargarCuadro = async (id: string) => {
+    setError('')
+    setExito('')
+    try {
+      const res = await fetch(`/api/dietas/cuadros/${id}`)
+      if (!res.ok) {
+        setError('No se pudo cargar el cuadro.')
+        return
+      }
+      const { cuadro: c } = await res.json()
+      setForm({
+        peso: String(c.peso),
+        talla_cm: String(c.talla_cm),
+        edad: String(c.edad),
+        sexo: c.sexo,
+        nivel_actividad: c.nivel_actividad,
+        objetivo: c.objetivo,
+        formula: c.formula ?? 'MIFFLIN',
+        mlg_kg: c.mlg_kg != null ? String(c.mlg_kg) : '',
+        notas: c.notas ?? '',
+      })
+      setPct({ hco: c.pct_carbohidrato, lip: c.pct_grasa, pro: c.pct_proteina })
+      setEquivalentes((c.equivalentes as Equivalentes) ?? {})
+      // Fijamos el resultado con los valores guardados (sin recalcular).
+      setResultado({
+        geb: c.geb,
+        get: c.get,
+        kcalMeta: c.kcal_meta,
+        imc: c.imc,
+        clasificacionImc: clasificarIMC(c.imc),
+        pesoIdeal: c.peso_ideal,
+        macros: {
+          proteina: { gramos: c.proteina_g, kcal: 0, porcentaje: c.pct_proteina },
+          grasa: { gramos: c.grasa_g, kcal: 0, porcentaje: c.pct_grasa },
+          carbohidrato: { gramos: c.carbohidrato_g, kcal: 0, porcentaje: c.pct_carbohidrato },
+          kcalTotal: c.kcal_meta,
+        },
+      })
+      setKcalOverride(null)
+      // Distribución en tiempos
+      const dt = c.distribucion_tiempos as {
+        tiempos?: TiempoComida[]
+        reparto?: DistribucionTiempos
+      } | null
+      if (dt?.tiempos?.length) {
+        setTiempos(dt.tiempos)
+        setReparto(dt.reparto ?? {})
+      } else {
+        setTiempos(TIEMPOS_DEFAULT.map((t) => ({ ...t })))
+        setReparto({})
+      }
+      setPestana('cuadro')
+      setExito('Cuadro cargado.')
+    } catch {
+      setError('Error de conexión al cargar el cuadro.')
+    }
+  }
 
   const cambiarPaciente = () => {
     setPaciente(null)
@@ -247,6 +336,7 @@ export default function DietasPage() {
     setTiempos(TIEMPOS_DEFAULT.map((t) => ({ ...t })))
     setPestana('cuadro')
     setForm({ ...FORM_INICIAL })
+    setHistorial([])
     setError('')
     setExito('')
   }
@@ -331,7 +421,8 @@ export default function DietasPage() {
       const data = await res.json()
       if (res.ok) {
         setResultado(data.resultado)
-        setExito('Cuadro guardado correctamente.')
+        setExito('Cuadro guardado como nueva versión.')
+        if (paciente) cargarHistorial(paciente.id) // refresca el historial
       } else {
         setError(data.error || 'Error al guardar')
       }
@@ -387,6 +478,35 @@ export default function DietasPage() {
             Cambiar paciente
           </button>
         </div>
+      )}
+
+      {/* Historial de cuadros guardados */}
+      {paciente && historial.length > 0 && (
+        <div className={styles.historial}>
+          <span className={styles.historialTitulo}>Cuadros guardados:</span>
+          <div className={styles.historialChips}>
+            {historial.map((h) => (
+              <button
+                key={h.id}
+                className={styles.historialChip}
+                onClick={() => cargarCuadro(h.id)}
+                title="Abrir este cuadro"
+              >
+                <span className={styles.historialFecha}>
+                  {new Date(h.createdAt).toLocaleDateString('es-MX', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </span>
+                <span className={styles.historialKcal}>{Math.round(h.kcal_meta)} kcal</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {paciente && cargandoHistorial && historial.length === 0 && (
+        <p className={styles.historialVacio}>Buscando cuadros guardados…</p>
       )}
 
       {/* Pestañas */}

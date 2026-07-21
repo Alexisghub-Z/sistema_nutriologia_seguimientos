@@ -107,6 +107,65 @@
   font-weight: 600;
 }
 
+/* Historial de cuadros guardados */
+.historial {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-lg);
+}
+
+.historialTitulo {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-gray-600);
+}
+
+.historialChips {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.historialChip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 0.4rem 0.75rem;
+  background: white;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.historialChip:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.historialFecha {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-gray-800);
+}
+
+.historialKcal {
+  font-size: 0.72rem;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.historialVacio {
+  font-size: 0.85rem;
+  color: var(--color-gray-400);
+  margin-bottom: var(--spacing-lg);
+}
+
 /* Pestañas */
 .tabs {
   display: flex;
