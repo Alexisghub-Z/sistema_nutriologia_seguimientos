@@ -15,6 +15,16 @@ import {
 const GRUPO_IDS = GRUPOS_SMAE.map((g) => g.id) as [GrupoSMAEId, ...GrupoSMAEId[]]
 const equivalentesSchema = z.record(z.enum(GRUPO_IDS), z.number().min(0).max(99)).optional()
 
+// Distribución en tiempos de comida: lista de tiempos + reparto por tiempo.
+const distribucionTiemposSchema = z
+  .object({
+    tiempos: z
+      .array(z.object({ id: z.string().min(1), nombre: z.string().min(1).max(60) }))
+      .max(12),
+    reparto: z.record(z.string(), z.record(z.enum(GRUPO_IDS), z.number().min(0).max(99))),
+  })
+  .optional()
+
 /**
  * Cuadro dietosintético
  * ------------------------------------------------------------
@@ -48,6 +58,8 @@ const cuadroSchema = z.object({
 
   // Distribución por grupos del SMAE (nº de equivalentes por grupo).
   equivalentes: equivalentesSchema,
+  // Reparto de esos equivalentes en tiempos de comida (pestaña 2).
+  distribucion_tiempos: distribucionTiemposSchema,
 
   // Si es true, guarda el cuadro en la BD. Si false (default), solo calcula.
   guardar: z.boolean().default(false),
@@ -152,6 +164,7 @@ export async function POST(request: NextRequest) {
       grasa_g: metaLipG,
       carbohidrato_g: metaHcoG,
       equivalentes: Object.keys(equivalentes).length ? equivalentes : undefined,
+      distribucion_tiempos: data.distribucion_tiempos ?? undefined,
       notas: data.notas ?? null,
     },
   })
