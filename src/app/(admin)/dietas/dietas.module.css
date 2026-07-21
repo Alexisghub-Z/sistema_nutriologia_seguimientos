@@ -327,14 +327,14 @@
 }
 
 .thEquiv {
-  width: 210px;
+  width: 340px;
 }
 
 .equivControl {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .equivValor {
@@ -350,7 +350,7 @@
 /* Slider con thumb grande y pista propia (cross-browser) */
 .equivSlider {
   flex: 1 1 auto;
-  min-width: 110px;
+  min-width: 240px;
   height: 20px; /* área de agarre alta */
   cursor: pointer;
   background: transparent;
