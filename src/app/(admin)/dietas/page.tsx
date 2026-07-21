@@ -566,134 +566,223 @@ export default function DietasPage() {
 
       {paciente && pestana === 'cuadro' && (
         <div className={styles.grid}>
-          {/* Columna izquierda: datos + cuadro de distribución (apilados) */}
-          <div className={styles.columna}>
-            <div className={styles.card}>
-              <h2 className={styles.cardTitle}>Datos del paciente</h2>
+          {/* Columna izquierda: datos del paciente */}
+          <div className={styles.card}>
+            <h2 className={styles.cardTitle}>Datos del paciente</h2>
 
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label htmlFor="peso">Peso (kg)</label>
-                  <input
-                    id="peso"
-                    type="number"
-                    step="0.1"
-                    value={form.peso}
-                    onChange={(e) => setCampo('peso', e.target.value)}
-                    placeholder="80"
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label htmlFor="talla">Talla (cm)</label>
-                  <input
-                    id="talla"
-                    type="number"
-                    step="1"
-                    value={form.talla_cm}
-                    onChange={(e) => setCampo('talla_cm', e.target.value)}
-                    placeholder="180"
-                  />
-                </div>
-              </div>
-
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label htmlFor="edad">Edad (años)</label>
-                  <input
-                    id="edad"
-                    type="number"
-                    step="1"
-                    value={form.edad}
-                    onChange={(e) => setCampo('edad', e.target.value)}
-                    placeholder="30"
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label htmlFor="sexo">Sexo</label>
-                  <select
-                    id="sexo"
-                    value={form.sexo}
-                    onChange={(e) => setCampo('sexo', e.target.value)}
-                  >
-                    <option value="MASCULINO">Masculino</option>
-                    <option value="FEMENINO">Femenino</option>
-                  </select>
-                </div>
-              </div>
-
+            <div className={styles.formRow}>
               <div className={styles.formGroup}>
-                <label htmlFor="actividad">Nivel de actividad</label>
-                <select
-                  id="actividad"
-                  value={form.nivel_actividad}
-                  onChange={(e) => setCampo('nivel_actividad', e.target.value)}
-                >
-                  {ACTIVIDADES.map((a) => (
-                    <option key={a.valor} value={a.valor}>
-                      {a.label}
-                    </option>
-                  ))}
-                </select>
+                <label htmlFor="peso">Peso (kg)</label>
+                <input
+                  id="peso"
+                  type="number"
+                  step="0.1"
+                  value={form.peso}
+                  onChange={(e) => setCampo('peso', e.target.value)}
+                  placeholder="80"
+                />
               </div>
-
               <div className={styles.formGroup}>
-                <label htmlFor="objetivo">Objetivo</label>
-                <select
-                  id="objetivo"
-                  value={form.objetivo}
-                  onChange={(e) => setCampo('objetivo', e.target.value)}
-                >
-                  {OBJETIVOS.map((o) => (
-                    <option key={o.valor} value={o.valor}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label htmlFor="formula">Fórmula (gasto en reposo)</label>
-                  <select
-                    id="formula"
-                    value={form.formula}
-                    onChange={(e) => setCampo('formula', e.target.value)}
-                  >
-                    {FORMULAS.map((f) => (
-                      <option key={f.valor} value={f.valor}>
-                        {f.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {requiereMlg && (
-                  <div className={styles.formGroup}>
-                    <label htmlFor="mlg">Masa libre de grasa (kg)</label>
-                    <input
-                      id="mlg"
-                      type="number"
-                      step="0.1"
-                      value={form.mlg_kg}
-                      onChange={(e) => setCampo('mlg_kg', e.target.value)}
-                      placeholder="Ej: 65"
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className={styles.formGroup}>
-                <label htmlFor="notas">Notas (opcional)</label>
-                <textarea
-                  id="notas"
-                  rows={2}
-                  value={form.notas}
-                  onChange={(e) => setCampo('notas', e.target.value)}
-                  placeholder="Observaciones sobre el cuadro…"
+                <label htmlFor="talla">Talla (cm)</label>
+                <input
+                  id="talla"
+                  type="number"
+                  step="1"
+                  value={form.talla_cm}
+                  onChange={(e) => setCampo('talla_cm', e.target.value)}
+                  placeholder="180"
                 />
               </div>
             </div>
 
-            {/* Cuadro de distribución — card propio, debajo de los datos */}
+            <div className={styles.formRow}>
+              <div className={styles.formGroup}>
+                <label htmlFor="edad">Edad (años)</label>
+                <input
+                  id="edad"
+                  type="number"
+                  step="1"
+                  value={form.edad}
+                  onChange={(e) => setCampo('edad', e.target.value)}
+                  placeholder="30"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label htmlFor="sexo">Sexo</label>
+                <select
+                  id="sexo"
+                  value={form.sexo}
+                  onChange={(e) => setCampo('sexo', e.target.value)}
+                >
+                  <option value="MASCULINO">Masculino</option>
+                  <option value="FEMENINO">Femenino</option>
+                </select>
+              </div>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="actividad">Nivel de actividad</label>
+              <select
+                id="actividad"
+                value={form.nivel_actividad}
+                onChange={(e) => setCampo('nivel_actividad', e.target.value)}
+              >
+                {ACTIVIDADES.map((a) => (
+                  <option key={a.valor} value={a.valor}>
+                    {a.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="objetivo">Objetivo</label>
+              <select
+                id="objetivo"
+                value={form.objetivo}
+                onChange={(e) => setCampo('objetivo', e.target.value)}
+              >
+                {OBJETIVOS.map((o) => (
+                  <option key={o.valor} value={o.valor}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.formRow}>
+              <div className={styles.formGroup}>
+                <label htmlFor="formula">Fórmula (gasto en reposo)</label>
+                <select
+                  id="formula"
+                  value={form.formula}
+                  onChange={(e) => setCampo('formula', e.target.value)}
+                >
+                  {FORMULAS.map((f) => (
+                    <option key={f.valor} value={f.valor}>
+                      {f.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {requiereMlg && (
+                <div className={styles.formGroup}>
+                  <label htmlFor="mlg">Masa libre de grasa (kg)</label>
+                  <input
+                    id="mlg"
+                    type="number"
+                    step="0.1"
+                    value={form.mlg_kg}
+                    onChange={(e) => setCampo('mlg_kg', e.target.value)}
+                    placeholder="Ej: 65"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="notas">Notas (opcional)</label>
+              <textarea
+                id="notas"
+                rows={2}
+                value={form.notas}
+                onChange={(e) => setCampo('notas', e.target.value)}
+                placeholder="Observaciones sobre el cuadro…"
+              />
+            </div>
+          </div>
+
+          {/* Columna derecha: resultado + cuadro de distribución (apilados) */}
+          <div className={styles.columna}>
+            <div className={styles.card}>
+              <h2 className={styles.cardTitle}>Resultado</h2>
+              {!resultado ? (
+                <p className={styles.resultadoVacio}>
+                  Llena los datos y presiona <strong>Calcular</strong> para ver los requerimientos.
+                </p>
+              ) : (
+                <>
+                  <div className={`${styles.metricaFila} ${styles.metricaDestacada}`}>
+                    <span className={styles.metricaLabel}>Kcal meta / día</span>
+                    <span className={styles.kcalEditable}>
+                      <input
+                        type="number"
+                        className={styles.kcalInput}
+                        value={kcalOverride !== null ? kcalOverride : Math.round(kcalCalculada)}
+                        onChange={(e) => setKcalOverride(e.target.value)}
+                        aria-label="Kcal meta editable"
+                      />
+                      <span className={styles.kcalUnidad}>kcal</span>
+                      {kcalEditada && (
+                        <button
+                          type="button"
+                          className={styles.recalcularBtn}
+                          onClick={() => setKcalOverride(null)}
+                          title={`Volver al valor calculado (${Math.round(kcalCalculada)} kcal)`}
+                        >
+                          ↻
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                  {kcalEditada && (
+                    <p className={styles.kcalAviso}>
+                      Valor manual. Calculado: {Math.round(kcalCalculada)} kcal.
+                    </p>
+                  )}
+                  <div className={styles.metricaFila}>
+                    <span className={styles.metricaLabel}>Gasto energético basal (GEB)</span>
+                    <span className={styles.metricaValor}>{resultado.geb} kcal</span>
+                  </div>
+                  <div className={styles.metricaFila}>
+                    <span className={styles.metricaLabel}>Gasto energético total (GET)</span>
+                    <span className={styles.metricaValor}>{resultado.get} kcal</span>
+                  </div>
+                  <div className={styles.metricaFila}>
+                    <span className={styles.metricaLabel}>IMC</span>
+                    <span className={styles.metricaValor}>
+                      {resultado.imc}{' '}
+                      <span className={styles.badge}>{resultado.clasificacionImc}</span>
+                    </span>
+                  </div>
+                  <div className={styles.metricaFila}>
+                    <span className={styles.metricaLabel}>Peso ideal (ref.)</span>
+                    <span className={styles.metricaValor}>{resultado.pesoIdeal} kg</span>
+                  </div>
+
+                  {distribucion && (
+                    <div className={styles.macrosGrid}>
+                      <div className={styles.macroCard}>
+                        <div className={styles.macroNombre}>Proteína</div>
+                        <p className={styles.macroGramos}>
+                          {distribucion[2]!.gramos}
+                          <span className={styles.macroUnidad}>g</span>
+                        </p>
+                        <span className={styles.macroKcal}>{distribucion[2]!.kcal} kcal</span>
+                      </div>
+                      <div className={styles.macroCard}>
+                        <div className={styles.macroNombre}>Grasa</div>
+                        <p className={styles.macroGramos}>
+                          {distribucion[1]!.gramos}
+                          <span className={styles.macroUnidad}>g</span>
+                        </p>
+                        <span className={styles.macroKcal}>{distribucion[1]!.kcal} kcal</span>
+                      </div>
+                      <div className={styles.macroCard}>
+                        <div className={styles.macroNombre}>Carbohidrato</div>
+                        <p className={styles.macroGramos}>
+                          {distribucion[0]!.gramos}
+                          <span className={styles.macroUnidad}>g</span>
+                        </p>
+                        <span className={styles.macroKcal}>{distribucion[0]!.kcal} kcal</span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Cuadro de distribución — debajo de Resultado */}
             {distribucion && (
               <div className={styles.card}>
                 <h3 className={styles.subCardTitle}>Cuadro de distribución</h3>
@@ -777,95 +866,6 @@ export default function DietasPage() {
                   </table>
                 </div>
               </div>
-            )}
-          </div>
-
-          {/* Columna derecha: resultado calculado */}
-          <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Resultado</h2>
-            {!resultado ? (
-              <p className={styles.resultadoVacio}>
-                Llena los datos y presiona <strong>Calcular</strong> para ver los requerimientos.
-              </p>
-            ) : (
-              <>
-                <div className={`${styles.metricaFila} ${styles.metricaDestacada}`}>
-                  <span className={styles.metricaLabel}>Kcal meta / día</span>
-                  <span className={styles.kcalEditable}>
-                    <input
-                      type="number"
-                      className={styles.kcalInput}
-                      value={kcalOverride !== null ? kcalOverride : Math.round(kcalCalculada)}
-                      onChange={(e) => setKcalOverride(e.target.value)}
-                      aria-label="Kcal meta editable"
-                    />
-                    <span className={styles.kcalUnidad}>kcal</span>
-                    {kcalEditada && (
-                      <button
-                        type="button"
-                        className={styles.recalcularBtn}
-                        onClick={() => setKcalOverride(null)}
-                        title={`Volver al valor calculado (${Math.round(kcalCalculada)} kcal)`}
-                      >
-                        ↻
-                      </button>
-                    )}
-                  </span>
-                </div>
-                {kcalEditada && (
-                  <p className={styles.kcalAviso}>
-                    Valor manual. Calculado: {Math.round(kcalCalculada)} kcal.
-                  </p>
-                )}
-                <div className={styles.metricaFila}>
-                  <span className={styles.metricaLabel}>Gasto energético basal (GEB)</span>
-                  <span className={styles.metricaValor}>{resultado.geb} kcal</span>
-                </div>
-                <div className={styles.metricaFila}>
-                  <span className={styles.metricaLabel}>Gasto energético total (GET)</span>
-                  <span className={styles.metricaValor}>{resultado.get} kcal</span>
-                </div>
-                <div className={styles.metricaFila}>
-                  <span className={styles.metricaLabel}>IMC</span>
-                  <span className={styles.metricaValor}>
-                    {resultado.imc}{' '}
-                    <span className={styles.badge}>{resultado.clasificacionImc}</span>
-                  </span>
-                </div>
-                <div className={styles.metricaFila}>
-                  <span className={styles.metricaLabel}>Peso ideal (ref.)</span>
-                  <span className={styles.metricaValor}>{resultado.pesoIdeal} kg</span>
-                </div>
-
-                {distribucion && (
-                  <div className={styles.macrosGrid}>
-                    <div className={styles.macroCard}>
-                      <div className={styles.macroNombre}>Proteína</div>
-                      <p className={styles.macroGramos}>
-                        {distribucion[2]!.gramos}
-                        <span className={styles.macroUnidad}>g</span>
-                      </p>
-                      <span className={styles.macroKcal}>{distribucion[2]!.kcal} kcal</span>
-                    </div>
-                    <div className={styles.macroCard}>
-                      <div className={styles.macroNombre}>Grasa</div>
-                      <p className={styles.macroGramos}>
-                        {distribucion[1]!.gramos}
-                        <span className={styles.macroUnidad}>g</span>
-                      </p>
-                      <span className={styles.macroKcal}>{distribucion[1]!.kcal} kcal</span>
-                    </div>
-                    <div className={styles.macroCard}>
-                      <div className={styles.macroNombre}>Carbohidrato</div>
-                      <p className={styles.macroGramos}>
-                        {distribucion[0]!.gramos}
-                        <span className={styles.macroUnidad}>g</span>
-                      </p>
-                      <span className={styles.macroKcal}>{distribucion[0]!.kcal} kcal</span>
-                    </div>
-                  </div>
-                )}
-              </>
             )}
           </div>
         </div>

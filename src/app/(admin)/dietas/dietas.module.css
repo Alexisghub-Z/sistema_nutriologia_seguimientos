@@ -1,5 +1,5 @@
 .container {
-  max-width: 1100px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: var(--spacing-lg);
 }
@@ -482,10 +482,10 @@
   font-size: 0.85rem;
 }
 
-/* Layout de dos columnas: formulario (más ancho) + resultado (compacto) */
+/* Layout de dos columnas del mismo ancho: datos | (resultado + distribución) */
 .grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--spacing-xl);
   align-items: start;
 }
