@@ -37,6 +37,8 @@ const cuadroSchema = z.object({
   pct_grasa: z.number().min(10).max(60).default(25),
   pct_carbohidrato: z.number().min(10).max(70).default(50),
   ajuste_kcal_custom: z.number().int().min(-1500).max(1500).nullable().optional(),
+  // Kcal meta manual (sobrescribe la calculada). Si se omite, se usa la calculada.
+  kcal_meta_manual: z.number().min(800).max(6000).optional(),
 
   notas: z.string().max(2000).optional(),
 
@@ -97,14 +99,21 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Distribución por equivalentes SMAE: sumamos aportes y comparamos con la meta.
+  // Meta efectiva: la manual si el nutriólogo la sobrescribió, si no la calculada.
+  const kcalMetaEfectiva = data.kcal_meta_manual ?? resultado.kcalMeta
+  // Gramos de meta según los % y la kcal efectiva (Atwater: HCO/Pro 4, Líp 9).
+  const metaHcoG = Math.round(((kcalMetaEfectiva * data.pct_carbohidrato) / 100 / 4) * 10) / 10
+  const metaLipG = Math.round(((kcalMetaEfectiva * data.pct_grasa) / 100 / 9) * 10) / 10
+  const metaProG = Math.round(((kcalMetaEfectiva * data.pct_proteina) / 100 / 4) * 10) / 10
+
+  // Distribución por equivalentes SMAE: sumamos aportes y comparamos con la meta efectiva.
   const equivalentes = (data.equivalentes ?? {}) as Equivalentes
   const totalesSmae = sumarEquivalentes(equivalentes)
   const diferenciaSmae = calcularDiferencia(totalesSmae, {
-    kcalMeta: resultado.kcalMeta,
-    hco_g: resultado.macros.carbohidrato.gramos,
-    proteina_g: resultado.macros.proteina.gramos,
-    lipidos_g: resultado.macros.grasa.gramos,
+    kcalMeta: kcalMetaEfectiva,
+    hco_g: metaHcoG,
+    proteina_g: metaProG,
+    lipidos_g: metaLipG,
   })
   const smae = { totales: totalesSmae, diferencia: diferenciaSmae }
 
@@ -130,12 +139,12 @@ export async function POST(request: NextRequest) {
       ajuste_kcal_custom: data.ajuste_kcal_custom ?? null,
       geb: resultado.geb,
       get: resultado.get,
-      kcal_meta: resultado.kcalMeta,
+      kcal_meta: kcalMetaEfectiva,
       imc: resultado.imc,
       peso_ideal: resultado.pesoIdeal,
-      proteina_g: resultado.macros.proteina.gramos,
-      grasa_g: resultado.macros.grasa.gramos,
-      carbohidrato_g: resultado.macros.carbohidrato.gramos,
+      proteina_g: metaProG,
+      grasa_g: metaLipG,
+      carbohidrato_g: metaHcoG,
       equivalentes: Object.keys(equivalentes).length ? equivalentes : undefined,
       notas: data.notas ?? null,
     },
