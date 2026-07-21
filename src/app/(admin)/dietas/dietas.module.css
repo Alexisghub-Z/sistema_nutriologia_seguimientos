@@ -150,22 +150,92 @@
   margin-bottom: var(--spacing-lg);
 }
 
-/* Tabla de distribución en tiempos (matriz grupos × tiempos) */
+/* ============================================================
+   Tabla de distribución en tiempos (matriz grupos × tiempos)
+   Diseño premium: cabecera con fondo, celdas centradas, hover por fila.
+   ============================================================ */
+.tablaTiempos {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9rem;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.tablaTiempos th,
+.tablaTiempos td {
+  padding: 0.7rem 0.85rem;
+  text-align: center;
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+/* Cabecera de tiempos */
+.tablaTiempos thead th {
+  background: var(--color-gray-50);
+  border-bottom: 1px solid var(--color-gray-200);
+  vertical-align: middle;
+}
+
 .thTiempo {
-  min-width: 130px;
+  min-width: 118px;
 }
 
 .thTiempoContenido {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.15rem;
   justify-content: center;
 }
 
 .thCuadre {
-  min-width: 130px;
+  min-width: 118px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-gray-400);
+  font-weight: 700;
 }
 
+/* Primera columna (nombre de grupo) */
+.tablaTiempos .thGrupo,
+.tablaTiempos .tdGrupo {
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-gray-800);
+  width: 210px;
+  white-space: normal;
+  background: white;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+
+.tablaTiempos thead .thGrupo {
+  background: var(--color-gray-50);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-gray-400);
+  font-weight: 700;
+}
+
+/* Filas del cuerpo con hover suave */
+.tablaTiempos tbody tr:hover td {
+  background: var(--color-gray-50);
+}
+
+.tablaTiempos tbody tr:hover .tdGrupo {
+  background: var(--color-gray-50);
+}
+
+.tablaTiempos tbody tr:last-child td {
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+/* Nombre editable del tiempo de comida */
 .tiempoNombre {
   width: 100%;
   min-width: 0;
@@ -175,47 +245,113 @@
   text-transform: none;
   letter-spacing: 0;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  padding: 0.2rem 0.35rem;
+  border-radius: var(--radius-md);
+  padding: 0.3rem 0.4rem;
   background: transparent;
   text-align: center;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
 }
 
-.tiempoNombre:hover,
+.tiempoNombre:hover {
+  background: white;
+  border-color: var(--color-gray-200);
+}
+
 .tiempoNombre:focus {
-  border-color: var(--color-gray-300);
+  border-color: var(--color-primary);
   outline: none;
-  background: var(--color-gray-50);
+  background: white;
 }
 
 .tiempoEliminar {
   border: none;
   background: none;
-  color: var(--color-gray-400);
-  font-size: 1.2rem;
+  color: var(--color-gray-300);
+  font-size: 1.15rem;
   line-height: 1;
   cursor: pointer;
-  padding: 0 0.2rem;
+  padding: 0 0.15rem;
   flex: 0 0 auto;
+  transition: color 0.12s ease;
 }
 
 .tiempoEliminar:hover {
   color: #dc2626;
 }
 
+/* Input de porciones — centrado y con look premium */
 .tiempoInput {
-  width: 58px;
-  padding: 0.3rem 0.4rem;
-  text-align: right;
-  border: 1px solid var(--color-gray-300);
-  border-radius: var(--radius-sm);
-  font-size: 0.9rem;
+  width: 62px;
+  padding: 0.4rem 0.3rem;
+  text-align: center;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-gray-800);
   font-variant-numeric: tabular-nums;
+  background: white;
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.tiempoInput::-webkit-outer-spin-button,
+.tiempoInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.tiempoInput:hover {
+  border-color: var(--color-gray-300);
 }
 
 .tiempoInput:focus {
   outline: none;
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 34 197 94), 0.15);
+}
+
+.tiempoInput::placeholder {
+  color: var(--color-gray-300);
+  font-weight: 400;
+}
+
+/* Columna de cuadre (repartido/total) */
+.celdaCuadre {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Pie con el resumen por tiempo */
+.tablaTiempos tfoot td {
+  background: var(--color-gray-50);
+  font-variant-numeric: tabular-nums;
+}
+
+.tablaTiempos tfoot tr:first-child td {
+  border-top: 2px solid var(--color-gray-200);
+}
+
+.filaEnergia .tdGrupo,
+.tablaTiempos tfoot .filaEnergia td {
+  font-weight: 700;
+  color: var(--color-gray-900);
+}
+
+.filaEnergiaValor {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.filaMacroValor {
+  color: var(--color-gray-600);
+  font-size: 0.85rem;
 }
 
 /* Layout de dos columnas: formulario + resultado */

@@ -828,7 +828,7 @@ export default function DietasPage() {
           ) : (
             <>
               <div className={styles.tablaWrap}>
-                <table className={styles.tablaSmae}>
+                <table className={styles.tablaTiempos}>
                   <thead>
                     <tr>
                       <th className={styles.thGrupo}>Grupo</th>
@@ -876,8 +876,10 @@ export default function DietasPage() {
                               />
                             </td>
                           ))}
-                          <td className={completo ? styles.difOk : styles.difLejos}>
-                            {c?.repartido ?? 0} / {c?.total ?? 0} {completo ? '✓' : '✗'}
+                          <td className={styles.celdaCuadre}>
+                            <span className={completo ? styles.difOk : styles.difLejos}>
+                              {c?.repartido ?? 0} / {c?.total ?? 0} {completo ? '✓' : '✗'}
+                            </span>
                           </td>
                         </tr>
                       )
@@ -885,37 +887,37 @@ export default function DietasPage() {
                   </tbody>
                   <tfoot>
                     {/* Resumen por tiempo (columna): kcal y macros */}
-                    <tr className={styles.filaTotal}>
+                    <tr className={styles.filaEnergia}>
                       <td className={styles.tdGrupo}>Energía</td>
                       {tiempos.map((t) => (
-                        <td key={t.id} className={styles.tdNum}>
+                        <td key={t.id} className={styles.filaEnergiaValor}>
                           {resumenTiempo(reparto[t.id] ?? {}).kcal} kcal
                         </td>
                       ))}
                       <td></td>
                     </tr>
-                    <tr className={styles.filaMeta}>
+                    <tr>
                       <td className={styles.tdGrupo}>Proteína (g)</td>
                       {tiempos.map((t) => (
-                        <td key={t.id} className={styles.tdNum}>
+                        <td key={t.id} className={styles.filaMacroValor}>
                           {resumenTiempo(reparto[t.id] ?? {}).proteina}
                         </td>
                       ))}
                       <td></td>
                     </tr>
-                    <tr className={styles.filaMeta}>
+                    <tr>
                       <td className={styles.tdGrupo}>Lípidos (g)</td>
                       {tiempos.map((t) => (
-                        <td key={t.id} className={styles.tdNum}>
+                        <td key={t.id} className={styles.filaMacroValor}>
                           {resumenTiempo(reparto[t.id] ?? {}).lipidos}
                         </td>
                       ))}
                       <td></td>
                     </tr>
-                    <tr className={styles.filaMeta}>
+                    <tr>
                       <td className={styles.tdGrupo}>HCO (g)</td>
                       {tiempos.map((t) => (
-                        <td key={t.id} className={styles.tdNum}>
+                        <td key={t.id} className={styles.filaMacroValor}>
                           {resumenTiempo(reparto[t.id] ?? {}).hco}
                         </td>
                       ))}
