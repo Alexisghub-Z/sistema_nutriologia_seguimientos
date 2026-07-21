@@ -53,6 +53,16 @@ const OBJETIVOS = [
   { valor: 'SUBIR_PESO', label: 'Subir peso' },
 ]
 
+const FORMULAS = [
+  { valor: 'MIFFLIN', label: 'Mifflin-St Jeor (recomendada)' },
+  { valor: 'HARRIS', label: 'Harris-Benedict revisada' },
+  { valor: 'KATCH', label: 'Katch-McArdle (requiere MLG)' },
+  { valor: 'CUNNINGHAM', label: 'Cunningham (requiere MLG)' },
+]
+
+// Fórmulas que necesitan la masa libre de grasa (MLG).
+const FORMULAS_MLG = ['KATCH', 'CUNNINGHAM']
+
 const FORM_INICIAL = {
   peso: '',
   talla_cm: '',
@@ -60,6 +70,8 @@ const FORM_INICIAL = {
   sexo: 'MASCULINO',
   nivel_actividad: 'MODERADO',
   objetivo: 'BAJAR_PESO',
+  formula: 'MIFFLIN',
+  mlg_kg: '',
   notas: '',
 }
 
@@ -162,6 +174,7 @@ export default function DietasPage() {
           peso: data.peso != null ? String(data.peso) : '',
           talla_cm: data.talla_cm != null ? String(data.talla_cm) : '',
           edad: data.edad != null ? String(data.edad) : '',
+          mlg_kg: data.mlg_kg != null ? String(data.mlg_kg) : '',
         }))
       }
     } catch {
@@ -200,6 +213,8 @@ export default function DietasPage() {
     sexo: form.sexo,
     nivel_actividad: form.nivel_actividad,
     objetivo: form.objetivo,
+    formula: form.formula,
+    mlg_kg: form.mlg_kg ? Number(form.mlg_kg) : undefined,
     pct_proteina: pct.pro,
     pct_grasa: pct.lip,
     pct_carbohidrato: pct.hco,
@@ -209,11 +224,19 @@ export default function DietasPage() {
     guardar,
   })
 
+  const requiereMlg = FORMULAS_MLG.includes(form.formula)
+
   const calcular = async () => {
     setError('')
     setExito('')
     if (!pctOk) {
       setError('Los porcentajes de la distribución (HCO/Líp/Pro) deben sumar 100.')
+      return
+    }
+    if (requiereMlg && !form.mlg_kg) {
+      setError(
+        'Esta fórmula requiere la masa libre de grasa (MLG). Escríbela o elige otra fórmula.'
+      )
       return
     }
     setCalculando(true)
@@ -391,6 +414,36 @@ export default function DietasPage() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className={styles.formRow}>
+              <div className={styles.formGroup}>
+                <label htmlFor="formula">Fórmula (gasto en reposo)</label>
+                <select
+                  id="formula"
+                  value={form.formula}
+                  onChange={(e) => setCampo('formula', e.target.value)}
+                >
+                  {FORMULAS.map((f) => (
+                    <option key={f.valor} value={f.valor}>
+                      {f.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {requiereMlg && (
+                <div className={styles.formGroup}>
+                  <label htmlFor="mlg">Masa libre de grasa (kg)</label>
+                  <input
+                    id="mlg"
+                    type="number"
+                    step="0.1"
+                    value={form.mlg_kg}
+                    onChange={(e) => setCampo('mlg_kg', e.target.value)}
+                    placeholder="Ej: 65"
+                  />
+                </div>
+              )}
             </div>
 
             <div className={styles.formGroup}>

@@ -33,6 +33,10 @@ const cuadroSchema = z.object({
   nivel_actividad: z.enum(['SEDENTARIO', 'LIGERO', 'MODERADO', 'ACTIVO', 'MUY_ACTIVO']),
   objetivo: z.enum(['BAJAR_PESO', 'MANTENER', 'SUBIR_PESO']),
 
+  // Fórmula para el gasto en reposo. KATCH/CUNNINGHAM requieren mlg_kg.
+  formula: z.enum(['MIFFLIN', 'HARRIS', 'KATCH', 'CUNNINGHAM']).default('MIFFLIN'),
+  mlg_kg: z.number().min(5).max(200).optional(),
+
   pct_proteina: z.number().min(5).max(60).default(25),
   pct_grasa: z.number().min(10).max(60).default(25),
   pct_carbohidrato: z.number().min(10).max(70).default(50),
@@ -90,6 +94,8 @@ export async function POST(request: NextRequest) {
         carbohidrato: data.pct_carbohidrato,
       },
       ajusteObjetivoCustom: data.ajuste_kcal_custom ?? undefined,
+      formula: data.formula,
+      mlgKg: data.mlg_kg,
     }
     resultado = calcularCuadroDietosintetico(entrada)
   } catch (e) {

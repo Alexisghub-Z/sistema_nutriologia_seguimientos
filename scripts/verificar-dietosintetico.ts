@@ -14,6 +14,7 @@ import {
   calcularIMC,
   clasificarIMC,
   distribuirMacros,
+  calcularMLG,
   calcularCuadroDietosintetico,
   DISTRIBUCION_MACROS_DEFAULT,
 } from '../src/lib/utils/dietosintetico'
@@ -55,6 +56,22 @@ aprox(calcularGEB(80, 180, 30, 'MASCULINO'), 1780, 0, 'Hombre 80kg/180cm/30a')
 // Mujer 60kg, 165cm, 25 años:
 // 10*60 + 6.25*165 - 5*25 - 161 = 600 + 1031.25 - 125 - 161 = 1345.25 → 1345
 aprox(calcularGEB(60, 165, 25, 'FEMENINO'), 1345, 1, 'Mujer 60kg/165cm/25a')
+
+console.log('\n── GEB otras fórmulas ──')
+// Harris-Benedict revisada, hombre 80/180/30:
+// 13.397*80 + 4.799*180 - 5.677*30 + 88.362 = 1071.76 + 863.82 - 170.31 + 88.362 = 1853.6 → 1854
+aprox(calcularGEB(80, 180, 30, 'MASCULINO', 'HARRIS'), 1854, 1, 'Harris-Benedict hombre')
+// Harris mujer 60/165/25:
+// 9.247*60 + 3.098*165 - 4.33*25 + 447.593 = 554.82 + 511.17 - 108.25 + 447.593 = 1405.3 → 1405
+aprox(calcularGEB(60, 165, 25, 'FEMENINO', 'HARRIS'), 1405, 1, 'Harris-Benedict mujer')
+// Katch-McArdle con MLG 65 kg: 370 + 21.6*65 = 370 + 1404 = 1774
+aprox(calcularGEB(80, 180, 30, 'MASCULINO', 'KATCH', 65), 1774, 0, 'Katch-McArdle (MLG 65)')
+// Cunningham con MLG 65 kg: 500 + 22*65 = 500 + 1430 = 1930
+aprox(calcularGEB(80, 180, 30, 'MASCULINO', 'CUNNINGHAM', 65), 1930, 0, 'Cunningham (MLG 65)')
+// MLG: 80 kg con 18% grasa = 80*0.82 = 65.6
+aprox(calcularMLG(80, 18), 65.6, 0.1, 'MLG (80kg, 18% grasa)')
+// Katch sin MLG debe lanzar
+lanza(() => calcularGEB(80, 180, 30, 'MASCULINO', 'KATCH'), 'Katch sin MLG lanza error')
 
 console.log('\n── GET (GEB × factor actividad) ──')
 // 1780 × 1.55 (moderado) = 2759
