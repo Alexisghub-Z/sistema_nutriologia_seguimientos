@@ -566,151 +566,136 @@ export default function DietasPage() {
 
       {paciente && pestana === 'cuadro' && (
         <div className={styles.grid}>
-          {/* Columna izquierda: datos del nutriólogo */}
-          <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Datos del paciente</h2>
+          {/* Columna izquierda: datos + cuadro de distribución (apilados) */}
+          <div className={styles.columna}>
+            <div className={styles.card}>
+              <h2 className={styles.cardTitle}>Datos del paciente</h2>
 
-            <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label htmlFor="peso">Peso (kg)</label>
-                <input
-                  id="peso"
-                  type="number"
-                  step="0.1"
-                  value={form.peso}
-                  onChange={(e) => setCampo('peso', e.target.value)}
-                  placeholder="80"
-                />
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label htmlFor="peso">Peso (kg)</label>
+                  <input
+                    id="peso"
+                    type="number"
+                    step="0.1"
+                    value={form.peso}
+                    onChange={(e) => setCampo('peso', e.target.value)}
+                    placeholder="80"
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label htmlFor="talla">Talla (cm)</label>
+                  <input
+                    id="talla"
+                    type="number"
+                    step="1"
+                    value={form.talla_cm}
+                    onChange={(e) => setCampo('talla_cm', e.target.value)}
+                    placeholder="180"
+                  />
+                </div>
               </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="talla">Talla (cm)</label>
-                <input
-                  id="talla"
-                  type="number"
-                  step="1"
-                  value={form.talla_cm}
-                  onChange={(e) => setCampo('talla_cm', e.target.value)}
-                  placeholder="180"
-                />
-              </div>
-            </div>
 
-            <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label htmlFor="edad">Edad (años)</label>
-                <input
-                  id="edad"
-                  type="number"
-                  step="1"
-                  value={form.edad}
-                  onChange={(e) => setCampo('edad', e.target.value)}
-                  placeholder="30"
-                />
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label htmlFor="edad">Edad (años)</label>
+                  <input
+                    id="edad"
+                    type="number"
+                    step="1"
+                    value={form.edad}
+                    onChange={(e) => setCampo('edad', e.target.value)}
+                    placeholder="30"
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label htmlFor="sexo">Sexo</label>
+                  <select
+                    id="sexo"
+                    value={form.sexo}
+                    onChange={(e) => setCampo('sexo', e.target.value)}
+                  >
+                    <option value="MASCULINO">Masculino</option>
+                    <option value="FEMENINO">Femenino</option>
+                  </select>
+                </div>
               </div>
+
               <div className={styles.formGroup}>
-                <label htmlFor="sexo">Sexo</label>
+                <label htmlFor="actividad">Nivel de actividad</label>
                 <select
-                  id="sexo"
-                  value={form.sexo}
-                  onChange={(e) => setCampo('sexo', e.target.value)}
+                  id="actividad"
+                  value={form.nivel_actividad}
+                  onChange={(e) => setCampo('nivel_actividad', e.target.value)}
                 >
-                  <option value="MASCULINO">Masculino</option>
-                  <option value="FEMENINO">Femenino</option>
-                </select>
-              </div>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="actividad">Nivel de actividad</label>
-              <select
-                id="actividad"
-                value={form.nivel_actividad}
-                onChange={(e) => setCampo('nivel_actividad', e.target.value)}
-              >
-                {ACTIVIDADES.map((a) => (
-                  <option key={a.valor} value={a.valor}>
-                    {a.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="objetivo">Objetivo</label>
-              <select
-                id="objetivo"
-                value={form.objetivo}
-                onChange={(e) => setCampo('objetivo', e.target.value)}
-              >
-                {OBJETIVOS.map((o) => (
-                  <option key={o.valor} value={o.valor}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label htmlFor="formula">Fórmula (gasto en reposo)</label>
-                <select
-                  id="formula"
-                  value={form.formula}
-                  onChange={(e) => setCampo('formula', e.target.value)}
-                >
-                  {FORMULAS.map((f) => (
-                    <option key={f.valor} value={f.valor}>
-                      {f.label}
+                  {ACTIVIDADES.map((a) => (
+                    <option key={a.valor} value={a.valor}>
+                      {a.label}
                     </option>
                   ))}
                 </select>
               </div>
-              {requiereMlg && (
+
+              <div className={styles.formGroup}>
+                <label htmlFor="objetivo">Objetivo</label>
+                <select
+                  id="objetivo"
+                  value={form.objetivo}
+                  onChange={(e) => setCampo('objetivo', e.target.value)}
+                >
+                  {OBJETIVOS.map((o) => (
+                    <option key={o.valor} value={o.valor}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label htmlFor="mlg">Masa libre de grasa (kg)</label>
-                  <input
-                    id="mlg"
-                    type="number"
-                    step="0.1"
-                    value={form.mlg_kg}
-                    onChange={(e) => setCampo('mlg_kg', e.target.value)}
-                    placeholder="Ej: 65"
-                  />
+                  <label htmlFor="formula">Fórmula (gasto en reposo)</label>
+                  <select
+                    id="formula"
+                    value={form.formula}
+                    onChange={(e) => setCampo('formula', e.target.value)}
+                  >
+                    {FORMULAS.map((f) => (
+                      <option key={f.valor} value={f.valor}>
+                        {f.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              )}
+                {requiereMlg && (
+                  <div className={styles.formGroup}>
+                    <label htmlFor="mlg">Masa libre de grasa (kg)</label>
+                    <input
+                      id="mlg"
+                      type="number"
+                      step="0.1"
+                      value={form.mlg_kg}
+                      onChange={(e) => setCampo('mlg_kg', e.target.value)}
+                      placeholder="Ej: 65"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="notas">Notas (opcional)</label>
+                <textarea
+                  id="notas"
+                  rows={2}
+                  value={form.notas}
+                  onChange={(e) => setCampo('notas', e.target.value)}
+                  placeholder="Observaciones sobre el cuadro…"
+                />
+              </div>
             </div>
 
-            <div className={styles.formGroup}>
-              <label htmlFor="notas">Notas (opcional)</label>
-              <textarea
-                id="notas"
-                rows={2}
-                value={form.notas}
-                onChange={(e) => setCampo('notas', e.target.value)}
-                placeholder="Observaciones sobre el cuadro…"
-              />
-            </div>
-
-            <div className={styles.acciones}>
-              <Button onClick={calcular} disabled={!datosMinimos || calculando}>
-                {calculando ? 'Calculando…' : 'Calcular'}
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => setPestana('tiempos')}
-                disabled={!resultado}
-                title={!resultado ? 'Primero calcula el cuadro' : ''}
-              >
-                Continuar a distribución →
-              </Button>
-            </div>
-
-            {error && <p className={styles.error}>{error}</p>}
-            {exito && <p className={styles.exito}>{exito}</p>}
-
-            {/* Cuadro de distribución — % editables, junto a lo que se edita */}
+            {/* Cuadro de distribución — card propio, debajo de los datos */}
             {distribucion && (
-              <>
+              <div className={styles.card}>
                 <h3 className={styles.subCardTitle}>Cuadro de distribución</h3>
                 <p className={styles.smaeAyuda}>
                   Ajusta el % de cada macronutriente; recalcula kcal, gramos y la META de la tabla
@@ -791,7 +776,7 @@ export default function DietasPage() {
                     </tfoot>
                   </table>
                 </div>
-              </>
+              </div>
             )}
           </div>
 
@@ -885,6 +870,25 @@ export default function DietasPage() {
           </div>
         </div>
       )}
+
+      {/* Barra de acciones al final de la pestaña 1 */}
+      {paciente && pestana === 'cuadro' && (
+        <div className={styles.barraAcciones}>
+          <Button onClick={calcular} disabled={!datosMinimos || calculando}>
+            {calculando ? 'Calculando…' : 'Calcular'}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => setPestana('tiempos')}
+            disabled={!resultado}
+            title={!resultado ? 'Primero calcula el cuadro' : ''}
+          >
+            Continuar a distribución →
+          </Button>
+        </div>
+      )}
+      {paciente && pestana === 'cuadro' && error && <p className={styles.error}>{error}</p>}
+      {paciente && pestana === 'cuadro' && exito && <p className={styles.exito}>{exito}</p>}
 
       {/* Distribución por equivalentes (SMAE) — aparece al calcular */}
       {paciente && pestana === 'cuadro' && resultado && diferenciaSmae && distribucion && (

@@ -496,6 +496,24 @@
   }
 }
 
+/* Columna izquierda: apila los cards (datos + distribución) con separación */
+.columna {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  min-width: 0;
+}
+
+/* Barra de acciones a ancho completo, al final de la pestaña 1 */
+.barraAcciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-gray-200);
+}
+
 .card {
   background: white;
   border: 1px solid var(--color-gray-200);
@@ -590,10 +608,12 @@
   border-top: 1px solid var(--color-gray-100);
 }
 
-/* Cuadro de distribución dentro del panel derecho: tabla fluida (sin el
-   min-width ancho de la tabla SMAE), la primera columna se ajusta al contenido. */
-.tablaDist {
+/* Cuadro de distribución: tabla fluida (sin el min-width ancho de la tabla
+   SMAE), la primera columna se ajusta al contenido. Mayor especificidad para
+   ganarle al min-width de .tablaSmae y así evitar el scroll horizontal. */
+.tablaSmae.tablaDist {
   min-width: 0;
+  width: 100%;
 }
 
 .tablaDist .tdGrupo,
