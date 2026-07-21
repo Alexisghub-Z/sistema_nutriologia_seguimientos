@@ -60,11 +60,11 @@ const FORM_INICIAL = {
   sexo: 'MASCULINO',
   nivel_actividad: 'MODERADO',
   objetivo: 'BAJAR_PESO',
-  pct_proteina: '25',
-  pct_grasa: '25',
-  pct_carbohidrato: '50',
   notas: '',
 }
+
+// Distribución calórica por defecto (% de HCO / lípidos / proteína).
+const PCT_DEFAULT = { hco: 50, lip: 25, pro: 25 }
 
 export default function DietasPage() {
   const [query, setQuery] = useState('')
@@ -73,33 +73,46 @@ export default function DietasPage() {
   const [form, setForm] = useState({ ...FORM_INICIAL })
   const [resultado, setResultado] = useState<ResultadoCuadro | null>(null)
   const [equivalentes, setEquivalentes] = useState<Equivalentes>({})
+  // Distribución calórica editable (% de HCO / lípidos / proteína).
+  const [pct, setPct] = useState({ ...PCT_DEFAULT })
+  // Kcal meta editable: null = usa la calculada; string = valor manual.
+  const [kcalOverride, setKcalOverride] = useState<string | null>(null)
   const [calculando, setCalculando] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
   const [exito, setExito] = useState('')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Totales y diferencia del SMAE, recalculados en vivo mientras el nutriólogo
-  // ajusta los equivalentes de cada grupo.
-  const totalesSmae = useMemo(() => sumarEquivalentes(equivalentes), [equivalentes])
-  const diferenciaSmae = useMemo(() => {
-    if (!resultado) return null
-    return calcularDiferencia(totalesSmae, {
-      kcalMeta: resultado.kcalMeta,
-      hco_g: resultado.macros.carbohidrato.gramos,
-      proteina_g: resultado.macros.proteina.gramos,
-      lipidos_g: resultado.macros.grasa.gramos,
-    })
-  }, [totalesSmae, resultado])
+  // Kcal calculada por el sistema (Mifflin × actividad ± objetivo).
+  const kcalCalculada = resultado?.kcalMeta ?? 0
+  // Kcal meta efectiva: la manual si el nutriólogo la sobrescribió, si no la calculada.
+  const kcalMeta =
+    kcalOverride !== null && kcalOverride !== '' ? Number(kcalOverride) : kcalCalculada
+  const kcalEditada =
+    kcalOverride !== null && kcalOverride !== '' && Number(kcalOverride) !== kcalCalculada
+
+  const sumaPct = pct.hco + pct.lip + pct.pro
+  const pctOk = Math.abs(sumaPct - 100) < 0.5
+
+  // Cuadro de distribución (HCO/Líp/Pro/HCO simples) a partir de la meta y los % editables.
   const distribucion = useMemo(() => {
     if (!resultado) return null
-    return cuadroDistribucion(
-      resultado.kcalMeta,
-      resultado.macros.carbohidrato.porcentaje,
-      resultado.macros.grasa.porcentaje,
-      resultado.macros.proteina.porcentaje
-    )
-  }, [resultado])
+    return cuadroDistribucion(kcalMeta, pct.hco, pct.lip, pct.pro)
+  }, [resultado, kcalMeta, pct])
+
+  // Totales y diferencia del SMAE, recalculados en vivo. La META son los gramos
+  // que salen de la distribución editable (no del cálculo original).
+  const totalesSmae = useMemo(() => sumarEquivalentes(equivalentes), [equivalentes])
+  const diferenciaSmae = useMemo(() => {
+    if (!distribucion) return null
+    const [hco, lip, pro] = distribucion
+    return calcularDiferencia(totalesSmae, {
+      kcalMeta,
+      hco_g: hco!.gramos,
+      proteina_g: pro!.gramos,
+      lipidos_g: lip!.gramos,
+    })
+  }, [totalesSmae, distribucion, kcalMeta])
 
   const setEquivalente = (id: GrupoSMAEId, valor: string) => {
     // Permite medios equivalentes: redondea al 0.5 más cercano.
@@ -134,6 +147,8 @@ export default function DietasPage() {
     setQuery('')
     setResultado(null)
     setEquivalentes({})
+    setPct({ ...PCT_DEFAULT })
+    setKcalOverride(null)
     setError('')
     setExito('')
     setForm({ ...FORM_INICIAL })
@@ -158,6 +173,8 @@ export default function DietasPage() {
     setPaciente(null)
     setResultado(null)
     setEquivalentes({})
+    setPct({ ...PCT_DEFAULT })
+    setKcalOverride(null)
     setForm({ ...FORM_INICIAL })
     setError('')
     setExito('')
@@ -169,11 +186,11 @@ export default function DietasPage() {
     setExito('')
   }
 
-  const sumaMacros =
-    Number(form.pct_proteina || 0) +
-    Number(form.pct_grasa || 0) +
-    Number(form.pct_carbohidrato || 0)
-  const macrosOk = Math.abs(sumaMacros - 100) < 0.5
+  // Actualiza un porcentaje de la distribución (HCO/Líp/Pro).
+  const setPctCampo = (macro: 'hco' | 'lip' | 'pro', valor: string) => {
+    const n = valor === '' ? 0 : Math.max(0, Math.min(100, Number(valor)))
+    setPct((p) => ({ ...p, [macro]: n }))
+  }
 
   const construirPayload = (guardar: boolean) => ({
     paciente_id: paciente!.id,
@@ -183,9 +200,10 @@ export default function DietasPage() {
     sexo: form.sexo,
     nivel_actividad: form.nivel_actividad,
     objetivo: form.objetivo,
-    pct_proteina: Number(form.pct_proteina),
-    pct_grasa: Number(form.pct_grasa),
-    pct_carbohidrato: Number(form.pct_carbohidrato),
+    pct_proteina: pct.pro,
+    pct_grasa: pct.lip,
+    pct_carbohidrato: pct.hco,
+    kcal_meta_manual: kcalEditada ? kcalMeta : undefined,
     equivalentes,
     notas: form.notas || undefined,
     guardar,
@@ -194,8 +212,8 @@ export default function DietasPage() {
   const calcular = async () => {
     setError('')
     setExito('')
-    if (!macrosOk) {
-      setError('Los porcentajes de macros deben sumar 100.')
+    if (!pctOk) {
+      setError('Los porcentajes de la distribución (HCO/Líp/Pro) deben sumar 100.')
       return
     }
     setCalculando(true)
@@ -376,38 +394,6 @@ export default function DietasPage() {
             </div>
 
             <div className={styles.formGroup}>
-              <label>Distribución de macros (%)</label>
-              <div className={styles.macrosRow}>
-                <input
-                  type="number"
-                  aria-label="Proteína %"
-                  value={form.pct_proteina}
-                  onChange={(e) => setCampo('pct_proteina', e.target.value)}
-                  placeholder="Prot"
-                />
-                <input
-                  type="number"
-                  aria-label="Grasa %"
-                  value={form.pct_grasa}
-                  onChange={(e) => setCampo('pct_grasa', e.target.value)}
-                  placeholder="Grasa"
-                />
-                <input
-                  type="number"
-                  aria-label="Carbohidratos %"
-                  value={form.pct_carbohidrato}
-                  onChange={(e) => setCampo('pct_carbohidrato', e.target.value)}
-                  placeholder="Carbo"
-                />
-              </div>
-              <span
-                className={`${styles.macrosSuma} ${macrosOk ? styles.macrosSumaOk : styles.macrosSumaError}`}
-              >
-                Suma: {sumaMacros}% {macrosOk ? '✓' : '(debe sumar 100)'}
-              </span>
-            </div>
-
-            <div className={styles.formGroup}>
               <label htmlFor="notas">Notas (opcional)</label>
               <textarea
                 id="notas"
@@ -419,7 +405,7 @@ export default function DietasPage() {
             </div>
 
             <div className={styles.acciones}>
-              <Button onClick={calcular} disabled={!datosMinimos || !macrosOk || calculando}>
+              <Button onClick={calcular} disabled={!datosMinimos || calculando}>
                 {calculando ? 'Calculando…' : 'Calcular'}
               </Button>
               <Button variant="secondary" onClick={guardar} disabled={!resultado || guardando}>
@@ -442,8 +428,32 @@ export default function DietasPage() {
               <>
                 <div className={`${styles.metricaFila} ${styles.metricaDestacada}`}>
                   <span className={styles.metricaLabel}>Kcal meta / día</span>
-                  <span className={styles.metricaValor}>{resultado.kcalMeta} kcal</span>
+                  <span className={styles.kcalEditable}>
+                    <input
+                      type="number"
+                      className={styles.kcalInput}
+                      value={kcalOverride !== null ? kcalOverride : Math.round(kcalCalculada)}
+                      onChange={(e) => setKcalOverride(e.target.value)}
+                      aria-label="Kcal meta editable"
+                    />
+                    <span className={styles.kcalUnidad}>kcal</span>
+                    {kcalEditada && (
+                      <button
+                        type="button"
+                        className={styles.recalcularBtn}
+                        onClick={() => setKcalOverride(null)}
+                        title={`Volver al valor calculado (${Math.round(kcalCalculada)} kcal)`}
+                      >
+                        ↻
+                      </button>
+                    )}
+                  </span>
                 </div>
+                {kcalEditada && (
+                  <p className={styles.kcalAviso}>
+                    Valor manual. Calculado: {Math.round(kcalCalculada)} kcal.
+                  </p>
+                )}
                 <div className={styles.metricaFila}>
                   <span className={styles.metricaLabel}>Gasto energético basal (GEB)</span>
                   <span className={styles.metricaValor}>{resultado.geb} kcal</span>
@@ -464,25 +474,25 @@ export default function DietasPage() {
                   <span className={styles.metricaValor}>{resultado.pesoIdeal} kg</span>
                 </div>
 
-                <div className={styles.macrosGrid}>
-                  <div className={styles.macroCard}>
-                    <div className={styles.macroNombre}>Proteína</div>
-                    <p className={styles.macroGramos}>{resultado.macros.proteina.gramos} g</p>
-                    <span className={styles.macroKcal}>{resultado.macros.proteina.kcal} kcal</span>
+                {distribucion && (
+                  <div className={styles.macrosGrid}>
+                    <div className={styles.macroCard}>
+                      <div className={styles.macroNombre}>Proteína</div>
+                      <p className={styles.macroGramos}>{distribucion[2]!.gramos} g</p>
+                      <span className={styles.macroKcal}>{distribucion[2]!.kcal} kcal</span>
+                    </div>
+                    <div className={styles.macroCard}>
+                      <div className={styles.macroNombre}>Grasa</div>
+                      <p className={styles.macroGramos}>{distribucion[1]!.gramos} g</p>
+                      <span className={styles.macroKcal}>{distribucion[1]!.kcal} kcal</span>
+                    </div>
+                    <div className={styles.macroCard}>
+                      <div className={styles.macroNombre}>Carbohidrato</div>
+                      <p className={styles.macroGramos}>{distribucion[0]!.gramos} g</p>
+                      <span className={styles.macroKcal}>{distribucion[0]!.kcal} kcal</span>
+                    </div>
                   </div>
-                  <div className={styles.macroCard}>
-                    <div className={styles.macroNombre}>Grasa</div>
-                    <p className={styles.macroGramos}>{resultado.macros.grasa.gramos} g</p>
-                    <span className={styles.macroKcal}>{resultado.macros.grasa.kcal} kcal</span>
-                  </div>
-                  <div className={styles.macroCard}>
-                    <div className={styles.macroNombre}>Carbohidrato</div>
-                    <p className={styles.macroGramos}>{resultado.macros.carbohidrato.gramos} g</p>
-                    <span className={styles.macroKcal}>
-                      {resultado.macros.carbohidrato.kcal} kcal
-                    </span>
-                  </div>
-                </div>
+                )}
               </>
             )}
           </div>
@@ -577,9 +587,13 @@ export default function DietasPage() {
             </div>
           </div>
 
-          {/* Cuadro de distribución final */}
+          {/* Cuadro de distribución final — % editables */}
           <div className={styles.card} style={{ marginTop: 'var(--spacing-lg)' }}>
             <h2 className={styles.cardTitle}>Cuadro de distribución</h2>
+            <p className={styles.smaeAyuda}>
+              Ajusta el porcentaje de cada macronutriente. El sistema recalcula las kcal y los
+              gramos, y con ellos la fila META de la tabla de arriba.
+            </p>
             <div className={styles.tablaWrap}>
               <table className={styles.tablaSmae}>
                 <thead>
@@ -591,15 +605,68 @@ export default function DietasPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {distribucion.map((fila) => (
-                    <tr key={fila.nombre}>
-                      <td className={styles.tdGrupo}>{fila.nombre}</td>
-                      <td className={styles.tdNum}>{fila.porcentaje}%</td>
-                      <td className={styles.tdNum}>{fila.kcal}</td>
-                      <td className={styles.tdNum}>{fila.gramos}</td>
-                    </tr>
-                  ))}
+                  <tr>
+                    <td className={styles.tdGrupo}>HCO</td>
+                    <td className={styles.tdPct}>
+                      <input
+                        type="number"
+                        className={styles.pctInput}
+                        value={pct.hco}
+                        onChange={(e) => setPctCampo('hco', e.target.value)}
+                        aria-label="Porcentaje de HCO"
+                      />
+                      <span className={styles.pctSigno}>%</span>
+                    </td>
+                    <td className={styles.tdNum}>{distribucion[0]!.kcal}</td>
+                    <td className={styles.tdNum}>{distribucion[0]!.gramos}</td>
+                  </tr>
+                  <tr>
+                    <td className={styles.tdGrupo}>Lípidos</td>
+                    <td className={styles.tdPct}>
+                      <input
+                        type="number"
+                        className={styles.pctInput}
+                        value={pct.lip}
+                        onChange={(e) => setPctCampo('lip', e.target.value)}
+                        aria-label="Porcentaje de lípidos"
+                      />
+                      <span className={styles.pctSigno}>%</span>
+                    </td>
+                    <td className={styles.tdNum}>{distribucion[1]!.kcal}</td>
+                    <td className={styles.tdNum}>{distribucion[1]!.gramos}</td>
+                  </tr>
+                  <tr>
+                    <td className={styles.tdGrupo}>Proteína</td>
+                    <td className={styles.tdPct}>
+                      <input
+                        type="number"
+                        className={styles.pctInput}
+                        value={pct.pro}
+                        onChange={(e) => setPctCampo('pro', e.target.value)}
+                        aria-label="Porcentaje de proteína"
+                      />
+                      <span className={styles.pctSigno}>%</span>
+                    </td>
+                    <td className={styles.tdNum}>{distribucion[2]!.kcal}</td>
+                    <td className={styles.tdNum}>{distribucion[2]!.gramos}</td>
+                  </tr>
+                  <tr className={styles.filaMeta}>
+                    <td className={styles.tdGrupo}>HCO simples (máx.)</td>
+                    <td className={styles.tdNum}>{distribucion[3]!.porcentaje}%</td>
+                    <td className={styles.tdNum}>{distribucion[3]!.kcal}</td>
+                    <td className={styles.tdNum}>{distribucion[3]!.gramos}</td>
+                  </tr>
                 </tbody>
+                <tfoot>
+                  <tr className={styles.filaTotal}>
+                    <td className={styles.tdGrupo}>Suma</td>
+                    <td className={pctOk ? styles.difOk : styles.difLejos}>
+                      {sumaPct}% {pctOk ? '✓' : '(debe sumar 100)'}
+                    </td>
+                    <td className={styles.tdNum}></td>
+                    <td className={styles.tdNum}></td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </div>
