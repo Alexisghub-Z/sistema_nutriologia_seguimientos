@@ -104,6 +104,8 @@ export default function DietasPage() {
   const [exito, setExito] = useState('')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Paso entre porciones de los sliders de equivalentes (0.25 / 0.5 / 1).
+  const [pasoEquiv, setPasoEquiv] = useState(0.5)
   // Pestaña activa: 'cuadro' (dietosintético) | 'tiempos' (distribución).
   const [pestana, setPestana] = useState<'cuadro' | 'tiempos'>('cuadro')
   // Tiempos de comida y su reparto de equivalentes.
@@ -144,9 +146,9 @@ export default function DietasPage() {
   }, [totalesSmae, distribucion, kcalMeta])
 
   const setEquivalente = (id: GrupoSMAEId, valor: string) => {
-    // Permite medios equivalentes: redondea al 0.5 más cercano.
-    const n = valor === '' ? 0 : Math.max(0, Math.round(Number(valor) * 2) / 2)
-    setEquivalentes((e) => ({ ...e, [id]: n }))
+    // Redondea al múltiplo del paso elegido (0.25 / 0.5 / 1).
+    const n = valor === '' ? 0 : Math.max(0, Math.round(Number(valor) / pasoEquiv) * pasoEquiv)
+    setEquivalentes((e) => ({ ...e, [id]: redondear2(n) }))
   }
 
   // --- Distribución en tiempos de comida (pestaña 2) ---
@@ -724,6 +726,18 @@ export default function DietasPage() {
               Ajusta el número de equivalentes de cada grupo hasta que la diferencia con la meta
               tienda a cero.
             </p>
+            <div className={styles.pasoSelector}>
+              <label htmlFor="paso">Paso entre porciones</label>
+              <select
+                id="paso"
+                value={pasoEquiv}
+                onChange={(e) => setPasoEquiv(Number(e.target.value))}
+              >
+                <option value={0.25}>0.25</option>
+                <option value={0.5}>0.5</option>
+                <option value={1}>1</option>
+              </select>
+            </div>
             <div className={styles.tablaWrap}>
               <table className={styles.tablaSmae}>
                 <thead>
@@ -748,13 +762,13 @@ export default function DietasPage() {
                               type="range"
                               min={0}
                               max={15}
-                              step={0.5}
+                              step={pasoEquiv}
                               className={styles.equivSlider}
                               value={n}
                               onChange={(e) => setEquivalente(g.id, e.target.value)}
                               aria-label={`Equivalentes de ${g.nombre}`}
                             />
-                            <span className={styles.equivValor}>{n}</span>
+                            <span className={styles.equivValor}>{fmtNum(n)}</span>
                           </div>
                         </td>
                         <td className={styles.tdNum}>{n ? fmtNum(g.hco * n) : '—'}</td>
@@ -942,10 +956,14 @@ export default function DietasPage() {
   )
 }
 
-// Muestra un número sin decimales si es entero, o con 1 decimal si no
-// (los medios equivalentes producen aportes fraccionarios como 7.5).
+// Redondea a 2 decimales para evitar ruido de coma flotante (0.1+0.2, etc.).
+function redondear2(n: number): number {
+  return Math.round(n * 100) / 100
+}
+
+// Muestra un número sin ceros decimales sobrantes (2, 2.5, 2.25).
 function fmtNum(n: number): string {
-  return Number.isInteger(n) ? String(n) : n.toFixed(1)
+  return Number.isInteger(n) ? String(n) : String(redondear2(n))
 }
 
 // Formatea una diferencia con signo explícito.
