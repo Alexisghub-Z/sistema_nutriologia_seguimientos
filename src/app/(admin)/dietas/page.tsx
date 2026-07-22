@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import Button from '@/components/ui/Button'
+import GenerandoIA from '@/components/dietas/GenerandoIA'
 import { clasificarIMC } from '@/lib/utils/dietosintetico'
 import {
   GRUPOS_SMAE,
@@ -1507,11 +1508,11 @@ export default function DietasPage() {
 
               {/* Vista del RECETARIO */}
               {modoIA === 'recetario' ? (
-                !recetario ? (
+                generando && !recetario ? (
+                  <GenerandoIA modo="recetario" />
+                ) : !recetario ? (
                   <p className={styles.resultadoVacio}>
-                    {generando
-                      ? 'La IA está armando el recetario…'
-                      : 'Presiona “Generar” para que la IA proponga varias opciones por tiempo.'}
+                    Presiona “Generar” para que la IA proponga varias opciones por tiempo.
                   </p>
                 ) : (
                   <div className={styles.recetario}>
@@ -1546,11 +1547,11 @@ export default function DietasPage() {
                     ))}
                   </div>
                 )
+              ) : generando && !dietaIA ? (
+                <GenerandoIA modo="dieta" />
               ) : !dietaIA ? (
                 <p className={styles.resultadoVacio}>
-                  {generando
-                    ? 'La IA está armando la dieta…'
-                    : 'Presiona “Generar dieta” para que la IA proponga los alimentos.'}
+                  Presiona “Generar dieta” para que la IA proponga los alimentos.
                 </p>
               ) : (
                 <div className={styles.iaTiempos}>
@@ -1682,7 +1683,13 @@ export default function DietasPage() {
                     </div>
                   ))
                 )}
-                {generando && <div className={styles.chatBurbujaIA}>Pensando…</div>}
+                {generando && (
+                  <div className={`${styles.chatBurbujaIA} ${styles.chatEscribiendo}`}>
+                    <span className={styles.dot} />
+                    <span className={styles.dot} />
+                    <span className={styles.dot} />
+                  </div>
+                )}
               </div>
               <div className={styles.chatInput}>
                 <input

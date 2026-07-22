@@ -1,0 +1,246 @@
+/* ============================================================
+   Animación premium "IA generando" — usada al crear dieta/recetario.
+   Todo en CSS puro, respeta prefers-reduced-motion.
+   ============================================================ */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-xl) var(--spacing-lg);
+}
+
+/* --- Orbe central con anillos y destellos --- */
+.orbe {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Núcleo con gradiente que respira y rota su brillo */
+.nucleo {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.9), transparent 45%),
+    conic-gradient(from 0deg, var(--color-primary), #34d399, #22d3ee, var(--color-primary));
+  box-shadow:
+    0 0 0 1px rgba(16, 185, 129, 0.25),
+    0 8px 24px -6px rgba(16, 185, 129, 0.55);
+  animation:
+    respirar 2.4s ease-in-out infinite,
+    girarBrillo 6s linear infinite;
+  z-index: 3;
+}
+
+/* Ícono de chispa dentro del núcleo */
+.chispa {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  z-index: 4;
+  animation: parpadeoChispa 2.4s ease-in-out infinite;
+}
+
+/* Anillos que se expanden hacia afuera (pulso) */
+.anillo {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-primary);
+  opacity: 0;
+  animation: pulso 2.4s ease-out infinite;
+}
+
+.anillo2 {
+  animation-delay: 0.8s;
+}
+
+.anillo3 {
+  animation-delay: 1.6s;
+}
+
+/* Partículas orbitando */
+.orbita {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  animation: orbitar 8s linear infinite;
+}
+
+.orbita2 {
+  animation-duration: 11s;
+  animation-direction: reverse;
+}
+
+.particula {
+  position: absolute;
+  top: 50%;
+  left: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0 8px 1px rgba(16, 185, 129, 0.7);
+  transform: translateY(-50%);
+}
+
+.orbita2 .particula {
+  width: 4px;
+  height: 4px;
+  background: #22d3ee;
+  box-shadow: 0 0 6px 1px rgba(34, 211, 238, 0.7);
+}
+
+/* --- Texto que cicla con puntos animados --- */
+.texto {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-gray-700);
+  text-align: center;
+  min-height: 1.4em;
+}
+
+.puntos::after {
+  content: '';
+  display: inline-block;
+  width: 1.2em;
+  text-align: left;
+  animation: puntos 1.4s steps(4, end) infinite;
+}
+
+/* --- Skeleton shimmer (líneas fantasma que "se llenan") --- */
+.skeleton {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-top: var(--spacing-sm);
+}
+
+.linea {
+  height: 12px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    90deg,
+    var(--color-gray-100) 0%,
+    var(--color-gray-200) 20%,
+    rgba(16, 185, 129, 0.18) 40%,
+    var(--color-gray-200) 60%,
+    var(--color-gray-100) 100%
+  );
+  background-size: 220% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+.linea:nth-child(1) {
+  width: 85%;
+}
+.linea:nth-child(2) {
+  width: 65%;
+  animation-delay: 0.15s;
+}
+.linea:nth-child(3) {
+  width: 92%;
+  animation-delay: 0.3s;
+}
+.linea:nth-child(4) {
+  width: 55%;
+  animation-delay: 0.45s;
+}
+
+/* --- Keyframes --- */
+@keyframes respirar {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes girarBrillo {
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+
+@keyframes parpadeoChispa {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+@keyframes pulso {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.15);
+    opacity: 0;
+  }
+}
+
+@keyframes orbitar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes puntos {
+  0% {
+    content: '';
+  }
+  25% {
+    content: '.';
+  }
+  50% {
+    content: '..';
+  }
+  75% {
+    content: '...';
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 120% 0;
+  }
+  100% {
+    background-position: -120% 0;
+  }
+}
+
+/* Accesibilidad: sin movimiento agresivo si el usuario lo pide */
+@media (prefers-reduced-motion: reduce) {
+  .nucleo,
+  .chispa,
+  .anillo,
+  .orbita,
+  .linea {
+    animation-duration: 3s;
+    animation-timing-function: ease;
+  }
+  .anillo,
+  .orbita {
+    animation: none;
+  }
+}
