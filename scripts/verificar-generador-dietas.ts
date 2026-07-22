@@ -14,6 +14,7 @@ import {
   type EntradaGeneracion,
   type DietaGenerada,
 } from '../src/lib/services/generador-dietas'
+import { nutrientesDeAlimento, nivelCercania, sumarEquivalentes } from '../src/lib/utils/smae'
 
 let fallos = 0
 function check(cond: boolean, etiqueta: string) {
@@ -77,6 +78,47 @@ console.log('\n── Validación: tiempo completamente ausente ──')
 const dietaVacia: DietaGenerada = { mensaje: '', tiempos: [] }
 const disc3 = validarDietaGenerada(entrada, dietaVacia)
 check(disc3.length > 0, `Detecta faltantes cuando no hay tiempos (${disc3.length} discrepancias)`)
+
+console.log('\n── Tabla: nutrientes por alimento (SMAE) ──')
+// 2 equivalentes de cereal sin grasa (15 HCO, 2 prot, 0 líp, 70 kcal c/u)
+const nut = nutrientesDeAlimento('CEREALES_SG', 2)
+check(
+  nut.hco === 30 && nut.proteina === 4 && nut.lipidos === 0 && nut.kcal === 140,
+  `2× cereal = ${JSON.stringify(nut)}`
+)
+// 1 fruta (15 HCO, 60 kcal)
+const nutFruta = nutrientesDeAlimento('FRUTAS', 1)
+check(nutFruta.hco === 15 && nutFruta.kcal === 60, `1× fruta = ${JSON.stringify(nutFruta)}`)
+
+console.log('\n── Tabla: la suma por alimento cuadra con sumarEquivalentes ──')
+// Suma manual de la dieta dietaOk (t1: 2 cereal + 1 fruta + 1 AOA_BAG)
+const totalT1 = [
+  nutrientesDeAlimento('CEREALES_SG', 2),
+  nutrientesDeAlimento('FRUTAS', 1),
+  nutrientesDeAlimento('AOA_BAG', 1),
+].reduce(
+  (s, n) => ({
+    hco: s.hco + n.hco,
+    proteina: s.proteina + n.proteina,
+    lipidos: s.lipidos + n.lipidos,
+    kcal: s.kcal + n.kcal,
+  }),
+  { hco: 0, proteina: 0, lipidos: 0, kcal: 0 }
+)
+const totalEquiv = sumarEquivalentes({ CEREALES_SG: 2, FRUTAS: 1, AOA_BAG: 1 })
+check(
+  totalT1.kcal === totalEquiv.kcal && totalT1.hco === totalEquiv.hco,
+  `Suma por alimento (${totalT1.kcal} kcal) == sumarEquivalentes (${totalEquiv.kcal} kcal)`
+)
+
+console.log('\n── Gradiente de color: nivelCercania (5 escalones) ──')
+check(nivelCercania(0) === 0, `dif 0 → nivel 0 (cuadra)`)
+check(nivelCercania(3) === 0, `dif 3 (≤tol 5) → nivel 0`)
+check(nivelCercania(8) === 1, `dif 8 → nivel 1 (muy cerca)`)
+check(nivelCercania(15) === 2, `dif 15 → nivel 2 (cerca)`)
+check(nivelCercania(30) === 3, `dif 30 → nivel 3 (se aleja)`)
+check(nivelCercania(60) === 4, `dif 60 → nivel 4 (muy lejos)`)
+check(nivelCercania(-60) === 4, `dif negativa también cuenta (abs)`)
 
 console.log(`\n${'─'.repeat(40)}`)
 if (fallos === 0) {

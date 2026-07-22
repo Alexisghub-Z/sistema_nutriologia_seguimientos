@@ -135,6 +135,50 @@ export function sumarEquivalentes(equivalentes: Equivalentes): TotalesMacro {
   }
 }
 
+// Aportes por equivalente indexados por id de grupo (acceso O(1)).
+const APORTE_POR_GRUPO = Object.fromEntries(GRUPOS_SMAE.map((g) => [g.id, g])) as Record<
+  GrupoSMAEId,
+  GrupoSMAE
+>
+
+/**
+ * Nutrientes que aporta un alimento según su grupo y nº de equivalentes.
+ * Es el aporte del SMAE (exacto), no un valor inventado. Base de la tabla de
+ * comprobación de la dieta generada por IA.
+ *
+ * @param grupo        grupo SMAE del alimento
+ * @param equivalentes nº de equivalentes de ese grupo que aporta el alimento
+ */
+export function nutrientesDeAlimento(grupo: GrupoSMAEId, equivalentes: number): TotalesMacro {
+  const g = APORTE_POR_GRUPO[grupo]
+  const n = equivalentes || 0
+  if (!g) return { hco: 0, proteina: 0, lipidos: 0, kcal: 0 }
+  return {
+    hco: redondear(g.hco * n, 1),
+    proteina: redondear(g.proteina * n, 1),
+    lipidos: redondear(g.lipidos * n, 1),
+    kcal: redondear(g.kcal * n),
+  }
+}
+
+/**
+ * Nivel de cercanía de una diferencia a cero, en 5 escalones. Sirve para
+ * pintar un gradiente (verde → lima → amarillo → naranja → rojo) según qué tan
+ * cerca está el total de la meta.
+ *
+ * @param diferencia  total − meta (en la unidad que sea)
+ * @param tolerancia  margen considerado "en meta" (nivel 0). Por defecto 5.
+ * @returns 0 (cuadra) … 4 (muy lejos)
+ */
+export function nivelCercania(diferencia: number, tolerancia = 5): 0 | 1 | 2 | 3 | 4 {
+  const abs = Math.abs(diferencia)
+  if (abs <= tolerancia) return 0
+  if (abs <= tolerancia * 2) return 1
+  if (abs <= tolerancia * 4) return 2
+  if (abs <= tolerancia * 7) return 3
+  return 4
+}
+
 // ============================================================
 // Distribución en tiempos de comida
 // ============================================================
