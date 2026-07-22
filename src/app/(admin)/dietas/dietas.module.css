@@ -1184,3 +1184,147 @@
   font-weight: 600;
   margin-top: var(--spacing-sm);
 }
+
+/* ============================================================
+   Pestaña 3: Generar con IA
+   ============================================================ */
+.iaGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: var(--spacing-xl);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .iaGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.iaHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xs);
+}
+
+.iaTiempos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.iaTiempo {
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+}
+
+.iaTiempoNombre {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-gray-900);
+  margin: 0 0 var(--spacing-sm);
+}
+
+.iaAlimento {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.4rem;
+}
+
+.iaAlimentoGrupo {
+  flex: 0 0 auto;
+  min-width: 92px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--color-primary);
+}
+
+.iaAlimentoInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  color: var(--color-gray-800);
+}
+
+.iaAlimentoInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.iaTiempoNota {
+  font-size: 0.82rem;
+  color: var(--color-gray-500);
+  font-style: italic;
+  margin: 0.4rem 0 0;
+}
+
+/* Chat copiloto */
+.chatMensajes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 180px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: var(--spacing-sm) 0;
+  margin-bottom: var(--spacing-md);
+}
+
+.chatVacio {
+  color: var(--color-gray-400);
+  font-size: 0.88rem;
+  text-align: center;
+  margin: auto;
+}
+
+.chatBurbujaIA,
+.chatBurbujaNutri {
+  max-width: 85%;
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--radius-md);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.chatBurbujaIA {
+  align-self: flex-start;
+  background: var(--color-gray-100);
+  color: var(--color-gray-800);
+  border-bottom-left-radius: 4px;
+}
+
+.chatBurbujaNutri {
+  align-self: flex-end;
+  background: var(--color-primary);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.chatInput {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chatInput input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+}
+
+.chatInput input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
