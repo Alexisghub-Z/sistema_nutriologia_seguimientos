@@ -65,6 +65,24 @@ interface MensajeChat {
   texto: string
 }
 
+interface OpcionUI {
+  nombre: string
+  alimentos: AlimentoUI[]
+  preparacion?: string
+}
+
+interface TiempoRecetarioUI {
+  id: string
+  nombre: string
+  opciones: OpcionUI[]
+}
+
+interface RecetarioUI {
+  indicacionesInicio: string
+  tiempos: TiempoRecetarioUI[]
+  mensaje: string
+}
+
 interface MacroResultado {
   gramos: number
   kcal: number
@@ -175,6 +193,9 @@ export default function DietasPage() {
   const [mensajesIA, setMensajesIA] = useState<MensajeChat[]>([])
   const [generando, setGenerando] = useState(false)
   const [inputChat, setInputChat] = useState('')
+  // Modo de generación: 'dieta' (una precisa) | 'recetario' (varias opciones).
+  const [modoIA, setModoIA] = useState<'dieta' | 'recetario'>('dieta')
+  const [recetario, setRecetario] = useState<RecetarioUI | null>(null)
 
   // Kcal calculada por el sistema (Mifflin × actividad ± objetivo).
   const kcalCalculada = resultado?.kcalMeta ?? 0
@@ -474,6 +495,7 @@ export default function DietasPage() {
     setConsultaId('')
     setConsultas([])
     setDietaIA(null)
+    setRecetario(null)
     setMensajesIA([])
     setError('')
     setExito('')
@@ -510,6 +532,7 @@ export default function DietasPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           paciente_id: paciente?.id,
+          modo: modoIA,
           kcal_meta: kcalMeta,
           proteina_g: distribucion[2]!.gramos,
           grasa_g: distribucion[1]!.gramos,
@@ -524,15 +547,22 @@ export default function DietasPage() {
       })
       const data = await res.json()
       if (res.ok) {
-        setDietaIA(data.dieta.tiempos)
-        if (data.dieta.mensaje) {
-          setMensajesIA((m) => [...m, { rol: 'ia', texto: data.dieta.mensaje }])
+        if (modoIA === 'recetario') {
+          setRecetario(data.recetario)
+          if (data.recetario?.mensaje) {
+            setMensajesIA((m) => [...m, { rol: 'ia', texto: data.recetario.mensaje }])
+          }
+        } else {
+          setDietaIA(data.dieta.tiempos)
+          if (data.dieta.mensaje) {
+            setMensajesIA((m) => [...m, { rol: 'ia', texto: data.dieta.mensaje }])
+          }
         }
       } else {
-        setError(data.error || 'Error al generar la dieta con IA')
+        setError(data.error || 'Error al generar con IA')
       }
     } catch {
-      setError('Error de conexión al generar la dieta')
+      setError('Error de conexión al generar')
     } finally {
       setGenerando(false)
     }
@@ -1437,17 +1467,86 @@ export default function DietasPage() {
             {/* Columna izquierda: dieta generada (editable) */}
             <div className={styles.card}>
               <div className={styles.iaHeader}>
-                <h2 className={styles.cardTitle}>Dieta propuesta por IA</h2>
-                <Button onClick={() => generarDietaIA()} disabled={generando}>
-                  {generando ? 'Generando…' : dietaIA ? 'Regenerar' : 'Generar dieta'}
+                <h2 className={styles.cardTitle}>
+                  {modoIA === 'recetario' ? 'Recetario de opciones' : 'Dieta propuesta por IA'}
+                </h2>
+                <Button
+                  onClick={() => generarDietaIA()}
+                  disabled={generando}
+                  variant={modoIA === 'recetario' ? 'secondary' : 'primary'}
+                >
+                  {generando
+                    ? 'Generando…'
+                    : (modoIA === 'recetario' ? recetario : dietaIA)
+                      ? 'Regenerar'
+                      : 'Generar'}
                 </Button>
               </div>
+
+              {/* Selector de modo */}
+              <div className={styles.modoSelector}>
+                <button
+                  className={`${styles.modoBtn} ${modoIA === 'dieta' ? styles.modoBtnActivo : ''}`}
+                  onClick={() => setModoIA('dieta')}
+                >
+                  Dieta precisa
+                </button>
+                <button
+                  className={`${styles.modoBtn} ${modoIA === 'recetario' ? styles.modoBtnActivo : ''}`}
+                  onClick={() => setModoIA('recetario')}
+                >
+                  Recetario de opciones
+                </button>
+              </div>
+
               <p className={styles.smaeAyuda}>
-                La IA propone los alimentos concretos de cada tiempo respetando tus equivalentes y
-                tu estilo. Puedes editar cada alimento a mano.
+                {modoIA === 'recetario'
+                  ? 'La IA propone varias opciones de platillo por tiempo (el paciente elige), todas con los mismos equivalentes.'
+                  : 'La IA propone los alimentos concretos de cada tiempo respetando tus equivalentes y tu estilo. Puedes editar cada alimento a mano.'}
               </p>
 
-              {!dietaIA ? (
+              {/* Vista del RECETARIO */}
+              {modoIA === 'recetario' ? (
+                !recetario ? (
+                  <p className={styles.resultadoVacio}>
+                    {generando
+                      ? 'La IA está armando el recetario…'
+                      : 'Presiona “Generar” para que la IA proponga varias opciones por tiempo.'}
+                  </p>
+                ) : (
+                  <div className={styles.recetario}>
+                    {recetario.indicacionesInicio && (
+                      <div className={styles.recetarioIndicaciones}>
+                        <h3 className={styles.recetarioSubtitulo}>Indicaciones de inicio</h3>
+                        <p>{recetario.indicacionesInicio}</p>
+                      </div>
+                    )}
+                    {recetario.tiempos.map((t) => (
+                      <div key={t.id} className={styles.recetarioTiempo}>
+                        <h3 className={styles.recetarioTiempoNombre}>{t.nombre}</h3>
+                        {t.opciones.map((o, i) => (
+                          <div key={i} className={styles.recetarioOpcion}>
+                            <div className={styles.recetarioOpcionNombre}>
+                              <span className={styles.recetarioOpcionNum}>Opción {i + 1}</span>
+                              {o.nombre}
+                            </div>
+                            <ul className={styles.recetarioAlimentos}>
+                              {o.alimentos.map((a, j) => (
+                                <li key={j}>{a.descripcion}</li>
+                              ))}
+                            </ul>
+                            {o.preparacion && (
+                              <p className={styles.recetarioPrep}>
+                                <strong>Preparación:</strong> {o.preparacion}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )
+              ) : !dietaIA ? (
                 <p className={styles.resultadoVacio}>
                   {generando
                     ? 'La IA está armando la dieta…'

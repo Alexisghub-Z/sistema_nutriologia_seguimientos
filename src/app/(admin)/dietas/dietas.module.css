@@ -1398,3 +1398,118 @@
 .iaCalculo:hover {
   color: var(--color-primary);
 }
+
+/* Selector de modo (dieta precisa / recetario) */
+.modoSelector {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--color-gray-100);
+  border-radius: var(--radius-md);
+  padding: 3px;
+  margin-bottom: var(--spacing-sm);
+}
+
+.modoBtn {
+  border: none;
+  background: none;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-gray-600);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.modoBtnActivo {
+  background: white;
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Vista del recetario (formato documento) */
+.recetario {
+  margin-top: var(--spacing-md);
+}
+
+.recetarioIndicaciones {
+  background: var(--color-gray-50);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1rem;
+  margin-bottom: var(--spacing-lg);
+}
+
+.recetarioIndicaciones p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-gray-700);
+  line-height: 1.5;
+}
+
+.recetarioSubtitulo {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-primary);
+  margin: 0 0 0.4rem;
+}
+
+.recetarioTiempo {
+  margin-bottom: var(--spacing-lg);
+}
+
+.recetarioTiempoNombre {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-gray-900);
+  padding-bottom: 0.35rem;
+  border-bottom: 2px solid var(--color-gray-200);
+  margin: 0 0 var(--spacing-md);
+}
+
+.recetarioOpcion {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  margin-bottom: 0.6rem;
+}
+
+.recetarioOpcionNombre {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  color: var(--color-gray-900);
+  margin-bottom: 0.4rem;
+}
+
+.recetarioOpcionNum {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: white;
+  background: var(--color-primary);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.recetarioAlimentos {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--color-gray-700);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.recetarioPrep {
+  margin: 0.5rem 0 0;
+  font-size: 0.82rem;
+  color: var(--color-gray-600);
+  background: var(--color-gray-50);
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--radius-sm);
+  line-height: 1.5;
+}
