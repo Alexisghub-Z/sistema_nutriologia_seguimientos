@@ -123,11 +123,22 @@ function construirPromptSistema(perfil: PerfilEstilo, ejemplos?: string[]): stri
 
   partes.push(
     '',
-    'REGLAS DE SALIDA:',
-    '- Cada alimento propuesto pertenece a un grupo y consume un número de equivalentes de ese grupo.',
-    '- La suma de equivalentes por grupo en un tiempo DEBE coincidir con la meta indicada para ese tiempo.',
-    '- Usa porciones caseras y claras (piezas, tazas, cucharadas) apropiadas para el paciente.',
-    '- Responde ÚNICAMENTE en JSON válido con la forma especificada por el usuario.'
+    'REGLAS ESTRICTAS (obligatorias, no las rompas):',
+    '1. Para CADA tiempo, debes usar EXACTAMENTE los equivalentes de cada grupo que se te indican.',
+    '   Si un tiempo pide "2 de Cereales sin grasa, 1 de Frutas, 1 de AOA bajo en grasa", tus alimentos',
+    '   de ese tiempo deben sumar EXACTAMENTE 2 de cereal, 1 de fruta y 1 de AOA. Ni más, ni menos.',
+    '2. NO agregues grupos que no se pidieron. NO omitas grupos que sí se pidieron.',
+    '3. El campo "equivalentes" de cada alimento indica cuántos equivalentes de SU grupo aporta.',
+    '   La suma de "equivalentes" por grupo en un tiempo debe ser IGUAL a lo pedido para ese tiempo.',
+    '4. Puedes usar varios alimentos para cubrir los equivalentes de un grupo (ej. 3 de cereal = 1 pan + 2 tortillas),',
+    '   pero la SUMA por grupo debe cuadrar exactamente.',
+    '5. Usa la porción correcta: la descripción debe corresponder al número de equivalentes',
+    '   (ej. "2 de Cereales" ≈ 2 tortillas o 1 bolillo, NO "1 tortilla").',
+    '',
+    'ESTILO Y FORMATO:',
+    '- Elige alimentos del estilo del nutriólogo (región y alimentos típicos de arriba).',
+    '- Usa porciones caseras y claras (piezas, tazas, cucharadas, gramos).',
+    '- Responde ÚNICAMENTE en JSON válido con la forma que indica el usuario. Nada de texto fuera del JSON.'
   )
 
   return partes.join('\n')
@@ -185,19 +196,60 @@ function construirPromptUsuario(entrada: EntradaGeneracion): string {
  * @throws Error si OpenAI no está configurado o la respuesta no es válida.
  */
 export async function generarDietaConIA(entrada: EntradaGeneracion): Promise<DietaGenerada> {
-  const client = getCliente()
-  const model = process.env.OPENAI_MODEL || 'gpt-4o'
-  const temperature = parseFloat(process.env.OPENAI_TEMPERATURE || '0.7')
+  // Sin equivalentes definidos no hay nada que anclar; evitamos que la IA improvise.
+  const tieneEquivalentes = entrada.tiempos.some((t) =>
+    Object.values(t.equivalentes).some((n) => (n ?? 0) > 0)
+  )
+  if (!tieneEquivalentes) {
+    throw new Error(
+      'No hay equivalentes repartidos en los tiempos de comida. Reparte los equivalentes en la ' +
+        'pestaña "Distribución en tiempos" antes de generar la dieta con IA.'
+    )
+  }
 
   const promptSistema = construirPromptSistema(entrada.perfil, entrada.ejemplos)
   const promptUsuario = construirPromptUsuario(entrada)
 
-  logDebug('Generando dieta con IA', {
-    model,
-    tiempos: entrada.tiempos.length,
-    kcalMeta: entrada.kcalMeta,
-    tieneEjemplos: (entrada.ejemplos?.length ?? 0) > 0,
-  })
+  // Primera generación.
+  let dieta = await llamarIA(promptSistema, promptUsuario)
+  let discrepancias = validarDietaGenerada(entrada, dieta)
+
+  // Si la IA se desvió de los equivalentes, reintenta UNA vez con el detalle exacto.
+  if (discrepancias.length > 0) {
+    logDebug('La IA se desvió; reintentando con corrección', {
+      discrepancias: discrepancias.length,
+    })
+    const correccion =
+      'La propuesta anterior NO respetó los equivalentes exactos. Corrige estos grupos para que ' +
+      'la suma por grupo y tiempo cuadre EXACTAMENTE:\n' +
+      discrepancias
+        .map(
+          (d) =>
+            `- En "${d.tiempo}", grupo ${NOMBRE_GRUPO[d.grupo]}: se pidieron ${d.pedido} equivalentes, ` +
+            `tú propusiste ${d.propuesto}. Ajústalo a ${d.pedido}.`
+        )
+        .join('\n') +
+      '\n\nVuelve a generar TODA la dieta respetando exactamente los equivalentes de cada tiempo.'
+    dieta = await llamarIA(promptSistema, `${promptUsuario}\n\n${correccion}`)
+    discrepancias = validarDietaGenerada(entrada, dieta)
+    if (discrepancias.length > 0) {
+      logDebug('La IA sigue con discrepancias tras el reintento', {
+        discrepancias: discrepancias.length,
+      })
+    }
+  }
+
+  return dieta
+}
+
+/**
+ * Hace una llamada a la IA y normaliza la respuesta a DietaGenerada.
+ */
+async function llamarIA(promptSistema: string, promptUsuario: string): Promise<DietaGenerada> {
+  const client = getCliente()
+  const model = process.env.OPENAI_MODEL || 'gpt-4o'
+  // Temperatura baja: queremos precisión (respetar equivalentes), no creatividad.
+  const temperature = 0.3
 
   try {
     const completion = await client.chat.completions.create({
@@ -213,7 +265,6 @@ export async function generarDietaConIA(entrada: EntradaGeneracion): Promise<Die
     const contenido = completion.choices[0]?.message?.content || '{}'
     const parsed = JSON.parse(contenido) as DietaGenerada
 
-    // Normaliza: asegura arrays y campos mínimos.
     const dieta: DietaGenerada = {
       mensaje: typeof parsed.mensaje === 'string' ? parsed.mensaje : '',
       tiempos: Array.isArray(parsed.tiempos)

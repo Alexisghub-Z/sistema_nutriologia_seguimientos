@@ -11,6 +11,8 @@ import {
   cuadroDistribucion,
   resumenTiempo,
   validarDistribucion,
+  nutrientesDeAlimento,
+  nivelCercania,
   TIEMPOS_DEFAULT,
   type Equivalentes,
   type GrupoSMAEId,
@@ -203,6 +205,56 @@ export default function DietasPage() {
       lipidos_g: lip!.gramos,
     })
   }, [totalesSmae, distribucion, kcalMeta])
+
+  // Tabla de comprobación de la dieta generada por IA: una fila por alimento con
+  // sus nutrientes del SMAE, el total, la meta del cuadro y la diferencia.
+  const tablaComprobacion = useMemo(() => {
+    if (!dietaIA || !distribucion) return null
+    const filas = dietaIA.flatMap((t) =>
+      t.alimentos.map((a) => ({
+        descripcion: a.descripcion || `${a.equivalentes}× ${NOMBRE_GRUPO[a.grupo] ?? a.grupo}`,
+        ...nutrientesDeAlimento(a.grupo, a.equivalentes),
+      }))
+    )
+    const total = filas.reduce(
+      (s, f) => ({
+        hco: s.hco + f.hco,
+        proteina: s.proteina + f.proteina,
+        lipidos: s.lipidos + f.lipidos,
+        kcal: s.kcal + f.kcal,
+      }),
+      { hco: 0, proteina: 0, lipidos: 0, kcal: 0 }
+    )
+    const meta = {
+      hco: distribucion[0]!.gramos,
+      proteina: distribucion[2]!.gramos,
+      lipidos: distribucion[1]!.gramos,
+      kcal: kcalMeta,
+    }
+    const r = (n: number) => Math.round(n * 10) / 10
+    const diferencia = {
+      hco: r(total.hco - meta.hco),
+      proteina: r(total.proteina - meta.proteina),
+      lipidos: r(total.lipidos - meta.lipidos),
+      kcal: Math.round(total.kcal - meta.kcal),
+    }
+    return {
+      filas,
+      total: {
+        hco: r(total.hco),
+        proteina: r(total.proteina),
+        lipidos: r(total.lipidos),
+        kcal: Math.round(total.kcal),
+      },
+      meta: {
+        hco: r(meta.hco),
+        proteina: r(meta.proteina),
+        lipidos: r(meta.lipidos),
+        kcal: Math.round(meta.kcal),
+      },
+      diferencia,
+    }
+  }, [dietaIA, distribucion, kcalMeta])
 
   const setEquivalente = (id: GrupoSMAEId, valor: string) => {
     // Redondea al múltiplo del paso elegido (0.25 / 0.5 / 1).
@@ -443,6 +495,12 @@ export default function DietasPage() {
   // Llama a la IA para proponer los alimentos, con instrucciones opcionales del chat.
   const generarDietaIA = async (instruccionesExtra?: string) => {
     if (!resultado || !distribucion) return
+    if (!tieneDistribucion) {
+      setError(
+        'Primero reparte los equivalentes en la pestaña “Distribución en tiempos”. La IA necesita saber cuántos equivalentes lleva cada comida.'
+      )
+      return
+    }
     setGenerando(true)
     setError('')
     try {
@@ -1417,6 +1475,85 @@ export default function DietasPage() {
                 </div>
               )}
 
+              {/* Tabla de comprobación de nutrientes */}
+              {tablaComprobacion && (
+                <div className={styles.comprobacion}>
+                  <h3 className={styles.subCardTitle}>Comprobación de nutrientes</h3>
+                  <p className={styles.smaeAyuda}>
+                    Nutrientes de cada alimento (según el SMAE) sumados y comparados con la meta del
+                    cuadro. El color indica qué tan cerca queda.
+                  </p>
+                  <div className={styles.tablaWrap}>
+                    <table className={`${styles.tablaSmae} ${styles.tablaComprob}`}>
+                      <thead>
+                        <tr>
+                          <th className={styles.thGrupo}>Alimento</th>
+                          <th>HCO</th>
+                          <th>Prot</th>
+                          <th>Líp</th>
+                          <th>Kcal</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tablaComprobacion.filas.map((f, i) => (
+                          <tr key={i}>
+                            <td className={styles.tdGrupo}>{f.descripcion}</td>
+                            <td className={styles.tdNum}>{f.hco}</td>
+                            <td className={styles.tdNum}>{f.proteina}</td>
+                            <td className={styles.tdNum}>{f.lipidos}</td>
+                            <td className={styles.tdNum}>{f.kcal}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className={styles.filaTotal}>
+                          <td className={styles.tdGrupo}>TOTAL</td>
+                          <td className={styles.tdNum}>{tablaComprobacion.total.hco}</td>
+                          <td className={styles.tdNum}>{tablaComprobacion.total.proteina}</td>
+                          <td className={styles.tdNum}>{tablaComprobacion.total.lipidos}</td>
+                          <td className={styles.tdNum}>{tablaComprobacion.total.kcal}</td>
+                        </tr>
+                        <tr className={styles.filaMeta}>
+                          <td className={styles.tdGrupo}>META</td>
+                          <td className={styles.tdNum}>{tablaComprobacion.meta.hco}</td>
+                          <td className={styles.tdNum}>{tablaComprobacion.meta.proteina}</td>
+                          <td className={styles.tdNum}>{tablaComprobacion.meta.lipidos}</td>
+                          <td className={styles.tdNum}>{tablaComprobacion.meta.kcal}</td>
+                        </tr>
+                        <tr className={styles.filaDif}>
+                          <td className={styles.tdGrupo}>DIFERENCIA</td>
+                          <td className={claseGradiente(tablaComprobacion.diferencia.hco)}>
+                            {fmtDif(tablaComprobacion.diferencia.hco)}
+                          </td>
+                          <td className={claseGradiente(tablaComprobacion.diferencia.proteina)}>
+                            {fmtDif(tablaComprobacion.diferencia.proteina)}
+                          </td>
+                          <td className={claseGradiente(tablaComprobacion.diferencia.lipidos)}>
+                            {fmtDif(tablaComprobacion.diferencia.lipidos)}
+                          </td>
+                          <td className={claseGradiente(tablaComprobacion.diferencia.kcal, 30)}>
+                            {fmtDif(tablaComprobacion.diferencia.kcal)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                  {Math.abs(tablaComprobacion.diferencia.kcal) <= 30 &&
+                  Math.abs(tablaComprobacion.diferencia.hco) <= 5 &&
+                  Math.abs(tablaComprobacion.diferencia.proteina) <= 5 &&
+                  Math.abs(tablaComprobacion.diferencia.lipidos) <= 5 ? (
+                    <p className={styles.comprobacionOk}>
+                      ✓ La dieta cuadra con la meta del cuadro.
+                    </p>
+                  ) : (
+                    <p className={styles.comprobacionAviso}>
+                      ⚠ La dieta no cuadra del todo con la meta. Pídele a la IA que ajuste, o revisa
+                      el reparto en la pestaña de distribución.
+                    </p>
+                  )}
+                </div>
+              )}
+
               {error && <p className={styles.error}>{error}</p>}
             </div>
 
@@ -1525,4 +1662,12 @@ function celdaDif(n: number, tolerancia = 5): string {
   if (abs <= tolerancia) return `${base} ${styles.difOk}`
   if (abs <= tolerancia * 3) return `${base} ${styles.difCerca}`
   return `${base} ${styles.difLejos}`
+}
+
+// Clase de gradiente (5 escalones: verde → lima → amarillo → naranja → rojo)
+// según qué tan cerca está la diferencia de la meta. Para la tabla de la IA.
+const CLASES_GRADIENTE = ['grad0', 'grad1', 'grad2', 'grad3', 'grad4'] as const
+function claseGradiente(diferencia: number, tolerancia = 5): string {
+  const nivel = nivelCercania(diferencia, tolerancia)
+  return `${styles.tdNum} ${styles[CLASES_GRADIENTE[nivel]]}`
 }
