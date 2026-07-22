@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { GRUPOS_SMAE, type Equivalentes, type GrupoSMAEId } from '@/lib/utils/smae'
 import {
   generarDietaConIA,
+  generarRecetario,
   validarDietaGenerada,
   isGeneradorDisponible,
   type EntradaGeneracion,
@@ -40,6 +41,8 @@ const generarSchema = z.object({
     .min(1)
     .max(12),
   instrucciones_extra: z.string().max(1000).optional(),
+  // 'dieta' = una dieta precisa; 'recetario' = varias opciones por tiempo.
+  modo: z.enum(['dieta', 'recetario']).default('dieta'),
 })
 
 export async function POST(request: NextRequest) {
@@ -85,6 +88,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (data.modo === 'recetario') {
+      const recetario = await generarRecetario(entrada)
+      return NextResponse.json({ recetario }, { status: 200 })
+    }
     const dieta = await generarDietaConIA(entrada)
     const discrepancias = validarDietaGenerada(entrada, dieta)
     return NextResponse.json({ dieta, discrepancias }, { status: 200 })
