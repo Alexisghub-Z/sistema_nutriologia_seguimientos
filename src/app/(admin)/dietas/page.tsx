@@ -44,6 +44,24 @@ interface ConsultaLite {
   motivo: string | null
 }
 
+interface AlimentoUI {
+  grupo: GrupoSMAEId
+  equivalentes: number
+  descripcion: string
+}
+
+interface TiempoGeneradoUI {
+  id: string
+  nombre: string
+  alimentos: AlimentoUI[]
+  nota?: string
+}
+
+interface MensajeChat {
+  rol: 'nutriologo' | 'ia'
+  texto: string
+}
+
 interface MacroResultado {
   gramos: number
   kcal: number
@@ -104,6 +122,12 @@ const FORM_INICIAL = {
 // Distribución calórica por defecto (% de HCO / lípidos / proteína).
 const PCT_DEFAULT = { hco: 50, lip: 25, pro: 25 }
 
+// Mapa id de grupo SMAE → nombre legible (para mostrar en la dieta de IA).
+const NOMBRE_GRUPO = Object.fromEntries(GRUPOS_SMAE.map((g) => [g.id, g.nombre])) as Record<
+  GrupoSMAEId,
+  string
+>
+
 export default function DietasPage() {
   const [query, setQuery] = useState('')
   const [resultados, setResultados] = useState<PacienteLite[]>([])
@@ -123,8 +147,8 @@ export default function DietasPage() {
 
   // Paso entre porciones de los sliders de equivalentes (0.25 / 0.5 / 1).
   const [pasoEquiv, setPasoEquiv] = useState(0.5)
-  // Pestaña activa: 'cuadro' (dietosintético) | 'tiempos' (distribución).
-  const [pestana, setPestana] = useState<'cuadro' | 'tiempos'>('cuadro')
+  // Pestaña activa: 'cuadro' (dietosintético) | 'tiempos' (distribución) | 'ia' (generar).
+  const [pestana, setPestana] = useState<'cuadro' | 'tiempos' | 'ia'>('cuadro')
   // Tiempos de comida y su reparto de equivalentes.
   const [tiempos, setTiempos] = useState<TiempoComida[]>(() =>
     TIEMPOS_DEFAULT.map((t) => ({ ...t }))
@@ -142,6 +166,12 @@ export default function DietasPage() {
   // Modal de confirmación antes de guardar.
   const [confirmando, setConfirmando] = useState(false)
   const [noVolverAvisar, setNoVolverAvisar] = useState(false)
+
+  // Generación con IA (pestaña 3).
+  const [dietaIA, setDietaIA] = useState<TiempoGeneradoUI[] | null>(null)
+  const [mensajesIA, setMensajesIA] = useState<MensajeChat[]>([])
+  const [generando, setGenerando] = useState(false)
+  const [inputChat, setInputChat] = useState('')
 
   // Kcal calculada por el sistema (Mifflin × actividad ± objetivo).
   const kcalCalculada = resultado?.kcalMeta ?? 0
@@ -390,6 +420,8 @@ export default function DietasPage() {
     setHistorial([])
     setConsultaId('')
     setConsultas([])
+    setDietaIA(null)
+    setMensajesIA([])
     setError('')
     setExito('')
   }
@@ -404,6 +436,72 @@ export default function DietasPage() {
   const setPctCampo = (macro: 'hco' | 'lip' | 'pro', valor: string) => {
     const n = valor === '' ? 0 : Math.max(0, Math.min(100, Number(valor)))
     setPct((p) => ({ ...p, [macro]: n }))
+  }
+
+  // --- Generación con IA (pestaña 3) ---
+
+  // Llama a la IA para proponer los alimentos, con instrucciones opcionales del chat.
+  const generarDietaIA = async (instruccionesExtra?: string) => {
+    if (!resultado || !distribucion) return
+    setGenerando(true)
+    setError('')
+    try {
+      const res = await fetch('/api/dietas/generar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paciente_id: paciente?.id,
+          kcal_meta: kcalMeta,
+          proteina_g: distribucion[2]!.gramos,
+          grasa_g: distribucion[1]!.gramos,
+          carbohidrato_g: distribucion[0]!.gramos,
+          tiempos: tiempos.map((t) => ({
+            id: t.id,
+            nombre: t.nombre,
+            equivalentes: reparto[t.id] ?? {},
+          })),
+          instrucciones_extra: instruccionesExtra,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setDietaIA(data.dieta.tiempos)
+        if (data.dieta.mensaje) {
+          setMensajesIA((m) => [...m, { rol: 'ia', texto: data.dieta.mensaje }])
+        }
+      } else {
+        setError(data.error || 'Error al generar la dieta con IA')
+      }
+    } catch {
+      setError('Error de conexión al generar la dieta')
+    } finally {
+      setGenerando(false)
+    }
+  }
+
+  // Envía un mensaje del nutriólogo al chat y regenera con esa instrucción.
+  const enviarMensajeChat = () => {
+    const texto = inputChat.trim()
+    if (!texto || generando) return
+    setMensajesIA((m) => [...m, { rol: 'nutriologo', texto }])
+    setInputChat('')
+    generarDietaIA(texto)
+  }
+
+  // Edita a mano la descripción de un alimento propuesto.
+  const editarAlimento = (tiempoId: string, idx: number, descripcion: string) => {
+    setDietaIA((d) =>
+      d
+        ? d.map((t) =>
+            t.id === tiempoId
+              ? {
+                  ...t,
+                  alimentos: t.alimentos.map((a, i) => (i === idx ? { ...a, descripcion } : a)),
+                }
+              : t
+          )
+        : d
+    )
   }
 
   const construirPayload = (guardar: boolean) => ({
@@ -687,6 +785,20 @@ export default function DietasPage() {
             title={!resultado ? 'Primero calcula el cuadro' : ''}
           >
             Distribución en tiempos
+          </button>
+          <button
+            className={`${styles.tab} ${pestana === 'ia' ? styles.tabActivo : ''}`}
+            onClick={() => setPestana('ia')}
+            disabled={!resultado || gruposConEquiv.length === 0}
+            title={
+              !resultado
+                ? 'Primero calcula el cuadro'
+                : gruposConEquiv.length === 0
+                  ? 'Primero define equivalentes'
+                  : ''
+            }
+          >
+            Generar con IA ✨
           </button>
         </div>
       )}
@@ -1256,6 +1368,97 @@ export default function DietasPage() {
               {exito && <p className={styles.exito}>{exito}</p>}
             </>
           )}
+        </div>
+      )}
+
+      {/* PESTAÑA 3: Generar con IA */}
+      {paciente && pestana === 'ia' && resultado && (
+        <div className={styles.iaWrap}>
+          <div className={styles.iaGrid}>
+            {/* Columna izquierda: dieta generada (editable) */}
+            <div className={styles.card}>
+              <div className={styles.iaHeader}>
+                <h2 className={styles.cardTitle}>Dieta propuesta por IA</h2>
+                <Button onClick={() => generarDietaIA()} disabled={generando}>
+                  {generando ? 'Generando…' : dietaIA ? 'Regenerar' : 'Generar dieta'}
+                </Button>
+              </div>
+              <p className={styles.smaeAyuda}>
+                La IA propone los alimentos concretos de cada tiempo respetando tus equivalentes y
+                tu estilo. Puedes editar cada alimento a mano.
+              </p>
+
+              {!dietaIA ? (
+                <p className={styles.resultadoVacio}>
+                  {generando
+                    ? 'La IA está armando la dieta…'
+                    : 'Presiona “Generar dieta” para que la IA proponga los alimentos.'}
+                </p>
+              ) : (
+                <div className={styles.iaTiempos}>
+                  {dietaIA.map((t) => (
+                    <div key={t.id} className={styles.iaTiempo}>
+                      <h3 className={styles.iaTiempoNombre}>{t.nombre}</h3>
+                      {t.alimentos.map((a, i) => (
+                        <div key={i} className={styles.iaAlimento}>
+                          <span className={styles.iaAlimentoGrupo}>
+                            {a.equivalentes}× {NOMBRE_GRUPO[a.grupo] ?? a.grupo}
+                          </span>
+                          <input
+                            className={styles.iaAlimentoInput}
+                            value={a.descripcion}
+                            onChange={(e) => editarAlimento(t.id, i, e.target.value)}
+                          />
+                        </div>
+                      ))}
+                      {t.nota && <p className={styles.iaTiempoNota}>{t.nota}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {error && <p className={styles.error}>{error}</p>}
+            </div>
+
+            {/* Columna derecha: chat copiloto */}
+            <div className={styles.card}>
+              <h2 className={styles.cardTitle}>Ajustar con la IA</h2>
+              <p className={styles.smaeAyuda}>
+                Pídele cambios: “cámbiale la fruta del desayuno”, “no uses lácteos”, “más
+                económico”.
+              </p>
+              <div className={styles.chatMensajes}>
+                {mensajesIA.length === 0 ? (
+                  <p className={styles.chatVacio}>Aún no hay conversación.</p>
+                ) : (
+                  mensajesIA.map((m, i) => (
+                    <div
+                      key={i}
+                      className={m.rol === 'ia' ? styles.chatBurbujaIA : styles.chatBurbujaNutri}
+                    >
+                      {m.texto}
+                    </div>
+                  ))
+                )}
+                {generando && <div className={styles.chatBurbujaIA}>Pensando…</div>}
+              </div>
+              <div className={styles.chatInput}>
+                <input
+                  value={inputChat}
+                  onChange={(e) => setInputChat(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && enviarMensajeChat()}
+                  placeholder="Escribe un ajuste…"
+                  disabled={generando || !dietaIA}
+                />
+                <Button
+                  onClick={enviarMensajeChat}
+                  disabled={generando || !dietaIA || !inputChat.trim()}
+                >
+                  Enviar
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
