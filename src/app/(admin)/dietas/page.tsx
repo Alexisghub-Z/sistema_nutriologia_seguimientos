@@ -166,6 +166,7 @@ export default function DietasPage() {
   const [error, setError] = useState('')
   const [exito, setExito] = useState('')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const chatRef = useRef<HTMLDivElement | null>(null)
 
   // Paso entre porciones de los sliders de equivalentes (0.25 / 0.5 / 1).
   const [pasoEquiv, setPasoEquiv] = useState(0.5)
@@ -197,6 +198,8 @@ export default function DietasPage() {
   // Modo de generación: 'dieta' (una precisa) | 'recetario' (varias opciones).
   const [modoIA, setModoIA] = useState<'dieta' | 'recetario'>('dieta')
   const [recetario, setRecetario] = useState<RecetarioUI | null>(null)
+  // Chat conversacional (copiloto): true mientras la IA escribe su respuesta.
+  const [chateando, setChateando] = useState(false)
 
   // Kcal calculada por el sistema (Mifflin × actividad ± objetivo).
   const kcalCalculada = resultado?.kcalMeta ?? 0
@@ -325,6 +328,13 @@ export default function DietasPage() {
       setNoVolverAvisar(true)
     }
   }, [])
+
+  // Auto-scroll del chat al fondo cuando llegan mensajes o texto en streaming.
+  useEffect(() => {
+    if (chatRef.current) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight
+    }
+  }, [mensajesIA])
 
   useEffect(() => {
     if (paciente) return
@@ -569,13 +579,88 @@ export default function DietasPage() {
     }
   }
 
-  // Envía un mensaje del nutriólogo al chat y regenera con esa instrucción.
-  const enviarMensajeChat = () => {
+  // Envía un mensaje del nutriólogo y recibe la respuesta de la IA con streaming.
+  // La IA conversa y, si el mensaje implica un cambio, actualiza la dieta.
+  const enviarMensajeChat = async () => {
     const texto = inputChat.trim()
-    if (!texto || generando) return
-    setMensajesIA((m) => [...m, { rol: 'nutriologo', texto }])
+    if (!texto || chateando || generando || !dietaIA || !distribucion) return
+
+    // Historial para la IA (antes de agregar el mensaje nuevo).
+    const historial = mensajesIA.map((m) => ({
+      rol: m.rol === 'nutriologo' ? ('user' as const) : ('assistant' as const),
+      contenido: m.texto,
+    }))
+
+    setMensajesIA((m) => [...m, { rol: 'nutriologo', texto }, { rol: 'ia', texto: '' }])
     setInputChat('')
-    generarDietaIA(texto)
+    setChateando(true)
+    setError('')
+
+    try {
+      const res = await fetch('/api/dietas/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kcal_meta: kcalMeta,
+          proteina_g: distribucion[2]!.gramos,
+          grasa_g: distribucion[1]!.gramos,
+          carbohidrato_g: distribucion[0]!.gramos,
+          tiempos: tiempos.map((t) => ({
+            id: t.id,
+            nombre: t.nombre,
+            equivalentes: reparto[t.id] ?? {},
+          })),
+          dieta_actual: { tiempos: dietaIA },
+          historial,
+          mensaje: texto,
+        }),
+      })
+
+      if (!res.ok || !res.body) {
+        setError('No se pudo iniciar la conversación con la IA.')
+        setChateando(false)
+        return
+      }
+
+      // Lee el stream de Server-Sent Events y actualiza la última burbuja en vivo.
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lineas = buffer.split('\n\n')
+        buffer = lineas.pop() ?? '' // el último puede estar incompleto
+
+        for (const linea of lineas) {
+          const l = linea.trim()
+          if (!l.startsWith('data:')) continue
+          const evento = JSON.parse(l.slice(5).trim())
+
+          if (evento.tipo === 'texto') {
+            setMensajesIA((m) => {
+              const copia = [...m]
+              const ultimo = copia[copia.length - 1]
+              if (ultimo && ultimo.rol === 'ia') {
+                copia[copia.length - 1] = { ...ultimo, texto: ultimo.texto + evento.delta }
+              }
+              return copia
+            })
+          } else if (evento.tipo === 'dieta' && evento.dieta?.tiempos) {
+            setDietaIA(evento.dieta.tiempos)
+          } else if (evento.tipo === 'error') {
+            setError(evento.error || 'Error en la conversación')
+          }
+        }
+      }
+    } catch {
+      setError('Error de conexión en la conversación')
+    } finally {
+      setChateando(false)
+    }
   }
 
   // Edita a mano la descripción de un alimento propuesto.
@@ -1667,28 +1752,43 @@ export default function DietasPage() {
             <div className={styles.card}>
               <h2 className={styles.cardTitle}>Ajustar con la IA</h2>
               <p className={styles.smaeAyuda}>
-                Pídele cambios: “cámbiale la fruta del desayuno”, “no uses lácteos”, “más
-                económico”.
+                Conversa: pregunta “¿por qué esa porción?”, o pide “cambia la fruta”, “no uses
+                lácteos”, “hazlo más económico”. La IA responde y ajusta la dieta cuando aplica.
               </p>
-              <div className={styles.chatMensajes}>
-                {mensajesIA.length === 0 ? (
-                  <p className={styles.chatVacio}>Aún no hay conversación.</p>
+              <div className={styles.chatMensajes} ref={chatRef}>
+                {mensajesIA.length === 0 && !chateando ? (
+                  <p className={styles.chatVacio}>
+                    {dietaIA
+                      ? 'Escríbele a la IA para afinar la dieta.'
+                      : 'Genera una dieta primero para poder conversar.'}
+                  </p>
                 ) : (
-                  mensajesIA.map((m, i) => (
-                    <div
-                      key={i}
-                      className={m.rol === 'ia' ? styles.chatBurbujaIA : styles.chatBurbujaNutri}
-                    >
-                      {m.texto}
-                    </div>
-                  ))
-                )}
-                {generando && (
-                  <div className={`${styles.chatBurbujaIA} ${styles.chatEscribiendo}`}>
-                    <span className={styles.dot} />
-                    <span className={styles.dot} />
-                    <span className={styles.dot} />
-                  </div>
+                  mensajesIA.map((m, i) => {
+                    const esUltima = i === mensajesIA.length - 1
+                    const escribiendoAqui = chateando && esUltima && m.rol === 'ia'
+                    // Burbuja de la IA aún vacía mientras esperamos el primer token.
+                    if (escribiendoAqui && m.texto === '') {
+                      return (
+                        <div
+                          key={i}
+                          className={`${styles.chatBurbujaIA} ${styles.chatEscribiendo}`}
+                        >
+                          <span className={styles.dot} />
+                          <span className={styles.dot} />
+                          <span className={styles.dot} />
+                        </div>
+                      )
+                    }
+                    return (
+                      <div
+                        key={i}
+                        className={m.rol === 'ia' ? styles.chatBurbujaIA : styles.chatBurbujaNutri}
+                      >
+                        {m.texto}
+                        {escribiendoAqui && <span className={styles.cursor} />}
+                      </div>
+                    )
+                  })
                 )}
               </div>
               <div className={styles.chatInput}>
@@ -1696,12 +1796,12 @@ export default function DietasPage() {
                   value={inputChat}
                   onChange={(e) => setInputChat(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && enviarMensajeChat()}
-                  placeholder="Escribe un ajuste…"
-                  disabled={generando || !dietaIA}
+                  placeholder="Escribe tu mensaje…"
+                  disabled={chateando || generando || !dietaIA}
                 />
                 <Button
                   onClick={enviarMensajeChat}
-                  disabled={generando || !dietaIA || !inputChat.trim()}
+                  disabled={chateando || generando || !dietaIA || !inputChat.trim()}
                 >
                   Enviar
                 </Button>
