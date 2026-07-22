@@ -45,6 +45,7 @@ export interface PerfilEstilo {
   reglas_propias?: string | null
   tono?: string | null
   instrucciones_libres?: string | null
+  indicaciones_inicio?: string | null
 }
 
 /** Un tiempo de comida con los equivalentes que debe cumplir. */
@@ -115,6 +116,12 @@ function construirPromptSistema(perfil: PerfilEstilo, ejemplos?: string[]): stri
   if (perfil.tono) partes.push(`- Tono de las indicaciones: ${perfil.tono}`)
   if (perfil.instrucciones_libres)
     partes.push(`- Instrucciones adicionales: ${perfil.instrucciones_libres}`)
+  if (perfil.indicaciones_inicio)
+    partes.push(
+      '',
+      'Indicaciones de inicio del nutriólogo (RESPÉTALAS al elegir alimentos y preparaciones):',
+      perfil.indicaciones_inicio
+    )
 
   if (!perfil.region && !perfil.alimentos_tipicos) {
     partes.push(

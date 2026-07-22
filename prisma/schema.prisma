@@ -646,6 +646,9 @@ model PerfilEstiloDietas {
   tono String? @db.Text
   // Instrucciones libres adicionales para la IA
   instrucciones_libres String? @db.Text
+  // Indicaciones de inicio: recomendaciones generales que el nutriólogo pone al
+  // principio de cada dieta (evitar frituras, sustitutos de azúcar, agua, etc.).
+  indicaciones_inicio String? @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
