@@ -551,6 +551,28 @@ export default function DietasPage() {
       ) : (
         <div className={styles.pacienteSel}>
           <span className={styles.pacienteSelNombre}>{paciente.nombre}</span>
+          {consultas.length > 0 && (
+            <div className={styles.pacienteSelConsulta}>
+              <label htmlFor="consultaBarra">Consulta:</label>
+              <select
+                id="consultaBarra"
+                value={consultaId}
+                onChange={(e) => cambiarConsultaBase(e.target.value)}
+              >
+                <option value="">Ninguna (última consulta)</option>
+                {consultas.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {new Date(c.fecha).toLocaleDateString('es-MX', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                    {c.peso ? ` · ${c.peso} kg` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <button className={styles.cambiarBtn} onClick={cambiarPaciente}>
             Cambiar paciente
           </button>
@@ -612,32 +634,10 @@ export default function DietasPage() {
           <div className={styles.card}>
             <h2 className={styles.cardTitle}>Datos del paciente</h2>
 
-            {consultas.length > 0 && (
-              <div className={styles.formGroup}>
-                <label htmlFor="consultaBase">Basar la dieta en una consulta (opcional)</label>
-                <select
-                  id="consultaBase"
-                  value={consultaId}
-                  onChange={(e) => cambiarConsultaBase(e.target.value)}
-                >
-                  <option value="">Ninguna (dieta suelta) · usa la última consulta</option>
-                  {consultas.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {new Date(c.fecha).toLocaleDateString('es-MX', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                      {c.peso ? ` · ${c.peso} kg` : ''}
-                      {c.motivo ? ` · ${c.motivo}` : ''}
-                    </option>
-                  ))}
-                </select>
-                <small>
-                  Si eliges una, el peso/talla se toman de esa consulta y la dieta queda ligada a
-                  ella.
-                </small>
-              </div>
+            {consultaId && (
+              <p className={styles.consultaLigadaAviso}>
+                Datos tomados de la consulta seleccionada; la dieta quedará ligada a ella.
+              </p>
             )}
 
             <div className={styles.formRow}>
