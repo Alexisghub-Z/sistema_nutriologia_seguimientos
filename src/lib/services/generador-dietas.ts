@@ -89,6 +89,33 @@ export interface DietaGenerada {
   mensaje: string // mensaje conversacional de la IA para el nutriólogo
 }
 
+// ============================================================
+// Recetario de opciones (formato del nutriólogo)
+// ============================================================
+// En vez de una dieta única, genera VARIAS opciones por tiempo (platillos),
+// cada una anclada a los mismos equivalentes. El paciente elige.
+
+/** Una opción/platillo dentro de un tiempo de comida. */
+export interface OpcionPlatillo {
+  nombre: string // "Entomatadas", "Tostada de aguacate"
+  alimentos: AlimentoPropuesto[] // ingredientes anclados a los equivalentes
+  preparacion?: string // pasos, cuando aplique (hotcakes, pastel...)
+}
+
+/** Un tiempo de comida con varias opciones de platillo. */
+export interface TiempoRecetario {
+  id: string
+  nombre: string
+  opciones: OpcionPlatillo[]
+}
+
+/** Resultado del recetario. */
+export interface RecetarioGenerado {
+  indicacionesInicio: string // recomendaciones generales (del perfil)
+  tiempos: TiempoRecetario[]
+  mensaje: string
+}
+
 const NOMBRE_GRUPO: Record<GrupoSMAEId, string> = Object.fromEntries(
   GRUPOS_SMAE.map((g) => [g.id, g.nombre])
 ) as Record<GrupoSMAEId, string>
@@ -296,6 +323,163 @@ export async function generarDietaConIA(entrada: EntradaGeneracion): Promise<Die
   dieta = await revisarPorciones(promptSistema, dieta)
 
   return dieta
+}
+
+/**
+ * Genera un RECETARIO de opciones (formato del nutriólogo): por cada tiempo,
+ * varias opciones de platillo, cada una anclada a los mismos equivalentes.
+ *
+ * @param entrada     mismo cuadro/equivalentes que la dieta precisa
+ * @param opcionesPorTiempo cuántas opciones generar por tiempo (por defecto 4)
+ */
+export async function generarRecetario(
+  entrada: EntradaGeneracion,
+  opcionesPorTiempo = 4
+): Promise<RecetarioGenerado> {
+  const tieneEquivalentes = entrada.tiempos.some((t) =>
+    Object.values(t.equivalentes).some((n) => (n ?? 0) > 0)
+  )
+  if (!tieneEquivalentes) {
+    throw new Error(
+      'No hay equivalentes repartidos en los tiempos de comida. Reparte los equivalentes en la ' +
+        'pestaña "Distribución en tiempos" antes de generar el recetario.'
+    )
+  }
+
+  const promptSistema = construirPromptSistemaRecetario(entrada.perfil, entrada.ejemplos)
+  const promptUsuario = construirPromptUsuarioRecetario(entrada, opcionesPorTiempo)
+
+  const client = getCliente()
+  const model = process.env.OPENAI_MODEL || 'gpt-4o'
+
+  try {
+    const completion = await client.chat.completions.create({
+      model,
+      messages: [
+        { role: 'system', content: promptSistema },
+        { role: 'user', content: promptUsuario },
+      ],
+      temperature: 0.5, // algo de variedad entre opciones, pero sin desviarse
+      response_format: { type: 'json_object' },
+    })
+
+    const contenido = completion.choices[0]?.message?.content || '{}'
+    const parsed = JSON.parse(contenido) as RecetarioGenerado
+
+    const recetario: RecetarioGenerado = {
+      indicacionesInicio: entrada.perfil.indicaciones_inicio ?? '',
+      mensaje: typeof parsed.mensaje === 'string' ? parsed.mensaje : '',
+      tiempos: Array.isArray(parsed.tiempos)
+        ? parsed.tiempos.map((t) => ({
+            id: String(t.id ?? ''),
+            nombre: String(t.nombre ?? ''),
+            opciones: Array.isArray(t.opciones)
+              ? t.opciones.map((o) => ({
+                  nombre: String(o.nombre ?? ''),
+                  preparacion: o.preparacion ? String(o.preparacion) : undefined,
+                  alimentos: Array.isArray(o.alimentos)
+                    ? o.alimentos.map((a) => ({
+                        grupo: a.grupo,
+                        equivalentes: Number(a.equivalentes) || 0,
+                        descripcion: String(a.descripcion ?? ''),
+                        calculo: a.calculo ? String(a.calculo) : undefined,
+                      }))
+                    : [],
+                }))
+              : [],
+          }))
+        : [],
+    }
+
+    logSuccess('Recetario generado con IA', {
+      tiempos: recetario.tiempos.length,
+      tokens: completion.usage?.total_tokens ?? 0,
+    })
+
+    return recetario
+  } catch (error) {
+    captureError(error as Error, { module: 'generarRecetario' })
+    throw new Error(
+      error instanceof Error
+        ? `Error al generar el recetario: ${error.message}`
+        : 'Error al generar el recetario'
+    )
+  }
+}
+
+/** Prompt de sistema para el recetario (reusa el estilo, pide varias opciones). */
+function construirPromptSistemaRecetario(perfil: PerfilEstilo, ejemplos?: string[]): string {
+  // Reusamos todo el prompt de estilo/reglas de la dieta precisa, y añadimos la
+  // instrucción de formato "varias opciones por tiempo".
+  const base = construirPromptSistema(perfil, ejemplos)
+  return (
+    base +
+    '\n\n' +
+    'FORMATO RECETARIO (muy importante):\n' +
+    '- En vez de UNA dieta, genera VARIAS OPCIONES de platillo por cada tiempo de comida.\n' +
+    '- CADA opción debe cumplir EXACTAMENTE los mismos equivalentes del tiempo (son intercambiables).\n' +
+    '- Dale a cada opción un nombre de platillo atractivo (ej. "Entomatadas", "Tostada de aguacate").\n' +
+    '- Cuando el platillo lo requiera (licuados, hot cakes, pasteles), incluye la preparación en "preparacion".\n' +
+    '- Usa alimentos y preparaciones del estilo del nutriólogo y respeta sus indicaciones de inicio.'
+  )
+}
+
+/** Prompt de usuario para el recetario. */
+function construirPromptUsuarioRecetario(
+  entrada: EntradaGeneracion,
+  opcionesPorTiempo: number
+): string {
+  const lineas: string[] = [
+    `Meta diaria: ${entrada.kcalMeta} kcal · Proteína ${entrada.macros.proteina_g} g · ` +
+      `Grasa ${entrada.macros.grasa_g} g · Carbohidratos ${entrada.macros.carbohidrato_g} g.`,
+    '',
+    `Genera ${opcionesPorTiempo} opciones de platillo por cada tiempo. Cada opción debe cumplir ` +
+      'EXACTAMENTE estos equivalentes:',
+  ]
+
+  for (const t of entrada.tiempos) {
+    const grupos = Object.entries(t.equivalentes)
+      .filter(([, n]) => (n ?? 0) > 0)
+      .map(([id, n]) => `${n} de ${NOMBRE_GRUPO[id as GrupoSMAEId]}`)
+      .join(', ')
+    lineas.push(`- ${t.nombre} (id="${t.id}"): ${grupos || 'sin equivalentes'}`)
+  }
+
+  if (entrada.instruccionesExtra) {
+    lineas.push('', `Instrucciones adicionales del nutriólogo: ${entrada.instruccionesExtra}`)
+  }
+
+  lineas.push(
+    '',
+    'Aporte por 1 equivalente de cada grupo (g): ' +
+      GRUPOS_SMAE.map(
+        (g) => `${g.nombre}=[HCO ${g.hco}, Prot ${g.proteina}, Líp ${g.lipidos}]`
+      ).join('; '),
+    '',
+    'Devuelve un JSON con esta forma exacta:',
+    '{',
+    '  "mensaje": "breve comentario para el nutriólogo",',
+    '  "tiempos": [',
+    '    {',
+    '      "id": "<id del tiempo>",',
+    '      "nombre": "<nombre del tiempo>",',
+    '      "opciones": [',
+    '        {',
+    '          "nombre": "<nombre del platillo>",',
+    '          "alimentos": [',
+    '            { "grupo": "<ID grupo SMAE>", "equivalentes": <número>, "calculo": "<cómo obtuviste la porción>", "descripcion": "<porción concreta>" }',
+    '          ],',
+    '          "preparacion": "<pasos, solo si aplica>"',
+    '        }',
+    '      ]',
+    '    }',
+    '  ]',
+    '}',
+    '',
+    `IDs de grupo válidos: ${GRUPOS_SMAE.map((g) => g.id).join(', ')}.`
+  )
+
+  return lineas.join('\n')
 }
 
 /**
