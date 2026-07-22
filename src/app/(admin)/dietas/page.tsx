@@ -525,14 +525,38 @@ export default function DietasPage() {
       {/* Selector de paciente */}
       {!paciente ? (
         <div className={styles.buscador}>
-          <input
-            type="text"
-            className={styles.buscadorInput}
-            placeholder="Busca un paciente por nombre o email…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            autoFocus
-          />
+          <div className={styles.buscadorInputWrap}>
+            <svg
+              className={styles.buscadorIcono}
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="9" cy="9" r="6" />
+              <path strokeLinecap="round" d="M14 14l3.5 3.5" />
+            </svg>
+            <input
+              type="text"
+              className={styles.buscadorInput}
+              placeholder="Busca un paciente por nombre o email…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              autoFocus
+            />
+            {query && (
+              <button
+                type="button"
+                className={styles.buscadorLimpiar}
+                onClick={() => setQuery('')}
+                title="Limpiar"
+              >
+                ×
+              </button>
+            )}
+          </div>
           {resultados.length > 0 && (
             <div className={styles.resultados}>
               {resultados.map((p) => (
@@ -541,8 +565,22 @@ export default function DietasPage() {
                   className={styles.resultadoItem}
                   onClick={() => seleccionarPaciente(p)}
                 >
-                  <span className={styles.resultadoNombre}>{p.nombre}</span>
-                  <span className={styles.resultadoEmail}>{p.email}</span>
+                  <span className={styles.resultadoAvatar}>{p.nombre.charAt(0).toUpperCase()}</span>
+                  <span className={styles.resultadoInfo}>
+                    <span className={styles.resultadoNombre}>{p.nombre}</span>
+                    <span className={styles.resultadoEmail}>{p.email}</span>
+                  </span>
+                  <svg
+                    className={styles.resultadoFlecha}
+                    width="18"
+                    height="18"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 4l6 6-6 6" />
+                  </svg>
                 </button>
               ))}
             </div>
