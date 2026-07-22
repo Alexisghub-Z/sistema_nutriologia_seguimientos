@@ -1,5 +1,10 @@
 import OpenAI from 'openai'
-import { GRUPOS_SMAE, type Equivalentes, type GrupoSMAEId } from '@/lib/utils/smae'
+import {
+  GRUPOS_SMAE,
+  PORCIONES_REFERENCIA,
+  type Equivalentes,
+  type GrupoSMAEId,
+} from '@/lib/utils/smae'
 import { logSuccess, logDebug } from '@/lib/logger'
 import { captureError } from '@/lib/sentry-utils'
 
@@ -135,9 +140,28 @@ function construirPromptSistema(perfil: PerfilEstilo, ejemplos?: string[]): stri
     '5. Usa la porción correcta: la descripción debe corresponder al número de equivalentes',
     '   (ej. "2 de Cereales" ≈ 2 tortillas o 1 bolillo, NO "1 tortilla").',
     '',
+    'PORCIONES (muy importante para exactitud):',
+    '- Prefiere MEDIDAS CASERAS del SMAE (piezas, tazas, cucharadas), NO gramos sueltos, porque',
+    '  en cereales y leguminosas el gramo crudo y el cocido se confunden.',
+    '- Para arroz, pasta, avena, frijol, lenteja: usa SIEMPRE la medida en taza COCIDO',
+    '  (ej. "1/2 taza de frijol cocido", "1/4 de taza de arroz cocido"), nunca gramos crudos.'
+  )
+
+  // Tabla de referencia de porciones-equivalente para los grupos problemáticos.
+  const refs = Object.entries(PORCIONES_REFERENCIA)
+    .map(
+      ([id, lista]) =>
+        `  ${NOMBRE_GRUPO[id as GrupoSMAEId]} (1 equivalente = una de estas):\n    - ${lista.join('\n    - ')}`
+    )
+    .join('\n')
+  if (refs) {
+    partes.push('- Referencia de porciones (1 equivalente por porción indicada):', refs)
+  }
+
+  partes.push(
+    '',
     'ESTILO Y FORMATO:',
     '- Elige alimentos del estilo del nutriólogo (región y alimentos típicos de arriba).',
-    '- Usa porciones caseras y claras (piezas, tazas, cucharadas, gramos).',
     '- Responde ÚNICAMENTE en JSON válido con la forma que indica el usuario. Nada de texto fuera del JSON.'
   )
 
