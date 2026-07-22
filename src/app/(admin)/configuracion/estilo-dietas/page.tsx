@@ -16,6 +16,7 @@ interface PerfilEstilo {
   reglas_propias: string
   tono: string
   instrucciones_libres: string
+  indicaciones_inicio: string
 }
 
 export default function EstiloDietasPage() {
@@ -39,6 +40,7 @@ export default function EstiloDietasPage() {
             reglas_propias: data.reglas_propias || '',
             tono: data.tono || '',
             instrucciones_libres: data.instrucciones_libres || '',
+            indicaciones_inicio: data.indicaciones_inicio || '',
           })
         } else {
           setError('Error al cargar el perfil')
@@ -127,6 +129,37 @@ export default function EstiloDietasPage() {
 
       <form onSubmit={guardar}>
         <div className={styles.grid}>
+          <Card>
+            <CardHeader>
+              <CardTitle>Indicaciones de inicio</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={styles.formGroup}>
+                <label htmlFor="indicaciones_inicio">
+                  Recomendaciones generales que van al inicio de cada dieta
+                </label>
+                <textarea
+                  id="indicaciones_inicio"
+                  rows={8}
+                  value={perfil.indicaciones_inicio}
+                  onChange={(e) => setCampo('indicaciones_inicio', e.target.value)}
+                  placeholder={
+                    'Ej: Puedes utilizar sal, ajo y hierbas de aroma y sabor. Evita salsas y aderezos ' +
+                    'con azúcar o mayonesa. Evita alimentos fritos, capeados o empanizados. Cocina ' +
+                    'carnes y huevo sin aceite (salvo aceite en aerosol). Prefiere alimentos asados, al ' +
+                    'vapor, horneados o en caldos. Evita el azúcar; puedes endulzar con sustituto ' +
+                    '(Svetia, Splenda). No combines: tortillas, pan, arroz, frijoles, lentejas, avena, ' +
+                    'papas. Bebe mínimo 2 L de agua natural al día…'
+                  }
+                />
+                <small>
+                  Este texto aparecerá al inicio de las dietas que genere la IA. Escríbelo con tus
+                  propias palabras y recomendaciones.
+                </small>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Cómo hago mis dietas</CardTitle>

@@ -19,6 +19,7 @@ const perfilSchema = z.object({
   reglas_propias: z.string().max(2000).optional().nullable(),
   tono: z.string().max(1000).optional().nullable(),
   instrucciones_libres: z.string().max(4000).optional().nullable(),
+  indicaciones_inicio: z.string().max(8000).optional().nullable(),
 })
 
 /** Obtiene el perfil único, creándolo vacío la primera vez. */
