@@ -116,6 +116,19 @@ export interface RecetarioGenerado {
   mensaje: string
 }
 
+// ============================================================
+// Chat conversacional (copiloto)
+// ============================================================
+
+/** Un mensaje del historial de conversación. */
+export interface MensajeChatIA {
+  rol: 'user' | 'assistant'
+  contenido: string
+}
+
+/** Marcador que separa el texto conversacional de la dieta actualizada (JSON). */
+export const MARCADOR_DIETA = '<<<DIETA_ACTUALIZADA>>>'
+
 const NOMBRE_GRUPO: Record<GrupoSMAEId, string> = Object.fromEntries(
   GRUPOS_SMAE.map((g) => [g.id, g.nombre])
 ) as Record<GrupoSMAEId, string>
@@ -569,6 +582,129 @@ async function llamarIA(promptSistema: string, promptUsuario: string): Promise<D
         : 'Error al generar la dieta'
     )
   }
+}
+
+/**
+ * Chat conversacional (copiloto). La IA responde con naturalidad al nutriólogo
+ * y, si el mensaje implica cambiar la dieta, la actualiza respetando los
+ * equivalentes. Devuelve un stream de texto (SSE-friendly).
+ *
+ * Formato de respuesta de la IA:
+ *   <texto conversacional en vivo>
+ *   [si hay cambios] MARCADOR_DIETA seguido del JSON de tiempos actualizado.
+ *
+ * @returns un AsyncIterable de trozos de texto (el texto conversacional).
+ *          La dieta actualizada se obtiene aparte con extraerDietaDeRespuesta.
+ */
+export async function* chatDietaStream(params: {
+  entrada: EntradaGeneracion
+  dietaActual: DietaGenerada
+  historial: MensajeChatIA[]
+  mensaje: string
+}): AsyncGenerator<string, void, unknown> {
+  const client = getCliente()
+  const model = process.env.OPENAI_MODEL || 'gpt-4o'
+
+  const promptSistema = construirPromptSistemaChat(params.entrada, params.dietaActual)
+
+  const mensajes: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    { role: 'system', content: promptSistema },
+    ...params.historial.map((m) => ({
+      role: m.rol as 'user' | 'assistant',
+      content: m.contenido,
+    })),
+    { role: 'user', content: params.mensaje },
+  ]
+
+  const stream = await client.chat.completions.create({
+    model,
+    messages: mensajes,
+    temperature: 0.4,
+    stream: true,
+  })
+
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta?.content
+    if (delta) yield delta
+  }
+}
+
+/**
+ * Separa el texto conversacional de la dieta actualizada en la respuesta
+ * completa del chat. Devuelve { texto, dieta }.
+ */
+export function extraerDietaDeRespuesta(respuestaCompleta: string): {
+  texto: string
+  dieta: DietaGenerada | null
+} {
+  const idx = respuestaCompleta.indexOf(MARCADOR_DIETA)
+  if (idx === -1) {
+    return { texto: respuestaCompleta.trim(), dieta: null }
+  }
+  const texto = respuestaCompleta.slice(0, idx).trim()
+  const jsonRaw = respuestaCompleta.slice(idx + MARCADOR_DIETA.length).trim()
+  try {
+    // El JSON puede venir dentro de ```json ... ``` o suelto.
+    const limpio = jsonRaw.replace(/^```json\s*/i, '').replace(/```\s*$/, '')
+    const parsed = JSON.parse(limpio) as { tiempos?: TiempoGenerado[] }
+    if (!Array.isArray(parsed.tiempos)) return { texto, dieta: null }
+    const dieta: DietaGenerada = {
+      mensaje: texto,
+      tiempos: parsed.tiempos.map((t) => ({
+        id: String(t.id ?? ''),
+        nombre: String(t.nombre ?? ''),
+        nota: t.nota ? String(t.nota) : undefined,
+        alimentos: Array.isArray(t.alimentos)
+          ? t.alimentos.map((a) => ({
+              grupo: a.grupo,
+              equivalentes: Number(a.equivalentes) || 0,
+              descripcion: String(a.descripcion ?? ''),
+              calculo: a.calculo ? String(a.calculo) : undefined,
+            }))
+          : [],
+      })),
+    }
+    return { texto, dieta }
+  } catch {
+    return { texto, dieta: null }
+  }
+}
+
+/** Prompt de sistema del chat: le da contexto y las reglas de conversación. */
+function construirPromptSistemaChat(
+  entrada: EntradaGeneracion,
+  dietaActual: DietaGenerada
+): string {
+  const base = construirPromptSistema(entrada.perfil, entrada.ejemplos)
+
+  const equivalentesPorTiempo = entrada.tiempos
+    .map((t) => {
+      const grupos = Object.entries(t.equivalentes)
+        .filter(([, n]) => (n ?? 0) > 0)
+        .map(([id, n]) => `${n} de ${NOMBRE_GRUPO[id as GrupoSMAEId]}`)
+        .join(', ')
+      return `- ${t.nombre} (id="${t.id}"): ${grupos}`
+    })
+    .join('\n')
+
+  return (
+    base +
+    '\n\n' +
+    'MODO CONVERSACIÓN (copiloto):\n' +
+    'Estás conversando con el nutriólogo sobre la dieta que propusiste. Responde con naturalidad,\n' +
+    'de forma breve y cercana, como un colega experto. Reglas:\n' +
+    '1. Si el nutriólogo solo pregunta, comenta o pide una aclaración: responde en texto, NO cambies la dieta.\n' +
+    '2. Si pide un cambio concreto (cambiar un alimento, hacerlo más económico, quitar un ingrediente,\n' +
+    '   etc.): primero confírmale en texto qué vas a hacer, y LUEGO incluye la dieta actualizada.\n' +
+    '3. Cuando actualices la dieta, escribe el texto conversacional PRIMERO, después una línea con\n' +
+    `   exactamente "${MARCADOR_DIETA}" y a continuación el JSON con la forma:\n` +
+    '   {"tiempos":[{"id":"...","nombre":"...","alimentos":[{"grupo":"...","equivalentes":<n>,"calculo":"...","descripcion":"..."}],"nota":"..."}]}\n' +
+    '4. La dieta actualizada DEBE seguir respetando EXACTAMENTE estos equivalentes por tiempo:\n' +
+    equivalentesPorTiempo +
+    '\n5. Nunca muestres el JSON ni el marcador si NO cambiaste la dieta.\n\n' +
+    'Dieta actual (para tu referencia):\n' +
+    JSON.stringify(dietaActual.tiempos)
+  )
 }
 
 /**
