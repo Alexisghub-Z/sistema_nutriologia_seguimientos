@@ -588,10 +588,19 @@ export default function DietasPage() {
         </div>
       ) : (
         <div className={styles.pacienteSel}>
-          <span className={styles.pacienteSelNombre}>{paciente.nombre}</span>
+          <div className={styles.pacienteSelIdentidad}>
+            <span className={styles.pacienteSelAvatar}>
+              {paciente.nombre.charAt(0).toUpperCase()}
+            </span>
+            <div className={styles.pacienteSelTexto}>
+              <span className={styles.pacienteSelNombre}>{paciente.nombre}</span>
+              <span className={styles.pacienteSelEmail}>{paciente.email}</span>
+            </div>
+          </div>
+
           {consultas.length > 0 && (
             <div className={styles.pacienteSelConsulta}>
-              <label htmlFor="consultaBarra">Consulta:</label>
+              <label htmlFor="consultaBarra">Basar en consulta</label>
               <select
                 id="consultaBarra"
                 value={consultaId}
@@ -611,8 +620,24 @@ export default function DietasPage() {
               </select>
             </div>
           )}
+
           <button className={styles.cambiarBtn} onClick={cambiarPaciente}>
-            Cambiar paciente
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h5M16 16v-5h-5" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4.5 9a6 6 0 0110.5-2.5M15.5 11a6 6 0 01-10.5 2.5"
+              />
+            </svg>
+            Cambiar
           </button>
         </div>
       )}
