@@ -621,3 +621,34 @@ enum ObjetivoDieta {
   MANTENER
   SUBIR_PESO
 }
+
+// ============================================
+// PERFIL DE ESTILO PARA LA IA DE DIETAS
+// ============================================
+// Cómo hace las dietas este nutriólogo. Se inyecta en el prompt de la IA para
+// que genere dietas a su estilo (región, alimentos típicos, reglas propias).
+// Es un registro único por instalación (patrón singleton, como ConfiguracionGeneral).
+
+model PerfilEstiloDietas {
+  id String @id @default(cuid())
+
+  // Región / contexto geográfico (ej. "Oaxaca, México")
+  region String? @db.Text
+  // Alimentos que suele usar (ej. "tlayudas, quintoniles, frijol negro, quesillo")
+  alimentos_tipicos String? @db.Text
+  // Alimentos que evita o no recomienda (ej. "ultraprocesados, refrescos")
+  alimentos_evitar String? @db.Text
+  // Cómo estructura sus dietas (ej. "5 tiempos, porciones caseras en tazas/piezas")
+  estructura_notas String? @db.Text
+  // Reglas propias (ej. "siempre incluyo verdura en comida y cena")
+  reglas_propias String? @db.Text
+  // Tono de las indicaciones al paciente (ej. "cercano, explico el porqué")
+  tono String? @db.Text
+  // Instrucciones libres adicionales para la IA
+  instrucciones_libres String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("perfil_estilo_dietas")
+}
