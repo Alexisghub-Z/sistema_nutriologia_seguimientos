@@ -702,6 +702,12 @@ export default function DietasPage() {
     kcal_meta_manual: kcalEditada ? kcalMeta : undefined,
     equivalentes,
     distribucion_tiempos: Object.keys(reparto).length ? { tiempos, reparto } : undefined,
+    // Dieta o recetario generado por la IA (lo que exista), para el historial del paciente.
+    dieta_ia: recetario
+      ? { modo: 'recetario' as const, tiempos: recetario.tiempos }
+      : dietaIA
+        ? { modo: 'dieta' as const, tiempos: dietaIA }
+        : undefined,
     notas: form.notas || undefined,
     guardar,
   })

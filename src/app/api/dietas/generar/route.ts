@@ -71,8 +71,8 @@ export async function POST(request: NextRequest) {
   // Perfil de estilo del nutriólogo (singleton).
   const perfil = (await prisma.perfilEstiloDietas.findFirst()) ?? {}
 
-  // Ejemplos: últimas dietas guardadas con distribución en tiempos (few-shot).
-  const ejemplos = await construirEjemplos()
+  // Contexto del paciente: sus últimas dietas + evolución clínica (few-shot por paciente).
+  const ejemplos = await construirContextoPaciente(data.paciente_id)
 
   const entrada: EntradaGeneracion = {
     kcalMeta: data.kcal_meta,
@@ -104,36 +104,106 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Construye ejemplos de few-shot con las últimas dietas que ya tienen alimentos
- * o al menos distribución en tiempos. Formato de texto simple para el prompt.
+ * Construye el contexto por PACIENTE para que la IA dé continuidad:
+ * sus últimas 3 dietas (equivalentes + alimentos que usó) y su evolución
+ * clínica (peso y objetivo de sus consultas recientes). Cada bloque de texto se
+ * inyecta como few-shot en el prompt. Sin paciente_id, no aporta contexto.
  */
-async function construirEjemplos(): Promise<string[]> {
-  const cuadros = await prisma.cuadroDietosintetico.findMany({
-    where: { distribucion_tiempos: { not: undefined } },
-    orderBy: { createdAt: 'desc' },
-    take: 3,
-    select: { kcal_meta: true, distribucion_tiempos: true },
+async function construirContextoPaciente(pacienteId?: string): Promise<string[]> {
+  if (!pacienteId) return []
+  const bloques: string[] = []
+  const nombreGrupo = Object.fromEntries(GRUPOS_SMAE.map((g) => [g.id, g.nombre]))
+
+  // 1. Evolución clínica: últimas consultas (peso, objetivo).
+  const consultas = await prisma.consulta.findMany({
+    where: { paciente_id: pacienteId },
+    orderBy: { fecha: 'desc' },
+    take: 4,
+    select: { fecha: true, peso: true, objetivo: true },
   })
-
-  const ejemplos: string[] = []
-  for (const c of cuadros) {
-    const dt = c.distribucion_tiempos as {
-      tiempos?: Array<{ id: string; nombre: string }>
-      reparto?: Record<string, Equivalentes>
-    } | null
-    if (!dt?.tiempos?.length || !dt.reparto) continue
-
-    const nombreGrupo = Object.fromEntries(GRUPOS_SMAE.map((g) => [g.id, g.nombre]))
-    const lineas: string[] = [`Dieta de ${Math.round(c.kcal_meta)} kcal:`]
-    for (const t of dt.tiempos) {
-      const grupos = Object.entries(dt.reparto[t.id] ?? {})
-        .filter(([, n]) => (n ?? 0) > 0)
-        .map(([id, n]) => `${n} de ${nombreGrupo[id]}`)
-        .join(', ')
-      if (grupos) lineas.push(`  ${t.nombre}: ${grupos}`)
-    }
-    if (lineas.length > 1) ejemplos.push(lineas.join('\n'))
+  if (consultas.length > 0) {
+    const evol = consultas
+      .map((c) => {
+        const f = new Date(c.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })
+        const partes = [f]
+        if (c.peso != null) partes.push(`${c.peso} kg`)
+        if (c.objetivo) partes.push(c.objetivo)
+        return partes.join(' · ')
+      })
+      .join('  |  ')
+    bloques.push(
+      `Evolución del paciente (consulta más reciente primero): ${evol}. ` +
+        'Usa esta evolución para dar continuidad al tratamiento.'
+    )
   }
 
-  return ejemplos
+  // 2. Últimas 3 dietas del paciente (con alimentos si se guardaron).
+  const cuadros = await prisma.cuadroDietosintetico.findMany({
+    where: { paciente_id: pacienteId },
+    orderBy: { createdAt: 'desc' },
+    take: 3,
+    select: { kcal_meta: true, createdAt: true, distribucion_tiempos: true, dieta_ia: true },
+  })
+
+  for (const c of cuadros) {
+    const fecha = new Date(c.createdAt).toLocaleDateString('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+    const lineas: string[] = [
+      `Dieta previa del paciente (${fecha}, ${Math.round(c.kcal_meta)} kcal):`,
+    ]
+
+    // Alimentos concretos que usó (si se guardó la dieta IA) — lo más valioso.
+    const dietaIa = c.dieta_ia as {
+      tiempos?: Array<{
+        nombre?: string
+        alimentos?: Array<{ descripcion?: string }>
+        opciones?: Array<{ nombre?: string }>
+      }>
+    } | null
+    if (dietaIa?.tiempos?.length) {
+      for (const t of dietaIa.tiempos) {
+        if (t.opciones?.length) {
+          const nombres = t.opciones
+            .map((o) => o.nombre)
+            .filter(Boolean)
+            .join(', ')
+          if (nombres) lineas.push(`  ${t.nombre}: ${nombres}`)
+        } else if (t.alimentos?.length) {
+          const desc = t.alimentos
+            .map((a) => a.descripcion)
+            .filter(Boolean)
+            .join(', ')
+          if (desc) lineas.push(`  ${t.nombre}: ${desc}`)
+        }
+      }
+    } else {
+      // Sin dieta IA guardada: al menos los equivalentes de la distribución.
+      const dt = c.distribucion_tiempos as {
+        tiempos?: Array<{ id: string; nombre: string }>
+        reparto?: Record<string, Equivalentes>
+      } | null
+      if (dt?.tiempos?.length && dt.reparto) {
+        for (const t of dt.tiempos) {
+          const grupos = Object.entries(dt.reparto[t.id] ?? {})
+            .filter(([, n]) => (n ?? 0) > 0)
+            .map(([id, n]) => `${n} de ${nombreGrupo[id]}`)
+            .join(', ')
+          if (grupos) lineas.push(`  ${t.nombre}: ${grupos}`)
+        }
+      }
+    }
+
+    if (lineas.length > 1) bloques.push(lineas.join('\n'))
+  }
+
+  if (cuadros.length > 0) {
+    bloques.push(
+      'Da continuidad pero VARÍA los alimentos respecto a las dietas previas del paciente.'
+    )
+  }
+
+  return bloques
 }
