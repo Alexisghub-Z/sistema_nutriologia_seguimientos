@@ -5,10 +5,12 @@ import { GRUPOS_SMAE, type GrupoSMAEId } from '@/lib/utils/smae'
 import {
   chatDietaStream,
   extraerDietaDeRespuesta,
+  extraerRecetarioDeRespuesta,
   isGeneradorDisponible,
   MARCADOR_DIETA,
   type EntradaGeneracion,
   type DietaGenerada,
+  type RecetarioGenerado,
   type MensajeChatIA,
   type TiempoConEquivalentes,
 } from '@/lib/services/generador-dietas'
@@ -40,24 +42,11 @@ const chatSchema = z.object({
       })
     )
     .min(1),
-  // La dieta actual (tiempos con alimentos) sobre la que se conversa.
-  dieta_actual: z.object({
-    tiempos: z.array(
-      z.object({
-        id: z.string(),
-        nombre: z.string(),
-        nota: z.string().optional(),
-        alimentos: z.array(
-          z.object({
-            grupo: z.enum(GRUPO_IDS),
-            equivalentes: z.number(),
-            descripcion: z.string(),
-            calculo: z.string().optional(),
-          })
-        ),
-      })
-    ),
-  }),
+  // Modo activo y el estado (dieta o recetario) sobre el que se conversa.
+  // Se valida de forma laxa: la estructura la maneja el servicio.
+  modo: z.enum(['dieta', 'recetario']).default('dieta'),
+  estado_actual: z.object({ tiempos: z.array(z.any()) }),
+  indicaciones_inicio: z.string().optional().default(''),
   historial: z
     .array(z.object({ rol: z.enum(['user', 'assistant']), contenido: z.string() }))
     .max(40)
@@ -91,7 +80,7 @@ export async function POST(request: NextRequest) {
     tiempos: data.tiempos as TiempoConEquivalentes[],
     perfil: {},
   }
-  const dietaActual = data.dieta_actual as DietaGenerada
+  const estadoActual = data.estado_actual as DietaGenerada | RecetarioGenerado
   const historial = data.historial as MensajeChatIA[]
 
   const encoder = new TextEncoder()
@@ -106,7 +95,8 @@ export async function POST(request: NextRequest) {
 
         for await (const delta of chatDietaStream({
           entrada,
-          dietaActual,
+          modo: data.modo,
+          estadoActual,
           historial,
           mensaje: data.mensaje,
         })) {
@@ -115,7 +105,6 @@ export async function POST(request: NextRequest) {
           if (!dejeDeStreamearTexto) {
             if (completa.includes(MARCADOR_DIETA)) {
               dejeDeStreamearTexto = true
-              // Emitimos el trozo de texto que quede antes del marcador.
               const idx = completa.indexOf(MARCADOR_DIETA)
               const textoPrevio = completa.slice(0, idx)
               const yaEmitido = completa.length - delta.length
@@ -128,10 +117,13 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Al terminar, extraemos la dieta actualizada si la hubo.
-        const { dieta } = extraerDietaDeRespuesta(completa)
-        if (dieta) {
-          enviar({ tipo: 'dieta', dieta })
+        // Al terminar, extraemos la versión actualizada según el modo.
+        if (data.modo === 'recetario') {
+          const { recetario } = extraerRecetarioDeRespuesta(completa, data.indicaciones_inicio)
+          if (recetario) enviar({ tipo: 'recetario', recetario })
+        } else {
+          const { dieta } = extraerDietaDeRespuesta(completa)
+          if (dieta) enviar({ tipo: 'dieta', dieta })
         }
         enviar({ tipo: 'fin' })
       } catch (e) {

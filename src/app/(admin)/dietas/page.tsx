@@ -583,7 +583,8 @@ export default function DietasPage() {
   // La IA conversa y, si el mensaje implica un cambio, actualiza la dieta.
   const enviarMensajeChat = async () => {
     const texto = inputChat.trim()
-    if (!texto || chateando || generando || !dietaIA || !distribucion) return
+    const estadoActual = modoIA === 'recetario' ? recetario : dietaIA
+    if (!texto || chateando || generando || !estadoActual || !distribucion) return
 
     // Historial para la IA (antes de agregar el mensaje nuevo).
     const historial = mensajesIA.map((m) => ({
@@ -610,7 +611,10 @@ export default function DietasPage() {
             nombre: t.nombre,
             equivalentes: reparto[t.id] ?? {},
           })),
-          dieta_actual: { tiempos: dietaIA },
+          modo: modoIA,
+          estado_actual:
+            modoIA === 'recetario' ? { tiempos: recetario!.tiempos } : { tiempos: dietaIA },
+          indicaciones_inicio: recetario?.indicacionesInicio ?? '',
           historial,
           mensaje: texto,
         }),
@@ -651,6 +655,8 @@ export default function DietasPage() {
             })
           } else if (evento.tipo === 'dieta' && evento.dieta?.tiempos) {
             setDietaIA(evento.dieta.tiempos)
+          } else if (evento.tipo === 'recetario' && evento.recetario?.tiempos) {
+            setRecetario(evento.recetario)
           } else if (evento.tipo === 'error') {
             setError(evento.error || 'Error en la conversación')
           }
@@ -1758,9 +1764,9 @@ export default function DietasPage() {
               <div className={styles.chatMensajes} ref={chatRef}>
                 {mensajesIA.length === 0 && !chateando ? (
                   <p className={styles.chatVacio}>
-                    {dietaIA
-                      ? 'Escríbele a la IA para afinar la dieta.'
-                      : 'Genera una dieta primero para poder conversar.'}
+                    {(modoIA === 'recetario' ? recetario : dietaIA)
+                      ? `Escríbele a la IA para afinar ${modoIA === 'recetario' ? 'el recetario' : 'la dieta'}.`
+                      : `Genera ${modoIA === 'recetario' ? 'un recetario' : 'una dieta'} primero para poder conversar.`}
                   </p>
                 ) : (
                   mensajesIA.map((m, i) => {
@@ -1797,11 +1803,18 @@ export default function DietasPage() {
                   onChange={(e) => setInputChat(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && enviarMensajeChat()}
                   placeholder="Escribe tu mensaje…"
-                  disabled={chateando || generando || !dietaIA}
+                  disabled={
+                    chateando || generando || !(modoIA === 'recetario' ? recetario : dietaIA)
+                  }
                 />
                 <Button
                   onClick={enviarMensajeChat}
-                  disabled={chateando || generando || !dietaIA || !inputChat.trim()}
+                  disabled={
+                    chateando ||
+                    generando ||
+                    !(modoIA === 'recetario' ? recetario : dietaIA) ||
+                    !inputChat.trim()
+                  }
                 >
                   Enviar
                 </Button>
