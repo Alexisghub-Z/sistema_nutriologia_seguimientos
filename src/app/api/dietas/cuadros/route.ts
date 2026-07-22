@@ -60,6 +60,10 @@ const cuadroSchema = z.object({
   equivalentes: equivalentesSchema,
   // Reparto de esos equivalentes en tiempos de comida (pestaña 2).
   distribucion_tiempos: distribucionTiemposSchema,
+  // Dieta o recetario generado por la IA (validación laxa; estructura la maneja la IA).
+  dieta_ia: z
+    .object({ modo: z.enum(['dieta', 'recetario']), tiempos: z.array(z.any()) })
+    .optional(),
 
   // Si es true, guarda el cuadro en la BD. Si false (default), solo calcula.
   guardar: z.boolean().default(false),
@@ -165,6 +169,7 @@ export async function POST(request: NextRequest) {
       carbohidrato_g: metaHcoG,
       equivalentes: Object.keys(equivalentes).length ? equivalentes : undefined,
       distribucion_tiempos: data.distribucion_tiempos ?? undefined,
+      dieta_ia: data.dieta_ia ?? undefined,
       notas: data.notas ?? null,
     },
   })

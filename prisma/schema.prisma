@@ -588,6 +588,11 @@ model CuadroDietosintetico {
   // JSON: { tiempos: [{id,nombre}], reparto: { "t1": { VERDURAS: 1, ... } } }
   distribucion_tiempos Json?
 
+  // Dieta o recetario que generó la IA (alimentos concretos). Se guarda para dar
+  // continuidad: al generar una dieta nueva del paciente, la IA ve las anteriores.
+  // JSON: { modo: 'dieta'|'recetario', tiempos: [...] }
+  dieta_ia Json?
+
   notas String? @db.Text // Observaciones del nutriólogo sobre el cuadro
 
   createdAt DateTime @default(now())
