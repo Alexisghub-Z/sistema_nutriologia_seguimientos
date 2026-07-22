@@ -50,6 +50,7 @@ interface AlimentoUI {
   grupo: GrupoSMAEId
   equivalentes: number
   descripcion: string
+  calculo?: string
 }
 
 interface TiempoGeneradoUI {
@@ -1467,6 +1468,11 @@ export default function DietasPage() {
                             value={a.descripcion}
                             onChange={(e) => editarAlimento(t.id, i, e.target.value)}
                           />
+                          {a.calculo && (
+                            <span className={styles.iaCalculo} title={a.calculo}>
+                              ⓘ
+                            </span>
+                          )}
                         </div>
                       ))}
                       {t.nota && <p className={styles.iaTiempoNota}>{t.nota}</p>}

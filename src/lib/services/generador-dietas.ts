@@ -71,6 +71,7 @@ export interface AlimentoPropuesto {
   grupo: GrupoSMAEId
   equivalentes: number
   descripcion: string // "2 memelas de frijol", "1 taza de papaya"
+  calculo?: string // razonamiento de la porción (para transparencia/auditoría)
 }
 
 /** Un tiempo de comida ya con sus alimentos concretos. */
@@ -193,6 +194,21 @@ function construirPromptUsuario(entrada: EntradaGeneracion): string {
 
   lineas.push(
     '',
+    'RAZONA CADA PORCIÓN (obligatorio para exactitud):',
+    'Antes de escribir la descripción de un alimento, calcula la porción a partir de su',
+    'composición. El aporte por 1 equivalente de cada grupo es fijo (te lo damos abajo).',
+    'Método: toma el macronutriente que DEFINE al grupo (proteína para AOA y leche; hidratos',
+    'de carbono para cereales, frutas, verduras, leguminosas y azúcares; lípidos para aceites),',
+    'mira cuánto aporta el alimento por 100 g, y calcula los gramos que dan los equivalentes',
+    'pedidos. Ejemplo: pollo ≈ 31 g de proteína/100 g; 1 equivalente de AOA = 7 g de proteína;',
+    'entonces 1 equivalente ≈ 7 ÷ 31 × 100 ≈ 23 g de pollo. Pon ese cálculo en el campo "calculo".',
+    'Para cereales y leguminosas usa medidas caseras COCIDAS (tazas), no gramos crudos.',
+    '',
+    'Aporte por 1 equivalente de cada grupo (g): ' +
+      GRUPOS_SMAE.map(
+        (g) => `${g.nombre}=[HCO ${g.hco}, Prot ${g.proteina}, Líp ${g.lipidos}]`
+      ).join('; '),
+    '',
     'Devuelve un JSON con esta forma exacta:',
     '{',
     '  "mensaje": "breve comentario para el nutriólogo",',
@@ -201,7 +217,12 @@ function construirPromptUsuario(entrada: EntradaGeneracion): string {
     '      "id": "<el id del tiempo>",',
     '      "nombre": "<nombre del tiempo>",',
     '      "alimentos": [',
-    '        { "grupo": "<ID de grupo SMAE>", "equivalentes": <número>, "descripcion": "<porción concreta>" }',
+    '        {',
+    '          "grupo": "<ID de grupo SMAE>",',
+    '          "equivalentes": <número>,',
+    '          "calculo": "<cómo obtuviste la porción, ej: pollo 31g prot/100g → 1 equiv (7g) ≈ 23g>",',
+    '          "descripcion": "<porción concreta con su cantidad, ej: 23 g de pollo>"',
+    '        }',
     '      ],',
     '      "nota": "<indicación opcional>"',
     '    }',
@@ -263,7 +284,42 @@ export async function generarDietaConIA(entrada: EntradaGeneracion): Promise<Die
     }
   }
 
+  // Auto-revisión de porciones: la IA revisa sus propios gramajes y corrige los
+  // que no correspondan a los equivalentes (sin cambiar el número de equivalentes).
+  dieta = await revisarPorciones(promptSistema, dieta)
+
   return dieta
+}
+
+/**
+ * Segundo paso: la IA revisa sus propios gramajes y corrige los que no
+ * correspondan a los equivalentes, SIN cambiar el número de equivalentes ni los
+ * grupos. Es la parte de "auto-revisión" que reduce el sesgo en las porciones.
+ */
+async function revisarPorciones(
+  promptSistema: string,
+  dieta: DietaGenerada
+): Promise<DietaGenerada> {
+  const revision =
+    'Esta es la dieta que propusiste (JSON abajo). REVÍSALA con cuidado, alimento por alimento:\n' +
+    '1. Para cada alimento, verifica que la PORCIÓN de la descripción realmente corresponda al ' +
+    'número de "equivalentes" indicado, usando la composición del alimento (por 100 g) y el ' +
+    'aporte por equivalente del grupo. Rehaz el cálculo en el campo "calculo".\n' +
+    '2. Si una porción está mal (ej. gramos crudos en cereal/leguminosa, o un gramaje que no ' +
+    'cuadra con los nutrientes del alimento), CORRÍGELA. Para cereales y leguminosas usa medidas ' +
+    'caseras cocidas (tazas), no gramos crudos.\n' +
+    '3. NO cambies el "grupo" ni el número de "equivalentes" de ningún alimento. Solo ajusta la ' +
+    'descripción/porción si estaba mal.\n' +
+    'Devuelve la dieta corregida en EXACTAMENTE el mismo formato JSON.\n\n' +
+    'Dieta a revisar:\n' +
+    JSON.stringify(dieta)
+
+  try {
+    return await llamarIA(promptSistema, revision)
+  } catch {
+    // Si la revisión falla por lo que sea, devolvemos la dieta original (mejor que nada).
+    return dieta
+  }
 }
 
 /**
@@ -301,6 +357,7 @@ async function llamarIA(promptSistema: string, promptUsuario: string): Promise<D
                   grupo: a.grupo,
                   equivalentes: Number(a.equivalentes) || 0,
                   descripcion: String(a.descripcion ?? ''),
+                  calculo: a.calculo ? String(a.calculo) : undefined,
                 }))
               : [],
           }))

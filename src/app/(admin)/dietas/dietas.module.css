@@ -1387,3 +1387,14 @@
   color: #ea580c;
   line-height: 1.4;
 }
+
+.iaCalculo {
+  flex: 0 0 auto;
+  color: var(--color-gray-400);
+  cursor: help;
+  font-size: 0.95rem;
+}
+
+.iaCalculo:hover {
+  color: var(--color-primary);
+}
