@@ -101,6 +101,35 @@ export const GRUPOS_SMAE: GrupoSMAE[] = [
 /** kcal por gramo de cada macronutriente (Atwater) — para el cuadro de distribución. */
 export const KCAL_POR_GRAMO = { hco: 4, proteina: 4, lipidos: 9 } as const
 
+/**
+ * Porciones-equivalente verificadas para los grupos donde la IA suele fallar
+ * (cereales y leguminosas: confunde peso crudo vs cocido). Cada entrada es la
+ * MEDIDA CASERA que equivale a 1 equivalente SMAE. Se inyecta en el prompt como
+ * referencia para que la IA use la porción correcta, sin perder flexibilidad en
+ * el resto de grupos (que la IA maneja bien).
+ *
+ * Fuente: medidas caseras del SMAE (1 equivalente por porción indicada).
+ */
+export const PORCIONES_REFERENCIA: Partial<Record<GrupoSMAEId, string[]>> = {
+  CEREALES_SG: [
+    'Tortilla de maíz: 1 pieza (30 g)',
+    'Pan de caja: 1 rebanada',
+    'Arroz cocido: 1/4 de taza',
+    'Pasta cocida: 1/2 taza',
+    'Avena cruda: 1/3 de taza (~20 g); cocida: 1/2 taza',
+    'Papa cocida: 1/2 pieza chica (~70 g)',
+    'Bolillo sin migajón: 1/3 de pieza',
+    'Galletas saladas: 4 piezas',
+  ],
+  CEREALES_CG: ['Tlacoyo: 1/2 pieza', 'Tamal: 1/3 de pieza', 'Papas fritas: 1/2 taza'],
+  LEGUMINOSAS: [
+    'Frijol cocido: 1/2 taza (~85 g)',
+    'Lenteja cocida: 1/2 taza',
+    'Garbanzo cocido: 1/2 taza',
+    'Haba cocida: 1/2 taza',
+  ],
+}
+
 /** Equivalentes elegidos por el nutriólogo: { VERDURAS: 3, FRUTAS: 2, ... }. */
 export type Equivalentes = Partial<Record<GrupoSMAEId, number>>
 
