@@ -91,6 +91,7 @@ export async function POST(request: NextRequest) {
       }
       try {
         let completa = ''
+        let emitido = 0 // cuántos caracteres del texto conversacional ya enviamos
         let dejeDeStreamearTexto = false
 
         for await (const delta of chatDietaStream({
@@ -101,20 +102,31 @@ export async function POST(request: NextRequest) {
           mensaje: data.mensaje,
         })) {
           completa += delta
-          // Solo streameamos el texto ANTES del marcador (no el JSON al usuario).
-          if (!dejeDeStreamearTexto) {
-            if (completa.includes(MARCADOR_DIETA)) {
-              dejeDeStreamearTexto = true
-              const idx = completa.indexOf(MARCADOR_DIETA)
-              const textoPrevio = completa.slice(0, idx)
-              const yaEmitido = completa.length - delta.length
-              if (idx > yaEmitido) {
-                enviar({ tipo: 'texto', delta: textoPrevio.slice(yaEmitido) })
-              }
-            } else {
-              enviar({ tipo: 'texto', delta })
+          if (dejeDeStreamearTexto) continue
+
+          const idxMarcador = completa.indexOf(MARCADOR_DIETA)
+          if (idxMarcador !== -1) {
+            // Llegó el marcador completo: emitimos el texto que falte hasta él y avisamos.
+            if (idxMarcador > emitido) {
+              enviar({ tipo: 'texto', delta: completa.slice(emitido, idxMarcador) })
             }
+            enviar({ tipo: 'aplicando' }) // → dispara la animación en la UI
+            dejeDeStreamearTexto = true
+            continue
           }
+
+          // Emitimos texto, pero RETENEMOS una cola que podría ser el inicio del
+          // marcador (para no filtrar "<<<DIETA_ACT..." antes de confirmarlo).
+          const seguro = completa.length - (MARCADOR_DIETA.length - 1)
+          if (seguro > emitido) {
+            enviar({ tipo: 'texto', delta: completa.slice(emitido, seguro) })
+            emitido = seguro
+          }
+        }
+
+        // Si terminó sin marcador, emitimos la cola retenida.
+        if (!dejeDeStreamearTexto && completa.length > emitido) {
+          enviar({ tipo: 'texto', delta: completa.slice(emitido) })
         }
 
         // Al terminar, extraemos la versión actualizada según el modo.
