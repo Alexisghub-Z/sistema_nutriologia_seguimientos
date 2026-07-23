@@ -377,37 +377,16 @@ export async function generarRecetario(
     })
 
     const contenido = completion.choices[0]?.message?.content || '{}'
-    const parsed = JSON.parse(contenido) as RecetarioGenerado
-
-    const recetario: RecetarioGenerado = {
-      indicacionesInicio: entrada.perfil.indicaciones_inicio ?? '',
-      mensaje: typeof parsed.mensaje === 'string' ? parsed.mensaje : '',
-      tiempos: Array.isArray(parsed.tiempos)
-        ? parsed.tiempos.map((t) => ({
-            id: String(t.id ?? ''),
-            nombre: String(t.nombre ?? ''),
-            opciones: Array.isArray(t.opciones)
-              ? t.opciones.map((o) => ({
-                  nombre: String(o.nombre ?? ''),
-                  preparacion: o.preparacion ? String(o.preparacion) : undefined,
-                  alimentos: Array.isArray(o.alimentos)
-                    ? o.alimentos.map((a) => ({
-                        grupo: a.grupo,
-                        equivalentes: Number(a.equivalentes) || 0,
-                        descripcion: String(a.descripcion ?? ''),
-                        calculo: a.calculo ? String(a.calculo) : undefined,
-                      }))
-                    : [],
-                }))
-              : [],
-          }))
-        : [],
-    }
+    let recetario = parsearRecetario(contenido, entrada.perfil.indicaciones_inicio ?? '')
 
     logSuccess('Recetario generado con IA', {
       tiempos: recetario.tiempos.length,
       tokens: completion.usage?.total_tokens ?? 0,
     })
+
+    // Auto-revisión de porciones: la IA revisa sus gramajes en TODAS las opciones
+    // y corrige los que no correspondan a los equivalentes (mismo nivel que la dieta precisa).
+    recetario = await revisarPorcionesRecetario(promptSistema, recetario)
 
     return recetario
   } catch (error) {
@@ -417,6 +396,76 @@ export async function generarRecetario(
         ? `Error al generar el recetario: ${error.message}`
         : 'Error al generar el recetario'
     )
+  }
+}
+
+/** Normaliza el JSON de la IA a un RecetarioGenerado. */
+function parsearRecetario(contenido: string, indicacionesInicio: string): RecetarioGenerado {
+  const limpio = contenido.replace(/^```json\s*/i, '').replace(/```\s*$/, '')
+  const parsed = JSON.parse(limpio) as RecetarioGenerado
+  return {
+    indicacionesInicio,
+    mensaje: typeof parsed.mensaje === 'string' ? parsed.mensaje : '',
+    tiempos: Array.isArray(parsed.tiempos)
+      ? parsed.tiempos.map((t) => ({
+          id: String(t.id ?? ''),
+          nombre: String(t.nombre ?? ''),
+          opciones: Array.isArray(t.opciones)
+            ? t.opciones.map((o) => ({
+                nombre: String(o.nombre ?? ''),
+                preparacion: o.preparacion ? String(o.preparacion) : undefined,
+                alimentos: Array.isArray(o.alimentos)
+                  ? o.alimentos.map((a) => ({
+                      grupo: a.grupo,
+                      equivalentes: Number(a.equivalentes) || 0,
+                      descripcion: String(a.descripcion ?? ''),
+                      calculo: a.calculo ? String(a.calculo) : undefined,
+                    }))
+                  : [],
+              }))
+            : [],
+        }))
+      : [],
+  }
+}
+
+/**
+ * Auto-revisión de porciones del recetario: la IA revisa los gramajes de cada
+ * alimento en cada opción y corrige los que no cuadren, SIN cambiar grupos ni
+ * equivalentes. Misma capa de precisión que la dieta precisa.
+ */
+async function revisarPorcionesRecetario(
+  promptSistema: string,
+  recetario: RecetarioGenerado
+): Promise<RecetarioGenerado> {
+  const revision =
+    'Este es el recetario que propusiste (JSON abajo). REVÍSALO opción por opción, alimento por alimento:\n' +
+    '1. Verifica que la PORCIÓN de cada alimento corresponda al número de "equivalentes" indicado,\n' +
+    'usando la composición del alimento (por 100 g) y el aporte por equivalente del grupo. Rehaz el\n' +
+    'cálculo en "calculo".\n' +
+    '2. Si una porción está mal (gramos crudos en cereal/leguminosa, o un gramaje que no cuadra),\n' +
+    'CORRÍGELA. En cereales y leguminosas usa medidas caseras cocidas (tazas), no gramos crudos.\n' +
+    '3. NO cambies el "grupo" ni el número de "equivalentes" de ningún alimento; solo la porción/descripción.\n' +
+    'Devuelve el recetario corregido en EXACTAMENTE el mismo formato JSON.\n\n' +
+    'Recetario a revisar:\n' +
+    JSON.stringify({ tiempos: recetario.tiempos })
+
+  try {
+    const client = getCliente()
+    const model = process.env.OPENAI_MODEL || 'gpt-4o'
+    const completion = await client.chat.completions.create({
+      model,
+      messages: [
+        { role: 'system', content: promptSistema },
+        { role: 'user', content: revision },
+      ],
+      temperature: 0.2,
+      response_format: { type: 'json_object' },
+    })
+    const contenido = completion.choices[0]?.message?.content || '{}'
+    return parsearRecetario(contenido, recetario.indicacionesInicio)
+  } catch {
+    return recetario // si la revisión falla, devolvemos el original
   }
 }
 
@@ -464,6 +513,14 @@ function construirPromptUsuarioRecetario(
 
   lineas.push(
     '',
+    'RAZONA CADA PORCIÓN (obligatorio para exactitud, en TODAS las opciones):',
+    'Antes de escribir la porción de un alimento, calcúlala a partir de su composición. Toma el',
+    'macronutriente que define al grupo (proteína para AOA y leche; HCO para cereales, frutas,',
+    'verduras, leguminosas y azúcares; lípidos para aceites), mira cuánto aporta por 100 g y',
+    'calcula los gramos que dan los equivalentes pedidos. Ej: pollo ≈ 31 g prot/100 g; 1 equiv de',
+    'AOA = 7 g prot; entonces 1 equiv ≈ 7 ÷ 31 × 100 ≈ 23 g. Pon ese cálculo en el campo "calculo".',
+    'Para cereales y leguminosas usa medidas caseras COCIDAS (tazas), no gramos crudos.',
+    '',
     'Aporte por 1 equivalente de cada grupo (g): ' +
       GRUPOS_SMAE.map(
         (g) => `${g.nombre}=[HCO ${g.hco}, Prot ${g.proteina}, Líp ${g.lipidos}]`
@@ -480,7 +537,7 @@ function construirPromptUsuarioRecetario(
     '        {',
     '          "nombre": "<nombre del platillo>",',
     '          "alimentos": [',
-    '            { "grupo": "<ID grupo SMAE>", "equivalentes": <número>, "calculo": "<cómo obtuviste la porción>", "descripcion": "<porción concreta>" }',
+    '            { "grupo": "<ID grupo SMAE>", "equivalentes": <número>, "calculo": "<cómo obtuviste la porción>", "descripcion": "<porción concreta con su cantidad>" }',
     '          ],',
     '          "preparacion": "<pasos, solo si aplica>"',
     '        }',
