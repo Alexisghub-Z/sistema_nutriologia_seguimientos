@@ -200,6 +200,8 @@ export default function DietasPage() {
   const [recetario, setRecetario] = useState<RecetarioUI | null>(null)
   // Chat conversacional (copiloto): true mientras la IA escribe su respuesta.
   const [chateando, setChateando] = useState(false)
+  // true mientras la IA aplica un cambio a la dieta/recetario (animación).
+  const [aplicandoCambio, setAplicandoCambio] = useState(false)
 
   // Kcal calculada por el sistema (Mifflin × actividad ± objetivo).
   const kcalCalculada = resultado?.kcalMeta ?? 0
@@ -653,10 +655,14 @@ export default function DietasPage() {
               }
               return copia
             })
+          } else if (evento.tipo === 'aplicando') {
+            setAplicandoCambio(true)
           } else if (evento.tipo === 'dieta' && evento.dieta?.tiempos) {
             setDietaIA(evento.dieta.tiempos)
+            setAplicandoCambio(false)
           } else if (evento.tipo === 'recetario' && evento.recetario?.tiempos) {
             setRecetario(evento.recetario)
+            setAplicandoCambio(false)
           } else if (evento.tipo === 'error') {
             setError(evento.error || 'Error en la conversación')
           }
@@ -666,6 +672,7 @@ export default function DietasPage() {
       setError('Error de conexión en la conversación')
     } finally {
       setChateando(false)
+      setAplicandoCambio(false)
     }
   }
 
@@ -1801,6 +1808,26 @@ export default function DietasPage() {
                       </div>
                     )
                   })
+                )}
+                {aplicandoCambio && (
+                  <div className={styles.aplicando}>
+                    <span className={styles.aplicandoIcono}>
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8" />
+                      </svg>
+                    </span>
+                    <span className={styles.aplicandoTexto}>
+                      Aplicando cambios{modoIA === 'recetario' ? ' al recetario' : ' a la dieta'}
+                      <span className={styles.puntosAplicando} />
+                    </span>
+                  </div>
                 )}
               </div>
               <div className={styles.chatInput}>

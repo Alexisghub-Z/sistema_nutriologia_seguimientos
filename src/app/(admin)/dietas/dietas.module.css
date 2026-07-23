@@ -1585,3 +1585,94 @@
     animation: none;
   }
 }
+
+/* Animación "aplicando cambios a la dieta" (en el chat) */
+.aplicando {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radius-md);
+  border-bottom-left-radius: 4px;
+  background: linear-gradient(
+    120deg,
+    rgba(16, 185, 129, 0.12),
+    rgba(34, 211, 238, 0.12),
+    rgba(16, 185, 129, 0.12)
+  );
+  background-size: 200% 100%;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  animation: brilloAplicando 2.5s ease-in-out infinite;
+}
+
+.aplicandoIcono {
+  display: flex;
+  color: var(--color-primary);
+  animation: girarIcono 1.8s linear infinite;
+}
+
+.aplicandoTexto {
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: linear-gradient(90deg, var(--color-primary), #22d3ee, var(--color-primary));
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: textoBrillo 2.5s linear infinite;
+}
+
+.puntosAplicando::after {
+  content: '';
+  animation: puntosSuaves 1.4s steps(4, end) infinite;
+  -webkit-text-fill-color: var(--color-primary);
+}
+
+@keyframes girarIcono {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes brilloAplicando {
+  0%,
+  100% {
+    background-position: 0% 0;
+  }
+  50% {
+    background-position: 100% 0;
+  }
+}
+
+@keyframes textoBrillo {
+  to {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes puntosSuaves {
+  0% {
+    content: '';
+  }
+  25% {
+    content: '.';
+  }
+  50% {
+    content: '..';
+  }
+  75% {
+    content: '...';
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aplicando,
+  .aplicandoIcono,
+  .aplicandoTexto {
+    animation: none;
+  }
+  .aplicandoTexto {
+    -webkit-text-fill-color: var(--color-primary);
+  }
+}
