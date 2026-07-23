@@ -1678,64 +1678,19 @@
 }
 
 /* ============================================================
-   Overlay "la IA está editando el panel" (velo + shimmer + halo)
-   Se activa cuando el copiloto aplica un cambio a la dieta/recetario.
+   Edición por elemento: chip sutil + resaltado del elemento cambiado.
    ============================================================ */
-.panelEditando {
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--radius-lg);
-  animation: haloRespira 2s ease-in-out infinite;
-}
 
-.editandoOverlay {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-
-/* Velo translúcido que atenúa la dieta anterior */
-.editandoVelo {
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.62);
-  backdrop-filter: blur(1.5px);
-  -webkit-backdrop-filter: blur(1.5px);
-}
-
-/* Banda diagonal de brillo que recorre el panel */
-.editandoShimmer {
-  position: absolute;
-  inset: -50%;
-  background: linear-gradient(
-    115deg,
-    transparent 40%,
-    rgba(16, 185, 129, 0.16) 48%,
-    rgba(34, 211, 238, 0.22) 50%,
-    rgba(16, 185, 129, 0.16) 52%,
-    transparent 60%
-  );
-  background-size: 250% 250%;
-  animation: shimmerPanel 1.8s ease-in-out infinite;
-}
-
-/* Chip central "Actualizando…" */
+/* Chip sutil arriba del panel mientras la IA edita (no vela la dieta) */
 .editandoChip {
-  position: relative;
-  z-index: 6;
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.6rem 1rem;
-  background: white;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  gap: 0.5rem;
+  padding: 0.4rem 0.85rem;
+  margin-bottom: var(--spacing-md);
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
   border-radius: var(--radius-full);
-  box-shadow: var(--shadow-lg);
 }
 
 .editandoIcono {
@@ -1745,7 +1700,7 @@
 }
 
 .editandoTexto {
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 700;
   background: linear-gradient(90deg, var(--color-primary), #22d3ee, var(--color-primary));
   background-size: 200% 100%;
@@ -1761,32 +1716,75 @@
   -webkit-text-fill-color: var(--color-primary);
 }
 
-@keyframes haloRespira {
-  0%,
-  100% {
-    box-shadow:
-      0 0 0 1px rgba(16, 185, 129, 0.25),
-      0 0 18px -2px rgba(16, 185, 129, 0.35);
+/* Resaltado del elemento recién editado: entra con un pop, fondo verde que se
+   desvanece y una banda de brillo que lo barre una vez. */
+.recienEditado {
+  position: relative;
+  border-radius: var(--radius-md);
+  animation:
+    entradaEditado 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    desvaneceEditado 2.2s ease-out forwards;
+}
+
+/* Banda de brillo que barre el elemento una vez */
+.recienEditado::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: barridoEditado 1.1s ease-out 0.15s;
+}
+
+@keyframes entradaEditado {
+  0% {
+    transform: translateY(4px) scale(0.99);
+    opacity: 0.4;
   }
-  50% {
-    box-shadow:
-      0 0 0 1.5px rgba(16, 185, 129, 0.5),
-      0 0 32px 2px rgba(16, 185, 129, 0.55);
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
   }
 }
 
-@keyframes shimmerPanel {
+@keyframes desvaneceEditado {
   0% {
-    background-position: 0% 0%;
+    background-color: rgba(16, 185, 129, 0.18);
+    box-shadow:
+      0 0 0 1px rgba(16, 185, 129, 0.4),
+      0 0 16px -2px rgba(16, 185, 129, 0.5);
+  }
+  70% {
+    background-color: rgba(16, 185, 129, 0.12);
+    box-shadow:
+      0 0 0 1px rgba(16, 185, 129, 0.25),
+      0 0 10px -2px rgba(16, 185, 129, 0.3);
   }
   100% {
-    background-position: 100% 100%;
+    background-color: transparent;
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@keyframes barridoEditado {
+  0% {
+    background-position: 150% 0;
+    opacity: 1;
+  }
+  100% {
+    background-position: -150% 0;
+    opacity: 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .panelEditando,
-  .editandoShimmer,
   .editandoIcono,
   .editandoTexto {
     animation: none;
@@ -1794,7 +1792,11 @@
   .editandoTexto {
     -webkit-text-fill-color: var(--color-primary);
   }
-  .editandoShimmer {
+  .recienEditado {
+    animation: none;
+    background-color: rgba(16, 185, 129, 0.12);
+  }
+  .recienEditado::after {
     display: none;
   }
 }

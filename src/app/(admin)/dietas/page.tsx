@@ -202,6 +202,9 @@ export default function DietasPage() {
   const [chateando, setChateando] = useState(false)
   // true mientras la IA aplica un cambio a la dieta/recetario (animación).
   const [aplicandoCambio, setAplicandoCambio] = useState(false)
+  // Claves de los elementos (alimentos/opciones) que la IA acaba de cambiar,
+  // para resaltarlos brevemente. Ej: "t1|0" (tiempo t1, alimento índice 0).
+  const [elementosCambiados, setElementosCambiados] = useState<Set<string>>(new Set())
 
   // Kcal calculada por el sistema (Mifflin × actividad ± objetivo).
   const kcalCalculada = resultado?.kcalMeta ?? 0
@@ -581,6 +584,55 @@ export default function DietasPage() {
     }
   }
 
+  // Marca los elementos cambiados para resaltarlos y los desvanece tras ~2.2s.
+  const resaltarCambios = (claves: string[]) => {
+    if (claves.length === 0) return
+    setElementosCambiados(new Set(claves))
+    window.setTimeout(() => setElementosCambiados(new Set()), 2200)
+  }
+
+  // Compara la dieta anterior con la nueva y devuelve las claves "tiempoId|idx"
+  // de los alimentos que cambiaron (descripcion o equivalentes distintos, o nuevos).
+  const diffDieta = (anterior: TiempoGeneradoUI[] | null, nueva: TiempoGeneradoUI[]): string[] => {
+    if (!anterior) return [] // primera generación: no resaltamos nada
+    const claves: string[] = []
+    for (const t of nueva) {
+      const tAnt = anterior.find((x) => x.id === t.id)
+      t.alimentos.forEach((a, i) => {
+        const aAnt = tAnt?.alimentos[i]
+        if (!aAnt || aAnt.descripcion !== a.descripcion || aAnt.grupo !== a.grupo) {
+          claves.push(`${t.id}|${i}`)
+        }
+      })
+    }
+    return claves
+  }
+
+  // Igual para el recetario: clave "tiempoId|opcionIdx".
+  const diffRecetario = (
+    anterior: TiempoRecetarioUI[] | null,
+    nueva: TiempoRecetarioUI[]
+  ): string[] => {
+    if (!anterior) return []
+    const claves: string[] = []
+    for (const t of nueva) {
+      const tAnt = anterior.find((x) => x.id === t.id)
+      t.opciones.forEach((o, i) => {
+        const oAnt = tAnt?.opciones[i]
+        const seria = (op: OpcionUI) =>
+          op.nombre +
+          '|' +
+          op.alimentos.map((a) => a.descripcion).join(',') +
+          '|' +
+          (op.preparacion ?? '')
+        if (!oAnt || seria(oAnt) !== seria(o)) {
+          claves.push(`${t.id}|${i}`)
+        }
+      })
+    }
+    return claves
+  }
+
   // Envía un mensaje del nutriólogo y recibe la respuesta de la IA con streaming.
   // La IA conversa y, si el mensaje implica un cambio, actualiza la dieta.
   const enviarMensajeChat = async () => {
@@ -658,11 +710,15 @@ export default function DietasPage() {
           } else if (evento.tipo === 'aplicando') {
             setAplicandoCambio(true)
           } else if (evento.tipo === 'dieta' && evento.dieta?.tiempos) {
+            const cambiados = diffDieta(dietaIA, evento.dieta.tiempos)
             setDietaIA(evento.dieta.tiempos)
             setAplicandoCambio(false)
+            resaltarCambios(cambiados)
           } else if (evento.tipo === 'recetario' && evento.recetario?.tiempos) {
+            const cambiados = diffRecetario(recetario?.tiempos ?? null, evento.recetario.tiempos)
             setRecetario(evento.recetario)
             setAplicandoCambio(false)
+            resaltarCambios(cambiados)
           } else if (evento.tipo === 'error') {
             setError(evento.error || 'Error en la conversación')
           }
@@ -1610,33 +1666,29 @@ export default function DietasPage() {
                   : 'La IA propone los alimentos concretos de cada tiempo respetando tus equivalentes y tu estilo. Puedes editar cada alimento a mano.'}
               </p>
 
-              {/* Contenedor de la vista (con overlay de 'la IA está editando') */}
-              <div className={aplicandoCambio ? styles.panelEditando : undefined}>
-                {aplicandoCambio && (
-                  <div className={styles.editandoOverlay}>
-                    <div className={styles.editandoVelo} />
-                    <div className={styles.editandoShimmer} />
-                    <div className={styles.editandoChip}>
-                      <span className={styles.editandoIcono}>
-                        <svg
-                          width="18"
-                          height="18"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8" />
-                        </svg>
-                      </span>
-                      <span className={styles.editandoTexto}>
-                        Actualizando{modoIA === 'recetario' ? ' el recetario' : ' la dieta'}
-                        <span className={styles.editandoPuntos} />
-                      </span>
-                    </div>
-                  </div>
-                )}
+              {/* Indicador sutil mientras la IA edita (sin velar la dieta) */}
+              {aplicandoCambio && (
+                <div className={styles.editandoChip}>
+                  <span className={styles.editandoIcono}>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8" />
+                    </svg>
+                  </span>
+                  <span className={styles.editandoTexto}>
+                    La IA está editando{modoIA === 'recetario' ? ' el recetario' : ' la dieta'}
+                    <span className={styles.editandoPuntos} />
+                  </span>
+                </div>
+              )}
 
+              <div>
                 {/* Vista del RECETARIO */}
                 {modoIA === 'recetario' ? (
                   generando && !recetario ? (
@@ -1657,7 +1709,12 @@ export default function DietasPage() {
                         <div key={t.id} className={styles.recetarioTiempo}>
                           <h3 className={styles.recetarioTiempoNombre}>{t.nombre}</h3>
                           {t.opciones.map((o, i) => (
-                            <div key={i} className={styles.recetarioOpcion}>
+                            <div
+                              key={i}
+                              className={`${styles.recetarioOpcion} ${
+                                elementosCambiados.has(`${t.id}|${i}`) ? styles.recienEditado : ''
+                              }`}
+                            >
                               <div className={styles.recetarioOpcionNombre}>
                                 <span className={styles.recetarioOpcionNum}>Opción {i + 1}</span>
                                 {o.nombre}
@@ -1690,7 +1747,12 @@ export default function DietasPage() {
                       <div key={t.id} className={styles.iaTiempo}>
                         <h3 className={styles.iaTiempoNombre}>{t.nombre}</h3>
                         {t.alimentos.map((a, i) => (
-                          <div key={i} className={styles.iaAlimento}>
+                          <div
+                            key={i}
+                            className={`${styles.iaAlimento} ${
+                              elementosCambiados.has(`${t.id}|${i}`) ? styles.recienEditado : ''
+                            }`}
+                          >
                             <span className={styles.iaAlimentoGrupo}>
                               {a.equivalentes}× {NOMBRE_GRUPO[a.grupo] ?? a.grupo}
                             </span>
