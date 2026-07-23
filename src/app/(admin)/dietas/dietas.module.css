@@ -1676,3 +1676,125 @@
     -webkit-text-fill-color: var(--color-primary);
   }
 }
+
+/* ============================================================
+   Overlay "la IA está editando el panel" (velo + shimmer + halo)
+   Se activa cuando el copiloto aplica un cambio a la dieta/recetario.
+   ============================================================ */
+.panelEditando {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  animation: haloRespira 2s ease-in-out infinite;
+}
+
+.editandoOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* Velo translúcido que atenúa la dieta anterior */
+.editandoVelo {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(1.5px);
+  -webkit-backdrop-filter: blur(1.5px);
+}
+
+/* Banda diagonal de brillo que recorre el panel */
+.editandoShimmer {
+  position: absolute;
+  inset: -50%;
+  background: linear-gradient(
+    115deg,
+    transparent 40%,
+    rgba(16, 185, 129, 0.16) 48%,
+    rgba(34, 211, 238, 0.22) 50%,
+    rgba(16, 185, 129, 0.16) 52%,
+    transparent 60%
+  );
+  background-size: 250% 250%;
+  animation: shimmerPanel 1.8s ease-in-out infinite;
+}
+
+/* Chip central "Actualizando…" */
+.editandoChip {
+  position: relative;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.6rem 1rem;
+  background: white;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-lg);
+}
+
+.editandoIcono {
+  display: flex;
+  color: var(--color-primary);
+  animation: girarIcono 1.8s linear infinite;
+}
+
+.editandoTexto {
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, var(--color-primary), #22d3ee, var(--color-primary));
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: textoBrillo 2.5s linear infinite;
+}
+
+.editandoPuntos::after {
+  content: '';
+  animation: puntosSuaves 1.4s steps(4, end) infinite;
+  -webkit-text-fill-color: var(--color-primary);
+}
+
+@keyframes haloRespira {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(16, 185, 129, 0.25),
+      0 0 18px -2px rgba(16, 185, 129, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1.5px rgba(16, 185, 129, 0.5),
+      0 0 32px 2px rgba(16, 185, 129, 0.55);
+  }
+}
+
+@keyframes shimmerPanel {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 100% 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panelEditando,
+  .editandoShimmer,
+  .editandoIcono,
+  .editandoTexto {
+    animation: none;
+  }
+  .editandoTexto {
+    -webkit-text-fill-color: var(--color-primary);
+  }
+  .editandoShimmer {
+    display: none;
+  }
+}

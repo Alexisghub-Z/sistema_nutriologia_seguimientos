@@ -1610,80 +1610,108 @@ export default function DietasPage() {
                   : 'La IA propone los alimentos concretos de cada tiempo respetando tus equivalentes y tu estilo. Puedes editar cada alimento a mano.'}
               </p>
 
-              {/* Vista del RECETARIO */}
-              {modoIA === 'recetario' ? (
-                generando && !recetario ? (
-                  <GenerandoIA modo="recetario" />
-                ) : !recetario ? (
+              {/* Contenedor de la vista (con overlay de 'la IA está editando') */}
+              <div className={aplicandoCambio ? styles.panelEditando : undefined}>
+                {aplicandoCambio && (
+                  <div className={styles.editandoOverlay}>
+                    <div className={styles.editandoVelo} />
+                    <div className={styles.editandoShimmer} />
+                    <div className={styles.editandoChip}>
+                      <span className={styles.editandoIcono}>
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8" />
+                        </svg>
+                      </span>
+                      <span className={styles.editandoTexto}>
+                        Actualizando{modoIA === 'recetario' ? ' el recetario' : ' la dieta'}
+                        <span className={styles.editandoPuntos} />
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Vista del RECETARIO */}
+                {modoIA === 'recetario' ? (
+                  generando && !recetario ? (
+                    <GenerandoIA modo="recetario" />
+                  ) : !recetario ? (
+                    <p className={styles.resultadoVacio}>
+                      Presiona “Generar” para que la IA proponga varias opciones por tiempo.
+                    </p>
+                  ) : (
+                    <div className={styles.recetario}>
+                      {recetario.indicacionesInicio && (
+                        <div className={styles.recetarioIndicaciones}>
+                          <h3 className={styles.recetarioSubtitulo}>Indicaciones de inicio</h3>
+                          <p>{recetario.indicacionesInicio}</p>
+                        </div>
+                      )}
+                      {recetario.tiempos.map((t) => (
+                        <div key={t.id} className={styles.recetarioTiempo}>
+                          <h3 className={styles.recetarioTiempoNombre}>{t.nombre}</h3>
+                          {t.opciones.map((o, i) => (
+                            <div key={i} className={styles.recetarioOpcion}>
+                              <div className={styles.recetarioOpcionNombre}>
+                                <span className={styles.recetarioOpcionNum}>Opción {i + 1}</span>
+                                {o.nombre}
+                              </div>
+                              <ul className={styles.recetarioAlimentos}>
+                                {o.alimentos.map((a, j) => (
+                                  <li key={j}>{a.descripcion}</li>
+                                ))}
+                              </ul>
+                              {o.preparacion && (
+                                <p className={styles.recetarioPrep}>
+                                  <strong>Preparación:</strong> {o.preparacion}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )
+                ) : generando && !dietaIA ? (
+                  <GenerandoIA modo="dieta" />
+                ) : !dietaIA ? (
                   <p className={styles.resultadoVacio}>
-                    Presiona “Generar” para que la IA proponga varias opciones por tiempo.
+                    Presiona “Generar dieta” para que la IA proponga los alimentos.
                   </p>
                 ) : (
-                  <div className={styles.recetario}>
-                    {recetario.indicacionesInicio && (
-                      <div className={styles.recetarioIndicaciones}>
-                        <h3 className={styles.recetarioSubtitulo}>Indicaciones de inicio</h3>
-                        <p>{recetario.indicacionesInicio}</p>
-                      </div>
-                    )}
-                    {recetario.tiempos.map((t) => (
-                      <div key={t.id} className={styles.recetarioTiempo}>
-                        <h3 className={styles.recetarioTiempoNombre}>{t.nombre}</h3>
-                        {t.opciones.map((o, i) => (
-                          <div key={i} className={styles.recetarioOpcion}>
-                            <div className={styles.recetarioOpcionNombre}>
-                              <span className={styles.recetarioOpcionNum}>Opción {i + 1}</span>
-                              {o.nombre}
-                            </div>
-                            <ul className={styles.recetarioAlimentos}>
-                              {o.alimentos.map((a, j) => (
-                                <li key={j}>{a.descripcion}</li>
-                              ))}
-                            </ul>
-                            {o.preparacion && (
-                              <p className={styles.recetarioPrep}>
-                                <strong>Preparación:</strong> {o.preparacion}
-                              </p>
+                  <div className={styles.iaTiempos}>
+                    {dietaIA.map((t) => (
+                      <div key={t.id} className={styles.iaTiempo}>
+                        <h3 className={styles.iaTiempoNombre}>{t.nombre}</h3>
+                        {t.alimentos.map((a, i) => (
+                          <div key={i} className={styles.iaAlimento}>
+                            <span className={styles.iaAlimentoGrupo}>
+                              {a.equivalentes}× {NOMBRE_GRUPO[a.grupo] ?? a.grupo}
+                            </span>
+                            <input
+                              className={styles.iaAlimentoInput}
+                              value={a.descripcion}
+                              onChange={(e) => editarAlimento(t.id, i, e.target.value)}
+                            />
+                            {a.calculo && (
+                              <span className={styles.iaCalculo} title={a.calculo}>
+                                ⓘ
+                              </span>
                             )}
                           </div>
                         ))}
+                        {t.nota && <p className={styles.iaTiempoNota}>{t.nota}</p>}
                       </div>
                     ))}
                   </div>
-                )
-              ) : generando && !dietaIA ? (
-                <GenerandoIA modo="dieta" />
-              ) : !dietaIA ? (
-                <p className={styles.resultadoVacio}>
-                  Presiona “Generar dieta” para que la IA proponga los alimentos.
-                </p>
-              ) : (
-                <div className={styles.iaTiempos}>
-                  {dietaIA.map((t) => (
-                    <div key={t.id} className={styles.iaTiempo}>
-                      <h3 className={styles.iaTiempoNombre}>{t.nombre}</h3>
-                      {t.alimentos.map((a, i) => (
-                        <div key={i} className={styles.iaAlimento}>
-                          <span className={styles.iaAlimentoGrupo}>
-                            {a.equivalentes}× {NOMBRE_GRUPO[a.grupo] ?? a.grupo}
-                          </span>
-                          <input
-                            className={styles.iaAlimentoInput}
-                            value={a.descripcion}
-                            onChange={(e) => editarAlimento(t.id, i, e.target.value)}
-                          />
-                          {a.calculo && (
-                            <span className={styles.iaCalculo} title={a.calculo}>
-                              ⓘ
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                      {t.nota && <p className={styles.iaTiempoNota}>{t.nota}</p>}
-                    </div>
-                  ))}
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Tabla de comprobación de nutrientes */}
               {tablaComprobacion && (
