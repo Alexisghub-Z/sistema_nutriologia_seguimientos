@@ -12,6 +12,10 @@ import {
   type TiempoConEquivalentes,
 } from '@/lib/services/generador-dietas'
 
+// La generación hace 2 llamadas a la IA (generar + auto-revisar). Con modelos de
+// razonamiento (gpt-5) puede tardar; damos margen para que no se corte el request.
+export const maxDuration = 300
+
 /**
  * Genera los alimentos concretos de una dieta con IA.
  * POST /api/dietas/generar
