@@ -15,6 +15,10 @@ import {
   type TiempoConEquivalentes,
 } from '@/lib/services/generador-dietas'
 
+// El chat puede reescribir la dieta con modelos de razonamiento (gpt-5); damos
+// margen de duración para que el stream no se corte.
+export const maxDuration = 300
+
 /**
  * Chat conversacional con la IA sobre la dieta (copiloto), con streaming.
  * POST /api/dietas/chat  →  Server-Sent Events.
