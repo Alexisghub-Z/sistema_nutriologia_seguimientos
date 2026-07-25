@@ -12,6 +12,8 @@ import {
   cuadroDistribucion,
   resumenTiempo,
   validarDistribucion,
+  distribuirEnTiemposAuto,
+  calcularEquivalentesAuto,
   nutrientesDeAlimento,
   nivelCercania,
   TIEMPOS_DEFAULT,
@@ -177,6 +179,12 @@ export default function DietasPage() {
     TIEMPOS_DEFAULT.map((t) => ({ ...t }))
   )
   const [reparto, setReparto] = useState<DistribucionTiempos>({})
+  // Semilla de variación: cada clic en "Proponer distribución" la incrementa
+  // para obtener una propuesta distinta pero igualmente válida.
+  const [variacionDist, setVariacionDist] = useState(0)
+  // Semilla de variación para la propuesta de equivalentes por grupo (pestaña
+  // cuadro): cada clic ofrece una dieta balanceada distinta.
+  const [variacionEquiv, setVariacionEquiv] = useState(0)
 
   // Historial de cuadros guardados del paciente.
   const [historial, setHistorial] = useState<CuadroHistorial[]>([])
@@ -314,6 +322,41 @@ export default function DietasPage() {
   const agregarTiempo = () => {
     setTiempos((ts) => [...ts, { id: nuevoIdTiempo(), nombre: `Tiempo ${ts.length + 1}` }])
   }
+
+  // Genera una propuesta de reparto automática (como la haría un nutriólogo):
+  // fruta y lácteos hacia las colaciones; verduras, cereales y AOA en las
+  // comidas fuertes. Cuadra exacto con los equivalentes definidos. Cada clic
+  // incrementa la semilla para ofrecer una propuesta distinta pero válida.
+  const distribuirAuto = () => {
+    const nuevaVariacion = variacionDist + 1
+    setVariacionDist(nuevaVariacion)
+    setReparto(distribuirEnTiemposAuto(equivalentes, tiempos, nuevaVariacion))
+  }
+
+  // Propone automáticamente los equivalentes de cada grupo para cuadrar con la
+  // meta de macros, con un patrón alimentario balanceado. Cada clic ofrece una
+  // dieta distinta. Al proponer nuevos equivalentes, el reparto en tiempos
+  // anterior deja de corresponder, así que se limpia.
+  const proponerEquivalentes = () => {
+    if (!distribucion) return
+    const [hco, lip, pro] = distribucion
+    const nueva = variacionEquiv + 1
+    setVariacionEquiv(nueva)
+    setEquivalentes(
+      calcularEquivalentesAuto(
+        {
+          kcalMeta,
+          hco_g: hco!.gramos,
+          proteina_g: pro!.gramos,
+          lipidos_g: lip!.gramos,
+        },
+        nueva
+      )
+    )
+    // El reparto en tiempos ya no cuadra con los nuevos equivalentes.
+    setReparto({})
+    setVariacionDist(0)
+  }
   const renombrarTiempo = (id: string, nombre: string) => {
     setTiempos((ts) => ts.map((t) => (t.id === id ? { ...t, nombre } : t)))
   }
@@ -370,6 +413,8 @@ export default function DietasPage() {
     setPct({ ...PCT_DEFAULT })
     setKcalOverride(null)
     setReparto({})
+    setVariacionDist(0)
+    setVariacionEquiv(0)
     setTiempos(TIEMPOS_DEFAULT.map((t) => ({ ...t })))
     setPestana('cuadro')
     setError('')
@@ -490,6 +535,8 @@ export default function DietasPage() {
         setTiempos(TIEMPOS_DEFAULT.map((t) => ({ ...t })))
         setReparto({})
       }
+      setVariacionDist(0)
+      setVariacionEquiv(0)
       setPestana('cuadro')
       setExito('Cuadro cargado.')
     } catch {
@@ -504,6 +551,8 @@ export default function DietasPage() {
     setPct({ ...PCT_DEFAULT })
     setKcalOverride(null)
     setReparto({})
+    setVariacionDist(0)
+    setVariacionEquiv(0)
     setTiempos(TIEMPOS_DEFAULT.map((t) => ({ ...t })))
     setPestana('cuadro')
     setForm({ ...FORM_INICIAL })
@@ -1171,6 +1220,10 @@ export default function DietasPage() {
                     onChange={(e) => setCampo('mlg_kg', e.target.value)}
                     placeholder="Ej: 65"
                   />
+                  <small className={styles.campoAyuda}>
+                    Se calcula del % de grasa de la consulta: peso × (1 − %grasa/100). Si la consulta
+                    no tiene % de grasa, escríbela a mano.
+                  </small>
                 </div>
               )}
             </div>
@@ -1389,11 +1442,35 @@ export default function DietasPage() {
       {paciente && pestana === 'cuadro' && resultado && diferenciaSmae && distribucion && (
         <>
           <div className={styles.card} style={{ marginTop: 'var(--spacing-lg)' }}>
-            <h2 className={styles.cardTitle}>Distribución por grupos (SMAE)</h2>
-            <p className={styles.smaeAyuda}>
-              Ajusta el número de equivalentes de cada grupo hasta que la diferencia con la meta
-              tienda a cero.
-            </p>
+            <div className={styles.tiemposHeader}>
+              <div>
+                <h2 className={styles.cardTitle}>Distribución por grupos (SMAE)</h2>
+                <p className={styles.smaeAyuda}>
+                  Usa <strong>Proponer dieta balanceada</strong> para que el sistema calcule los
+                  equivalentes de cada grupo y cuadren con la meta de macros (patrón saludable:
+                  verduras, frutas, leguminosas, cereal integral, proteína magra y grasas buenas).
+                  Púlsalo de nuevo para ver otra propuesta y ajusta a mano lo que quieras.
+                </p>
+              </div>
+              <div className={styles.tiemposAcciones}>
+                <Button
+                  variant="primary"
+                  onClick={proponerEquivalentes}
+                  title="Calcula automáticamente los equivalentes para cuadrar con la meta. Vuelve a pulsar para otra propuesta."
+                >
+                  <span className={styles.btnIconoIA} aria-hidden>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2l1.9 5.5L19.5 9l-5.6 1.5L12 16l-1.9-5.5L4.5 9l5.6-1.5L12 2z" />
+                      <path
+                        d="M19 14l.8 2.3L22 17l-2.2.7L19 20l-.8-2.3L16 17l2.2-.7L19 14z"
+                        opacity="0.75"
+                      />
+                    </svg>
+                  </span>
+                  {variacionEquiv === 0 ? 'Proponer dieta balanceada' : 'Proponer otra dieta'}
+                </Button>
+              </div>
+            </div>
             <div className={styles.pasoSelector}>
               <label htmlFor="paso">Paso entre porciones</label>
               <select
@@ -1494,13 +1571,33 @@ export default function DietasPage() {
             <div>
               <h2 className={styles.cardTitle}>Distribución en tiempos de comida</h2>
               <p className={styles.smaeAyuda}>
-                Reparte los equivalentes de cada grupo entre los tiempos de comida. La columna final
-                avisa si un grupo quedó completo; el pie muestra el aporte de cada tiempo.
+                Usa <strong>Distribuir automáticamente</strong> para que el sistema reparta los
+                equivalentes con criterio nutricional (fruta y lácteos en colaciones; verduras,
+                cereales y proteína en las comidas fuertes). Púlsalo de nuevo para ver{' '}
+                <strong>otra propuesta</strong> igualmente válida, y ajusta a mano lo que quieras. La
+                columna final avisa si un grupo quedó completo; el pie muestra el aporte de cada
+                tiempo.
               </p>
             </div>
-            <Button variant="secondary" onClick={agregarTiempo}>
-              + Agregar tiempo
-            </Button>
+            <div className={styles.tiemposAcciones}>
+              <Button
+                variant="primary"
+                onClick={distribuirAuto}
+                disabled={gruposConEquiv.length === 0}
+                title="Reparte los equivalentes entre los tiempos con criterio nutricional. Vuelve a pulsar para otra propuesta."
+              >
+                <span className={styles.btnIconoIA} aria-hidden>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2l1.9 5.5L19.5 9l-5.6 1.5L12 16l-1.9-5.5L4.5 9l5.6-1.5L12 2z" />
+                    <path d="M19 14l.8 2.3L22 17l-2.2.7L19 20l-.8-2.3L16 17l2.2-.7L19 14z" opacity="0.75" />
+                  </svg>
+                </span>
+                {variacionDist === 0 ? 'Distribuir automáticamente' : 'Proponer otra distribución'}
+              </Button>
+              <Button variant="secondary" onClick={agregarTiempo}>
+                + Agregar tiempo
+              </Button>
+            </div>
           </div>
 
           {gruposConEquiv.length === 0 ? (
