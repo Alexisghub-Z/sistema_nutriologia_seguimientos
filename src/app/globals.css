@@ -15,6 +15,12 @@
   --color-error: #ef4444;
   --color-info: #3b82f6;
 
+  /* Degradado del menú lateral. Vertical (la barra es alta y estrecha) y con
+     tres paradas: con solo dos, el tramo medio se ve plano. Arranca algo más
+     oscuro que --color-primary para que el texto blanco conserve contraste
+     suficiente en la parte alta. */
+  --gradient-sidebar: linear-gradient(180deg, #268a51 0%, #22703f 55%, #1b5c34 100%);
+
   /* Neutrals */
   --color-white: #ffffff;
   --color-black: #000000;
