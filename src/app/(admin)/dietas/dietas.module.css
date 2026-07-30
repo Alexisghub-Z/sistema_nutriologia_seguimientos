@@ -359,45 +359,440 @@
   margin: 0 0 var(--spacing-md);
 }
 
-/* Historial de cuadros guardados */
+/* ============================================================
+   Historial de cuadros guardados (tarjetas + paginación)
+   ============================================================ */
 .historial {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
   margin-bottom: var(--spacing-lg);
 }
 
+.historialHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
 .historialTitulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-gray-600);
 }
 
-.historialChips {
-  display: flex;
+/* Título clicable que pliega/despliega la lista de cuadros. */
+.historialToggle {
+  display: inline-flex;
+  align-items: center;
   gap: 0.5rem;
-  flex-wrap: wrap;
+  padding: 0.2rem 0.4rem 0.2rem 0.2rem;
+  margin-left: -0.2rem;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-gray-600);
+  cursor: pointer;
+  transition: color 0.12s ease;
 }
 
-.historialChip {
+.historialToggle:hover {
+  color: var(--color-gray-800);
+}
+
+/* Flecha que gira según el estado (abajo = desplegado). */
+.historialFlecha {
+  display: inline-block;
+  font-size: 0.7rem;
+  line-height: 1;
+  color: var(--color-gray-400);
+  transition: transform 0.18s ease;
+}
+
+.historialFlechaCerrada {
+  transform: rotate(-90deg);
+}
+
+.historialToggle:hover .historialFlecha {
+  color: var(--color-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .historialFlecha {
+    transition: none;
+  }
+}
+
+/* Contador de cuadros junto al título. */
+.historialTotal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: var(--color-gray-100);
+  color: var(--color-gray-600);
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* Paginación */
+.paginacion {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 1px;
-  padding: 0.4rem 0.75rem;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pagBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
   background: white;
   border: 1px solid var(--color-gray-200);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
+  color: var(--color-gray-600);
+  font-size: 1.1rem;
+  line-height: 1;
   cursor: pointer;
   transition:
     border-color 0.12s ease,
-    box-shadow 0.12s ease;
+    color 0.12s ease;
 }
 
-.historialChip:hover {
+.pagBtn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.pagBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagInfo {
+  font-size: 0.75rem;
+  color: var(--color-gray-500);
+  font-variant-numeric: tabular-nums;
+  min-width: 42px;
+  text-align: center;
+}
+
+/* ------------------------------------------------------------
+   Entrada de datos recién cargados
+   Se usa al abrir un cuadro guardado o al terminar de generar una dieta, para
+   que la información no aparezca de golpe. El retardo se pasa inline
+   (animationDelay) y produce una cascada entre tiempos de comida.
+   ------------------------------------------------------------ */
+@keyframes entradaDatos {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.entrada {
+  opacity: 0; /* evita el destello antes de que arranque la animación */
+  animation: entradaDatos 0.34s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entrada {
+    opacity: 1;
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------------------
+   Plegado animado del historial
+   Se anima grid-template-rows de 1fr a 0fr: así la altura pasa de
+   automática a cero con transición, sin medirla en JS.
+   ------------------------------------------------------------ */
+.historialPlegable {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.22s ease;
+}
+
+.historialPlegableCerrado {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
+/* El hijo debe poder encogerse a 0: min-height 0 + overflow hidden.
+   La visibilidad vuelve al instante al abrir, y solo se oculta cuando el
+   plegado ha terminado (de ahí el retardo en el estado cerrado). */
+.historialPlegableInner {
+  overflow: hidden;
+  min-height: 0;
+  visibility: visible;
+  transition: visibility 0s;
+}
+
+.historialPlegableCerrado .historialPlegableInner {
+  visibility: hidden;
+  transition: visibility 0s linear 0.28s;
+}
+
+/* Las tarjetas suben un poco al plegarse, para que el cierre se sienta fluido. */
+.historialPlegable .cuadrosGrid {
+  transform: translateY(0);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.historialPlegableCerrado .cuadrosGrid {
+  transform: translateY(-6px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .historialPlegable,
+  .historialPlegable .cuadrosGrid {
+    transition: none;
+  }
+}
+
+/* Cuadrícula de tarjetas */
+.cuadrosGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--spacing-sm);
+  transition: opacity 0.15s ease;
+}
+
+.cuadrosGridCargando {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.cuadroCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.7rem 0.8rem;
+  background: white;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease,
+    transform 0.12s ease;
+}
+
+.cuadroCard:hover {
   border-color: var(--color-primary);
   box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+/* Cuadro con dieta ya definitiva. */
+.cuadroCardFinal {
+  border-left: 3px solid #10b981;
+}
+
+/* El cuadro que está abierto en pantalla. */
+.cuadroCardAbierto {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.12);
+}
+
+.cuadroCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cuadroFecha {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-gray-800);
+}
+
+/* Menú de acciones (⋮) */
+.cuadroMenuWrap {
+  position: relative;
+}
+
+.cuadroMenuBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-gray-500);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cuadroMenuBtn:hover {
+  background: var(--color-gray-100);
+  color: var(--color-gray-800);
+}
+
+/* Capa invisible para cerrar el menú al hacer clic fuera. */
+.menuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+
+.cuadroMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 21;
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+  padding: 4px;
+  background: white;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+.cuadroMenu button {
+  padding: 0.55rem 0.7rem;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-gray-700);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cuadroMenu button:hover:not(:disabled) {
+  background: var(--color-gray-100);
+}
+
+.cuadroMenu button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.menuPeligro {
+  color: #dc2626 !important;
+}
+
+.menuPeligro:hover:not(:disabled) {
+  background: #fef2f2 !important;
+}
+
+/* Etiqueta (nombre corto) del cuadro */
+.cuadroEtiqueta {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: rgba(16, 185, 129, 0.08);
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  align-self: flex-start;
+}
+
+.cuadroEtiquetaInput {
+  width: 100%;
+  padding: 2px 6px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+}
+
+/* Datos clave */
+.cuadroDatos {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cuadroKcal {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.cuadroMeta {
+  font-size: 0.72rem;
+  color: var(--color-gray-500);
+}
+
+/* Pie: estado + botón abrir */
+.cuadroCardPie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--color-gray-100);
+}
+
+.chipSinDieta {
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--color-gray-400);
+}
+
+.cuadroAbrir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0.4rem 1rem;
+  background: var(--color-gray-100);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  color: var(--color-gray-700);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.cuadroAbrir:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+/* Etiquetas de estado dentro de la tarjeta del historial. */
+.chipFinalizada,
+.chipBorrador {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.chipFinalizada {
+  color: #059669;
+}
+
+.chipBorrador {
+  color: var(--color-gray-500);
 }
 
 .historialFecha {
@@ -1236,6 +1631,86 @@
   margin-bottom: var(--spacing-xs);
 }
 
+/* Título de la pestaña IA + insignia de estado de la dieta. */
+.iaHeaderTitulo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+/* ============================================================
+   Estado de la dieta: borrador vs versión definitiva
+   ============================================================ */
+.badgeBorrador,
+.badgeFinalizada {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.badgeBorrador {
+  background: var(--color-gray-100);
+  color: var(--color-gray-600);
+  border: 1px solid var(--color-gray-200);
+}
+
+.badgeFinalizada {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+/* Aviso de solo lectura sobre una dieta ya finalizada. */
+.avisoFinalizada {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+  margin: var(--spacing-sm) 0 var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: var(--radius-md);
+  color: #065f46;
+  font-size: 0.85rem;
+}
+
+/* Fieldset usado solo para deshabilitar en cascada: sin estilo propio, para no
+   alterar el layout de las secciones que envuelve. */
+.fieldsetPlano {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+/* Los controles bloqueados se atenúan para que se note que no son editables. */
+.fieldsetPlano:disabled input,
+.fieldsetPlano:disabled select,
+.fieldsetPlano:disabled textarea {
+  background: var(--color-gray-50);
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+/* Acciones de guardado/cierre al pie de la dieta generada. */
+.iaAcciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-gray-200);
+}
+
 .iaTiempos {
   display: flex;
   flex-direction: column;
@@ -1243,17 +1718,98 @@
   margin-top: var(--spacing-md);
 }
 
+/* Un tiempo de comida se lee como una sección de documento: sin caja, separado
+   por aire y una regla fina. Así la jerarquía la marca la tipografía, no bordes
+   que compiten entre sí. */
 .iaTiempo {
-  border: 1px solid var(--color-gray-200);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-md);
+  padding: 0 0 var(--spacing-md);
+  border-bottom: 1px solid var(--color-gray-100);
 }
 
-.iaTiempoNombre {
-  font-size: 0.95rem;
+.iaTiempo:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* ============================================================
+   Cabecera de un tiempo de comida (icono · nombre · cuadre · aporte)
+   ============================================================ */
+.tiempoCabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.6rem;
+  border-bottom: 2px solid var(--color-gray-100);
+}
+
+.tiempoIcono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background-color: rgba(45, 159, 93, 0.1);
+  color: var(--color-primary);
+}
+
+.tiempoNombre {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.9rem;
   font-weight: 700;
-  color: var(--color-gray-900);
-  margin: 0 0 var(--spacing-sm);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-gray-800);
+}
+
+/* Aporte del tiempo: kcal grande y macros discretos. */
+.tiempoAporte {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  font-size: 0.76rem;
+  color: var(--color-gray-500);
+  font-variant-numeric: tabular-nums;
+}
+
+.tiempoAporte strong {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-gray-800);
+}
+
+.tiempoMacros {
+  padding-left: 0.4rem;
+  border-left: 1px solid var(--color-gray-200);
+  font-size: 0.72rem;
+  color: var(--color-gray-400);
+}
+
+/* Indicadores de cuadre */
+.cuadreOk,
+.cuadreFalla {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+}
+
+.cuadreOk {
+  background-color: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.cuadreFalla {
+  background-color: rgba(245, 158, 11, 0.14);
+  color: #b45309;
 }
 
 .iaAlimento {
@@ -1261,6 +1817,665 @@
   align-items: center;
   gap: 0.6rem;
   margin-bottom: 0.4rem;
+  padding: 2px 4px 2px 10px;
+  margin-left: -4px;
+  border-radius: var(--radius-sm);
+  /* Franja del color de su familia de alimento (la fija el componente). */
+  border-left: 3px solid var(--color-familia, var(--color-gray-300));
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.iaAlimento:hover {
+  background-color: var(--color-gray-50);
+}
+
+/* Solo el alimento recién añadido entra animado (no todos en cada render). */
+.alimentoNuevo {
+  animation: alimentoEntra 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes alimentoEntra {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+    background-color: rgba(45, 159, 93, 0.14);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    background-color: transparent;
+  }
+}
+
+/* ============================================================
+   Alimento fijado: la IA no puede tocarlo
+   ============================================================ */
+/* Mantiene la franja de su familia (para no perder el tipo de alimento) y añade
+   un fondo verde tenue + borde punteado que comunica "bloqueado". */
+.alimentoFijado {
+  background-color: rgba(45, 159, 93, 0.07);
+  box-shadow: inset 0 0 0 1px rgba(45, 159, 93, 0.2);
+}
+
+.alimentoFijado:hover {
+  background-color: rgba(45, 159, 93, 0.11);
+}
+
+/* Equivalentes editables junto al nombre del grupo. */
+.equivEditable {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.equivInput {
+  width: 40px;
+  padding: 2px 3px;
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-familia, var(--color-primary));
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.equivInput:hover:not(:disabled) {
+  background-color: white;
+  border-color: var(--color-gray-200);
+}
+
+.equivInput:focus {
+  outline: none;
+  border-color: var(--color-familia, var(--color-primary));
+  box-shadow: 0 0 0 3px rgba(45, 159, 93, 0.12);
+}
+
+.equivInput:disabled {
+  background-color: var(--color-gray-50);
+  color: var(--color-gray-500);
+  cursor: not-allowed;
+}
+
+/* Botones de acción (fijar / quitar) de cada alimento. */
+.alimentoAcciones {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.iaAlimento:hover .alimentoAcciones,
+.iaAlimento:focus-within .alimentoAcciones {
+  opacity: 1;
+}
+
+/* El candado permanece visible si está activo: es información, no una acción. */
+.alimentoFijado .alimentoAcciones {
+  opacity: 1;
+}
+
+.accionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-gray-400);
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease,
+    transform 0.12s ease;
+}
+
+.accionBtn:hover:not(:disabled) {
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-700);
+  transform: scale(1.08);
+}
+
+.accionBtn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.accionBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Candado activo: verde sólido, se lee como un estado y no como un botón más. */
+.accionBtnActiva {
+  background-color: rgba(45, 159, 93, 0.14);
+  color: var(--color-primary);
+}
+
+.accionBtnActiva:hover:not(:disabled) {
+  background-color: rgba(45, 159, 93, 0.22);
+  color: var(--color-primary-dark);
+}
+
+.accionBtnPeligro:hover:not(:disabled) {
+  color: #dc2626;
+}
+
+.accionBtnPeligro:hover:not(:disabled) {
+  background-color: #fee2e2;
+}
+
+/* ============================================================
+   Aviso de cuadre por tiempo (en vivo)
+   ============================================================ */
+.cuadreAviso {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin: 0.5rem 0 0;
+  padding: 0.4rem 0.6rem;
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-sm);
+  font-size: 0.74rem;
+  color: #92400e;
+  animation: avisoEntra 0.24s ease-out both;
+}
+
+@keyframes avisoEntra {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cuadreAvisoIcono {
+  flex-shrink: 0;
+}
+
+.cuadreChip {
+  padding: 1px 6px;
+  background-color: rgba(146, 64, 14, 0.1);
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Cálculo de la porción: visible pero discreto, se despliega al pasar el cursor.
+   Da transparencia clínica sin robar protagonismo al alimento. */
+.calculoChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  max-width: 22px;
+  padding: 2px 4px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-500);
+  font-size: 0.68rem;
+  white-space: nowrap;
+  cursor: help;
+  transition:
+    max-width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.calculoChip:hover {
+  max-width: 340px;
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #1e40af;
+}
+
+.calculoTexto {
+  opacity: 0;
+  transition: opacity 0.18s ease 0.06s;
+}
+
+.calculoChip:hover .calculoTexto {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calculoChip,
+  .calculoTexto {
+    transition: none;
+  }
+}
+
+/* ============================================================
+   Edición del recetario (opciones de platillo)
+   ============================================================ */
+
+/* Cabecera de una opción: número, nombre editable y acciones. */
+.opcionCabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.opcionNombreTexto {
+  flex: 1;
+  font-weight: 600;
+  color: var(--color-gray-800);
+}
+
+.opcionNombreInput {
+  flex: 1;
+  min-width: 0;
+  padding: 0.3rem 0.5rem;
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--color-gray-800);
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.opcionNombreInput:hover {
+  background-color: var(--color-gray-50);
+}
+
+.opcionNombreInput:focus {
+  outline: none;
+  background-color: white;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(45, 159, 93, 0.1);
+}
+
+.opcionNombreInput::placeholder {
+  font-weight: 400;
+  color: var(--color-gray-400);
+}
+
+/* Aporte de la opción, junto a su cuadre. */
+.opcionAporte {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--color-gray-500);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Acciones de la opción: aparecen al pasar el cursor. */
+.opcionAcciones {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.recetarioOpcion:hover .opcionAcciones,
+.recetarioOpcion:focus-within .opcionAcciones {
+  opacity: 1;
+}
+
+.opcionIngredientes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: 0.4rem;
+}
+
+/* Preparación editable */
+.prepZona {
+  margin-top: 0.6rem;
+}
+
+.prepLabel {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-gray-500);
+}
+
+.prepInput,
+.indicacionesInput {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  background-color: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--color-gray-700);
+  resize: vertical;
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.prepInput:focus,
+.indicacionesInput:focus {
+  outline: none;
+  background-color: white;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(45, 159, 93, 0.1);
+}
+
+/* Añadir una opción al tiempo. */
+.agregarOpcionBtn {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: transparent;
+  border: 1px dashed var(--color-gray-300);
+  border-radius: var(--radius-md);
+  color: var(--color-gray-500);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.agregarOpcionBtn:hover {
+  border-color: var(--color-primary);
+  border-style: solid;
+  color: var(--color-primary);
+  background-color: rgba(45, 159, 93, 0.05);
+}
+
+/* ============================================================
+   Deshacer / rehacer
+   ============================================================ */
+.iaHeaderAcciones {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.deshacerGrupo {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background-color: var(--color-gray-100);
+  border-radius: var(--radius-md);
+}
+
+.deshacerBtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 28px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-gray-600);
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease,
+    transform 0.1s ease;
+}
+
+.deshacerBtn:hover:not(:disabled) {
+  background-color: white;
+  color: var(--color-gray-900);
+  box-shadow: var(--shadow-sm);
+}
+
+.deshacerBtn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.deshacerBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Cuántos pasos se pueden deshacer. */
+.deshacerCuenta {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  background-color: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-full);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+}
+
+/* Confirmación breve tras deshacer/rehacer. */
+.avisoFlotante {
+  align-self: flex-start;
+  margin: 0 0 var(--spacing-sm);
+  padding: 0.3rem 0.7rem;
+  background-color: var(--color-gray-800);
+  color: white;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  animation: avisoFlota 1.8s ease-out both;
+}
+
+@keyframes avisoFlota {
+  0% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  12%,
+  75% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avisoFlotante {
+    animation: none;
+  }
+
+  .deshacerBtn:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* ============================================================
+   Leyenda de colores por familia de alimento
+   ============================================================ */
+.leyendaFamilias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.85rem;
+  padding: 0.55rem 0.7rem;
+  margin-bottom: var(--spacing-sm);
+  background-color: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+}
+
+.leyendaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-gray-600);
+  white-space: nowrap;
+}
+
+.leyendaPunto {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* Un tiempo que quedó sin alimentos tras eliminarlos. */
+.tiempoVacio {
+  margin: 0.4rem 0 0;
+  padding: 0.5rem 0.6rem;
+  background-color: var(--color-gray-50);
+  border: 1px dashed var(--color-gray-300);
+  border-radius: var(--radius-sm);
+  font-size: 0.76rem;
+  color: var(--color-gray-500);
+  animation: avisoEntra 0.24s ease-out both;
+}
+
+/* Aviso en el chat de cuántos alimentos están bloqueados. */
+.fijadosAviso {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 var(--spacing-md);
+  padding: 0.4rem 0.6rem;
+  background-color: rgba(45, 159, 93, 0.07);
+  border: 1px solid rgba(45, 159, 93, 0.2);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  color: #065f46;
+  animation: avisoEntra 0.24s ease-out both;
+}
+
+/* ============================================================
+   Añadir alimento a un tiempo
+   ============================================================ */
+.agregarZona {
+  margin-top: 0.5rem;
+}
+
+.agregarBtn {
+  padding: 0.3rem 0.7rem;
+  background-color: transparent;
+  border: 1px dashed var(--color-gray-300);
+  border-radius: var(--radius-md);
+  color: var(--color-gray-500);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.agregarBtn:hover {
+  border-color: var(--color-primary);
+  border-style: solid;
+  color: var(--color-primary);
+  background-color: rgba(45, 159, 93, 0.05);
+}
+
+.agregarForm {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  padding: 0.5rem;
+  background-color: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  animation: avisoEntra 0.2s ease-out both;
+}
+
+.agregarSelect {
+  flex: 1;
+  min-width: 150px;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  background-color: white;
+}
+
+.agregarSelect:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(45, 159, 93, 0.1);
+}
+
+.agregarEquiv {
+  width: 58px;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.agregarEquiv:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(45, 159, 93, 0.1);
+}
+
+.agregarEquivLabel {
+  font-size: 0.74rem;
+  color: var(--color-gray-500);
+}
+
+.agregarCancelar {
+  padding: 0.3rem 0.6rem;
+  background: transparent;
+  border: 0;
+  color: var(--color-gray-500);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.agregarCancelar:hover {
+  color: var(--color-gray-800);
+  text-decoration: underline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iaAlimento,
+  .cuadreAviso,
+  .agregarForm {
+    animation: none;
+  }
+
+  .accionBtn:hover:not(:disabled),
+  .accionBtn:active:not(:disabled) {
+    transform: none;
+  }
 }
 
 .iaAlimentoGrupo {
@@ -1270,17 +2485,47 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  color: var(--color-primary);
+  /* Del color de su familia, para reconocer el tipo sin leer. */
+  color: var(--color-familia, var(--color-primary));
 }
 
+/* Editable pero sin parecer formulario: el borde solo aparece al interactuar,
+   así en reposo la dieta se lee como un documento. */
 .iaAlimentoInput {
   flex: 1 1 auto;
   min-width: 0;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--color-gray-200);
+  padding: 0.32rem 0.5rem;
+  background-color: transparent;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  font-size: 0.9rem;
+  font-family: inherit;
+  font-size: 0.88rem;
   color: var(--color-gray-800);
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.iaAlimentoInput:hover:not(:disabled) {
+  background-color: white;
+  border-color: var(--color-gray-200);
+}
+
+.iaAlimentoInput:focus {
+  outline: none;
+  background-color: white;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(45, 159, 93, 0.1);
+}
+
+.iaAlimentoInput:disabled {
+  color: var(--color-gray-600);
+  cursor: default;
+}
+
+.iaAlimentoInput::placeholder {
+  color: var(--color-gray-400);
+  font-style: italic;
 }
 
 .iaAlimentoInput:focus {
@@ -1489,29 +2734,24 @@
   margin-bottom: var(--spacing-lg);
 }
 
-.recetarioTiempoNombre {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--color-gray-900);
-  padding-bottom: 0.35rem;
-  border-bottom: 2px solid var(--color-gray-200);
-  margin: 0 0 var(--spacing-md);
-}
-
+/* Una opción está subordinada a su tiempo: se indenta y usa un fondo muy tenue
+   en lugar de otro borde que competiría con la cabecera del tiempo. */
 .recetarioOpcion {
-  padding: 0.75rem 0.9rem;
-  border: 1px solid var(--color-gray-200);
-  border-radius: var(--radius-md);
-  margin-bottom: 0.6rem;
+  padding: 0.7rem 0.85rem;
+  margin: 0 0 0.5rem 0.5rem;
+  background-color: var(--color-gray-50);
+  border: 1px solid transparent;
+  border-left: 2px solid var(--color-gray-200);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
 }
 
-.recetarioOpcionNombre {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 700;
-  color: var(--color-gray-900);
-  margin-bottom: 0.4rem;
+.recetarioOpcion:hover {
+  background-color: white;
+  border-color: var(--color-gray-200);
+  border-left-color: var(--color-primary);
 }
 
 .recetarioOpcionNum {

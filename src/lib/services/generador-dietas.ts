@@ -116,6 +116,8 @@ export interface AlimentoPropuesto {
   equivalentes: number
   descripcion: string // "2 memelas de frijol", "1 taza de papaya"
   calculo?: string // razonamiento de la porción (para transparencia/auditoría)
+  // Bloqueado por el nutriólogo: la IA debe devolverlo intacto.
+  fijado?: boolean
 }
 
 /** Un tiempo de comida ya con sus alimentos concretos. */
@@ -484,6 +486,7 @@ function parsearRecetario(contenido: string, indicacionesInicio: string): Receta
                       equivalentes: Number(a.equivalentes) || 0,
                       descripcion: String(a.descripcion ?? ''),
                       calculo: a.calculo ? String(a.calculo) : undefined,
+                      fijado: a.fijado === true ? true : undefined,
                     }))
                   : [],
               }))
@@ -693,6 +696,7 @@ async function llamarIA(promptSistema: string, promptUsuario: string): Promise<D
                   equivalentes: Number(a.equivalentes) || 0,
                   descripcion: String(a.descripcion ?? ''),
                   calculo: a.calculo ? String(a.calculo) : undefined,
+                  fijado: a.fijado === true ? true : undefined,
                 }))
               : [],
           }))
@@ -793,6 +797,7 @@ export function extraerDietaDeRespuesta(respuestaCompleta: string): {
               equivalentes: Number(a.equivalentes) || 0,
               descripcion: String(a.descripcion ?? ''),
               calculo: a.calculo ? String(a.calculo) : undefined,
+              fijado: a.fijado === true ? true : undefined,
             }))
           : [],
       })),
@@ -834,6 +839,7 @@ export function extraerRecetarioDeRespuesta(
                     equivalentes: Number(a.equivalentes) || 0,
                     descripcion: String(a.descripcion ?? ''),
                     calculo: a.calculo ? String(a.calculo) : undefined,
+                    fijado: a.fijado === true ? true : undefined,
                   }))
                 : [],
             }))
@@ -874,7 +880,12 @@ function construirPromptSistemaChat(
     `3. Al actualizar, escribe el texto PRIMERO, después una línea con exactamente "${MARCADOR_DIETA}" y luego el JSON.\n` +
     '4. Cada tiempo/opción DEBE seguir respetando EXACTAMENTE estos equivalentes por tiempo:\n' +
     equivalentesPorTiempo +
-    '\n5. Nunca muestres el JSON ni el marcador si NO cambiaste nada.\n'
+    '\n5. Nunca muestres el JSON ni el marcador si NO cambiaste nada.\n' +
+    '6. ALIMENTOS FIJADOS (importante): los alimentos con "fijado": true están\n' +
+    '   bloqueados por el nutriólogo. NO cambies su grupo, sus equivalentes ni su\n' +
+    '   descripción, y NO los elimines. Devuélvelos EXACTAMENTE como están, con su\n' +
+    '   "fijado": true. Si te piden algo que obligaría a tocarlos, cámbialo en los\n' +
+    '   demás alimentos, y si no es posible, dilo en el texto en lugar de forzarlo.\n'
 
   const formato =
     modo === 'recetario'
