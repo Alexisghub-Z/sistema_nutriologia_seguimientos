@@ -2,15 +2,24 @@
   display: flex;
   min-height: 100vh;
   background-color: var(--color-gray-50);
+  /* Ancho del menú: lo comparten el sidebar y el margen del contenido, para que
+     no se desincronicen al colapsar. */
+  --ancho-sidebar: 260px;
+}
+
+/* Menú reducido a solo iconos: el contenido recupera el espacio. */
+.layoutColapsado {
+  --ancho-sidebar: 72px;
 }
 
 .main {
   flex: 1;
-  margin-left: 260px;
+  margin-left: var(--ancho-sidebar);
   display: flex;
   flex-direction: column;
   min-width: 0;
   overflow-x: hidden;
+  transition: margin-left var(--transition-normal);
 }
 
 .content {
