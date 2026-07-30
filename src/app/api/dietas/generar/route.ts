@@ -142,33 +142,39 @@ async function construirContextoPaciente(pacienteId?: string): Promise<string[]>
   }
 
   // 2. Últimas 3 dietas del paciente (con alimentos si se guardaron).
-  const cuadros = await prisma.cuadroDietosintetico.findMany({
-    where: { paciente_id: pacienteId },
+  // Dietas ya cerradas del paciente: son las que el nutriólogo aprobó y entregó,
+  // así que son el mejor ejemplo de su estilo para este paciente concreto.
+  const dietasPrevias = await prisma.dietaGenerada.findMany({
+    where: { paciente_id: pacienteId, estado: 'FINALIZADA' },
     orderBy: { createdAt: 'desc' },
     take: 3,
-    select: { kcal_meta: true, createdAt: true, distribucion_tiempos: true, dieta_ia: true },
+    select: {
+      contenido: true,
+      createdAt: true,
+      cuadro: { select: { kcal_meta: true, distribucion_tiempos: true } },
+    },
   })
 
-  for (const c of cuadros) {
-    const fecha = new Date(c.createdAt).toLocaleDateString('es-MX', {
+  for (const d of dietasPrevias) {
+    const fecha = new Date(d.createdAt).toLocaleDateString('es-MX', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
     })
     const lineas: string[] = [
-      `Dieta previa del paciente (${fecha}, ${Math.round(c.kcal_meta)} kcal):`,
+      `Dieta previa del paciente (${fecha}, ${Math.round(d.cuadro.kcal_meta)} kcal):`,
     ]
 
-    // Alimentos concretos que usó (si se guardó la dieta IA) — lo más valioso.
-    const dietaIa = c.dieta_ia as {
+    // Alimentos concretos que usó — lo más valioso para dar continuidad.
+    const contenido = d.contenido as {
       tiempos?: Array<{
         nombre?: string
         alimentos?: Array<{ descripcion?: string }>
         opciones?: Array<{ nombre?: string }>
       }>
     } | null
-    if (dietaIa?.tiempos?.length) {
-      for (const t of dietaIa.tiempos) {
+    if (contenido?.tiempos?.length) {
+      for (const t of contenido.tiempos) {
         if (t.opciones?.length) {
           const nombres = t.opciones
             .map((o) => o.nombre)
@@ -184,8 +190,8 @@ async function construirContextoPaciente(pacienteId?: string): Promise<string[]>
         }
       }
     } else {
-      // Sin dieta IA guardada: al menos los equivalentes de la distribución.
-      const dt = c.distribucion_tiempos as {
+      // Contenido inesperado: al menos los equivalentes de la distribución.
+      const dt = d.cuadro.distribucion_tiempos as {
         tiempos?: Array<{ id: string; nombre: string }>
         reparto?: Record<string, Equivalentes>
       } | null
@@ -203,7 +209,7 @@ async function construirContextoPaciente(pacienteId?: string): Promise<string[]>
     if (lineas.length > 1) bloques.push(lineas.join('\n'))
   }
 
-  if (cuadros.length > 0) {
+  if (dietasPrevias.length > 0) {
     bloques.push(
       'Da continuidad pero VARÍA los alimentos respecto a las dietas previas del paciente.'
     )
