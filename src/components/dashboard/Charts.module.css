@@ -209,6 +209,25 @@
   border-color: rgba(45, 159, 93, 0.25);
 }
 
+/* Variante con franja de color a la izquierda: distingue de un vistazo cada
+   métrica sin romper el estilo plano de la tarjeta. El color llega en la
+   custom property --kpi-accent (ver KpiCard). */
+.kpiCardAccent {
+  position: relative;
+  overflow: hidden;
+}
+
+.kpiCardAccent::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: var(--kpi-accent, var(--color-primary));
+  border-radius: var(--dash-radius) 0 0 var(--dash-radius);
+}
+
 .kpiCardFlash {
   animation: kpiFlash 600ms ease-out;
 }

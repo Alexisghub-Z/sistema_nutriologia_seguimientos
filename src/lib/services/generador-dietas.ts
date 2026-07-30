@@ -36,6 +36,49 @@ export function isGeneradorDisponible(): boolean {
   return !!process.env.OPENAI_API_KEY && process.env.AI_ENABLED === 'true'
 }
 
+/**
+ * Modelo para el sistema de DIETAS. Tiene su propia variable
+ * (OPENAI_MODEL_DIETAS) independiente del chatbot de respuestas a pacientes,
+ * que sigue usando OPENAI_MODEL. Así podemos usar un modelo más barato para las
+ * dietas sin afectar al asistente de consultas. Si no se define la variable
+ * específica, cae en el modelo general y, por último, en gpt-4o.
+ */
+function modeloConfigurado(): string {
+  return process.env.OPENAI_MODEL_DIETAS || process.env.OPENAI_MODEL || 'gpt-4o'
+}
+
+/**
+ * Los modelos gpt-5 y la familia de razonamiento (o1/o3/o4) NO aceptan valores
+ * de `temperature` distintos del default (1); enviar otro valor da error 400.
+ * Esta función detecta esos modelos para omitir la temperatura.
+ */
+function modeloIgnoraTemperature(model: string): boolean {
+  return /^(gpt-5|o1|o3|o4)/i.test(model)
+}
+
+/** true si el modelo es de la familia gpt-5 (acepta reasoning_effort). */
+function esModeloGpt5(model: string): boolean {
+  return /^gpt-5/i.test(model)
+}
+
+/**
+ * Construye los parámetros de la llamada de forma compatible con el modelo:
+ * - gpt-4o / gpt-4.1: incluye `temperature` (control de precisión).
+ * - gpt-5: OMITE temperature (la rechaza) y fuerza `reasoning_effort: "minimal"`.
+ *   Sin esto, gpt-5 "razona" miles de tokens y tarda ~90s por llamada (con dos
+ *   llamadas encadenadas se cuelga). Con "minimal" responde en ~20s y es más
+ *   barato (0 tokens de razonamiento), manteniendo buena calidad para dietas.
+ * - o-series: omite temperature (no soporta reasoning_effort vía este campo).
+ */
+function paramsModelo(
+  model: string,
+  temperature: number
+): { temperature?: number; reasoning_effort?: 'minimal' | 'low' | 'medium' | 'high' } {
+  if (esModeloGpt5(model)) return { reasoning_effort: 'minimal' }
+  if (modeloIgnoraTemperature(model)) return {}
+  return { temperature }
+}
+
 /** Perfil de estilo del nutriólogo (subset relevante para el prompt). */
 export interface PerfilEstilo {
   region?: string | null
@@ -73,6 +116,8 @@ export interface AlimentoPropuesto {
   equivalentes: number
   descripcion: string // "2 memelas de frijol", "1 taza de papaya"
   calculo?: string // razonamiento de la porción (para transparencia/auditoría)
+  // Bloqueado por el nutriólogo: la IA debe devolverlo intacto.
+  fijado?: boolean
 }
 
 /** Un tiempo de comida ya con sus alimentos concretos. */
@@ -207,6 +252,27 @@ function construirPromptSistema(perfil: PerfilEstilo, ejemplos?: string[]): stri
   }
 
   partes.push(
+    '',
+    'COHERENCIA GASTRONÓMICA (regla de oro, NO negociable):',
+    '- Cada tiempo debe ser un PLATILLO REAL Y APETITOSO que una persona comería de verdad;',
+    '  sus ingredientes tienen que combinar entre sí. NUNCA metas un alimento solo para "cumplir',
+    '  el equivalente" si no pega con el resto.',
+    '- Dentro de cada grupo, elige el alimento CONCRETO que combine. "Verduras" NO es solo lechuga:',
+    '  incluye jitomate, calabaza, nopal, champiñón, espinaca, zanahoria, chayote, ejote, pimiento…',
+    '  En un licuado o bebida las únicas verduras que caben son espinaca o apio; JAMÁS lechuga,',
+    '  nopal o calabaza en algo dulce.',
+    '- Platillos DULCES (yogur con fruta, licuados, avena, hot cakes, fruta con nueces) llevan fruta,',
+    '  lácteo, cereal y oleaginosas; NO verduras saladas. Si el tiempo trae equivalentes de verdura',
+    '  y la opción es dulce, cambia el CONCEPTO a uno salado en vez de encajar la verdura a la fuerza.',
+    '- Cantidades realistas y comibles: evita cifras absurdas (p. ej. "5 tazas de lechuga" o',
+    '  "6 tazas de arroz" en una comida). Si un equivalente obliga a mucho de un solo alimento,',
+    '  repártelo entre dos alimentos del mismo grupo que combinen.',
+    '',
+    'SENCILLEZ (importante): los platillos deben ser SENCILLOS, CASEROS y del día a día,',
+    'con POCOS ingredientes y preparación fácil y rápida. NO hagas recetas gourmet, elaboradas',
+    'ni de restaurante. Prefiere combinaciones simples y comunes en México (ej. "huevo a la',
+    'mexicana con frijoles y tortilla", "quesadilla de nopal", "fruta con yogur y granola"),',
+    'no platillos rebuscados con muchos pasos o ingredientes poco accesibles.',
     '',
     'ESTILO Y FORMATO:',
     '- Elige alimentos del estilo del nutriólogo (región y alimentos típicos de arriba).',
@@ -363,7 +429,7 @@ export async function generarRecetario(
   const promptUsuario = construirPromptUsuarioRecetario(entrada, opcionesPorTiempo)
 
   const client = getCliente()
-  const model = process.env.OPENAI_MODEL || 'gpt-4o'
+  const model = modeloConfigurado()
 
   try {
     const completion = await client.chat.completions.create({
@@ -372,7 +438,7 @@ export async function generarRecetario(
         { role: 'system', content: promptSistema },
         { role: 'user', content: promptUsuario },
       ],
-      temperature: 0.5, // algo de variedad entre opciones, pero sin desviarse
+      ...paramsModelo(model, 0.5), // algo de variedad entre opciones, pero sin desviarse
       response_format: { type: 'json_object' },
     })
 
@@ -420,6 +486,7 @@ function parsearRecetario(contenido: string, indicacionesInicio: string): Receta
                       equivalentes: Number(a.equivalentes) || 0,
                       descripcion: String(a.descripcion ?? ''),
                       calculo: a.calculo ? String(a.calculo) : undefined,
+                      fijado: a.fijado === true ? true : undefined,
                     }))
                   : [],
               }))
@@ -445,21 +512,28 @@ async function revisarPorcionesRecetario(
     'cálculo en "calculo".\n' +
     '2. Si una porción está mal (gramos crudos en cereal/leguminosa, o un gramaje que no cuadra),\n' +
     'CORRÍGELA. En cereales y leguminosas usa medidas caseras cocidas (tazas), no gramos crudos.\n' +
-    '3. NO cambies el "grupo" ni el número de "equivalentes" de ningún alimento; solo la porción/descripción.\n' +
+    '3. COHERENCIA: revisa que cada alimento TENGA SENTIDO dentro de su platillo. Si un ingrediente\n' +
+    'no combina (ej. lechuga u otra verdura salada dentro de un yogur, licuado o platillo dulce),\n' +
+    'REEMPLÁZALO por otro alimento DEL MISMO GRUPO y MISMOS equivalentes que sí combine (para verdura\n' +
+    'en algo dulce: espinaca en licuado; o si de plano no cabe, cambia el nombre/concepto de la opción\n' +
+    'a uno salado donde esa verdura encaje). Corrige también cantidades absurdas (p. ej. "5 tazas de\n' +
+    'lechuga" en una comida) repartiéndolas o eligiendo un alimento más denso del grupo.\n' +
+    '4. NO cambies el "grupo" ni el número de "equivalentes" de ningún alimento; puedes cambiar el\n' +
+    'ALIMENTO concreto (descripción), la porción y el nombre del platillo para que todo sea coherente.\n' +
     'Devuelve el recetario corregido en EXACTAMENTE el mismo formato JSON.\n\n' +
     'Recetario a revisar:\n' +
     JSON.stringify({ tiempos: recetario.tiempos })
 
   try {
     const client = getCliente()
-    const model = process.env.OPENAI_MODEL || 'gpt-4o'
+    const model = modeloConfigurado()
     const completion = await client.chat.completions.create({
       model,
       messages: [
         { role: 'system', content: promptSistema },
         { role: 'user', content: revision },
       ],
-      temperature: 0.2,
+      ...paramsModelo(model, 0.2),
       response_format: { type: 'json_object' },
     })
     const contenido = completion.choices[0]?.message?.content || '{}'
@@ -482,7 +556,12 @@ function construirPromptSistemaRecetario(perfil: PerfilEstilo, ejemplos?: string
     '- CADA opción debe cumplir EXACTAMENTE los mismos equivalentes del tiempo (son intercambiables).\n' +
     '- Dale a cada opción un nombre de platillo atractivo (ej. "Entomatadas", "Tostada de aguacate").\n' +
     '- Cuando el platillo lo requiera (licuados, hot cakes, pasteles), incluye la preparación en "preparacion".\n' +
-    '- Usa alimentos y preparaciones del estilo del nutriólogo y respeta sus indicaciones de inicio.'
+    '- Usa alimentos y preparaciones del estilo del nutriólogo y respeta sus indicaciones de inicio.\n' +
+    '- COHERENCIA (recuerda la regla de oro): CADA opción es un platillo real y apetitoso. Si un\n' +
+    '  tiempo trae equivalentes de verdura y una opción es dulce (yogur, licuado, avena con fruta),\n' +
+    '  NO metas lechuga ni verduras saladas dentro: diseña esa opción como un platillo SALADO donde\n' +
+    '  la verdura encaje, o elige una verdura que combine (espinaca en licuado). Antes que forzar un\n' +
+    '  ingrediente que rompa el platillo, prefiere otra opción distinta donde ese grupo encaje bien.'
   )
 }
 
@@ -588,10 +667,8 @@ async function revisarPorciones(
  */
 async function llamarIA(promptSistema: string, promptUsuario: string): Promise<DietaGenerada> {
   const client = getCliente()
-  const model = process.env.OPENAI_MODEL || 'gpt-4o'
+  const model = modeloConfigurado()
   // Temperatura baja: queremos precisión (respetar equivalentes), no creatividad.
-  const temperature = 0.3
-
   try {
     const completion = await client.chat.completions.create({
       model,
@@ -599,7 +676,7 @@ async function llamarIA(promptSistema: string, promptUsuario: string): Promise<D
         { role: 'system', content: promptSistema },
         { role: 'user', content: promptUsuario },
       ],
-      temperature,
+      ...paramsModelo(model, 0.3),
       response_format: { type: 'json_object' },
     })
 
@@ -619,6 +696,7 @@ async function llamarIA(promptSistema: string, promptUsuario: string): Promise<D
                   equivalentes: Number(a.equivalentes) || 0,
                   descripcion: String(a.descripcion ?? ''),
                   calculo: a.calculo ? String(a.calculo) : undefined,
+                  fijado: a.fijado === true ? true : undefined,
                 }))
               : [],
           }))
@@ -662,7 +740,7 @@ export async function* chatDietaStream(params: {
   mensaje: string
 }): AsyncGenerator<string, void, unknown> {
   const client = getCliente()
-  const model = process.env.OPENAI_MODEL || 'gpt-4o'
+  const model = modeloConfigurado()
 
   const promptSistema = construirPromptSistemaChat(params.entrada, params.modo, params.estadoActual)
 
@@ -678,7 +756,7 @@ export async function* chatDietaStream(params: {
   const stream = await client.chat.completions.create({
     model,
     messages: mensajes,
-    temperature: 0.4,
+    ...paramsModelo(model, 0.4),
     stream: true,
   })
 
@@ -719,6 +797,7 @@ export function extraerDietaDeRespuesta(respuestaCompleta: string): {
               equivalentes: Number(a.equivalentes) || 0,
               descripcion: String(a.descripcion ?? ''),
               calculo: a.calculo ? String(a.calculo) : undefined,
+              fijado: a.fijado === true ? true : undefined,
             }))
           : [],
       })),
@@ -760,6 +839,7 @@ export function extraerRecetarioDeRespuesta(
                     equivalentes: Number(a.equivalentes) || 0,
                     descripcion: String(a.descripcion ?? ''),
                     calculo: a.calculo ? String(a.calculo) : undefined,
+                    fijado: a.fijado === true ? true : undefined,
                   }))
                 : [],
             }))
@@ -800,7 +880,12 @@ function construirPromptSistemaChat(
     `3. Al actualizar, escribe el texto PRIMERO, después una línea con exactamente "${MARCADOR_DIETA}" y luego el JSON.\n` +
     '4. Cada tiempo/opción DEBE seguir respetando EXACTAMENTE estos equivalentes por tiempo:\n' +
     equivalentesPorTiempo +
-    '\n5. Nunca muestres el JSON ni el marcador si NO cambiaste nada.\n'
+    '\n5. Nunca muestres el JSON ni el marcador si NO cambiaste nada.\n' +
+    '6. ALIMENTOS FIJADOS (importante): los alimentos con "fijado": true están\n' +
+    '   bloqueados por el nutriólogo. NO cambies su grupo, sus equivalentes ni su\n' +
+    '   descripción, y NO los elimines. Devuélvelos EXACTAMENTE como están, con su\n' +
+    '   "fijado": true. Si te piden algo que obligaría a tocarlos, cámbialo en los\n' +
+    '   demás alimentos, y si no es posible, dilo en el texto en lugar de forzarlo.\n'
 
   const formato =
     modo === 'recetario'

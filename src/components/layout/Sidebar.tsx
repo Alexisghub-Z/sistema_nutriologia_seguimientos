@@ -81,7 +81,7 @@ const menuItems = [
 
 export default function Sidebar() {
   const pathname = usePathname()
-  const { isOpen, closeSidebar } = useSidebar()
+  const { isOpen, closeSidebar, isCollapsed, toggleCollapsed } = useSidebar()
   const [mensajesNoLeidos, setMensajesNoLeidos] = useState(0)
 
   // Obtener contador de mensajes no leídos
@@ -109,13 +109,25 @@ export default function Sidebar() {
       {/* Overlay para cerrar el sidebar en mobile */}
       {isOpen && <div className={styles.overlay} onClick={closeSidebar} />}
 
-      <aside className={`${styles.sidebar} ${isOpen ? styles.open : ''}`}>
+      <aside
+        className={`${styles.sidebar} ${isOpen ? styles.open : ''} ${
+          isCollapsed ? styles.colapsado : ''
+        }`}
+      >
         <div className={styles.logo}>
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-            <circle cx="16" cy="16" r="16" fill="var(--color-primary)" />
+          {/* Invertido respecto al original: sobre el fondo verde, el círculo va
+              en blanco y la figura interior en el verde de marca. */}
+          <svg
+            className={styles.logoIcono}
+            width="32"
+            height="32"
+            viewBox="0 0 32 32"
+            fill="none"
+          >
+            <circle cx="16" cy="16" r="16" fill="white" />
             <path
               d="M16 8C12.686 8 10 10.686 10 14C10 17.314 12.686 20 16 20C19.314 20 22 17.314 22 14C22 10.686 19.314 8 16 8Z"
-              fill="white"
+              fill="var(--color-primary)"
             />
           </svg>
           <span className={styles.logoText}>NutriSys</span>
@@ -133,6 +145,8 @@ export default function Sidebar() {
                 href={item.href}
                 className={`${styles.navItem} ${isActive ? styles.active : ''}`}
                 onClick={closeSidebar}
+                // Con el menú reducido el nombre no se ve: el tooltip lo suple.
+                title={isCollapsed ? item.name : undefined}
               >
                 <span className={styles.navIcon}>{item.icon}</span>
                 <span className={styles.navText}>{item.name}</span>
@@ -143,6 +157,30 @@ export default function Sidebar() {
         </nav>
 
         <div className={styles.footer}>
+          <button
+            className={styles.colapsarBtn}
+            onClick={toggleCollapsed}
+            aria-label={isCollapsed ? 'Expandir el menú' : 'Reducir el menú'}
+            title={isCollapsed ? 'Expandir el menú' : 'Reducir el menú'}
+          >
+            <span className={styles.colapsarIcono}>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d={isCollapsed ? 'M8 5l5 5-5 5' : 'M12 5l-5 5 5 5'}
+                />
+              </svg>
+            </span>
+            <span className={styles.colapsarTexto}>Reducir menú</span>
+          </button>
           <p className={styles.version}>v1.0.0</p>
         </div>
       </aside>

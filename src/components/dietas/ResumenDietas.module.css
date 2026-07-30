@@ -1,0 +1,200 @@
+/* Resumen de la sección de dietas: métricas + últimas dietas + borradores.
+   Reutiliza las clases del dashboard (Charts.module.css) para las tarjetas y
+   tablas; aquí solo vive lo que no existe allí. */
+
+.resumen {
+  margin-top: var(--spacing-2xl);
+  margin-bottom: var(--spacing-xl);
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.titulo {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dash-heading);
+}
+
+.subtitulo {
+  margin: 0;
+  font-size: 11px;
+  color: var(--dash-label);
+}
+
+/* Las dos tablas, lado a lado en escritorio. */
+.tablasRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .tablasRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Panel que ocupa todo el ancho, bajo la fila de gráficas. */
+.panelAncho {
+  margin-top: 16px;
+}
+
+/* Marco de cada tabla (mismo lenguaje que .section del dashboard). */
+.panel {
+  background-color: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  overflow: hidden;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--dash-border);
+}
+
+.panelTitulo {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dash-heading);
+}
+
+.panelConteo {
+  font-size: 11px;
+  color: var(--dash-label);
+}
+
+.tablaWrap {
+  overflow-x: auto;
+}
+
+/* Filas que llevan al cuadro correspondiente. */
+.filaClicable {
+  cursor: pointer;
+}
+
+.paciente {
+  font-weight: 600;
+}
+
+/* Días sin tocar un borrador: se resalta cuando ya lleva tiempo parado. */
+.diasAlerta {
+  color: #b45309;
+  font-weight: 600;
+}
+
+/* --- Estados vacíos --- */
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: var(--spacing-2xl) var(--spacing-lg);
+  text-align: center;
+}
+
+.vacioIcono {
+  color: var(--color-gray-300);
+}
+
+/* Cuando el vacío es una buena noticia (nada pendiente). */
+.vacioIconoOk {
+  color: var(--color-primary);
+}
+
+.vacioTexto {
+  margin: 0;
+  font-size: 13px;
+  color: var(--dash-heading);
+}
+
+.vacioPista {
+  margin: 0;
+  font-size: 11px;
+  color: var(--dash-label);
+}
+
+/* --- Carga --- */
+/* Los esqueletos replican la geometría final para que no salte el layout. */
+.skelCard {
+  background-color: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  padding: 20px;
+  height: 116px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skelPanel {
+  background-color: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Placeholder de una gráfica mientras carga. */
+.skelGrafica {
+  min-height: 300px;
+}
+
+.skelBloque {
+  flex: 1;
+  min-height: 200px;
+  border-radius: var(--dash-radius-sm);
+  background: linear-gradient(90deg, #f6f8f7 25%, #eef1f0 50%, #f6f8f7 75%);
+  background-size: 200% 100%;
+  animation: skelShimmer 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skelBloque {
+    animation: none;
+  }
+}
+
+.skelLinea {
+  height: 10px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #f1f3f5 25%, #e9ecef 50%, #f1f3f5 75%);
+  background-size: 200% 100%;
+  animation: skelShimmer 1.4s ease-in-out infinite;
+}
+
+.skelCorta {
+  width: 45%;
+}
+
+.skelMedia {
+  width: 70%;
+}
+
+@keyframes skelShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skelLinea {
+    animation: none;
+  }
+}

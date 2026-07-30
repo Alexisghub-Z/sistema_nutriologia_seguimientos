@@ -56,7 +56,6 @@ export async function GET(request: NextRequest) {
           peso: true,
           talla: true,
           grasa_corporal: true,
-          masa_muscular_kg: true,
           fecha: true,
         },
       })
@@ -67,18 +66,19 @@ export async function GET(request: NextRequest) {
           peso: true,
           talla: true,
           grasa_corporal: true,
-          masa_muscular_kg: true,
           fecha: true,
         },
       })
 
-  // Masa libre de grasa (para Katch-McArdle / Cunningham): preferimos calcularla
-  // desde el % de grasa corporal; si no hay, usamos la masa muscular como aproximación.
+  // Masa libre de grasa (para Katch-McArdle / Cunningham). Se calcula SOLO desde
+  // el % de grasa corporal: MLG = peso × (1 − %grasa/100). No se usa la masa
+  // muscular como MLG porque no es lo mismo — la MLG incluye músculo, hueso,
+  // órganos y agua (la masa muscular es solo ~50-55% de la MLG), y sustituirla
+  // subestima la MLG y hace que Katch/Cunningham devuelvan calorías demasiado
+  // bajas. Si no hay % de grasa, el campo queda vacío y el nutriólogo lo escribe.
   let mlgKg: number | null = null
   if (consultaBase?.peso && consultaBase.grasa_corporal != null) {
     mlgKg = Math.round(consultaBase.peso * (1 - consultaBase.grasa_corporal / 100) * 10) / 10
-  } else if (consultaBase?.masa_muscular_kg != null) {
-    mlgKg = consultaBase.masa_muscular_kg
   }
 
   // Lista de consultas del paciente para el selector "basar dieta en consulta".

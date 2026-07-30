@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import Button from '@/components/ui/Button'
 import GenerandoIA from '@/components/dietas/GenerandoIA'
+import ResumenDietas from '@/components/dietas/ResumenDietas'
 import { clasificarIMC } from '@/lib/utils/dietosintetico'
 import {
   GRUPOS_SMAE,
@@ -12,6 +13,8 @@ import {
   cuadroDistribucion,
   resumenTiempo,
   validarDistribucion,
+  distribuirEnTiemposAuto,
+  calcularEquivalentesAuto,
   nutrientesDeAlimento,
   nivelCercania,
   TIEMPOS_DEFAULT,
@@ -32,12 +35,112 @@ interface PacienteLite {
   email: string
 }
 
+/** Estado del ciclo de vida de una dieta (espejo del enum de Prisma). */
+type EstadoDieta = 'BORRADOR' | 'FINALIZADA'
+type ModoDietaAPI = 'DIETA' | 'RECETARIO'
+
+/** Una dieta guardada tal como la devuelve la API. */
+interface DietaGuardada {
+  id: string
+  modo: ModoDietaAPI
+  estado: EstadoDieta
+  finalizada_at: string | null
+  contenido: { tiempos?: unknown[] } | null
+  indicaciones_inicio: string | null
+}
+
 interface CuadroHistorial {
   id: string
   createdAt: string
   kcal_meta: number
   objetivo: string
   imc: number
+  peso?: number
+  etiqueta?: string | null
+  // Estado de las dietas del cuadro, para marcar las definitivas.
+  dietas?: { id: string; modo: ModoDietaAPI; estado: EstadoDieta }[]
+}
+
+/** Etiquetas legibles del objetivo de la dieta. */
+const NOMBRE_OBJETIVO: Record<string, string> = {
+  BAJAR_PESO: 'Bajar peso',
+  MANTENER: 'Mantener',
+  SUBIR_PESO: 'Subir peso',
+}
+
+/**
+ * Icono según el tiempo de comida, deducido de su nombre. Ayuda a ubicarse sin
+ * leer: sol para el desayuno, plato para las comidas fuertes, luna para la cena.
+ */
+function IconoTiempo({ nombre }: { nombre: string }) {
+  const n = nombre
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+
+  if (/desayuno|almuerzo temprano/.test(n)) {
+    // Sol
+    return (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="4" />
+        <path strokeLinecap="round" d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19" />
+      </svg>
+    )
+  }
+  if (/cena|noche/.test(n)) {
+    // Luna
+    return (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z" />
+      </svg>
+    )
+  }
+  if (/colacion|snack|refrigerio|merienda|entreno|tentempie/.test(n)) {
+    // Manzana
+    return (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-3.5-2.5-8 0-8 5s3 8 5.5 8c1 0 1.5-.5 2.5-.5s1.5.5 2.5.5C17 21 20 18 20 13s-4.5-7.5-8-5z" />
+        <path strokeLinecap="round" d="M12 8V5a3 3 0 013-3" />
+      </svg>
+    )
+  }
+  // Plato con cubiertos (comida y cualquier otro tiempo fuerte)
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path strokeLinecap="round" d="M4 3v7a2 2 0 002 2h0a2 2 0 002-2V3M6 12v9M15 3c-1.5 0-2.5 1.5-2.5 3.5S13.5 10 15 10s2.5-1.5 2.5-3.5S16.5 3 15 3zM15 10v11" />
+    </svg>
+  )
+}
+
+/**
+ * Color por familia de alimento, para distinguir de un vistazo qué es cada
+ * cosa en la dieta. Se agrupa por función nutricional, no un color por grupo:
+ * 17 colores serían un caos, 6 familias se leen bien.
+ */
+const COLOR_FAMILIA: Record<GrupoSMAEId, string> = {
+  // Verduras y frutas: los vegetales
+  VERDURAS: '#16a34a', // verde
+  FRUTAS: '#ea580c', // naranja
+  // Cereales y tubérculos: la energía
+  CEREALES_SG: '#d97706', // ámbar
+  CEREALES_CG: '#d97706',
+  // Leguminosas: proteína vegetal
+  LEGUMINOSAS: '#7c3aed', // violeta
+  // Origen animal: la proteína
+  AOA_MBAG: '#dc2626', // rojo
+  AOA_BAG: '#dc2626',
+  AOA_MAG: '#dc2626',
+  AOA_AAG: '#dc2626',
+  // Lácteos
+  LECHE_DES: '#2563eb', // azul
+  LECHE_SEMI: '#2563eb',
+  LECHE_ENTERA: '#2563eb',
+  LECHE_CA: '#2563eb',
+  // Grasas y azúcares
+  ACEITES_SP: '#ca8a04', // oro
+  ACEITES_CP: '#ca8a04',
+  AZUCAR_SG: '#db2777', // rosa
+  AZUCAR_CG: '#db2777',
 }
 
 interface ConsultaLite {
@@ -52,6 +155,8 @@ interface AlimentoUI {
   equivalentes: number
   descripcion: string
   calculo?: string
+  /** Fijado: la IA no debe tocarlo al regenerar ni al aplicar cambios. */
+  fijado?: boolean
 }
 
 interface TiempoGeneradoUI {
@@ -60,6 +165,7 @@ interface TiempoGeneradoUI {
   alimentos: AlimentoUI[]
   nota?: string
 }
+
 
 interface MensajeChat {
   rol: 'nutriologo' | 'ia'
@@ -83,6 +189,15 @@ interface RecetarioUI {
   tiempos: TiempoRecetarioUI[]
   mensaje: string
 }
+
+/** Instantánea de lo editable, para poder deshacer. */
+interface EstadoEditable {
+  dieta: TiempoGeneradoUI[] | null
+  recetario: RecetarioUI | null
+}
+
+/** Cuántos pasos atrás se recuerdan. */
+const MAX_DESHACER = 20
 
 interface MacroResultado {
   gramos: number
@@ -144,6 +259,9 @@ const FORM_INICIAL = {
 // Distribución calórica por defecto (% de HCO / lípidos / proteína).
 const PCT_DEFAULT = { hco: 50, lip: 25, pro: 25 }
 
+/** Cuadros por página en el historial. */
+const POR_PAGINA = 6
+
 // Mapa id de grupo SMAE → nombre legible (para mostrar en la dieta de IA).
 const NOMBRE_GRUPO = Object.fromEntries(GRUPOS_SMAE.map((g) => [g.id, g.nombre])) as Record<
   GrupoSMAEId,
@@ -177,6 +295,12 @@ export default function DietasPage() {
     TIEMPOS_DEFAULT.map((t) => ({ ...t }))
   )
   const [reparto, setReparto] = useState<DistribucionTiempos>({})
+  // Semilla de variación: cada clic en "Proponer distribución" la incrementa
+  // para obtener una propuesta distinta pero igualmente válida.
+  const [variacionDist, setVariacionDist] = useState(0)
+  // Semilla de variación para la propuesta de equivalentes por grupo (pestaña
+  // cuadro): cada clic ofrece una dieta balanceada distinta.
+  const [variacionEquiv, setVariacionEquiv] = useState(0)
 
   // Historial de cuadros guardados del paciente.
   const [historial, setHistorial] = useState<CuadroHistorial[]>([])
@@ -205,6 +329,73 @@ export default function DietasPage() {
   // Claves de los elementos (alimentos/opciones) que la IA acaba de cambiar,
   // para resaltarlos brevemente. Ej: "t1|0" (tiempo t1, alimento índice 0).
   const [elementosCambiados, setElementosCambiados] = useState<Set<string>>(new Set())
+
+  // --- Persistencia y cierre de la dieta ---
+  // Cuadro ya guardado sobre el que estamos trabajando (null = aún sin guardar).
+  const [cuadroId, setCuadroId] = useState<string | null>(null)
+  // Dieta guardada que se está viendo, y su estado.
+  const [dietaId, setDietaId] = useState<string | null>(null)
+  const [estadoDieta, setEstadoDieta] = useState<EstadoDieta | null>(null)
+  const [finalizando, setFinalizando] = useState(false)
+  const [confirmandoFinalizar, setConfirmandoFinalizar] = useState(false)
+
+  // --- Historial de cuadros guardados ---
+  const [historialPagina, setHistorialPagina] = useState(1)
+  const [historialTotalPaginas, setHistorialTotalPaginas] = useState(1)
+  const [historialTotal, setHistorialTotal] = useState(0)
+  // Id del cuadro cuyo menú de acciones está abierto.
+  const [menuCuadro, setMenuCuadro] = useState<string | null>(null)
+  // Id del cuadro pendiente de confirmar borrado.
+  const [confirmandoBorrar, setConfirmandoBorrar] = useState<string | null>(null)
+  // Id del cuadro que se está renombrando, y el texto en edición.
+  const [renombrando, setRenombrando] = useState<string | null>(null)
+  const [etiquetaTexto, setEtiquetaTexto] = useState('')
+  // Historial colapsado: la preferencia se recuerda entre sesiones.
+  const [historialColapsado, setHistorialColapsado] = useState(false)
+  // Se incrementa cada vez que se carga un cuadro. Al usarlo como `key`, React
+  // remonta el contenido y la animación de entrada vuelve a dispararse.
+  const [cargaId, setCargaId] = useState(0)
+  // Tiempo en el que se está añadiendo un alimento (null = ninguno), con el
+  // grupo y equivalentes elegidos en el formulario.
+  const [alimentoNuevo, setAlimentoNuevo] = useState<{
+    tiempoId: string
+    grupo: GrupoSMAEId
+    equivalentes: number
+  } | null>(null)
+  // Clave "tiempoId|idx" del alimento recién añadido, para animar solo ese.
+  const [recienAgregado, setRecienAgregado] = useState<string | null>(null)
+  // Formulario de ingrediente nuevo en una opción del recetario.
+  const [ingredienteNuevo, setIngredienteNuevo] = useState<{
+    tiempoId: string
+    idxOpcion: number
+    grupo: GrupoSMAEId
+    equivalentes: number
+  } | null>(null)
+
+  // --- Deshacer / rehacer ---
+  // Pila de estados anteriores de la dieta y del recetario. Vive solo en memoria:
+  // protege del error al editar, no sustituye al guardado.
+  const [pilaDeshacer, setPilaDeshacer] = useState<EstadoEditable[]>([])
+  const [pilaRehacer, setPilaRehacer] = useState<EstadoEditable[]>([])
+  // Cuando restauramos desde una pila, no queremos que el observador lo apile
+  // otra vez como si fuera una edición del usuario.
+  const restaurando = useRef(false)
+  const [avisoDeshacer, setAvisoDeshacer] = useState<string | null>(null)
+  // Última instantánea conocida, para detectar cambios reales.
+  const ultimoEstado = useRef<EstadoEditable>({ dieta: null, recetario: null })
+
+  // Una dieta finalizada es una versión definitiva: no se edita, se duplica.
+  const soloLectura = estadoDieta === 'FINALIZADA'
+
+  /**
+   * Vacía el historial de edición. Se llama al cambiar de paciente o de cuadro:
+   * si no, se podría "deshacer" hacia la dieta de otro paciente.
+   */
+  const limpiarHistorialEdicion = () => {
+    setPilaDeshacer([])
+    setPilaRehacer([])
+    ultimoEstado.current = { dieta: null, recetario: null }
+  }
 
   // Kcal calculada por el sistema (Mifflin × actividad ± objetivo).
   const kcalCalculada = resultado?.kcalMeta ?? 0
@@ -239,6 +430,80 @@ export default function DietasPage() {
 
   // Tabla de comprobación de la dieta generada por IA: una fila por alimento con
   // sus nutrientes del SMAE, el total, la meta del cuadro y la diferencia.
+  /** Cuántos alimentos están fijados (para avisar de lo que la IA no tocará). */
+  const totalFijados = useMemo(
+    () => (dietaIA ?? []).reduce((n, t) => n + t.alimentos.filter((a) => a.fijado).length, 0),
+    [dietaIA]
+  )
+
+  /**
+   * Cuadre de cada tiempo: compara los equivalentes que tiene la dieta contra
+   * los que se repartieron en la pestaña de distribución. Se recalcula en vivo,
+   * así que al añadir o quitar un alimento el aviso aparece al instante.
+   */
+  const cuadrePorTiempo = useMemo(() => {
+    if (!dietaIA) return null
+    const mapa = new Map<
+      string,
+      { grupo: GrupoSMAEId; enDieta: number; esperado: number }[]
+    >()
+    for (const t of dietaIA) {
+      const esperado = reparto[t.id] ?? {}
+      // Suma por grupo de lo que hay ahora mismo en la dieta.
+      const enDieta = new Map<GrupoSMAEId, number>()
+      for (const a of t.alimentos) {
+        enDieta.set(a.grupo, (enDieta.get(a.grupo) ?? 0) + a.equivalentes)
+      }
+      // Une los grupos de ambos lados para detectar tanto faltantes como sobrantes.
+      const grupos = new Set<GrupoSMAEId>([
+        ...(Object.keys(esperado) as GrupoSMAEId[]).filter((g) => (esperado[g] ?? 0) > 0),
+        ...enDieta.keys(),
+      ])
+      const filas = [...grupos]
+        .map((g) => ({
+          grupo: g,
+          enDieta: Math.round((enDieta.get(g) ?? 0) * 2) / 2,
+          esperado: Math.round((esperado[g] ?? 0) * 2) / 2,
+        }))
+        .filter((f) => Math.abs(f.enDieta - f.esperado) > 0.001)
+      mapa.set(t.id, filas)
+    }
+    return mapa
+  }, [dietaIA, reparto])
+
+  /**
+   * Cuadre de cada opción del recetario. A diferencia de la dieta, aquí CADA
+   * opción debe cumplir por sí sola los equivalentes del tiempo (son
+   * intercambiables), así que se valida una por una.
+   * Clave del mapa: "tiempoId|idxOpcion".
+   */
+  const cuadrePorOpcion = useMemo(() => {
+    if (!recetario) return null
+    const mapa = new Map<string, { grupo: GrupoSMAEId; enOpcion: number; esperado: number }[]>()
+    for (const t of recetario.tiempos) {
+      const esperado = reparto[t.id] ?? {}
+      t.opciones.forEach((o, idx) => {
+        const suma = new Map<GrupoSMAEId, number>()
+        for (const a of o.alimentos) {
+          suma.set(a.grupo, (suma.get(a.grupo) ?? 0) + a.equivalentes)
+        }
+        const grupos = new Set<GrupoSMAEId>([
+          ...(Object.keys(esperado) as GrupoSMAEId[]).filter((g) => (esperado[g] ?? 0) > 0),
+          ...suma.keys(),
+        ])
+        const filas = [...grupos]
+          .map((g) => ({
+            grupo: g,
+            enOpcion: Math.round((suma.get(g) ?? 0) * 2) / 2,
+            esperado: Math.round((esperado[g] ?? 0) * 2) / 2,
+          }))
+          .filter((f) => Math.abs(f.enOpcion - f.esperado) > 0.001)
+        mapa.set(`${t.id}|${idx}`, filas)
+      })
+    }
+    return mapa
+  }, [recetario, reparto])
+
   const tablaComprobacion = useMemo(() => {
     if (!dietaIA || !distribucion) return null
     const filas = dietaIA.flatMap((t) =>
@@ -314,6 +579,41 @@ export default function DietasPage() {
   const agregarTiempo = () => {
     setTiempos((ts) => [...ts, { id: nuevoIdTiempo(), nombre: `Tiempo ${ts.length + 1}` }])
   }
+
+  // Genera una propuesta de reparto automática (como la haría un nutriólogo):
+  // fruta y lácteos hacia las colaciones; verduras, cereales y AOA en las
+  // comidas fuertes. Cuadra exacto con los equivalentes definidos. Cada clic
+  // incrementa la semilla para ofrecer una propuesta distinta pero válida.
+  const distribuirAuto = () => {
+    const nuevaVariacion = variacionDist + 1
+    setVariacionDist(nuevaVariacion)
+    setReparto(distribuirEnTiemposAuto(equivalentes, tiempos, nuevaVariacion))
+  }
+
+  // Propone automáticamente los equivalentes de cada grupo para cuadrar con la
+  // meta de macros, con un patrón alimentario balanceado. Cada clic ofrece una
+  // dieta distinta. Al proponer nuevos equivalentes, el reparto en tiempos
+  // anterior deja de corresponder, así que se limpia.
+  const proponerEquivalentes = () => {
+    if (!distribucion) return
+    const [hco, lip, pro] = distribucion
+    const nueva = variacionEquiv + 1
+    setVariacionEquiv(nueva)
+    setEquivalentes(
+      calcularEquivalentesAuto(
+        {
+          kcalMeta,
+          hco_g: hco!.gramos,
+          proteina_g: pro!.gramos,
+          lipidos_g: lip!.gramos,
+        },
+        nueva
+      )
+    )
+    // El reparto en tiempos ya no cuadra con los nuevos equivalentes.
+    setReparto({})
+    setVariacionDist(0)
+  }
   const renombrarTiempo = (id: string, nombre: string) => {
     setTiempos((ts) => ts.map((t) => (t.id === id ? { ...t, nombre } : t)))
   }
@@ -327,12 +627,24 @@ export default function DietasPage() {
   }
 
   // Buscar pacientes (autocompletado)
-  // Preferencia persistida: si el nutriólogo pidió no volver a ver el aviso.
+  // Preferencias persistidas del nutriólogo (aviso de guardado, historial plegado).
   useEffect(() => {
     if (localStorage.getItem('dietas.omitirAvisoGuardar') === '1') {
       setNoVolverAvisar(true)
     }
+    if (localStorage.getItem('dietas.historialColapsado') === '1') {
+      setHistorialColapsado(true)
+    }
   }, [])
+
+  /** Pliega o despliega el historial, recordando la preferencia. */
+  const alternarHistorial = () => {
+    setHistorialColapsado((c) => {
+      const nuevo = !c
+      localStorage.setItem('dietas.historialColapsado', nuevo ? '1' : '0')
+      return nuevo
+    })
+  }
 
   // Auto-scroll del chat al fondo cuando llegan mensajes o texto en streaming.
   useEffect(() => {
@@ -370,6 +682,12 @@ export default function DietasPage() {
     setPct({ ...PCT_DEFAULT })
     setKcalOverride(null)
     setReparto({})
+    setVariacionDist(0)
+    setVariacionEquiv(0)
+    setCuadroId(null)
+    setDietaId(null)
+    setEstadoDieta(null)
+    limpiarHistorialEdicion()
     setTiempos(TIEMPOS_DEFAULT.map((t) => ({ ...t })))
     setPestana('cuadro')
     setError('')
@@ -421,14 +739,32 @@ export default function DietasPage() {
     }
   }
 
-  // Carga la lista de cuadros guardados de un paciente.
-  const cargarHistorial = async (pacienteId: string) => {
+  /**
+   * Abre desde el resumen: selecciona al paciente y carga ese cuadro, que a su
+   * vez restaura la dieta guardada. Así un clic en el panel lleva directo al
+   * trabajo (sobre todo útil para retomar un borrador).
+   */
+  const abrirDesdeResumen = async (
+    p: { id: string; nombre: string; email: string },
+    cuadroId: string
+  ) => {
+    await seleccionarPaciente(p)
+    cargarCuadro(cuadroId)
+  }
+
+  // Carga una página del historial de cuadros del paciente.
+  const cargarHistorial = async (pacienteId: string, pagina = 1) => {
     setCargandoHistorial(true)
     try {
-      const res = await fetch(`/api/dietas/cuadros?paciente_id=${pacienteId}`)
+      const res = await fetch(
+        `/api/dietas/cuadros?paciente_id=${pacienteId}&pagina=${pagina}&por_pagina=${POR_PAGINA}`
+      )
       if (res.ok) {
         const data = await res.json()
         setHistorial(data.cuadros ?? [])
+        setHistorialPagina(data.pagina ?? 1)
+        setHistorialTotalPaginas(data.totalPaginas ?? 1)
+        setHistorialTotal(data.total ?? 0)
       }
     } catch {
       /* silencioso */
@@ -437,10 +773,98 @@ export default function DietasPage() {
     }
   }
 
+  /** Cambia de página en el historial. */
+  const irAPagina = (pagina: number) => {
+    if (!paciente || pagina < 1 || pagina > historialTotalPaginas) return
+    cargarHistorial(paciente.id, pagina)
+  }
+
+  /** Elimina un cuadro guardado (el servidor bloquea los que tienen dieta definitiva). */
+  const eliminarCuadro = async (id: string) => {
+    if (!paciente) return
+    setError('')
+    setExito('')
+    try {
+      const res = await fetch(`/api/dietas/cuadros/${id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (res.ok) {
+        setExito('Cuadro eliminado.')
+        // Si borramos el que estaba abierto, limpiamos la pantalla.
+        if (cuadroId === id) {
+          setCuadroId(null)
+          setDietaId(null)
+          setEstadoDieta(null)
+          limpiarHistorialEdicion()
+          setDietaIA(null)
+          setRecetario(null)
+        }
+        // Si la página se queda vacía, retrocedemos una.
+        const quedan = historial.length - 1
+        cargarHistorial(paciente.id, quedan === 0 && historialPagina > 1 ? historialPagina - 1 : historialPagina)
+      } else {
+        setError(data.error || 'No se pudo eliminar el cuadro')
+      }
+    } catch {
+      setError('Error de conexión al eliminar')
+    } finally {
+      setConfirmandoBorrar(null)
+    }
+  }
+
+  /** Duplica un cuadro como punto de partida de uno nuevo. */
+  const duplicarCuadro = async (id: string) => {
+    if (!paciente) return
+    setError('')
+    setExito('')
+    setMenuCuadro(null)
+    try {
+      const res = await fetch(`/api/dietas/cuadros/${id}/duplicar`, { method: 'POST' })
+      const data = await res.json()
+      if (res.ok) {
+        setExito('Cuadro duplicado. Ajusta los datos y genera la dieta.')
+        await cargarHistorial(paciente.id, 1)
+        cargarCuadro(data.cuadro.id)
+      } else {
+        setError(data.error || 'No se pudo duplicar el cuadro')
+      }
+    } catch {
+      setError('Error de conexión al duplicar')
+    }
+  }
+
+  /** Guarda la etiqueta (nombre corto) de un cuadro. */
+  const guardarEtiqueta = async (id: string) => {
+    if (!paciente) return
+    const texto = etiquetaTexto.trim()
+    setRenombrando(null)
+    try {
+      const res = await fetch(`/api/dietas/cuadros/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ etiqueta: texto }),
+      })
+      if (res.ok) {
+        setHistorial((hs) => hs.map((h) => (h.id === id ? { ...h, etiqueta: texto || null } : h)))
+      }
+    } catch {
+      /* silencioso: la etiqueta es cosmética */
+    }
+  }
+
   // Abre un cuadro guardado y repuebla toda la pantalla.
   const cargarCuadro = async (id: string) => {
     setError('')
     setExito('')
+    // Limpiamos SIEMPRE la dieta que hubiera en pantalla antes de cargar otra:
+    // si no, la dieta del cuadro anterior quedaría pegada a este.
+    setDietaIA(null)
+    setRecetario(null)
+    setMensajesIA([])
+    setElementosCambiados(new Set())
+    setCuadroId(null)
+    setDietaId(null)
+    setEstadoDieta(null)
+    limpiarHistorialEdicion()
     try {
       const res = await fetch(`/api/dietas/cuadros/${id}`)
       if (!res.ok) {
@@ -490,8 +914,45 @@ export default function DietasPage() {
         setTiempos(TIEMPOS_DEFAULT.map((t) => ({ ...t })))
         setReparto({})
       }
-      setPestana('cuadro')
-      setExito('Cuadro cargado.')
+      setVariacionDist(0)
+      setVariacionEquiv(0)
+      setCuadroId(c.id)
+      // Relanza la animación de entrada de los datos recién cargados.
+      setCargaId((n) => n + 1)
+
+      // Restaurar la dieta/recetario guardado: preferimos la versión definitiva
+      // y, si no hay, el borrador más reciente.
+      const dietas: DietaGuardada[] = Array.isArray(c.dietas) ? c.dietas : []
+      const preferida = dietas.find((d) => d.estado === 'FINALIZADA') ?? dietas[0] ?? null
+      const tiemposGuardados = Array.isArray(preferida?.contenido?.tiempos)
+        ? preferida.contenido.tiempos
+        : null
+
+      if (preferida && tiemposGuardados) {
+        setDietaId(preferida.id)
+        setEstadoDieta(preferida.estado)
+        if (preferida.modo === 'RECETARIO') {
+          setModoIA('recetario')
+          setRecetario({
+            indicacionesInicio: preferida.indicaciones_inicio ?? '',
+            tiempos: tiemposGuardados as TiempoRecetarioUI[],
+            mensaje: '',
+          })
+        } else {
+          setModoIA('dieta')
+          setDietaIA(tiemposGuardados as TiempoGeneradoUI[])
+        }
+        // Si hay dieta, el nutriólogo quiere verla, no el formulario.
+        setPestana('ia')
+        setExito(
+          preferida.estado === 'FINALIZADA'
+            ? 'Dieta definitiva abierta en solo lectura.'
+            : 'Borrador de dieta cargado.'
+        )
+      } else {
+        setPestana('cuadro')
+        setExito('Cuadro cargado.')
+      }
     } catch {
       setError('Error de conexión al cargar el cuadro.')
     }
@@ -504,6 +965,12 @@ export default function DietasPage() {
     setPct({ ...PCT_DEFAULT })
     setKcalOverride(null)
     setReparto({})
+    setVariacionDist(0)
+    setVariacionEquiv(0)
+    setCuadroId(null)
+    setDietaId(null)
+    setEstadoDieta(null)
+    limpiarHistorialEdicion()
     setTiempos(TIEMPOS_DEFAULT.map((t) => ({ ...t })))
     setPestana('cuadro')
     setForm({ ...FORM_INICIAL })
@@ -520,6 +987,9 @@ export default function DietasPage() {
   const setCampo = (campo: string, valor: string) => {
     setForm((f) => ({ ...f, [campo]: valor }))
     setResultado(null) // invalidar resultado al cambiar datos
+    // Los datos ya no corresponden al cuadro guardado: al finalizar habrá que
+    // crear uno nuevo en vez de cerrar el viejo.
+    setCuadroId(null)
     setExito('')
   }
 
@@ -563,6 +1033,8 @@ export default function DietasPage() {
       })
       const data = await res.json()
       if (res.ok) {
+        // La dieta recién generada entra con animación, no de golpe.
+        setCargaId((n) => n + 1)
         if (modoIA === 'recetario') {
           setRecetario(data.recetario)
           if (data.recetario?.mensaje) {
@@ -639,6 +1111,9 @@ export default function DietasPage() {
     const texto = inputChat.trim()
     const estadoActual = modoIA === 'recetario' ? recetario : dietaIA
     if (!texto || chateando || generando || !estadoActual || !distribucion) return
+    // Una dieta definitiva no se modifica: el chat reescribe la dieta, así que
+    // hay que cortarlo aquí y no solo deshabilitar el botón.
+    if (soloLectura) return
 
     // Historial para la IA (antes de agregar el mensaje nuevo).
     const historial = mensajesIA.map((m) => ({
@@ -734,6 +1209,7 @@ export default function DietasPage() {
 
   // Edita a mano la descripción de un alimento propuesto.
   const editarAlimento = (tiempoId: string, idx: number, descripcion: string) => {
+    if (soloLectura) return // una versión definitiva no se edita
     setDietaIA((d) =>
       d
         ? d.map((t) =>
@@ -746,6 +1222,352 @@ export default function DietasPage() {
           )
         : d
     )
+  }
+
+  // --- Deshacer / rehacer ---
+
+  /**
+   * Observa la dieta y el recetario: cuando cambian por una edición del usuario
+   * o de la IA, apila el estado ANTERIOR. Hacerlo aquí (y no en cada handler)
+   * garantiza que ninguna forma de editar se quede fuera del historial.
+   */
+  useEffect(() => {
+    const previo = ultimoEstado.current
+    const cambio = previo.dieta !== dietaIA || previo.recetario !== recetario
+    if (!cambio) return
+
+    // Al restaurar no se apila: sería deshacer el deshacer.
+    if (restaurando.current) {
+      restaurando.current = false
+      ultimoEstado.current = { dieta: dietaIA, recetario: recetario }
+      return
+    }
+
+    // Solo guardamos si había algo antes (no apilamos el "nada" inicial).
+    if (previo.dieta || previo.recetario) {
+      setPilaDeshacer((p) => [...p, previo].slice(-MAX_DESHACER))
+      // Una edición nueva invalida la rama de rehacer.
+      setPilaRehacer([])
+    }
+    ultimoEstado.current = { dieta: dietaIA, recetario: recetario }
+  }, [dietaIA, recetario])
+
+  const puedeDeshacer = pilaDeshacer.length > 0 && !soloLectura
+  const puedeRehacer = pilaRehacer.length > 0 && !soloLectura
+
+  /** Vuelve al estado anterior de la dieta o el recetario. */
+  const deshacer = useCallback(() => {
+    if (pilaDeshacer.length === 0 || soloLectura) return
+    const anterior = pilaDeshacer[pilaDeshacer.length - 1]
+    if (!anterior) return
+    restaurando.current = true
+    // El estado actual pasa a la pila de rehacer.
+    setPilaRehacer((r) => [...r, { dieta: dietaIA, recetario }].slice(-MAX_DESHACER))
+    setPilaDeshacer((p) => p.slice(0, -1))
+    setDietaIA(anterior.dieta)
+    setRecetario(anterior.recetario)
+    setAvisoDeshacer('Cambio deshecho')
+  }, [pilaDeshacer, dietaIA, recetario, soloLectura])
+
+  /** Repite el cambio que se acababa de deshacer. */
+  const rehacer = useCallback(() => {
+    if (pilaRehacer.length === 0 || soloLectura) return
+    const siguiente = pilaRehacer[pilaRehacer.length - 1]
+    if (!siguiente) return
+    restaurando.current = true
+    setPilaDeshacer((p) => [...p, { dieta: dietaIA, recetario }].slice(-MAX_DESHACER))
+    setPilaRehacer((r) => r.slice(0, -1))
+    setDietaIA(siguiente.dieta)
+    setRecetario(siguiente.recetario)
+    setAvisoDeshacer('Cambio rehecho')
+  }, [pilaRehacer, dietaIA, recetario, soloLectura])
+
+  // El aviso se desvanece solo.
+  useEffect(() => {
+    if (!avisoDeshacer) return
+    const t = window.setTimeout(() => setAvisoDeshacer(null), 1800)
+    return () => window.clearTimeout(t)
+  }, [avisoDeshacer])
+
+  /**
+   * Atajos de teclado: Ctrl/Cmd+Z deshace, Ctrl+Shift+Z o Ctrl+Y rehace. Se
+   * ignoran mientras se escribe en un campo, para no pisar el deshacer nativo
+   * del texto.
+   */
+  useEffect(() => {
+    const enTeclado = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return
+      const destino = e.target as HTMLElement | null
+      const escribiendo =
+        destino instanceof HTMLInputElement ||
+        destino instanceof HTMLTextAreaElement ||
+        destino?.isContentEditable
+      if (escribiendo) return
+
+      const k = e.key.toLowerCase()
+      if (k === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        deshacer()
+      } else if ((k === 'z' && e.shiftKey) || k === 'y') {
+        e.preventDefault()
+        rehacer()
+      }
+    }
+    window.addEventListener('keydown', enTeclado)
+    return () => window.removeEventListener('keydown', enTeclado)
+  }, [deshacer, rehacer])
+
+  /** Fija o libera un alimento para que la IA no lo modifique. */
+  const alternarFijado = (tiempoId: string, idx: number) => {
+    if (soloLectura) return
+    setDietaIA((d) =>
+      d
+        ? d.map((t) =>
+            t.id === tiempoId
+              ? {
+                  ...t,
+                  alimentos: t.alimentos.map((a, i) =>
+                    i === idx ? { ...a, fijado: !a.fijado } : a
+                  ),
+                }
+              : t
+          )
+        : d
+    )
+  }
+
+  /** Quita un alimento del tiempo. El cuadre se recalcula solo. */
+  const eliminarAlimento = (tiempoId: string, idx: number) => {
+    if (soloLectura) return
+    setDietaIA((d) =>
+      d
+        ? d.map((t) =>
+            t.id === tiempoId
+              ? { ...t, alimentos: t.alimentos.filter((_, i) => i !== idx) }
+              : t
+          )
+        : d
+    )
+    setAlimentoNuevo(null)
+  }
+
+  /**
+   * Añade un alimento al tiempo. La descripción se deja en blanco a propósito:
+   * el nutriólogo la escribe, y el aporte ya cuenta por grupo y equivalentes.
+   */
+  const agregarAlimento = (tiempoId: string, grupo: GrupoSMAEId, equivalentes: number) => {
+    if (soloLectura) return
+    let indiceNuevo = 0
+    setDietaIA((d) =>
+      d
+        ? d.map((t) => {
+            if (t.id !== tiempoId) return t
+            indiceNuevo = t.alimentos.length
+            return {
+              ...t,
+              alimentos: [
+                ...t.alimentos,
+                { grupo, equivalentes, descripcion: '', calculo: undefined },
+              ],
+            }
+          })
+        : d
+    )
+    setAlimentoNuevo(null)
+    // Marca el nuevo para animarlo y lo desmarca al terminar la animación.
+    setRecienAgregado(`${tiempoId}|${indiceNuevo}`)
+    window.setTimeout(() => setRecienAgregado(null), 400)
+  }
+
+  /** Ajusta los equivalentes de un alimento (el cuadre se recalcula en vivo). */
+  const cambiarEquivalentes = (tiempoId: string, idx: number, valor: number) => {
+    if (soloLectura) return
+    const n = Math.max(0.5, Math.round(valor * 2) / 2)
+    setDietaIA((d) =>
+      d
+        ? d.map((t) =>
+            t.id === tiempoId
+              ? {
+                  ...t,
+                  alimentos: t.alimentos.map((a, i) =>
+                    i === idx ? { ...a, equivalentes: n } : a
+                  ),
+                }
+              : t
+          )
+        : d
+    )
+  }
+
+  // ============================================================
+  // Edición del recetario (opciones de platillo por tiempo)
+  // ============================================================
+
+  /** Aplica un cambio a una opción concreta de un tiempo del recetario. */
+  const editarOpcion = (
+    tiempoId: string,
+    idxOpcion: number,
+    cambio: Partial<OpcionUI>
+  ) => {
+    if (soloLectura) return
+    setRecetario((r) =>
+      r
+        ? {
+            ...r,
+            tiempos: r.tiempos.map((t) =>
+              t.id === tiempoId
+                ? {
+                    ...t,
+                    opciones: t.opciones.map((o, i) => (i === idxOpcion ? { ...o, ...cambio } : o)),
+                  }
+                : t
+            ),
+          }
+        : r
+    )
+  }
+
+  /** Reemplaza las opciones de un tiempo (para añadir, quitar o reordenar). */
+  const setOpciones = (tiempoId: string, fn: (ops: OpcionUI[]) => OpcionUI[]) => {
+    if (soloLectura) return
+    setRecetario((r) =>
+      r
+        ? {
+            ...r,
+            tiempos: r.tiempos.map((t) =>
+              t.id === tiempoId ? { ...t, opciones: fn(t.opciones) } : t
+            ),
+          }
+        : r
+    )
+  }
+
+  /** Añade una opción vacía al final del tiempo. */
+  const agregarOpcion = (tiempoId: string) => {
+    setOpciones(tiempoId, (ops) => [...ops, { nombre: '', alimentos: [], preparacion: '' }])
+  }
+
+  /** Quita una opción del tiempo. */
+  const eliminarOpcion = (tiempoId: string, idxOpcion: number) => {
+    setOpciones(tiempoId, (ops) => ops.filter((_, i) => i !== idxOpcion))
+  }
+
+  /** Duplica una opción, para hacerle una variante sin empezar de cero. */
+  const duplicarOpcion = (tiempoId: string, idxOpcion: number) => {
+    setOpciones(tiempoId, (ops) => {
+      const original = ops[idxOpcion]
+      if (!original) return ops
+      const copia: OpcionUI = {
+        nombre: original.nombre ? `${original.nombre} (variante)` : '',
+        // Copia profunda de los alimentos: si no, editar la copia tocaría el original.
+        alimentos: original.alimentos.map((a) => ({ ...a })),
+        preparacion: original.preparacion,
+      }
+      return [...ops.slice(0, idxOpcion + 1), copia, ...ops.slice(idxOpcion + 1)]
+    })
+  }
+
+  /** Mueve una opción arriba o abajo dentro de su tiempo. */
+  const moverOpcion = (tiempoId: string, idxOpcion: number, direccion: -1 | 1) => {
+    setOpciones(tiempoId, (ops) => {
+      const destino = idxOpcion + direccion
+      if (destino < 0 || destino >= ops.length) return ops
+      const copia = [...ops]
+      const a = copia[idxOpcion]
+      const b = copia[destino]
+      if (!a || !b) return ops
+      copia[idxOpcion] = b
+      copia[destino] = a
+      return copia
+    })
+  }
+
+  /** Cambia un ingrediente de una opción (descripción, equivalentes o fijado). */
+  const editarIngrediente = (
+    tiempoId: string,
+    idxOpcion: number,
+    idxAlimento: number,
+    cambio: Partial<AlimentoUI>
+  ) => {
+    if (soloLectura) return
+    setRecetario((r) =>
+      r
+        ? {
+            ...r,
+            tiempos: r.tiempos.map((t) =>
+              t.id === tiempoId
+                ? {
+                    ...t,
+                    opciones: t.opciones.map((o, i) =>
+                      i === idxOpcion
+                        ? {
+                            ...o,
+                            alimentos: o.alimentos.map((a, j) =>
+                              j === idxAlimento ? { ...a, ...cambio } : a
+                            ),
+                          }
+                        : o
+                    ),
+                  }
+                : t
+            ),
+          }
+        : r
+    )
+  }
+
+  /** Quita un ingrediente de una opción. */
+  const eliminarIngrediente = (tiempoId: string, idxOpcion: number, idxAlimento: number) => {
+    if (soloLectura) return
+    setRecetario((r) =>
+      r
+        ? {
+            ...r,
+            tiempos: r.tiempos.map((t) =>
+              t.id === tiempoId
+                ? {
+                    ...t,
+                    opciones: t.opciones.map((o, i) =>
+                      i === idxOpcion
+                        ? { ...o, alimentos: o.alimentos.filter((_, j) => j !== idxAlimento) }
+                        : o
+                    ),
+                  }
+                : t
+            ),
+          }
+        : r
+    )
+  }
+
+  /** Añade un ingrediente a una opción. */
+  const agregarIngrediente = (
+    tiempoId: string,
+    idxOpcion: number,
+    grupo: GrupoSMAEId,
+    equivalentes: number
+  ) => {
+    if (soloLectura) return
+    setRecetario((r) =>
+      r
+        ? {
+            ...r,
+            tiempos: r.tiempos.map((t) =>
+              t.id === tiempoId
+                ? {
+                    ...t,
+                    opciones: t.opciones.map((o, i) =>
+                      i === idxOpcion
+                        ? { ...o, alimentos: [...o.alimentos, { grupo, equivalentes, descripcion: '' }] }
+                        : o
+                    ),
+                  }
+                : t
+            ),
+          }
+        : r
+    )
+    setIngredienteNuevo(null)
   }
 
   const construirPayload = (guardar: boolean) => ({
@@ -765,12 +1587,6 @@ export default function DietasPage() {
     kcal_meta_manual: kcalEditada ? kcalMeta : undefined,
     equivalentes,
     distribucion_tiempos: Object.keys(reparto).length ? { tiempos, reparto } : undefined,
-    // Dieta o recetario generado por la IA (lo que exista), para el historial del paciente.
-    dieta_ia: recetario
-      ? { modo: 'recetario' as const, tiempos: recetario.tiempos }
-      : dietaIA
-        ? { modo: 'dieta' as const, tiempos: dietaIA }
-        : undefined,
     notas: form.notas || undefined,
     guardar,
   })
@@ -846,6 +1662,8 @@ export default function DietasPage() {
       const data = await res.json()
       if (res.ok) {
         setResultado(data.resultado)
+        // Guardamos el id para poder colgarle después la dieta sin duplicar cuadro.
+        if (data.cuadro?.id) setCuadroId(data.cuadro.id)
         setExito('Dieta guardada como nueva versión.')
         if (paciente) cargarHistorial(paciente.id) // refresca el historial
       } else {
@@ -855,6 +1673,84 @@ export default function DietasPage() {
       setError('Error de conexión')
     } finally {
       setGuardando(false)
+    }
+  }
+
+  // --- Guardar / finalizar la dieta generada ---
+
+  /**
+   * Persiste la dieta o recetario que hay en pantalla. Con `finalizar` la cierra
+   * como versión definitiva. Si el cuadro aún no está guardado, se crea en el
+   * mismo paso: así el nutriólogo cierra desde aquí sin cambiar de pestaña.
+   */
+  const guardarDietaGenerada = async (finalizar: boolean) => {
+    if (!paciente) return
+    const contenidoTiempos = recetario ? recetario.tiempos : dietaIA
+    if (!contenidoTiempos || contenidoTiempos.length === 0) {
+      setError('Primero genera la dieta o el recetario.')
+      return
+    }
+    setError('')
+    setExito('')
+    setFinalizando(true)
+    try {
+      const res = await fetch('/api/dietas/dietas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cuadro_id: cuadroId ?? undefined,
+          // Si el cuadro no está guardado, mandamos sus datos para crearlo.
+          cuadro: cuadroId ? undefined : construirPayload(false),
+          modo: recetario ? 'RECETARIO' : 'DIETA',
+          contenido: { tiempos: contenidoTiempos },
+          indicaciones_inicio: recetario?.indicacionesInicio || undefined,
+          finalizar,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setCuadroId(data.cuadro_id ?? cuadroId)
+        setDietaId(data.dieta?.id ?? null)
+        setEstadoDieta(data.dieta?.estado ?? 'BORRADOR')
+        setExito(
+          finalizar
+            ? 'Dieta finalizada. Ya no se puede editar; para cambiarla crea una versión nueva.'
+            : 'Borrador guardado.'
+        )
+        cargarHistorial(paciente.id)
+      } else {
+        setError(data.error || 'Error al guardar la dieta')
+      }
+    } catch {
+      setError('Error de conexión al guardar la dieta')
+    } finally {
+      setFinalizando(false)
+      setConfirmandoFinalizar(false)
+    }
+  }
+
+  /** Duplica la dieta finalizada en pantalla para trabajar una versión nueva. */
+  const crearVersionNueva = async () => {
+    if (!dietaId) return
+    setError('')
+    setExito('')
+    setFinalizando(true)
+    try {
+      const res = await fetch(`/api/dietas/dietas/${dietaId}/duplicar`, { method: 'POST' })
+      const data = await res.json()
+      if (res.ok) {
+        setDietaId(data.dieta.id)
+        setEstadoDieta('BORRADOR')
+        setMensajesIA([])
+        setExito('Versión nueva en borrador. Ajústala y vuelve a finalizarla.')
+        if (paciente) cargarHistorial(paciente.id)
+      } else {
+        setError(data.error || 'No se pudo crear la versión nueva')
+      }
+    } catch {
+      setError('Error de conexión')
+    } finally {
+      setFinalizando(false)
     }
   }
 
@@ -872,6 +1768,7 @@ export default function DietasPage() {
 
       {/* Selector de paciente */}
       {!paciente ? (
+        <>
         <div className={styles.buscador}>
           <div className={styles.buscadorInputWrap}>
             <svg
@@ -934,6 +1831,10 @@ export default function DietasPage() {
             </div>
           )}
         </div>
+
+        {/* Resumen del trabajo: solo mientras no hay un paciente elegido. */}
+        <ResumenDietas onAbrir={abrirDesdeResumen} />
+        </>
       ) : (
         <div className={styles.pacienteSel}>
           <div className={styles.pacienteSelIdentidad}>
@@ -993,25 +1894,182 @@ export default function DietasPage() {
       {/* Historial de cuadros guardados */}
       {paciente && historial.length > 0 && (
         <div className={styles.historial}>
-          <span className={styles.historialTitulo}>Cuadros guardados:</span>
-          <div className={styles.historialChips}>
-            {historial.map((h) => (
-              <button
-                key={h.id}
-                className={styles.historialChip}
-                onClick={() => cargarCuadro(h.id)}
-                title="Abrir este cuadro"
+          <div className={styles.historialHeader}>
+            <button
+              className={styles.historialToggle}
+              onClick={alternarHistorial}
+              aria-expanded={!historialColapsado}
+              title={historialColapsado ? 'Mostrar los cuadros' : 'Ocultar los cuadros'}
+            >
+              <span
+                className={`${styles.historialFlecha} ${
+                  historialColapsado ? styles.historialFlechaCerrada : ''
+                }`}
+                aria-hidden
               >
-                <span className={styles.historialFecha}>
-                  {new Date(h.createdAt).toLocaleDateString('es-MX', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
-                  })}
+                ▾
+              </span>
+              Cuadros guardados
+              <span className={styles.historialTotal}>{historialTotal}</span>
+            </button>
+            {!historialColapsado && historialTotalPaginas > 1 && (
+              <div className={styles.paginacion}>
+                <button
+                  className={styles.pagBtn}
+                  onClick={() => irAPagina(historialPagina - 1)}
+                  disabled={historialPagina <= 1 || cargandoHistorial}
+                  aria-label="Página anterior"
+                >
+                  ‹
+                </button>
+                <span className={styles.pagInfo}>
+                  {historialPagina} / {historialTotalPaginas}
                 </span>
-                <span className={styles.historialKcal}>{Math.round(h.kcal_meta)} kcal</span>
-              </button>
-            ))}
+                <button
+                  className={styles.pagBtn}
+                  onClick={() => irAPagina(historialPagina + 1)}
+                  disabled={historialPagina >= historialTotalPaginas || cargandoHistorial}
+                  aria-label="Página siguiente"
+                >
+                  ›
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Contenedor plegable: anima la altura sin tener que medirla en JS. */}
+          <div
+            className={`${styles.historialPlegable} ${
+              historialColapsado ? styles.historialPlegableCerrado : ''
+            }`}
+          >
+          <div className={styles.historialPlegableInner}>
+          <div
+            className={`${styles.cuadrosGrid} ${cargandoHistorial ? styles.cuadrosGridCargando : ''}`}
+          >
+            {historial.map((h) => {
+              const tieneFinalizada = h.dietas?.some((d) => d.estado === 'FINALIZADA') ?? false
+              const dietaVer = h.dietas?.[0]
+              const abierto = cuadroId === h.id
+              return (
+                <div
+                  key={h.id}
+                  className={`${styles.cuadroCard} ${tieneFinalizada ? styles.cuadroCardFinal : ''} ${
+                    abierto ? styles.cuadroCardAbierto : ''
+                  }`}
+                >
+                  {/* Encabezado: fecha + menú de acciones */}
+                  <div className={styles.cuadroCardTop}>
+                    <span className={styles.cuadroFecha}>
+                      {new Date(h.createdAt).toLocaleDateString('es-MX', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </span>
+                    <div className={styles.cuadroMenuWrap}>
+                      <button
+                        className={styles.cuadroMenuBtn}
+                        onClick={() => setMenuCuadro(menuCuadro === h.id ? null : h.id)}
+                        aria-label="Acciones del cuadro"
+                        title="Más acciones"
+                      >
+                        ⋮
+                      </button>
+                      {menuCuadro === h.id && (
+                        <>
+                          <div className={styles.menuBackdrop} onClick={() => setMenuCuadro(null)} />
+                          <div className={styles.cuadroMenu}>
+                            {dietaVer && (
+                              <button
+                                onClick={() => {
+                                  setMenuCuadro(null)
+                                  cargarCuadro(h.id)
+                                }}
+                              >
+                                Ver la dieta
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                setMenuCuadro(null)
+                                setRenombrando(h.id)
+                                setEtiquetaTexto(h.etiqueta ?? '')
+                              }}
+                            >
+                              {h.etiqueta ? 'Renombrar' : 'Poner nombre'}
+                            </button>
+                            <button onClick={() => duplicarCuadro(h.id)}>Duplicar</button>
+                            <button
+                              className={styles.menuPeligro}
+                              onClick={() => {
+                                setMenuCuadro(null)
+                                setConfirmandoBorrar(h.id)
+                              }}
+                              disabled={tieneFinalizada}
+                              title={
+                                tieneFinalizada
+                                  ? 'No se puede eliminar: tiene una dieta definitiva'
+                                  : ''
+                              }
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Etiqueta editable */}
+                  {renombrando === h.id ? (
+                    <input
+                      className={styles.cuadroEtiquetaInput}
+                      value={etiquetaTexto}
+                      onChange={(e) => setEtiquetaTexto(e.target.value)}
+                      onBlur={() => guardarEtiqueta(h.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') guardarEtiqueta(h.id)
+                        if (e.key === 'Escape') setRenombrando(null)
+                      }}
+                      placeholder="Ej. Etapa 1 - déficit"
+                      maxLength={60}
+                      autoFocus
+                    />
+                  ) : (
+                    h.etiqueta && <span className={styles.cuadroEtiqueta}>{h.etiqueta}</span>
+                  )}
+
+                  {/* Datos clave */}
+                  <div className={styles.cuadroDatos}>
+                    <span className={styles.cuadroKcal}>{Math.round(h.kcal_meta)} kcal</span>
+                    <span className={styles.cuadroMeta}>
+                      {NOMBRE_OBJETIVO[h.objetivo] ?? h.objetivo}
+                    </span>
+                    <span className={styles.cuadroMeta}>
+                      IMC {h.imc.toFixed(1)}
+                      {h.peso != null && ` · ${h.peso} kg`}
+                    </span>
+                  </div>
+
+                  {/* Estado + abrir */}
+                  <div className={styles.cuadroCardPie}>
+                    {tieneFinalizada ? (
+                      <span className={styles.chipFinalizada}>✓ Definitiva</span>
+                    ) : dietaVer ? (
+                      <span className={styles.chipBorrador}>Borrador</span>
+                    ) : (
+                      <span className={styles.chipSinDieta}>Sin dieta</span>
+                    )}
+                    <button className={styles.cuadroAbrir} onClick={() => cargarCuadro(h.id)}>
+                      {abierto ? 'Abierto' : 'Abrir'}
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          </div>
           </div>
         </div>
       )}
@@ -1053,6 +2111,19 @@ export default function DietasPage() {
         </div>
       )}
 
+      {/* Aviso global: la dieta abierta es definitiva, todo queda en solo lectura */}
+      {paciente && soloLectura && pestana !== 'ia' && (
+        <div className={styles.avisoFinalizada}>
+          <span>
+            Esta dieta es la <strong>versión definitiva</strong>: el cuadro y la distribución no
+            pueden modificarse.
+          </span>
+          <Button variant="secondary" onClick={() => setPestana('ia')}>
+            Ver la dieta
+          </Button>
+        </div>
+      )}
+
       {paciente && pestana === 'cuadro' && (
         <div className={styles.grid}>
           {/* Columna izquierda: datos del paciente */}
@@ -1065,6 +2136,9 @@ export default function DietasPage() {
               </p>
             )}
 
+            {/* Una dieta finalizada no se edita: el fieldset bloquea de golpe
+                todos los campos que contiene. */}
+            <fieldset className={styles.fieldsetPlano} disabled={soloLectura}>
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
                 <label htmlFor="peso">Peso (kg)</label>
@@ -1171,6 +2245,10 @@ export default function DietasPage() {
                     onChange={(e) => setCampo('mlg_kg', e.target.value)}
                     placeholder="Ej: 65"
                   />
+                  <small className={styles.campoAyuda}>
+                    Se calcula del % de grasa de la consulta: peso × (1 − %grasa/100). Si la consulta
+                    no tiene % de grasa, escríbela a mano.
+                  </small>
                 </div>
               )}
             </div>
@@ -1185,6 +2263,7 @@ export default function DietasPage() {
                 placeholder="Observaciones sobre el cuadro…"
               />
             </div>
+            </fieldset>
           </div>
 
           {/* Columna derecha: resultado + cuadro de distribución (apilados) */}
@@ -1196,7 +2275,7 @@ export default function DietasPage() {
                   Llena los datos y presiona <strong>Calcular</strong> para ver los requerimientos.
                 </p>
               ) : (
-                <>
+                <div className={styles.entrada} key={`res-${cargaId}`}>
                   <div className={`${styles.metricaFila} ${styles.metricaDestacada}`}>
                     <span className={styles.metricaLabel}>Kcal meta / día</span>
                     <span className={styles.kcalEditable}>
@@ -1273,7 +2352,7 @@ export default function DietasPage() {
                       </div>
                     </div>
                   )}
-                </>
+                </div>
               )}
             </div>
 
@@ -1369,7 +2448,7 @@ export default function DietasPage() {
       {/* Barra de acciones al final de la pestaña 1 */}
       {paciente && pestana === 'cuadro' && (
         <div className={styles.barraAcciones}>
-          <Button onClick={calcular} disabled={!datosMinimos || calculando}>
+          <Button onClick={calcular} disabled={!datosMinimos || calculando || soloLectura}>
             {calculando ? 'Calculando…' : 'Calcular'}
           </Button>
           <Button
@@ -1389,11 +2468,36 @@ export default function DietasPage() {
       {paciente && pestana === 'cuadro' && resultado && diferenciaSmae && distribucion && (
         <>
           <div className={styles.card} style={{ marginTop: 'var(--spacing-lg)' }}>
-            <h2 className={styles.cardTitle}>Distribución por grupos (SMAE)</h2>
-            <p className={styles.smaeAyuda}>
-              Ajusta el número de equivalentes de cada grupo hasta que la diferencia con la meta
-              tienda a cero.
-            </p>
+            <div className={styles.tiemposHeader}>
+              <div>
+                <h2 className={styles.cardTitle}>Distribución por grupos (SMAE)</h2>
+                <p className={styles.smaeAyuda}>
+                  Usa <strong>Proponer dieta balanceada</strong> para que el sistema calcule los
+                  equivalentes de cada grupo y cuadren con la meta de macros (patrón saludable:
+                  verduras, frutas, leguminosas, cereal integral, proteína magra y grasas buenas).
+                  Púlsalo de nuevo para ver otra propuesta y ajusta a mano lo que quieras.
+                </p>
+              </div>
+              <div className={styles.tiemposAcciones}>
+                <Button
+                  variant="primary"
+                  onClick={proponerEquivalentes}
+                  disabled={soloLectura}
+                  title="Calcula automáticamente los equivalentes para cuadrar con la meta. Vuelve a pulsar para otra propuesta."
+                >
+                  <span className={styles.btnIconoIA} aria-hidden>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2l1.9 5.5L19.5 9l-5.6 1.5L12 16l-1.9-5.5L4.5 9l5.6-1.5L12 2z" />
+                      <path
+                        d="M19 14l.8 2.3L22 17l-2.2.7L19 20l-.8-2.3L16 17l2.2-.7L19 14z"
+                        opacity="0.75"
+                      />
+                    </svg>
+                  </span>
+                  {variacionEquiv === 0 ? 'Proponer dieta balanceada' : 'Proponer otra dieta'}
+                </Button>
+              </div>
+            </div>
             <div className={styles.pasoSelector}>
               <label htmlFor="paso">Paso entre porciones</label>
               <select
@@ -1434,6 +2538,7 @@ export default function DietasPage() {
                               className={styles.equivSlider}
                               value={n}
                               onChange={(e) => setEquivalente(g.id, e.target.value)}
+                              disabled={soloLectura}
                               aria-label={`Equivalentes de ${g.nombre}`}
                             />
                             <span className={styles.equivValor}>{fmtNum(n)}</span>
@@ -1494,13 +2599,33 @@ export default function DietasPage() {
             <div>
               <h2 className={styles.cardTitle}>Distribución en tiempos de comida</h2>
               <p className={styles.smaeAyuda}>
-                Reparte los equivalentes de cada grupo entre los tiempos de comida. La columna final
-                avisa si un grupo quedó completo; el pie muestra el aporte de cada tiempo.
+                Usa <strong>Distribuir automáticamente</strong> para que el sistema reparta los
+                equivalentes con criterio nutricional (fruta y lácteos en colaciones; verduras,
+                cereales y proteína en las comidas fuertes). Púlsalo de nuevo para ver{' '}
+                <strong>otra propuesta</strong> igualmente válida, y ajusta a mano lo que quieras. La
+                columna final avisa si un grupo quedó completo; el pie muestra el aporte de cada
+                tiempo.
               </p>
             </div>
-            <Button variant="secondary" onClick={agregarTiempo}>
-              + Agregar tiempo
-            </Button>
+            <div className={styles.tiemposAcciones}>
+              <Button
+                variant="primary"
+                onClick={distribuirAuto}
+                disabled={gruposConEquiv.length === 0 || soloLectura}
+                title="Reparte los equivalentes entre los tiempos con criterio nutricional. Vuelve a pulsar para otra propuesta."
+              >
+                <span className={styles.btnIconoIA} aria-hidden>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2l1.9 5.5L19.5 9l-5.6 1.5L12 16l-1.9-5.5L4.5 9l5.6-1.5L12 2z" />
+                    <path d="M19 14l.8 2.3L22 17l-2.2.7L19 20l-.8-2.3L16 17l2.2-.7L19 14z" opacity="0.75" />
+                  </svg>
+                </span>
+                {variacionDist === 0 ? 'Distribuir automáticamente' : 'Proponer otra distribución'}
+              </Button>
+              <Button variant="secondary" onClick={agregarTiempo} disabled={soloLectura}>
+                + Agregar tiempo
+              </Button>
+            </div>
           </div>
 
           {gruposConEquiv.length === 0 ? (
@@ -1508,7 +2633,7 @@ export default function DietasPage() {
               Primero define equivalentes en la pestaña <strong>Cuadro dietosintético</strong>.
             </p>
           ) : (
-            <>
+            <fieldset className={styles.fieldsetPlano} disabled={soloLectura}>
               <div className={styles.tablaWrap}>
                 <table className={styles.tablaTiempos}>
                   <thead>
@@ -1610,13 +2735,13 @@ export default function DietasPage() {
               </div>
 
               <div className={styles.acciones}>
-                <Button onClick={intentarGuardar} disabled={guardando}>
+                <Button onClick={intentarGuardar} disabled={guardando || soloLectura}>
                   {guardando ? 'Guardando…' : 'Guardar dieta completa'}
                 </Button>
               </div>
               {error && <p className={styles.error}>{error}</p>}
               {exito && <p className={styles.exito}>{exito}</p>}
-            </>
+            </fieldset>
           )}
         </div>
       )}
@@ -1628,33 +2753,119 @@ export default function DietasPage() {
             {/* Columna izquierda: dieta generada (editable) */}
             <div className={styles.card}>
               <div className={styles.iaHeader}>
-                <h2 className={styles.cardTitle}>
-                  {modoIA === 'recetario' ? 'Recetario de opciones' : 'Dieta propuesta por IA'}
-                </h2>
-                <Button
-                  onClick={() => generarDietaIA()}
-                  disabled={generando}
-                  variant={modoIA === 'recetario' ? 'secondary' : 'primary'}
-                >
-                  {generando
-                    ? 'Generando…'
-                    : (modoIA === 'recetario' ? recetario : dietaIA)
-                      ? 'Regenerar'
-                      : 'Generar'}
-                </Button>
+                <div className={styles.iaHeaderTitulo}>
+                  <h2 className={styles.cardTitle}>
+                    {modoIA === 'recetario' ? 'Recetario de opciones' : 'Dieta propuesta por IA'}
+                  </h2>
+                  {estadoDieta && (
+                    <span
+                      className={
+                        soloLectura ? styles.badgeFinalizada : styles.badgeBorrador
+                      }
+                    >
+                      {soloLectura ? '✓ Versión definitiva' : 'Borrador'}
+                    </span>
+                  )}
+                </div>
+                <div className={styles.iaHeaderAcciones}>
+                  {/* Deshacer / rehacer: aparecen cuando hay algo que revertir */}
+                  {(dietaIA || recetario) && !soloLectura && (
+                    <div className={styles.deshacerGrupo}>
+                      <button
+                        className={styles.deshacerBtn}
+                        onClick={deshacer}
+                        disabled={!puedeDeshacer}
+                        title={
+                          puedeDeshacer
+                            ? `Deshacer (Ctrl+Z) · ${pilaDeshacer.length} ${pilaDeshacer.length === 1 ? 'paso' : 'pasos'}`
+                            : 'Nada que deshacer'
+                        }
+                        aria-label="Deshacer"
+                      >
+                        <svg
+                          width="15"
+                          height="15"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M9 14L4 9l5-5M4 9h11a5 5 0 010 10h-3"
+                          />
+                        </svg>
+                        {pilaDeshacer.length > 0 && (
+                          <span className={styles.deshacerCuenta}>{pilaDeshacer.length}</span>
+                        )}
+                      </button>
+                      <button
+                        className={styles.deshacerBtn}
+                        onClick={rehacer}
+                        disabled={!puedeRehacer}
+                        title={puedeRehacer ? 'Rehacer (Ctrl+Shift+Z)' : 'Nada que rehacer'}
+                        aria-label="Rehacer"
+                      >
+                        <svg
+                          width="15"
+                          height="15"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 14l5-5-5-5M20 9H9a5 5 0 000 10h3"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                  <Button
+                    onClick={() => generarDietaIA()}
+                    disabled={generando || soloLectura}
+                    variant={modoIA === 'recetario' ? 'secondary' : 'primary'}
+                  >
+                    {generando
+                      ? 'Generando…'
+                      : (modoIA === 'recetario' ? recetario : dietaIA)
+                        ? 'Regenerar'
+                        : 'Generar'}
+                  </Button>
+                </div>
               </div>
+
+              {/* Confirmación breve de que se deshizo/rehizo */}
+              {avisoDeshacer && <div className={styles.avisoFlotante}>{avisoDeshacer}</div>}
+
+              {/* Aviso de solo lectura cuando la dieta ya es definitiva */}
+              {soloLectura && (
+                <div className={styles.avisoFinalizada}>
+                  <span>
+                    Esta dieta es la <strong>versión definitiva</strong> y no puede editarse.
+                  </span>
+                  <Button variant="secondary" onClick={crearVersionNueva} disabled={finalizando}>
+                    {finalizando ? 'Creando…' : 'Crear versión nueva'}
+                  </Button>
+                </div>
+              )}
 
               {/* Selector de modo */}
               <div className={styles.modoSelector}>
                 <button
                   className={`${styles.modoBtn} ${modoIA === 'dieta' ? styles.modoBtnActivo : ''}`}
                   onClick={() => setModoIA('dieta')}
+                  disabled={soloLectura}
                 >
                   Dieta precisa
                 </button>
                 <button
                   className={`${styles.modoBtn} ${modoIA === 'recetario' ? styles.modoBtnActivo : ''}`}
                   onClick={() => setModoIA('recetario')}
+                  disabled={soloLectura}
                 >
                   Recetario de opciones
                 </button>
@@ -1698,39 +2909,397 @@ export default function DietasPage() {
                       Presiona “Generar” para que la IA proponga varias opciones por tiempo.
                     </p>
                   ) : (
-                    <div className={styles.recetario}>
-                      {recetario.indicacionesInicio && (
-                        <div className={styles.recetarioIndicaciones}>
+                    <div className={styles.recetario} key={`rec-${cargaId}`}>
+                      {/* Leyenda de colores por familia de alimento */}
+                      <div className={styles.leyendaFamilias}>
+                        {[
+                          { c: '#16a34a', t: 'Verduras' },
+                          { c: '#ea580c', t: 'Frutas' },
+                          { c: '#d97706', t: 'Cereales' },
+                          { c: '#7c3aed', t: 'Leguminosas' },
+                          { c: '#dc2626', t: 'Proteína animal' },
+                          { c: '#2563eb', t: 'Lácteos' },
+                          { c: '#ca8a04', t: 'Grasas' },
+                          { c: '#db2777', t: 'Azúcares' },
+                        ].map((f) => (
+                          <span key={f.t} className={styles.leyendaItem}>
+                            <span
+                              className={styles.leyendaPunto}
+                              style={{ backgroundColor: f.c }}
+                            />
+                            {f.t}
+                          </span>
+                        ))}
+                      </div>
+
+                      {(recetario.indicacionesInicio || !soloLectura) && (
+                        <div
+                          className={`${styles.recetarioIndicaciones} ${styles.entrada}`}
+                          style={{ animationDelay: '0ms' }}
+                        >
                           <h3 className={styles.recetarioSubtitulo}>Indicaciones de inicio</h3>
-                          <p>{recetario.indicacionesInicio}</p>
+                          {soloLectura ? (
+                            <p>{recetario.indicacionesInicio}</p>
+                          ) : (
+                            <textarea
+                              className={styles.indicacionesInput}
+                              value={recetario.indicacionesInicio}
+                              onChange={(e) =>
+                                setRecetario((r) =>
+                                  r ? { ...r, indicacionesInicio: e.target.value } : r
+                                )
+                              }
+                              placeholder="Recomendaciones generales que encabezan el recetario…"
+                              rows={3}
+                            />
+                          )}
                         </div>
                       )}
-                      {recetario.tiempos.map((t) => (
-                        <div key={t.id} className={styles.recetarioTiempo}>
-                          <h3 className={styles.recetarioTiempoNombre}>{t.nombre}</h3>
-                          {t.opciones.map((o, i) => (
-                            <div
-                              key={i}
-                              className={`${styles.recetarioOpcion} ${
-                                elementosCambiados.has(`${t.id}|${i}`) ? styles.recienEditado : ''
-                              }`}
-                            >
-                              <div className={styles.recetarioOpcionNombre}>
-                                <span className={styles.recetarioOpcionNum}>Opción {i + 1}</span>
-                                {o.nombre}
+                      {recetario.tiempos.map((t, ti) => (
+                        <div
+                          key={t.id}
+                          className={`${styles.recetarioTiempo} ${styles.entrada}`}
+                          style={{ animationDelay: `${(ti + 1) * 70}ms` }}
+                        >
+                          <div className={styles.tiempoCabecera}>
+                            <span className={styles.tiempoIcono}>
+                              <IconoTiempo nombre={t.nombre} />
+                            </span>
+                            <h3 className={styles.tiempoNombre}>{t.nombre}</h3>
+                            <span className={styles.tiempoAporte}>
+                              {t.opciones.length}{' '}
+                              {t.opciones.length === 1 ? 'opción' : 'opciones'}
+                            </span>
+                          </div>
+                          {t.opciones.map((o, i) => {
+                            const desajustes = cuadrePorOpcion?.get(`${t.id}|${i}`) ?? []
+                            return (
+                              <div
+                                key={i}
+                                className={`${styles.recetarioOpcion} ${
+                                  elementosCambiados.has(`${t.id}|${i}`) ? styles.recienEditado : ''
+                                }`}
+                              >
+                                {/* Cabecera: número, nombre editable y acciones */}
+                                <div className={styles.opcionCabecera}>
+                                  <span className={styles.recetarioOpcionNum}>Opción {i + 1}</span>
+                                  {soloLectura ? (
+                                    <span className={styles.opcionNombreTexto}>{o.nombre}</span>
+                                  ) : (
+                                    <input
+                                      className={styles.opcionNombreInput}
+                                      value={o.nombre}
+                                      onChange={(e) =>
+                                        editarOpcion(t.id, i, { nombre: e.target.value })
+                                      }
+                                      placeholder="Nombre del platillo…"
+                                    />
+                                  )}
+                                  {/* Aporte y cuadre de esta opción */}
+                                  {(() => {
+                                    const eq: Equivalentes = {}
+                                    for (const a of o.alimentos) {
+                                      eq[a.grupo] = (eq[a.grupo] ?? 0) + a.equivalentes
+                                    }
+                                    const ap = resumenTiempo(eq)
+                                    const ok = desajustes.length === 0
+                                    return (
+                                      <span className={styles.opcionAporte}>
+                                        <span
+                                          className={ok ? styles.cuadreOk : styles.cuadreFalla}
+                                          title={ok ? 'Cuadra con el tiempo' : 'No cuadra'}
+                                        >
+                                          {ok ? (
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                              <path strokeLinecap="round" strokeLinejoin="round" d="M20 6L9 17l-5-5" />
+                                            </svg>
+                                          ) : (
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                              <path strokeLinecap="round" d="M12 8v5M12 16.5v.5" />
+                                              <circle cx="12" cy="12" r="9" />
+                                            </svg>
+                                          )}
+                                        </span>
+                                        {ap.kcal} kcal
+                                      </span>
+                                    )
+                                  })()}
+                                  {!soloLectura && (
+                                    <span className={styles.opcionAcciones}>
+                                      <button
+                                        className={styles.accionBtn}
+                                        onClick={() => moverOpcion(t.id, i, -1)}
+                                        disabled={i === 0}
+                                        title="Subir"
+                                        aria-label="Subir opción"
+                                      >
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M18 15l-6-6-6 6" />
+                                        </svg>
+                                      </button>
+                                      <button
+                                        className={styles.accionBtn}
+                                        onClick={() => moverOpcion(t.id, i, 1)}
+                                        disabled={i === t.opciones.length - 1}
+                                        title="Bajar"
+                                        aria-label="Bajar opción"
+                                      >
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+                                        </svg>
+                                      </button>
+                                      <button
+                                        className={styles.accionBtn}
+                                        onClick={() => duplicarOpcion(t.id, i)}
+                                        title="Duplicar esta opción"
+                                        aria-label="Duplicar opción"
+                                      >
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                          <rect x="9" y="9" width="11" height="11" rx="2" />
+                                          <path strokeLinecap="round" d="M5 15V5a2 2 0 012-2h8" />
+                                        </svg>
+                                      </button>
+                                      <button
+                                        className={`${styles.accionBtn} ${styles.accionBtnPeligro}`}
+                                        onClick={() => eliminarOpcion(t.id, i)}
+                                        title="Quitar esta opción"
+                                        aria-label="Quitar opción"
+                                      >
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                          <path strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
+                                        </svg>
+                                      </button>
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Ingredientes con sus controles */}
+                                <div className={styles.opcionIngredientes}>
+                                  {o.alimentos.map((a, j) => (
+                                    <div
+                                      key={j}
+                                      className={`${styles.iaAlimento} ${a.fijado ? styles.alimentoFijado : ''}`}
+                                      style={
+                                        {
+                                          '--color-familia': COLOR_FAMILIA[a.grupo] ?? '#6b7280',
+                                        } as React.CSSProperties
+                                      }
+                                    >
+                                      <span className={styles.equivEditable}>
+                                        <input
+                                          type="number"
+                                          className={styles.equivInput}
+                                          value={a.equivalentes}
+                                          step={0.5}
+                                          min={0.5}
+                                          onChange={(e) =>
+                                            editarIngrediente(t.id, i, j, {
+                                              equivalentes: Math.max(
+                                                0.5,
+                                                Math.round(Number(e.target.value) * 2) / 2
+                                              ),
+                                            })
+                                          }
+                                          disabled={soloLectura || a.fijado}
+                                          aria-label="Equivalentes"
+                                        />
+                                        <span className={styles.iaAlimentoGrupo}>
+                                          × {NOMBRE_GRUPO[a.grupo] ?? a.grupo}
+                                        </span>
+                                      </span>
+                                      <input
+                                        className={styles.iaAlimentoInput}
+                                        value={a.descripcion}
+                                        onChange={(e) =>
+                                          editarIngrediente(t.id, i, j, {
+                                            descripcion: e.target.value,
+                                          })
+                                        }
+                                        placeholder="Ingrediente y su porción…"
+                                        disabled={soloLectura || a.fijado}
+                                      />
+                                      {a.calculo && (
+                                        <span className={styles.calculoChip} title={a.calculo}>
+                                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <circle cx="12" cy="12" r="9" />
+                                            <path strokeLinecap="round" d="M12 16v-5M12 8v.5" />
+                                          </svg>
+                                          <span className={styles.calculoTexto}>{a.calculo}</span>
+                                        </span>
+                                      )}
+                                      {!soloLectura && (
+                                        <span className={styles.alimentoAcciones}>
+                                          <button
+                                            className={`${styles.accionBtn} ${a.fijado ? styles.accionBtnActiva : ''}`}
+                                            onClick={() =>
+                                              editarIngrediente(t.id, i, j, { fijado: !a.fijado })
+                                            }
+                                            title={
+                                              a.fijado
+                                                ? 'Liberar: la IA podrá cambiarlo'
+                                                : 'Fijar: la IA no lo tocará'
+                                            }
+                                            aria-label={a.fijado ? 'Liberar' : 'Fijar'}
+                                          >
+                                            {a.fijado ? (
+                                              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M12 2a5 5 0 00-5 5v3H6a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2h-1V7a5 5 0 00-5-5zm0 2a3 3 0 013 3v3H9V7a3 3 0 013-3z" />
+                                              </svg>
+                                            ) : (
+                                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <rect x="4" y="10" width="16" height="12" rx="2" />
+                                                <path strokeLinecap="round" d="M8 10V7a4 4 0 017.5-2" />
+                                              </svg>
+                                            )}
+                                          </button>
+                                          <button
+                                            className={`${styles.accionBtn} ${styles.accionBtnPeligro}`}
+                                            onClick={() => eliminarIngrediente(t.id, i, j)}
+                                            disabled={a.fijado}
+                                            title="Quitar ingrediente"
+                                            aria-label="Quitar ingrediente"
+                                          >
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                              <path strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
+                                            </svg>
+                                          </button>
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
+
+                                  {o.alimentos.length === 0 && (
+                                    <p className={styles.tiempoVacio}>
+                                      Esta opción no tiene ingredientes.
+                                    </p>
+                                  )}
+                                </div>
+
+                                {/* Cuadre de ESTA opción: cada una debe cumplir sola */}
+                                {desajustes.length > 0 && (
+                                  <p className={styles.cuadreAviso}>
+                                    <span className={styles.cuadreAvisoIcono}>⚠</span>
+                                    {desajustes.map((d) => (
+                                      <span key={d.grupo} className={styles.cuadreChip}>
+                                        {NOMBRE_GRUPO[d.grupo] ?? d.grupo}: {d.enOpcion} de{' '}
+                                        {d.esperado}
+                                      </span>
+                                    ))}
+                                  </p>
+                                )}
+
+                                {/* Añadir ingrediente */}
+                                {!soloLectura && (
+                                  <div className={styles.agregarZona}>
+                                    {ingredienteNuevo?.tiempoId === t.id &&
+                                    ingredienteNuevo.idxOpcion === i ? (
+                                      <div className={styles.agregarForm}>
+                                        <select
+                                          className={styles.agregarSelect}
+                                          value={ingredienteNuevo.grupo}
+                                          onChange={(e) =>
+                                            setIngredienteNuevo({
+                                              ...ingredienteNuevo,
+                                              grupo: e.target.value as GrupoSMAEId,
+                                            })
+                                          }
+                                          aria-label="Grupo del ingrediente"
+                                        >
+                                          {GRUPOS_SMAE.map((g) => (
+                                            <option key={g.id} value={g.id}>
+                                              {g.nombre}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <input
+                                          type="number"
+                                          className={styles.agregarEquiv}
+                                          value={ingredienteNuevo.equivalentes}
+                                          step={0.5}
+                                          min={0.5}
+                                          onChange={(e) =>
+                                            setIngredienteNuevo({
+                                              ...ingredienteNuevo,
+                                              equivalentes: Math.max(
+                                                0.5,
+                                                Math.round(Number(e.target.value) * 2) / 2
+                                              ),
+                                            })
+                                          }
+                                          aria-label="Equivalentes"
+                                        />
+                                        <span className={styles.agregarEquivLabel}>equiv.</span>
+                                        <Button
+                                          onClick={() =>
+                                            agregarIngrediente(
+                                              t.id,
+                                              i,
+                                              ingredienteNuevo.grupo,
+                                              ingredienteNuevo.equivalentes
+                                            )
+                                          }
+                                        >
+                                          Añadir
+                                        </Button>
+                                        <button
+                                          className={styles.agregarCancelar}
+                                          onClick={() => setIngredienteNuevo(null)}
+                                        >
+                                          Cancelar
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        className={styles.agregarBtn}
+                                        onClick={() =>
+                                          setIngredienteNuevo({
+                                            tiempoId: t.id,
+                                            idxOpcion: i,
+                                            grupo: GRUPOS_SMAE[0]!.id,
+                                            equivalentes: 1,
+                                          })
+                                        }
+                                      >
+                                        + Añadir ingrediente
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Preparación editable */}
+                                {soloLectura ? (
+                                  o.preparacion && (
+                                    <p className={styles.recetarioPrep}>
+                                      <strong>Preparación:</strong> {o.preparacion}
+                                    </p>
+                                  )
+                                ) : (
+                                  <div className={styles.prepZona}>
+                                    <label className={styles.prepLabel}>Preparación</label>
+                                    <textarea
+                                      className={styles.prepInput}
+                                      value={o.preparacion ?? ''}
+                                      onChange={(e) =>
+                                        editarOpcion(t.id, i, { preparacion: e.target.value })
+                                      }
+                                      placeholder="Pasos de preparación (opcional)…"
+                                      rows={2}
+                                    />
+                                  </div>
+                                )}
                               </div>
-                              <ul className={styles.recetarioAlimentos}>
-                                {o.alimentos.map((a, j) => (
-                                  <li key={j}>{a.descripcion}</li>
-                                ))}
-                              </ul>
-                              {o.preparacion && (
-                                <p className={styles.recetarioPrep}>
-                                  <strong>Preparación:</strong> {o.preparacion}
-                                </p>
-                              )}
-                            </div>
-                          ))}
+                            )
+                          })}
+
+                          {/* Añadir una opción al tiempo */}
+                          {!soloLectura && (
+                            <button
+                              className={styles.agregarOpcionBtn}
+                              onClick={() => agregarOpcion(t.id)}
+                            >
+                              + Añadir opción a {t.nombre}
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -1742,32 +3311,281 @@ export default function DietasPage() {
                     Presiona “Generar dieta” para que la IA proponga los alimentos.
                   </p>
                 ) : (
-                  <div className={styles.iaTiempos}>
-                    {dietaIA.map((t) => (
-                      <div key={t.id} className={styles.iaTiempo}>
-                        <h3 className={styles.iaTiempoNombre}>{t.nombre}</h3>
+                  <div className={styles.iaTiempos} key={`dieta-${cargaId}`}>
+                    {/* Leyenda de colores: sin ella, los colores confunden. */}
+                    <div className={styles.leyendaFamilias}>
+                      {[
+                        { c: '#16a34a', t: 'Verduras' },
+                        { c: '#ea580c', t: 'Frutas' },
+                        { c: '#d97706', t: 'Cereales' },
+                        { c: '#7c3aed', t: 'Leguminosas' },
+                        { c: '#dc2626', t: 'Proteína animal' },
+                        { c: '#2563eb', t: 'Lácteos' },
+                        { c: '#ca8a04', t: 'Grasas' },
+                        { c: '#db2777', t: 'Azúcares' },
+                      ].map((f) => (
+                        <span key={f.t} className={styles.leyendaItem}>
+                          <span className={styles.leyendaPunto} style={{ backgroundColor: f.c }} />
+                          {f.t}
+                        </span>
+                      ))}
+                    </div>
+
+                    {dietaIA.map((t, ti) => (
+                      <div
+                        key={t.id}
+                        className={`${styles.iaTiempo} ${styles.entrada}`}
+                        style={{ animationDelay: `${ti * 70}ms` }}
+                      >
+                        {/* Cabecera: icono, nombre, cuadre y aporte del tiempo */}
+                        {(() => {
+                          const equivDelTiempo: Equivalentes = {}
+                          for (const a of t.alimentos) {
+                            equivDelTiempo[a.grupo] =
+                              (equivDelTiempo[a.grupo] ?? 0) + a.equivalentes
+                          }
+                          const aporte = resumenTiempo(equivDelTiempo)
+                          const cuadra = (cuadrePorTiempo?.get(t.id) ?? []).length === 0
+                          return (
+                            <div className={styles.tiempoCabecera}>
+                              <span className={styles.tiempoIcono}>
+                                <IconoTiempo nombre={t.nombre} />
+                              </span>
+                              <h3 className={styles.tiempoNombre}>{t.nombre}</h3>
+                              {t.alimentos.length > 0 && (
+                                <span
+                                  className={cuadra ? styles.cuadreOk : styles.cuadreFalla}
+                                  title={
+                                    cuadra
+                                      ? 'Cuadra con lo repartido en este tiempo'
+                                      : 'No cuadra con lo repartido'
+                                  }
+                                >
+                                  {cuadra ? (
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 6L9 17l-5-5" />
+                                    </svg>
+                                  ) : (
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                      <path strokeLinecap="round" d="M12 8v5M12 16.5v.5" />
+                                      <circle cx="12" cy="12" r="9" />
+                                    </svg>
+                                  )}
+                                </span>
+                              )}
+                              <span className={styles.tiempoAporte}>
+                                <strong>{aporte.kcal}</strong> kcal
+                                <span className={styles.tiempoMacros}>
+                                  P{Math.round(aporte.proteina)} · G{Math.round(aporte.lipidos)} · C
+                                  {Math.round(aporte.hco)}
+                                </span>
+                              </span>
+                            </div>
+                          )
+                        })()}
                         {t.alimentos.map((a, i) => (
                           <div
                             key={i}
                             className={`${styles.iaAlimento} ${
                               elementosCambiados.has(`${t.id}|${i}`) ? styles.recienEditado : ''
+                            } ${a.fijado ? styles.alimentoFijado : ''} ${
+                              recienAgregado === `${t.id}|${i}` ? styles.alimentoNuevo : ''
                             }`}
+                            style={
+                              {
+                                '--color-familia': COLOR_FAMILIA[a.grupo] ?? '#6b7280',
+                              } as React.CSSProperties
+                            }
                           >
-                            <span className={styles.iaAlimentoGrupo}>
-                              {a.equivalentes}× {NOMBRE_GRUPO[a.grupo] ?? a.grupo}
+                            {/* Equivalentes editables: al cambiarlos se recalcula el cuadre */}
+                            <span className={styles.equivEditable}>
+                              <input
+                                type="number"
+                                className={styles.equivInput}
+                                value={a.equivalentes}
+                                step={0.5}
+                                min={0.5}
+                                onChange={(e) =>
+                                  cambiarEquivalentes(t.id, i, Number(e.target.value))
+                                }
+                                disabled={soloLectura || a.fijado}
+                                aria-label="Equivalentes"
+                              />
+                              <span className={styles.iaAlimentoGrupo}>
+                                × {NOMBRE_GRUPO[a.grupo] ?? a.grupo}
+                              </span>
                             </span>
                             <input
                               className={styles.iaAlimentoInput}
                               value={a.descripcion}
                               onChange={(e) => editarAlimento(t.id, i, e.target.value)}
+                              placeholder="Escribe el alimento y su porción…"
+                              disabled={soloLectura || a.fijado}
                             />
                             {a.calculo && (
-                              <span className={styles.iaCalculo} title={a.calculo}>
-                                ⓘ
+                              <span className={styles.calculoChip} title={a.calculo}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <circle cx="12" cy="12" r="9" />
+                                  <path strokeLinecap="round" d="M12 16v-5M12 8v.5" />
+                                </svg>
+                                <span className={styles.calculoTexto}>{a.calculo}</span>
+                              </span>
+                            )}
+                            {!soloLectura && (
+                              <span className={styles.alimentoAcciones}>
+                                <button
+                                  className={`${styles.accionBtn} ${a.fijado ? styles.accionBtnActiva : ''}`}
+                                  onClick={() => alternarFijado(t.id, i)}
+                                  title={
+                                    a.fijado
+                                      ? 'Liberar: la IA podrá cambiarlo'
+                                      : 'Fijar: la IA no lo tocará'
+                                  }
+                                  aria-label={a.fijado ? 'Liberar alimento' : 'Fijar alimento'}
+                                >
+                                  {a.fijado ? (
+                                    /* Candado cerrado */
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                                      <path d="M12 2a5 5 0 00-5 5v3H6a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2h-1V7a5 5 0 00-5-5zm0 2a3 3 0 013 3v3H9V7a3 3 0 013-3zm0 10a1.6 1.6 0 01.8 2.98V19a.8.8 0 01-1.6 0v-1.02A1.6 1.6 0 0112 14z" />
+                                    </svg>
+                                  ) : (
+                                    /* Candado abierto */
+                                    <svg
+                                      width="13"
+                                      height="13"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                    >
+                                      <rect x="4" y="10" width="16" height="12" rx="2" />
+                                      <path strokeLinecap="round" d="M8 10V7a4 4 0 017.5-2" />
+                                    </svg>
+                                  )}
+                                </button>
+                                <button
+                                  className={`${styles.accionBtn} ${styles.accionBtnPeligro}`}
+                                  onClick={() => eliminarAlimento(t.id, i)}
+                                  title="Quitar este alimento"
+                                  aria-label="Quitar alimento"
+                                  disabled={a.fijado}
+                                >
+                                  <svg
+                                    width="13"
+                                    height="13"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.2"
+                                  >
+                                    <path strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
+                                  </svg>
+                                </button>
                               </span>
                             )}
                           </div>
                         ))}
+
+                        {/* Tiempo sin alimentos: se dice, no se deja en blanco. */}
+                        {t.alimentos.length === 0 && (
+                          <p className={styles.tiempoVacio}>
+                            Este tiempo quedó sin alimentos. Añade uno o pídele a la IA que lo
+                            complete.
+                          </p>
+                        )}
+
+                        {/* Aviso de cuadre del tiempo, en vivo */}
+                        {(() => {
+                          const desajustes = cuadrePorTiempo?.get(t.id) ?? []
+                          if (desajustes.length === 0) return null
+                          return (
+                            <p className={styles.cuadreAviso}>
+                              <span className={styles.cuadreAvisoIcono}>⚠</span>
+                              {desajustes.map((d, k) => (
+                                <span key={d.grupo} className={styles.cuadreChip}>
+                                  {NOMBRE_GRUPO[d.grupo] ?? d.grupo}: {d.enDieta} de {d.esperado}
+                                  {k < desajustes.length - 1 ? '' : ''}
+                                </span>
+                              ))}
+                            </p>
+                          )
+                        })()}
+
+                        {/* Añadir un alimento al tiempo */}
+                        {!soloLectura && (
+                          <div className={styles.agregarZona}>
+                            {alimentoNuevo?.tiempoId === t.id ? (
+                              <div className={styles.agregarForm}>
+                                <select
+                                  className={styles.agregarSelect}
+                                  value={alimentoNuevo.grupo}
+                                  onChange={(e) =>
+                                    setAlimentoNuevo({
+                                      ...alimentoNuevo,
+                                      grupo: e.target.value as GrupoSMAEId,
+                                    })
+                                  }
+                                  aria-label="Grupo del alimento"
+                                >
+                                  {GRUPOS_SMAE.map((g) => (
+                                    <option key={g.id} value={g.id}>
+                                      {g.nombre}
+                                    </option>
+                                  ))}
+                                </select>
+                                <input
+                                  type="number"
+                                  className={styles.agregarEquiv}
+                                  value={alimentoNuevo.equivalentes}
+                                  step={0.5}
+                                  min={0.5}
+                                  onChange={(e) =>
+                                    setAlimentoNuevo({
+                                      ...alimentoNuevo,
+                                      equivalentes: Math.max(
+                                        0.5,
+                                        Math.round(Number(e.target.value) * 2) / 2
+                                      ),
+                                    })
+                                  }
+                                  aria-label="Equivalentes"
+                                />
+                                <span className={styles.agregarEquivLabel}>equiv.</span>
+                                <Button
+                                  onClick={() =>
+                                    agregarAlimento(
+                                      t.id,
+                                      alimentoNuevo.grupo,
+                                      alimentoNuevo.equivalentes
+                                    )
+                                  }
+                                >
+                                  Añadir
+                                </Button>
+                                <button
+                                  className={styles.agregarCancelar}
+                                  onClick={() => setAlimentoNuevo(null)}
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                className={styles.agregarBtn}
+                                onClick={() =>
+                                  setAlimentoNuevo({
+                                    tiempoId: t.id,
+                                    grupo: GRUPOS_SMAE[0]!.id,
+                                    equivalentes: 1,
+                                  })
+                                }
+                              >
+                                + Añadir alimento
+                              </button>
+                            )}
+                          </div>
+                        )}
+
                         {t.nota && <p className={styles.iaTiempoNota}>{t.nota}</p>}
                       </div>
                     ))}
@@ -1854,6 +3672,26 @@ export default function DietasPage() {
                 </div>
               )}
 
+              {/* Guardar / cerrar la dieta, aquí mismo donde se termina de trabajar */}
+              {(dietaIA || recetario) && !soloLectura && (
+                <div className={styles.iaAcciones}>
+                  <Button
+                    variant="secondary"
+                    onClick={() => guardarDietaGenerada(false)}
+                    disabled={generando || chateando || finalizando}
+                  >
+                    {finalizando ? 'Guardando…' : 'Guardar borrador'}
+                  </Button>
+                  <Button
+                    onClick={() => setConfirmandoFinalizar(true)}
+                    disabled={generando || chateando || finalizando}
+                    title="Cierra la dieta como versión definitiva"
+                  >
+                    Finalizar dieta
+                  </Button>
+                </div>
+              )}
+
               {error && <p className={styles.error}>{error}</p>}
             </div>
 
@@ -1861,15 +3699,29 @@ export default function DietasPage() {
             <div className={styles.card}>
               <h2 className={styles.cardTitle}>Ajustar con la IA</h2>
               <p className={styles.smaeAyuda}>
-                Conversa: pregunta “¿por qué esa porción?”, o pide “cambia la fruta”, “no uses
-                lácteos”, “hazlo más económico”. La IA responde y ajusta la dieta cuando aplica.
+                {soloLectura
+                  ? 'Esta dieta está finalizada. Crea una versión nueva para poder ajustarla con la IA.'
+                  : 'Conversa: pregunta “¿por qué esa porción?”, o pide “cambia la fruta”, “no uses lácteos”, “hazlo más económico”. La IA responde y ajusta la dieta cuando aplica.'}
               </p>
+
+              {/* Recordatorio de lo que la IA no va a tocar. */}
+              {!soloLectura && totalFijados > 0 && (
+                <p className={styles.fijadosAviso}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <path d="M12 2a5 5 0 00-5 5v3H6a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2h-1V7a5 5 0 00-5-5zm0 2a3 3 0 013 3v3H9V7a3 3 0 013-3z" />
+                  </svg>
+                  {totalFijados} {totalFijados === 1 ? 'alimento fijado' : 'alimentos fijados'}: la
+                  IA no los cambiará.
+                </p>
+              )}
               <div className={styles.chatMensajes} ref={chatRef}>
                 {mensajesIA.length === 0 && !chateando ? (
                   <p className={styles.chatVacio}>
-                    {(modoIA === 'recetario' ? recetario : dietaIA)
-                      ? `Escríbele a la IA para afinar ${modoIA === 'recetario' ? 'el recetario' : 'la dieta'}.`
-                      : `Genera ${modoIA === 'recetario' ? 'un recetario' : 'una dieta'} primero para poder conversar.`}
+                    {soloLectura
+                      ? 'Dieta finalizada: el chat está desactivado.'
+                      : (modoIA === 'recetario' ? recetario : dietaIA)
+                        ? `Escríbele a la IA para afinar ${modoIA === 'recetario' ? 'el recetario' : 'la dieta'}.`
+                        : `Genera ${modoIA === 'recetario' ? 'un recetario' : 'una dieta'} primero para poder conversar.`}
                   </p>
                 ) : (
                   mensajesIA.map((m, i) => {
@@ -1925,9 +3777,14 @@ export default function DietasPage() {
                   value={inputChat}
                   onChange={(e) => setInputChat(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && enviarMensajeChat()}
-                  placeholder="Escribe tu mensaje…"
+                  placeholder={
+                    soloLectura ? 'Dieta finalizada (solo lectura)' : 'Escribe tu mensaje…'
+                  }
                   disabled={
-                    chateando || generando || !(modoIA === 'recetario' ? recetario : dietaIA)
+                    chateando ||
+                    generando ||
+                    soloLectura ||
+                    !(modoIA === 'recetario' ? recetario : dietaIA)
                   }
                 />
                 <Button
@@ -1935,6 +3792,7 @@ export default function DietasPage() {
                   disabled={
                     chateando ||
                     generando ||
+                    soloLectura ||
                     !(modoIA === 'recetario' ? recetario : dietaIA) ||
                     !inputChat.trim()
                   }
@@ -1977,6 +3835,64 @@ export default function DietasPage() {
                   Cancelar
                 </Button>
                 <Button onClick={confirmarGuardar}>Guardar</Button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Modal de confirmación antes de eliminar un cuadro */}
+      {confirmandoBorrar &&
+        createPortal(
+          <div className={styles.modalOverlay} onClick={() => setConfirmandoBorrar(null)}>
+            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+              <h3 className={styles.modalTitulo}>Eliminar cuadro</h3>
+              <p className={styles.modalTexto}>
+                Se borrará este cuadro y la dieta en borrador que tenga. Esta acción no se puede
+                deshacer.
+              </p>
+              <div className={styles.modalAcciones}>
+                <Button variant="secondary" onClick={() => setConfirmandoBorrar(null)}>
+                  Cancelar
+                </Button>
+                <Button variant="danger" onClick={() => eliminarCuadro(confirmandoBorrar)}>
+                  Eliminar
+                </Button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Modal de confirmación antes de finalizar (acción irreversible) */}
+      {confirmandoFinalizar &&
+        createPortal(
+          <div className={styles.modalOverlay} onClick={() => setConfirmandoFinalizar(false)}>
+            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+              <h3 className={styles.modalTitulo}>Finalizar dieta</h3>
+              <p className={styles.modalTexto}>
+                Se guardará como <strong>versión definitiva</strong>. Ya no podrás editarla ni
+                ajustarla con la IA; para cambiarla tendrás que crear una versión nueva.
+              </p>
+              {tablaComprobacion &&
+                !(
+                  Math.abs(tablaComprobacion.diferencia.kcal) <= 30 &&
+                  Math.abs(tablaComprobacion.diferencia.hco) <= 5 &&
+                  Math.abs(tablaComprobacion.diferencia.proteina) <= 5 &&
+                  Math.abs(tablaComprobacion.diferencia.lipidos) <= 5
+                ) && (
+                  <p className={styles.modalAviso}>
+                    ⚠ La dieta no cuadra del todo con la meta del cuadro. Revísala antes de
+                    finalizarla.
+                  </p>
+                )}
+              <div className={styles.modalAcciones}>
+                <Button variant="secondary" onClick={() => setConfirmandoFinalizar(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={() => guardarDietaGenerada(true)} disabled={finalizando}>
+                  {finalizando ? 'Finalizando…' : 'Finalizar dieta'}
+                </Button>
               </div>
             </div>
           </div>,
