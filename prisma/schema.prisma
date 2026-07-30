@@ -52,6 +52,7 @@ model Paciente {
   configuraciones         ConfiguracionMensajePaciente[]
   prospecto_origen        Prospecto? // Si se convirtió desde prospecto
   cuadros_dietosinteticos CuadroDietosintetico[]
+  dietas_generadas        DietaGenerada[]
 
   // Índices para búsquedas y ordenamiento
   @@index([email])
@@ -561,6 +562,12 @@ model CuadroDietosintetico {
   nivel_actividad NivelActividad
   objetivo        ObjetivoDieta
 
+  // Fórmula usada para el gasto energético basal. Se guarda para que al reabrir
+  // una dieta se vea exactamente con lo que se calculó.
+  formula String @default("MIFFLIN") // MIFFLIN | HARRIS | KATCH | CUNNINGHAM
+  // Masa libre de grasa en kg: obligatoria para KATCH y CUNNINGHAM.
+  mlg_kg  Float?
+
   // Distribución de macros usada (% del total calórico). Configurable.
   pct_proteina       Float @default(25)
   pct_grasa          Float @default(25)
@@ -588,24 +595,74 @@ model CuadroDietosintetico {
   // JSON: { tiempos: [{id,nombre}], reparto: { "t1": { VERDURAS: 1, ... } } }
   distribucion_tiempos Json?
 
-  // Dieta o recetario que generó la IA (alimentos concretos). Se guarda para dar
-  // continuidad: al generar una dieta nueva del paciente, la IA ve las anteriores.
-  // JSON: { modo: 'dieta'|'recetario', tiempos: [...] }
+  // DEPRECADO: la dieta/recetario vive ahora en el modelo DietaGenerada, que
+  // permite varias dietas por cuadro y estado propio (borrador/finalizada).
+  // El campo se conserva por compatibilidad hasta verificar la migración en
+  // producción; ya no se escribe ni se lee. Eliminar en una fase posterior.
   dieta_ia Json?
 
-  notas String? @db.Text // Observaciones del nutriólogo sobre el cuadro
+  // Nombre corto para identificar el cuadro en el historial (ej. "Etapa 1 - déficit").
+  etiqueta String?
+  notas    String? @db.Text // Observaciones del nutriólogo sobre el cuadro
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relaciones
-  paciente Paciente  @relation(fields: [paciente_id], references: [id], onDelete: Cascade)
-  consulta Consulta? @relation(fields: [consulta_id], references: [id], onDelete: SetNull)
+  paciente Paciente        @relation(fields: [paciente_id], references: [id], onDelete: Cascade)
+  consulta Consulta?       @relation(fields: [consulta_id], references: [id], onDelete: SetNull)
+  dietas   DietaGenerada[] // dietas/recetarios generados a partir de este cuadro
 
   @@index([paciente_id])
   @@index([consulta_id])
   @@index([paciente_id, createdAt]) // Historial de cuadros del paciente
   @@map("cuadros_dietosinteticos")
+}
+
+/// Modo en que se generó una dieta.
+enum ModoDieta {
+  DIETA // una dieta precisa: alimentos concretos por tiempo
+  RECETARIO // varias opciones de platillo por tiempo (el paciente elige)
+}
+
+/// Estado del ciclo de vida de una dieta.
+enum EstadoDieta {
+  BORRADOR // se puede seguir ajustando con la IA y editando a mano
+  FINALIZADA // versión definitiva: solo lectura; para cambiarla se crea otra
+}
+
+/// Una dieta o recetario generado a partir de un cuadro dietosintético.
+/// Un mismo cuadro puede tener varias (p. ej. una dieta precisa y un recetario,
+/// o varias versiones), cada una con su propio estado.
+model DietaGenerada {
+  id          String @id @default(cuid())
+  cuadro_id   String
+  paciente_id String // desnormalizado: historial del paciente sin join
+
+  modo      ModoDieta
+  contenido Json // { tiempos: [...] } con los alimentos/opciones concretos
+  // Recomendaciones generales que encabezan el recetario (solo modo RECETARIO).
+  indicaciones_inicio String? @db.Text
+
+  estado        EstadoDieta @default(BORRADOR)
+  finalizada_at DateTime?
+  // Trazabilidad de versiones: de qué dieta finalizada se duplicó esta.
+  version_de_id String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relaciones
+  cuadro     CuadroDietosintetico @relation(fields: [cuadro_id], references: [id], onDelete: Cascade)
+  paciente   Paciente             @relation(fields: [paciente_id], references: [id], onDelete: Cascade)
+  version_de DietaGenerada?       @relation("VersionesDieta", fields: [version_de_id], references: [id], onDelete: SetNull)
+  versiones  DietaGenerada[]      @relation("VersionesDieta")
+
+  @@index([cuadro_id])
+  @@index([paciente_id, createdAt]) // Historial de dietas del paciente
+  @@index([paciente_id, estado]) // Dietas finalizadas (contexto de la IA)
+  @@index([version_de_id])
+  @@map("dietas_generadas")
 }
 
 enum SexoBiologico {
