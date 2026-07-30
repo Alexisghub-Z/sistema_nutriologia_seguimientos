@@ -11,9 +11,20 @@ interface KpiCardProps {
   color: string
   sparklineData?: number[]
   flashKey?: number
+  /** Pinta una franja del `color` a la izquierda, para distinguir métricas. */
+  accent?: boolean
 }
 
-export default function KpiCard({ label, value, detail, delta, color, sparklineData, flashKey }: KpiCardProps) {
+export default function KpiCard({
+  label,
+  value,
+  detail,
+  delta,
+  color,
+  sparklineData,
+  flashKey,
+  accent,
+}: KpiCardProps) {
   const showDelta = delta !== null && delta !== undefined
   const maxSparkline = sparklineData ? Math.max(...sparklineData, 1) : 1
   const [flashing, setFlashing] = useState(false)
@@ -28,8 +39,15 @@ export default function KpiCard({ label, value, detail, delta, color, sparklineD
     prevFlashKey.current = flashKey
   }, [flashKey])
 
+  // La franja se pinta con un ::before que lee esta variable, porque no se puede
+  // dar estilo inline a un pseudo-elemento.
+  const estiloAcento = accent ? ({ '--kpi-accent': color } as React.CSSProperties) : undefined
+
   return (
-    <div className={`${styles.kpiCard} ${flashing ? styles.kpiCardFlash : ''}`}>
+    <div
+      className={`${styles.kpiCard} ${accent ? styles.kpiCardAccent : ''} ${flashing ? styles.kpiCardFlash : ''}`}
+      style={estiloAcento}
+    >
       <p className={styles.kpiLabel}>{label}</p>
       <div className={styles.kpiBody}>
         <p className={styles.kpiValue}>{value}</p>
