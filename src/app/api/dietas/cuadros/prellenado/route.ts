@@ -42,7 +42,16 @@ export async function GET(request: NextRequest) {
 
   const paciente = await prisma.paciente.findUnique({
     where: { id: pacienteId },
-    select: { id: true, nombre: true, fecha_nacimiento: true },
+    select: {
+      id: true,
+      nombre: true,
+      fecha_nacimiento: true,
+      // Restricciones: la pantalla de dietas avisa de ellas antes de generar.
+      alergias: true,
+      intolerancias: true,
+      preferencias: true,
+      disgustos: true,
+    },
   })
   if (!paciente) {
     return NextResponse.json({ error: 'Paciente no encontrado' }, { status: 404 })
@@ -96,6 +105,12 @@ export async function GET(request: NextRequest) {
     talla_cm: consultaBase?.talla ? Math.round(consultaBase.talla * 100) : null,
     mlg_kg: mlgKg,
     fecha_consulta_base: consultaBase?.fecha ?? null,
+    restricciones: {
+      alergias: paciente.alergias,
+      intolerancias: paciente.intolerancias,
+      preferencias: paciente.preferencias,
+      disgustos: paciente.disgustos,
+    },
     consultas,
   })
 }

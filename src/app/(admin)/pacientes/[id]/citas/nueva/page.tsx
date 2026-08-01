@@ -5,11 +5,13 @@ import { useParams, useRouter } from 'next/navigation'
 import Button from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import Alert from '@/components/ui/Alert'
+import { useToast } from '@/components/ui/Toast'
 import styles from './nueva.module.css'
 
 export default function NuevaCitaPage() {
   const params = useParams()
   const router = useRouter()
+  const toast = useToast()
   const pacienteId = params.id as string
 
   const [loading, setLoading] = useState(false)
@@ -77,7 +79,9 @@ export default function NuevaCitaPage() {
 
       await response.json()
 
-      // Redirigir al detalle del paciente con timestamp para forzar recarga
+      // Redirigir al detalle del paciente con timestamp para forzar recarga. El
+      // toast sobrevive a la navegación porque vive en el layout raíz.
+      toast.exito('Cita agendada')
       router.push(`/pacientes/${pacienteId}?refresh=${Date.now()}`)
       router.refresh()
     } catch (err) {

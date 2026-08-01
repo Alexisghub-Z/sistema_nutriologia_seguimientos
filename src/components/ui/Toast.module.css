@@ -1,0 +1,255 @@
+/* ============================================================
+   Toasts — estilo brutalista con entrada de rebote
+   Fondo plano, borde negro grueso y sombra dura (sin desenfoque):
+   destacan sobre cualquier pantalla sin competir con el color de
+   marca, que aquí solo se usa para el icono.
+   ============================================================ */
+
+.contenedor {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  /* Por encima de modales: un aviso tapado no sirve de nada. */
+  z-index: calc(var(--z-tooltip) + 10);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  /* El contenedor no debe bloquear clics; cada toast sí los recibe. */
+  pointer-events: none;
+}
+
+.toast {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  width: 340px;
+  max-width: calc(100vw - 3rem);
+  padding: 0.9rem 1rem;
+  background: #fff;
+  color: #000;
+  border: 2px solid #000;
+  border-radius: 4px;
+  /* Sombra dura, sin difuminar: la firma del estilo brutalista. */
+  box-shadow: 5px 5px 0 0 #000;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  pointer-events: auto;
+
+  /* Rebote de entrada, igual que el original. */
+  animation: rebote 0.6s cubic-bezier(0.25, 1.5, 0.5, 1) both;
+}
+
+@keyframes rebote {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  40% {
+    transform: translateY(-20%);
+    opacity: 1;
+  }
+  60% {
+    transform: translateY(10%);
+  }
+  80% {
+    transform: translateY(-4%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* Salida rápida hacia la derecha: no entretiene al usuario. */
+.saliendo {
+  animation: sale 0.25s ease-in forwards;
+}
+
+@keyframes sale {
+  to {
+    opacity: 0;
+    transform: translateX(120%);
+  }
+}
+
+/* --- Icono: el único punto de color --- */
+.icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border: 2px solid #000;
+  border-radius: 3px;
+}
+
+.icono svg {
+  width: 15px;
+  height: 15px;
+}
+
+.exito .icono {
+  background: var(--color-success);
+  color: #fff;
+}
+
+.error .icono {
+  background: var(--color-error);
+  color: #fff;
+}
+
+.aviso .icono {
+  background: var(--color-warning);
+  color: #000;
+}
+
+.info .icono {
+  background: var(--color-info);
+  color: #fff;
+}
+
+/* Franja lateral del color del tipo: identifica el aviso de un vistazo,
+   incluso antes de leerlo. */
+.toast::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: -2px;
+  width: 6px;
+  border: 2px solid #000;
+  border-radius: 4px 0 0 4px;
+}
+
+.exito::before {
+  background: var(--color-success);
+}
+
+.error::before {
+  background: var(--color-error);
+}
+
+.aviso::before {
+  background: var(--color-warning);
+}
+
+.info::before {
+  background: var(--color-info);
+}
+
+/* --- Texto --- */
+.cuerpo {
+  flex: 1;
+  min-width: 0;
+  padding-left: 0.25rem;
+}
+
+.mensaje {
+  margin: 0;
+  font-weight: 700;
+  /* Corta palabras largas (correos, nombres de archivo) en vez de desbordar. */
+  overflow-wrap: anywhere;
+}
+
+.descripcion {
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: #444;
+  overflow-wrap: anywhere;
+}
+
+.accion {
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.7rem;
+  background: #000;
+  color: #fff;
+  border: 2px solid #000;
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.accion:hover {
+  background: #fff;
+  color: #000;
+}
+
+/* --- Cerrar --- */
+.cerrar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin: -2px -2px 0 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 3px;
+  color: #666;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.cerrar:hover {
+  background: #000;
+  color: #fff;
+}
+
+.cerrar svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* --- Móvil: ocupan el ancho y se anclan abajo --- */
+@media (max-width: 640px) {
+  .contenedor {
+    right: 0.75rem;
+    bottom: 0.75rem;
+    left: 0.75rem;
+  }
+
+  .toast {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+/* Sin animación para quien la haya desactivado, pero el toast sigue saliendo
+   y desapareciendo: la información no se pierde. */
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: apareceSuave 0.15s ease-out both;
+  }
+
+  .saliendo {
+    animation: desapareceSuave 0.15s ease-in forwards;
+  }
+
+  @keyframes apareceSuave {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes desapareceSuave {
+    to {
+      opacity: 0;
+    }
+  }
+}

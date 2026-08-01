@@ -1027,15 +1027,205 @@
   background: rgba(var(--color-primary-rgb, 34 197 94), 0.08);
 }
 
-.dietaMeta {
-  margin-top: 4px;
-  font-size: 0.82rem;
+/* ============================================================
+   Lista de dietas del paciente
+   ============================================================ */
+.dietasLista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.dietaLigada {
+.dietaItem {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.dietaItem:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(45, 159, 93, 0.1);
+  transform: translateX(2px);
+}
+
+/* Con dieta definitiva: barra verde a la izquierda. */
+.dietaItemFinal {
+  border-left: 3px solid #10b981;
+}
+
+/* Las kcal son el dato principal: bloque propio a la izquierda. */
+.dietaKcalBloque {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 62px;
+  padding: 6px 4px;
+  background: linear-gradient(135deg, rgba(45, 159, 93, 0.09), rgba(45, 159, 93, 0.04));
+  border-radius: var(--radius-md);
+}
+
+.dietaKcalNum {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.1;
   color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
 }
 
-.dietaSuelta {
-  color: var(--color-gray-400);
+.dietaKcalUnidad {
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-primary);
+  opacity: 0.75;
+}
+
+.dietaCuerpo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dietaLinea1 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dietaTitulo {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-gray-900);
+}
+
+/* Chips de estado */
+.dietaChipReciente,
+.dietaChipFinal,
+.dietaChipBorrador {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.dietaChipReciente {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.dietaChipFinal {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.dietaChipBorrador {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-600);
+}
+
+/* Datos clínicos, separados por puntos. */
+.dietaDatos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 0.75rem;
+  color: var(--color-gray-500);
+}
+
+.dietaDato {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  position: relative;
+}
+
+/* Separador en punto entre datos, sin marcarlo en el JSX. */
+.dietaDato:not(:last-child)::after {
+  content: '·';
+  position: absolute;
+  right: -7px;
+  color: var(--color-gray-300);
+}
+
+/* Variación de peso respecto a la dieta anterior. */
+.dietaBaja {
+  margin-left: 3px;
+  font-weight: 700;
+  color: #059669;
+}
+
+.dietaSube {
+  margin-left: 3px;
+  font-weight: 700;
+  color: #b45309;
+}
+
+.dietaFlecha {
+  flex-shrink: 0;
+  color: var(--color-gray-300);
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.dietaItem:hover .dietaFlecha {
+  color: var(--color-primary);
+  transform: translateX(2px);
+}
+
+/* Estado vacío */
+.dietaVacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: var(--spacing-2xl) var(--spacing-lg);
+  text-align: center;
+  color: var(--color-gray-300);
+}
+
+.dietaVacioTitulo {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-gray-700);
+}
+
+.dietaVacioPista {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-gray-500);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dietaItem,
+  .dietaFlecha {
+    transition: none;
+  }
+
+  .dietaItem:hover {
+    transform: none;
+  }
 }

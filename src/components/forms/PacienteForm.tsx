@@ -9,6 +9,7 @@ import {
   extraerDigitosTelefono,
   validarTelefonoMexico,
 } from '@/lib/utils/phone'
+import { useToast } from '@/components/ui/Toast'
 import styles from './PacienteForm.module.css'
 
 interface PacienteFormProps {
@@ -23,6 +24,7 @@ interface PacienteFormProps {
 
 export default function PacienteForm({ pacienteId, initialData }: PacienteFormProps) {
   const router = useRouter()
+  const toast = useToast()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
@@ -176,7 +178,10 @@ export default function PacienteForm({ pacienteId, initialData }: PacienteFormPr
         throw new Error(data.error || 'Error al guardar paciente')
       }
 
-      // Redirigir a la lista o al detalle
+      // Redirigir a la lista o al detalle. El toast vive en el layout raíz, así
+      // que sobrevive a la navegación: es la única forma de confirmar el
+      // guardado cuando la pantalla cambia justo después.
+      toast.exito(isEditing ? 'Paciente actualizado' : 'Paciente registrado')
       router.push('/pacientes')
       router.refresh()
     } catch (err) {

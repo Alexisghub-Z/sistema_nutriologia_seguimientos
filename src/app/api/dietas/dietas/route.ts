@@ -25,6 +25,9 @@ const guardarDietaSchema = z.object({
   // Si el cuadro ya está guardado, su id. Si no, hay que mandar `cuadro`.
   cuadro_id: z.string().min(1).optional(),
   cuadro: datosCuadroSchema.optional(),
+  // Dieta concreta que se está editando. Con esto se actualiza ESA y no se
+  // adivina cuál por (cuadro, modo), que podría acertar con otra distinta.
+  dieta_id: z.string().min(1).optional(),
 
   modo: z.enum(['DIETA', 'RECETARIO']),
   // Estructura libre: la forma de los tiempos la define el generador de IA.
@@ -148,10 +151,18 @@ async function guardarDieta(
   pacienteId: string,
   data: z.infer<typeof guardarDietaSchema>
 ) {
-  const borrador = await prisma.dietaGenerada.findFirst({
-    where: { cuadro_id: cuadroId, modo: data.modo, estado: 'BORRADOR' },
-    select: { id: true },
-  })
+  // Si sabemos qué dieta se está editando, se actualiza esa. Si no (dieta recién
+  // generada), se busca un borrador del mismo cuadro y modo para no acumular
+  // registros al guardar varias veces seguidas.
+  const borrador = data.dieta_id
+    ? await prisma.dietaGenerada.findFirst({
+        where: { id: data.dieta_id, cuadro_id: cuadroId },
+        select: { id: true },
+      })
+    : await prisma.dietaGenerada.findFirst({
+        where: { cuadro_id: cuadroId, modo: data.modo, estado: 'BORRADOR' },
+        select: { id: true },
+      })
 
   const comunes = {
     contenido: data.contenido,

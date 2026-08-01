@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import Spinner from '@/components/ui/Spinner'
 import Alert from '@/components/ui/Alert'
+import { useToast } from '@/components/ui/Toast'
 import styles from './pacientes.module.css'
 
 interface Paciente {
@@ -40,6 +41,7 @@ interface ModalEliminar {
 
 export default function PacientesPage() {
   const router = useRouter()
+  const toast = useToast()
   const [pacientes, setPacientes] = useState<Paciente[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -177,11 +179,15 @@ export default function PacientesPage() {
         throw new Error(data.error || 'Error al eliminar paciente')
       }
 
+      const nombre = modalEliminar.nombre
       setModalEliminar(null)
       fetchPacientes()
+      toast.exito(`Paciente ${nombre} eliminado`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al eliminar paciente')
       setModalEliminar(null)
+      // Toast y no `setError`: al cerrarse el modal, un aviso arriba de la lista
+      // pasa desapercibido.
+      toast.error(err instanceof Error ? err.message : 'Error al eliminar paciente')
     } finally {
       setDeletingId(null)
     }

@@ -12,3 +12,5 @@ export {
 export { default as Badge } from './Badge'
 export { default as Alert } from './Alert'
 export { default as Spinner } from './Spinner'
+export { ToastProvider, useToast } from './Toast'
+export type { TipoToast, OpcionesToast } from './Toast'
