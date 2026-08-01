@@ -176,13 +176,15 @@ html {
   font-size: 13.6px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  /* `clip` y no `hidden`: recorta igual el desbordamiento horizontal, pero sin
+     convertir el elemento en contenedor de scroll. Con `hidden` el viewport deja
+     de ser la referencia y `position: sticky` no funciona en toda la app. */
+  overflow-x: clip;
 }
 
 body {
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
@@ -190,7 +192,9 @@ body {
   line-height: var(--line-height-normal);
   color: var(--color-text);
   background-color: var(--color-background);
-  overflow-x: hidden;
+  /* Mismo motivo que en html: `clip` no rompe `position: sticky`.
+     Estaba declarado dos veces; se deja una sola. */
+  overflow-x: clip;
   max-width: 100vw;
   position: relative;
 }

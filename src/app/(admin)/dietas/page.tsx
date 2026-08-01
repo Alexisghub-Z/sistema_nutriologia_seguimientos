@@ -5,6 +5,16 @@ import { createPortal } from 'react-dom'
 import Button from '@/components/ui/Button'
 import GenerandoIA from '@/components/dietas/GenerandoIA'
 import ResumenDietas from '@/components/dietas/ResumenDietas'
+import PanelAlternativas from '@/components/dietas/PanelAlternativas'
+import { useToast } from '@/components/ui/Toast'
+import { buscarAlergenos } from '@/lib/dietas/alergenos'
+import {
+  firmaContenido,
+  textoAutoguardado,
+  type EstadoAutoguardado,
+  type ContenidoAutoguardado,
+  type TonoAutoguardado,
+} from '@/lib/dietas/autoguardado'
 import { clasificarIMC } from '@/lib/utils/dietosintetico'
 import {
   GRUPOS_SMAE,
@@ -199,6 +209,39 @@ interface EstadoEditable {
 /** Cuántos pasos atrás se recuerdan. */
 const MAX_DESHACER = 20
 
+/**
+ * Calma antes de autoguardar. Suficiente para no disparar una petición por
+ * tecla, y lo bastante corto para que salir de la pantalla sea seguro.
+ */
+const RETRASO_AUTOGUARDADO = 3000
+
+/** Clase del indicador de guardado según su tono. */
+const TONO_GUARDADO: Record<TonoAutoguardado, string> = {
+  definitiva: styles.badgeDefinitiva!,
+  ok: styles.badgeOk!,
+  trabajando: styles.badgeTrabajando!,
+  pendiente: styles.badgePendiente!,
+  error: styles.badgeErrorGuardado!,
+}
+
+/**
+ * Contexto que lee el autoguardado. Se mantiene en una ref para que la función
+ * de guardado no dependa del estado y pueda ser estable entre renders.
+ */
+interface CtxGuardado {
+  paciente: PacienteLite | null
+  cuadroId: string | null
+  dietaId: string | null
+  soloLectura: boolean
+  recetario: RecetarioUI | null
+  dietaIA: TiempoGeneradoUI[] | null
+  generando: boolean
+  chateando: boolean
+  finalizando: boolean
+  /** Datos del cuadro para crearlo al vuelo si aún no está guardado. */
+  payloadCuadro: Record<string, unknown> | null
+}
+
 interface MacroResultado {
   gramos: number
   kcal: number
@@ -269,6 +312,7 @@ const NOMBRE_GRUPO = Object.fromEntries(GRUPOS_SMAE.map((g) => [g.id, g.nombre])
 >
 
 export default function DietasPage() {
+  const toast = useToast()
   const [query, setQuery] = useState('')
   const [resultados, setResultados] = useState<PacienteLite[]>([])
   const [paciente, setPaciente] = useState<PacienteLite | null>(null)
@@ -339,6 +383,42 @@ export default function DietasPage() {
   const [finalizando, setFinalizando] = useState(false)
   const [confirmandoFinalizar, setConfirmandoFinalizar] = useState(false)
 
+  // --- Autoguardado ---
+  // La dieta se persiste sola: antes, salir de la pantalla sin pulsar "Guardar
+  // dieta" perdía todo el trabajo.
+  const [estadoAutoguardado, setEstadoAutoguardado] = useState<EstadoAutoguardado>('inactivo')
+  const [guardadoEn, setGuardadoEn] = useState<Date | null>(null)
+  // Temporizador del retardo, para poder cancelarlo al cambiar de contexto.
+  const temporizadorAutoguardado = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Petición en vuelo. Es un ref y no estado porque se lee y escribe de forma
+  // síncrona: con useState habría una ventana en la que dos llamadas leen
+  // `false` y ambas crean un cuadro.
+  const autoguardadoEnCurso = useRef(false)
+  // Llegó un cambio mientras guardábamos: al terminar se reintenta.
+  const autoguardadoPendiente = useRef(false)
+  // Tras un 409 (el cuadro ya tiene versión definitiva) dejamos de insistir.
+  const autoguardadoBloqueado = useRef(false)
+  // Huella de lo último persistido, para no repetir un POST idéntico.
+  const firmaGuardada = useRef<string | null>(null)
+  // Ya avisamos de que el guardado falla: no repetirlo en cada reintento.
+  const avisadoFalloGuardado = useRef(false)
+  // Todo lo que necesita el autoguardado, refrescado en cada render por un
+  // efecto más abajo. Con esto `autoguardar` puede tener dependencias vacías: si
+  // dependiera del estado se recrearía en cada tecla y reprogramaría el retardo
+  // sin parar.
+  const ctxGuardado = useRef<CtxGuardado>({
+    paciente: null,
+    cuadroId: null,
+    dietaId: null,
+    soloLectura: false,
+    recetario: null,
+    dietaIA: null,
+    generando: false,
+    chateando: false,
+    finalizando: false,
+    payloadCuadro: null,
+  })
+
   // --- Historial de cuadros guardados ---
   const [historialPagina, setHistorialPagina] = useState(1)
   const [historialTotalPaginas, setHistorialTotalPaginas] = useState(1)
@@ -364,6 +444,24 @@ export default function DietasPage() {
   } | null>(null)
   // Clave "tiempoId|idx" del alimento recién añadido, para animar solo ese.
   const [recienAgregado, setRecienAgregado] = useState<string | null>(null)
+
+  // --- Alternativas para un alimento concreto ---
+  // Clave del alimento cuyo panel está abierto ("tiempoId|idx" o
+  // "tiempoId|opcion|idx" en el recetario).
+  const [alternativasDe, setAlternativasDe] = useState<string | null>(null)
+  const [alternativas, setAlternativas] = useState<
+    { descripcion: string; calculo?: string; nota?: string }[]
+  >([])
+  const [cargandoAlternativas, setCargandoAlternativas] = useState(false)
+  const [errorAlternativas, setErrorAlternativas] = useState('')
+  // Restricciones del paciente elegido: se avisan antes de generar y se
+  // comprueban en la dieta resultante.
+  const [restricciones, setRestricciones] = useState<{
+    alergias: string | null
+    intolerancias: string | null
+    preferencias: string | null
+    disgustos: string | null
+  } | null>(null)
   // Formulario de ingrediente nuevo en una opción del recetario.
   const [ingredienteNuevo, setIngredienteNuevo] = useState<{
     tiempoId: string
@@ -387,6 +485,18 @@ export default function DietasPage() {
   // Una dieta finalizada es una versión definitiva: no se edita, se duplica.
   const soloLectura = estadoDieta === 'FINALIZADA'
 
+  // Qué mostrar en el indicador de guardado de la cabecera.
+  const indicadorGuardado = useMemo(
+    () =>
+      textoAutoguardado(
+        estadoAutoguardado,
+        guardadoEn,
+        soloLectura,
+        Boolean(dietaIA || recetario)
+      ),
+    [estadoAutoguardado, guardadoEn, soloLectura, dietaIA, recetario]
+  )
+
   /**
    * Vacía el historial de edición. Se llama al cambiar de paciente o de cuadro:
    * si no, se podría "deshacer" hacia la dieta de otro paciente.
@@ -395,6 +505,21 @@ export default function DietasPage() {
     setPilaDeshacer([])
     setPilaRehacer([])
     ultimoEstado.current = { dieta: null, recetario: null }
+    // El autoguardado pendiente era del contexto anterior: cancelarlo aquí, que
+    // es la función de "cambiamos de contexto", evita olvidarlo en cada sitio
+    // que la llama.
+    cancelarAutoguardado()
+    autoguardadoPendiente.current = false
+    autoguardadoBloqueado.current = false
+    firmaGuardada.current = null
+    avisadoFalloGuardado.current = false
+    // Soltar también los ids de la ref: el efecto que la refresca conserva los
+    // que capturó el autoguardado, y aquí es justamente cuando dejan de valer
+    // (otro cuadro, o ninguno). Si no, escribiríamos sobre la dieta anterior.
+    ctxGuardado.current.cuadroId = null
+    ctxGuardado.current.dietaId = null
+    setEstadoAutoguardado('inactivo')
+    setGuardadoEn(null)
   }
 
   // Kcal calculada por el sistema (Mifflin × actividad ± objetivo).
@@ -430,6 +555,35 @@ export default function DietasPage() {
 
   // Tabla de comprobación de la dieta generada por IA: una fila por alimento con
   // sus nutrientes del SMAE, el total, la meta del cuadro y la diferencia.
+  /**
+   * Revisa la dieta o el recetario buscando los alérgenos declarados. Es una red
+   * de seguridad por si la IA ignora la restricción: solo detecta lo que está
+   * escrito, así que avisa para revisar, no certifica que sea seguro.
+   */
+  const alergenosDetectados = useMemo(() => {
+    if (!restricciones?.alergias) return []
+    const textos: { texto: string; ubicacion: string }[] = []
+
+    for (const t of dietaIA ?? []) {
+      for (const a of t.alimentos) {
+        if (a.descripcion) textos.push({ texto: a.descripcion, ubicacion: t.nombre })
+      }
+    }
+    for (const t of recetario?.tiempos ?? []) {
+      t.opciones.forEach((o, i) => {
+        const donde = `${t.nombre} · opción ${i + 1}`
+        if (o.nombre) textos.push({ texto: o.nombre, ubicacion: donde })
+        if (o.preparacion) textos.push({ texto: o.preparacion, ubicacion: donde })
+        for (const a of o.alimentos) {
+          if (a.descripcion) textos.push({ texto: a.descripcion, ubicacion: donde })
+        }
+      })
+    }
+
+    return buscarAlergenos(restricciones.alergias, textos)
+  }, [restricciones, dietaIA, recetario])
+
+
   /** Cuántos alimentos están fijados (para avisar de lo que la IA no tocará). */
   const totalFijados = useMemo(
     () => (dietaIA ?? []).reduce((n, t) => n + t.alimentos.filter((a) => a.fijado).length, 0),
@@ -503,6 +657,76 @@ export default function DietasPage() {
     }
     return mapa
   }, [recetario, reparto])
+  /**
+   * Revisa la dieta antes de guardarla. Distingue lo que IMPIDE guardar (datos
+   * incompletos, que dejarían una dieta rota) de lo que solo merece un aviso
+   * (descuadres, que a veces son intencionales).
+   */
+  const validacionGuardado = useMemo(() => {
+    const bloqueos: string[] = []
+    const avisos: string[] = []
+    const contenido = recetario ? recetario.tiempos : dietaIA
+
+    if (!contenido || contenido.length === 0) {
+      bloqueos.push('Todavía no has generado la dieta.')
+      return { bloqueos, avisos }
+    }
+
+    if (recetario) {
+      // Cada tiempo necesita al menos una opción, y cada opción sus datos.
+      for (const t of recetario.tiempos) {
+        if (t.opciones.length === 0) {
+          bloqueos.push(`"${t.nombre}" no tiene ninguna opción.`)
+          continue
+        }
+        t.opciones.forEach((o, i) => {
+          const donde = `${t.nombre} · opción ${i + 1}`
+          if (!o.nombre.trim()) bloqueos.push(`${donde}: falta el nombre del platillo.`)
+          if (o.alimentos.length === 0) bloqueos.push(`${donde}: no tiene ingredientes.`)
+          if (o.alimentos.some((a) => !a.descripcion.trim()))
+            bloqueos.push(`${donde}: hay un ingrediente sin describir.`)
+        })
+      }
+      // Descuadres: se avisan, no bloquean.
+      const conDescuadre = [...(cuadrePorOpcion?.entries() ?? [])].filter(
+        ([, filas]) => filas.length > 0
+      ).length
+      if (conDescuadre > 0) {
+        avisos.push(
+          `${conDescuadre} ${conDescuadre === 1 ? 'opción no cuadra' : 'opciones no cuadran'} con los equivalentes del tiempo.`
+        )
+      }
+    } else if (dietaIA) {
+      for (const t of dietaIA) {
+        if (t.alimentos.length === 0) {
+          bloqueos.push(`"${t.nombre}" quedó sin alimentos.`)
+          continue
+        }
+        if (t.alimentos.some((a) => !a.descripcion.trim()))
+          bloqueos.push(`"${t.nombre}": hay un alimento sin describir.`)
+      }
+      const conDescuadre = [...(cuadrePorTiempo?.entries() ?? [])].filter(
+        ([, filas]) => filas.length > 0
+      ).length
+      if (conDescuadre > 0) {
+        avisos.push(
+          `${conDescuadre} ${conDescuadre === 1 ? 'tiempo no cuadra' : 'tiempos no cuadran'} con lo repartido.`
+        )
+      }
+    }
+
+    // Un alérgeno detectado es lo más grave: bloquea el guardado.
+    if (alergenosDetectados.length > 0) {
+      bloqueos.push(
+        `Se detectó un posible alérgeno (${alergenosDetectados.map((a) => a.declarado).join(', ')}). Corrígelo antes de guardar.`
+      )
+    }
+
+    return { bloqueos, avisos }
+  }, [dietaIA, recetario, cuadrePorTiempo, cuadrePorOpcion, alergenosDetectados])
+
+  /** Solo se puede guardar si no hay nada que lo impida. */
+  const puedeGuardarDieta = validacionGuardado.bloqueos.length === 0
 
   const tablaComprobacion = useMemo(() => {
     if (!dietaIA || !distribucion) return null
@@ -688,6 +912,7 @@ export default function DietasPage() {
     setDietaId(null)
     setEstadoDieta(null)
     limpiarHistorialEdicion()
+    setRestricciones(null)
     setTiempos(TIEMPOS_DEFAULT.map((t) => ({ ...t })))
     setPestana('cuadro')
     setError('')
@@ -701,6 +926,7 @@ export default function DietasPage() {
       if (res.ok) {
         const data = await res.json()
         setConsultas(data.consultas ?? [])
+        setRestricciones(data.restricciones ?? null)
         setForm((f) => ({
           ...f,
           peso: data.peso != null ? String(data.peso) : '',
@@ -788,13 +1014,16 @@ export default function DietasPage() {
       const res = await fetch(`/api/dietas/cuadros/${id}`, { method: 'DELETE' })
       const data = await res.json()
       if (res.ok) {
-        setExito('Cuadro eliminado.')
+        // Toast: el historial se ve desde cualquier pestaña, pero el aviso de la
+        // cabecera solo aparece en "cuadro".
+        toast.exito('Cuadro eliminado')
         // Si borramos el que estaba abierto, limpiamos la pantalla.
         if (cuadroId === id) {
           setCuadroId(null)
           setDietaId(null)
           setEstadoDieta(null)
           limpiarHistorialEdicion()
+          setRestricciones(null)
           setDietaIA(null)
           setRecetario(null)
         }
@@ -821,7 +1050,10 @@ export default function DietasPage() {
       const res = await fetch(`/api/dietas/cuadros/${id}/duplicar`, { method: 'POST' })
       const data = await res.json()
       if (res.ok) {
-        setExito('Cuadro duplicado. Ajusta los datos y genera la dieta.')
+        // Toast: `cargarCuadro` de abajo pisaría un `setExito` al instante.
+        toast.exito('Cuadro duplicado', {
+          descripcion: 'Ajusta los datos y genera la dieta.',
+        })
         await cargarHistorial(paciente.id, 1)
         cargarCuadro(data.cuadro.id)
       } else {
@@ -865,6 +1097,7 @@ export default function DietasPage() {
     setDietaId(null)
     setEstadoDieta(null)
     limpiarHistorialEdicion()
+    setRestricciones(null)
     try {
       const res = await fetch(`/api/dietas/cuadros/${id}`)
       if (!res.ok) {
@@ -931,6 +1164,14 @@ export default function DietasPage() {
       if (preferida && tiemposGuardados) {
         setDietaId(preferida.id)
         setEstadoDieta(preferida.estado)
+        // Esto acaba de salir de la base de datos: fijamos su firma para que
+        // restaurarlo en pantalla no dispare un guardado de lo mismo.
+        firmaGuardada.current = firmaContenido({
+          modo: preferida.modo === 'RECETARIO' ? 'RECETARIO' : 'DIETA',
+          tiempos: tiemposGuardados,
+          indicacionesInicio: preferida.indicaciones_inicio ?? '',
+        })
+        setEstadoAutoguardado('guardado')
         if (preferida.modo === 'RECETARIO') {
           setModoIA('recetario')
           setRecetario({
@@ -944,10 +1185,15 @@ export default function DietasPage() {
         }
         // Si hay dieta, el nutriólogo quiere verla, no el formulario.
         setPestana('ia')
-        setExito(
+        // Toast y no `setExito`: el aviso de la cabecera solo se renderiza en la
+        // pestaña "cuadro", así que aquí (que saltamos a "ia") no se vería.
+        toast.exito(
           preferida.estado === 'FINALIZADA'
-            ? 'Dieta definitiva abierta en solo lectura.'
-            : 'Borrador de dieta cargado.'
+            ? 'Dieta definitiva abierta'
+            : 'Borrador de dieta cargado',
+          preferida.estado === 'FINALIZADA'
+            ? { descripcion: 'Está en solo lectura. Pulsa Editar para cambiarla.' }
+            : undefined
         )
       } else {
         setPestana('cuadro')
@@ -959,6 +1205,10 @@ export default function DietasPage() {
   }
 
   const cambiarPaciente = () => {
+    // Antes de soltar al paciente, conserva lo que estuviera a medio ajustar.
+    // Sin retardo: nos vamos ya. La ref del contexto todavía apunta a este
+    // paciente, así que el guardado va al sitio correcto.
+    void autoguardar()
     setPaciente(null)
     setResultado(null)
     setEquivalentes({})
@@ -971,6 +1221,7 @@ export default function DietasPage() {
     setDietaId(null)
     setEstadoDieta(null)
     limpiarHistorialEdicion()
+    setRestricciones(null)
     setTiempos(TIEMPOS_DEFAULT.map((t) => ({ ...t })))
     setPestana('cuadro')
     setForm({ ...FORM_INICIAL })
@@ -1012,6 +1263,8 @@ export default function DietasPage() {
     }
     setGenerando(true)
     setError('')
+    // Lo que haya generado la IA, para autoguardarlo al terminar.
+    let recienGenerado: ContenidoAutoguardado | null = null
     try {
       const res = await fetch('/api/dietas/generar', {
         method: 'POST',
@@ -1040,11 +1293,17 @@ export default function DietasPage() {
           if (data.recetario?.mensaje) {
             setMensajesIA((m) => [...m, { rol: 'ia', texto: data.recetario.mensaje }])
           }
+          recienGenerado = {
+            modo: 'RECETARIO',
+            tiempos: data.recetario.tiempos,
+            indicacionesInicio: data.recetario.indicacionesInicio,
+          }
         } else {
           setDietaIA(data.dieta.tiempos)
           if (data.dieta.mensaje) {
             setMensajesIA((m) => [...m, { rol: 'ia', texto: data.dieta.mensaje }])
           }
+          recienGenerado = { modo: 'DIETA', tiempos: data.dieta.tiempos }
         }
       } else {
         setError(data.error || 'Error al generar con IA')
@@ -1053,6 +1312,14 @@ export default function DietasPage() {
       setError('Error de conexión al generar')
     } finally {
       setGenerando(false)
+    }
+
+    // Guardar en cuanto la IA termina, sin esperar los 3 segundos: generar es
+    // lo que más trabajo cuesta y lo que más dolía perder. Se pasa el contenido
+    // a mano porque los setState de arriba aún no se han reflejado en la ref.
+    if (recienGenerado) {
+      cancelarAutoguardado()
+      void autoguardar(recienGenerado)
     }
   }
 
@@ -1204,6 +1471,9 @@ export default function DietasPage() {
     } finally {
       setChateando(false)
       setAplicandoCambio(false)
+      // Durante el stream el autoguardado está bloqueado (`chateando`), así que
+      // los cambios que aplicó la IA se guardan aquí, al terminar.
+      programarAutoguardado()
     }
   }
 
@@ -1227,9 +1497,191 @@ export default function DietasPage() {
   // --- Deshacer / rehacer ---
 
   /**
+   * Avisa de que el guardado automático está fallando, UNA sola vez. Sin este
+   * freno, una caída de red lanzaría un aviso cada 3 segundos.
+   */
+  const avisarFalloGuardado = useCallback(() => {
+    if (avisadoFalloGuardado.current) return
+    avisadoFalloGuardado.current = true
+    toast.error('No se pudo guardar la dieta', {
+      descripcion: 'Se reintentará al siguiente cambio. Tu trabajo sigue en pantalla.',
+    })
+  }, [toast])
+
+  /**
+   * Guarda la dieta en segundo plano, sin cerrarla y sin molestar al usuario.
+   *
+   * Lee todo de `ctxGuardado` en lugar de las dependencias del callback: así es
+   * estable (deps vacías) y el retardo no se reprograma en cada tecla. De paso,
+   * al cambiar de paciente la ref todavía apunta al anterior, que es justo el
+   * contexto en el que hay que guardar.
+   *
+   * `contenidoExplicito` sirve para guardar lo que acaba de llegar de la IA sin
+   * esperar a que React lo refleje en el estado.
+   */
+  const autoguardar = useCallback(async (contenidoExplicito?: ContenidoAutoguardado) => {
+    const c = ctxGuardado.current
+    if (!c.paciente) return
+    if (c.soloLectura) return
+    if (autoguardadoBloqueado.current) return
+    // Nunca competir con el guardado manual. La generación y el chat sí pueden
+    // pasar contenido explícito, porque saben lo que están guardando.
+    if (c.finalizando) return
+    if (!contenidoExplicito && (c.generando || c.chateando)) return
+
+    const cont: ContenidoAutoguardado | null =
+      contenidoExplicito ??
+      (c.recetario
+        ? {
+            modo: 'RECETARIO',
+            tiempos: c.recetario.tiempos,
+            indicacionesInicio: c.recetario.indicacionesInicio,
+          }
+        : c.dietaIA
+          ? { modo: 'DIETA', tiempos: c.dietaIA }
+          : null)
+    // El endpoint exige al menos un tiempo; sin contenido no hay nada que salvar.
+    if (!cont || cont.tiempos.length === 0) return
+
+    const firma = firmaContenido(cont)
+    if (firma === firmaGuardada.current) return
+
+    // Una sola petición en vuelo. Si llegan más cambios se encolan: con dos POST
+    // simultáneos y sin `cuadro_id` todavía, se crearían dos cuadros duplicados.
+    // Abortar no serviría, porque el servidor ya habría escrito.
+    if (autoguardadoEnCurso.current) {
+      autoguardadoPendiente.current = true
+      return
+    }
+    autoguardadoEnCurso.current = true
+    setEstadoAutoguardado('guardando')
+
+    // Si no hay cuadro todavía, este guardado lo crea: hay que refrescar el
+    // historial para que aparezca.
+    const creaCuadro = !c.cuadroId
+
+    try {
+      const res = await fetch('/api/dietas/dietas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cuadro_id: c.cuadroId ?? undefined,
+          dieta_id: c.dietaId ?? undefined,
+          cuadro: c.cuadroId ? undefined : c.payloadCuadro,
+          modo: cont.modo,
+          contenido: { tiempos: cont.tiempos },
+          indicaciones_inicio: cont.indicacionesInicio || undefined,
+          finalizar: false,
+        }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        // Quedarnos con los ids es lo que convierte esto en un upsert: sin ellos
+        // el siguiente guardado volvería a crear cuadro y dieta desde cero.
+        if (data.cuadro_id) {
+          setCuadroId(data.cuadro_id)
+          // Espejo síncrono: un cambio en este mismo tick usaría todavía
+          // `cuadroId === null` y duplicaría el cuadro.
+          ctxGuardado.current.cuadroId = data.cuadro_id
+        }
+        if (data.dieta?.id) {
+          setDietaId(data.dieta.id)
+          ctxGuardado.current.dietaId = data.dieta.id
+        }
+        setEstadoDieta((e) => e ?? 'BORRADOR')
+        firmaGuardada.current = firma
+        setGuardadoEn(new Date())
+        setEstadoAutoguardado('guardado')
+        // Si veníamos de un fallo, confirmar que se recuperó: el nutriólogo se
+        // quedó con el aviso de que no se guardaba.
+        if (avisadoFalloGuardado.current) {
+          avisadoFalloGuardado.current = false
+          toast.exito('Ya se guardó la dieta', {
+            descripcion: 'Se recuperó la conexión.',
+          })
+        }
+        if (creaCuadro && c.paciente) void cargarHistorial(c.paciente.id, 1)
+      } else if (res.status === 409) {
+        // El cuadro ya tiene una versión definitiva de este modo: el borrador en
+        // pantalla no debe pisarla. Dejamos de intentarlo, en silencio.
+        autoguardadoBloqueado.current = true
+        setEstadoAutoguardado('inactivo')
+      } else {
+        setEstadoAutoguardado('error')
+        avisarFalloGuardado()
+      }
+    } catch {
+      // El guardado automático no interrumpe al usuario, pero un fallo sí debe
+      // verse: si no, creería que su trabajo está a salvo cuando no lo está.
+      setEstadoAutoguardado('error')
+      avisarFalloGuardado()
+    } finally {
+      autoguardadoEnCurso.current = false
+      if (autoguardadoPendiente.current) {
+        autoguardadoPendiente.current = false
+        // Reintento con lo más fresco de la ref. La firma corta el bucle si el
+        // contenido ya coincide con lo persistido.
+        void autoguardar()
+      }
+    }
+    // `avisarFalloGuardado` es estable (depende solo del toast, memorizado), así
+    // que no envejece el closure. El resto se lee de `ctxGuardado`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [avisarFalloGuardado])
+
+  /** Programa un autoguardado tras un momento de calma. */
+  const programarAutoguardado = useCallback(() => {
+    if (temporizadorAutoguardado.current) clearTimeout(temporizadorAutoguardado.current)
+    setEstadoAutoguardado((e) => (e === 'guardando' ? e : 'pendiente'))
+    temporizadorAutoguardado.current = setTimeout(() => {
+      temporizadorAutoguardado.current = null
+      void autoguardar()
+    }, RETRASO_AUTOGUARDADO)
+  }, [autoguardar])
+
+  /** Cancela el autoguardado pendiente (cambio de contexto o guardado manual). */
+  const cancelarAutoguardado = useCallback(() => {
+    if (temporizadorAutoguardado.current) {
+      clearTimeout(temporizadorAutoguardado.current)
+      temporizadorAutoguardado.current = null
+    }
+  }, [])
+
+  /**
+   * Autoguardado: cualquier cambio en la dieta o el recetario programa un
+   * guardado en segundo plano. Observarlo aquí (y no en cada handler) hace que
+   * ninguna forma de editar se quede sin guardar, ni las que se añadan después.
+   *
+   * ORDEN IMPORTANTE: va ANTES del observador de deshacer porque ese consume
+   * `restaurando.current` (lo pone en false). React ejecuta los efectos en orden
+   * de declaración, así que si se moviera detrás, el flag ya valdría false y
+   * deshacer dispararía guardados. Si aun así se reordena, la firma de contenido
+   * de `autoguardar` lo amortigua: como mucho un POST redundante, nunca un
+   * duplicado.
+   */
+  useEffect(() => {
+    if (soloLectura) return
+    // Deshacer/rehacer no es una edición nueva: no hay nada que salvar todavía.
+    if (restaurando.current) return
+    if (!dietaIA && !recetario) return
+    programarAutoguardado()
+  }, [dietaIA, recetario, soloLectura, programarAutoguardado])
+
+  // Al desmontar, no dejar un temporizador suelto.
+  useEffect(() => {
+    return () => {
+      if (temporizadorAutoguardado.current) clearTimeout(temporizadorAutoguardado.current)
+    }
+  }, [])
+
+  /**
    * Observa la dieta y el recetario: cuando cambian por una edición del usuario
    * o de la IA, apila el estado ANTERIOR. Hacerlo aquí (y no en cada handler)
    * garantiza que ninguna forma de editar se quede fuera del historial.
+   *
+   * Ver la nota de orden en el efecto de autoguardado de arriba: este consume
+   * `restaurando.current`, así que debe seguir yendo después.
    */
   useEffect(() => {
     const previo = ultimoEstado.current
@@ -1316,6 +1768,95 @@ export default function DietasPage() {
     window.addEventListener('keydown', enTeclado)
     return () => window.removeEventListener('keydown', enTeclado)
   }, [deshacer, rehacer])
+
+  // --- Alternativas para un alimento concreto ---
+
+  /**
+   * Pide a la IA otras formas de cubrir ese mismo alimento, sin tocar el resto
+   * de la dieta. Si el panel ya estaba abierto, lo cierra.
+   */
+  const pedirAlternativas = async (
+    clave: string,
+    alimento: AlimentoUI,
+    contexto: string
+  ) => {
+    if (soloLectura) return
+    if (alternativasDe === clave) {
+      setAlternativasDe(null)
+      return
+    }
+    setAlternativasDe(clave)
+    setAlternativas([])
+    setErrorAlternativas('')
+    setCargandoAlternativas(true)
+    try {
+      const res = await fetch('/api/dietas/alternativas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          grupo: alimento.grupo,
+          equivalentes: alimento.equivalentes,
+          descripcion: alimento.descripcion || NOMBRE_GRUPO[alimento.grupo],
+          contexto,
+          paciente_id: paciente?.id,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setAlternativas(data.alternativas ?? [])
+        if ((data.alternativas ?? []).length === 0) {
+          setErrorAlternativas('La IA no encontró alternativas para este alimento.')
+        }
+      } else {
+        setErrorAlternativas(data.error || 'No se pudieron obtener alternativas')
+      }
+    } catch {
+      setErrorAlternativas('Error de conexión')
+    } finally {
+      setCargandoAlternativas(false)
+    }
+  }
+
+  /** Aplica una alternativa a un alimento de la dieta precisa. */
+  const aplicarAlternativa = (
+    tiempoId: string,
+    idx: number,
+    alt: { descripcion: string; calculo?: string }
+  ) => {
+    setDietaIA((d) =>
+      d
+        ? d.map((t) =>
+            t.id === tiempoId
+              ? {
+                  ...t,
+                  alimentos: t.alimentos.map((a, i) =>
+                    i === idx
+                      ? { ...a, descripcion: alt.descripcion, calculo: alt.calculo }
+                      : a
+                  ),
+                }
+              : t
+          )
+        : d
+    )
+    setAlternativasDe(null)
+    // Resalta el cambio, igual que cuando lo hace el chat.
+    resaltarCambios([`${tiempoId}|${idx}`])
+  }
+
+  /** Aplica una alternativa a un ingrediente del recetario. */
+  const aplicarAlternativaRecetario = (
+    tiempoId: string,
+    idxOpcion: number,
+    idxAlimento: number,
+    alt: { descripcion: string; calculo?: string }
+  ) => {
+    editarIngrediente(tiempoId, idxOpcion, idxAlimento, {
+      descripcion: alt.descripcion,
+      calculo: alt.calculo,
+    })
+    setAlternativasDe(null)
+  }
 
   /** Fija o libera un alimento para que la IA no lo modifique. */
   const alternarFijado = (tiempoId: string, idx: number) => {
@@ -1591,6 +2132,31 @@ export default function DietasPage() {
     guardar,
   })
 
+  // Refresca el contexto del autoguardado. Sin array de dependencias: se
+  // actualiza en cada render, que es lo que elimina de raíz los closures
+  // obsoletos. Vive aquí abajo porque necesita `construirPayload`.
+  useEffect(() => {
+    const previo = ctxGuardado.current
+    // Los ids que capturó el autoguardado mandan sobre el estado hasta que React
+    // lo refleje: si aquí volviéramos a poner el `cuadroId` viejo (null), el
+    // siguiente guardado crearía un cuadro duplicado. Al cambiar de paciente el
+    // estado sí gana, porque entonces `paciente` cambia.
+    const mismoPaciente = previo.paciente?.id === paciente?.id
+    ctxGuardado.current = {
+      paciente,
+      cuadroId: cuadroId ?? (mismoPaciente ? previo.cuadroId : null),
+      dietaId: dietaId ?? (mismoPaciente ? previo.dietaId : null),
+      soloLectura,
+      recetario,
+      dietaIA,
+      generando,
+      chateando,
+      finalizando,
+      // `construirPayload` usa `paciente!`, así que solo con paciente elegido.
+      payloadCuadro: paciente ? construirPayload(false) : null,
+    }
+  })
+
   const requiereMlg = FORMULAS_MLG.includes(form.formula)
 
   const calcular = async () => {
@@ -1690,18 +2256,29 @@ export default function DietasPage() {
       setError('Primero genera la dieta o el recetario.')
       return
     }
+    // Segunda barrera: los botones ya están deshabilitados, pero si algo cambió
+    // entre el clic y el envío, no queremos guardar una dieta incompleta.
+    if (finalizar && validacionGuardado.bloqueos.length > 0) {
+      setError(validacionGuardado.bloqueos[0] ?? 'La dieta tiene datos incompletos.')
+      setConfirmandoFinalizar(false)
+      return
+    }
     setError('')
     setExito('')
+    // Este guardado manda: que no se cruce con uno automático a medio camino.
+    cancelarAutoguardado()
     setFinalizando(true)
+    const modo = recetario ? ('RECETARIO' as const) : ('DIETA' as const)
     try {
       const res = await fetch('/api/dietas/dietas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           cuadro_id: cuadroId ?? undefined,
+          dieta_id: dietaId ?? undefined,
           // Si el cuadro no está guardado, mandamos sus datos para crearlo.
           cuadro: cuadroId ? undefined : construirPayload(false),
-          modo: recetario ? 'RECETARIO' : 'DIETA',
+          modo,
           contenido: { tiempos: contenidoTiempos },
           indicaciones_inicio: recetario?.indicacionesInicio || undefined,
           finalizar,
@@ -1712,11 +2289,24 @@ export default function DietasPage() {
         setCuadroId(data.cuadro_id ?? cuadroId)
         setDietaId(data.dieta?.id ?? null)
         setEstadoDieta(data.dieta?.estado ?? 'BORRADOR')
-        setExito(
-          finalizar
-            ? 'Dieta finalizada. Ya no se puede editar; para cambiarla crea una versión nueva.'
-            : 'Borrador guardado.'
-        )
+        // Lo que acabamos de mandar ya está persistido: que el autoguardado no
+        // lo repita, y que el indicador refleje este guardado.
+        firmaGuardada.current = firmaContenido({
+          modo,
+          tiempos: contenidoTiempos,
+          indicacionesInicio: recetario?.indicacionesInicio ?? '',
+        })
+        setGuardadoEn(new Date())
+        setEstadoAutoguardado('guardado')
+        // Toast: la pestaña de IA no renderiza el aviso de éxito, así que el
+        // guardado más importante de la sección pasaba desapercibido.
+        if (finalizar) {
+          toast.exito('Dieta guardada', {
+            descripcion: 'Es la versión definitiva. Para cambiarla, pulsa Editar.',
+          })
+        } else {
+          toast.exito('Progreso guardado')
+        }
         cargarHistorial(paciente.id)
       } else {
         setError(data.error || 'Error al guardar la dieta')
@@ -1729,6 +2319,7 @@ export default function DietasPage() {
     }
   }
 
+
   /** Duplica la dieta finalizada en pantalla para trabajar una versión nueva. */
   const crearVersionNueva = async () => {
     if (!dietaId) return
@@ -1736,16 +2327,23 @@ export default function DietasPage() {
     setExito('')
     setFinalizando(true)
     try {
-      const res = await fetch(`/api/dietas/dietas/${dietaId}/duplicar`, { method: 'POST' })
+      const res = await fetch(`/api/dietas/dietas/${dietaId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion: 'reabrir' }),
+      })
       const data = await res.json()
       if (res.ok) {
-        setDietaId(data.dieta.id)
         setEstadoDieta('BORRADOR')
-        setMensajesIA([])
-        setExito('Versión nueva en borrador. Ajústala y vuelve a finalizarla.')
+        // Vuelve a ser editable: el autoguardado se reactiva (si se había
+        // bloqueado por un 409 contra la versión que acabamos de reabrir).
+        autoguardadoBloqueado.current = false
+        toast.info('Ya puedes editar la dieta', {
+          descripcion: 'Se guarda sola mientras trabajas.',
+        })
         if (paciente) cargarHistorial(paciente.id)
       } else {
-        setError(data.error || 'No se pudo crear la versión nueva')
+        setError(data.error || 'No se pudo abrir la dieta para editar')
       }
     } catch {
       setError('Error de conexión')
@@ -1844,6 +2442,43 @@ export default function DietasPage() {
             <div className={styles.pacienteSelTexto}>
               <span className={styles.pacienteSelNombre}>{paciente.nombre}</span>
               <span className={styles.pacienteSelEmail}>{paciente.email}</span>
+
+              {/* Restricciones del paciente: van con él, no en una franja aparte */}
+              {restricciones &&
+                (restricciones.alergias ||
+                  restricciones.intolerancias ||
+                  restricciones.preferencias ||
+                  restricciones.disgustos) && (
+                  <div className={styles.restriccionesChips}>
+                    {restricciones.alergias && (
+                      <span
+                        className={`${styles.restriccionChip} ${styles.restriccionChipAlergia}`}
+                        title="Alergias: la IA nunca las propondrá"
+                      >
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden>
+                          <path strokeLinecap="round" d="M12 9v4M12 17v.5" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M10.3 3.9L2.4 17.1A2 2 0 004.1 20h15.8a2 2 0 001.7-2.9L13.7 3.9a2 2 0 00-3.4 0z" />
+                        </svg>
+                        {restricciones.alergias}
+                      </span>
+                    )}
+                    {restricciones.intolerancias && (
+                      <span className={styles.restriccionChip} title="Intolerancias">
+                        {restricciones.intolerancias}
+                      </span>
+                    )}
+                    {restricciones.preferencias && (
+                      <span className={styles.restriccionChip} title="Preferencias">
+                        {restricciones.preferencias}
+                      </span>
+                    )}
+                    {restricciones.disgustos && (
+                      <span className={styles.restriccionChip} title="No le gustan">
+                        {restricciones.disgustos}
+                      </span>
+                    )}
+                  </div>
+                )}
             </div>
           </div>
 
@@ -2055,7 +2690,7 @@ export default function DietasPage() {
                   {/* Estado + abrir */}
                   <div className={styles.cuadroCardPie}>
                     {tieneFinalizada ? (
-                      <span className={styles.chipFinalizada}>✓ Definitiva</span>
+                      <span className={styles.chipFinalizada}>✓ Guardada</span>
                     ) : dietaVer ? (
                       <span className={styles.chipBorrador}>Borrador</span>
                     ) : (
@@ -2111,12 +2746,47 @@ export default function DietasPage() {
         </div>
       )}
 
-      {/* Aviso global: la dieta abierta es definitiva, todo queda en solo lectura */}
+      {/* Alérgenos encontrados en la dieta ya generada: red de seguridad */}
+      {alergenosDetectados.length > 0 && (
+        <div className={styles.alergenoAlerta}>
+          <div className={styles.alergenoTitulo}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
+              <path strokeLinecap="round" d="M12 9v4M12 17v.5" />
+              <circle cx="12" cy="12" r="9" />
+            </svg>
+            Revisa: puede haber un alérgeno en la dieta
+          </div>
+          <ul className={styles.alergenoLista}>
+            {alergenosDetectados.map((h, i) => (
+              <li key={i}>
+                <strong>{h.declarado}</strong> — «{h.texto}» en {h.ubicacion}
+              </li>
+            ))}
+          </ul>
+          <p className={styles.alergenoNota}>
+            Comprobación automática sobre el texto de la dieta: puede dar falsos positivos y no
+            detecta ingredientes que no se nombran. Revísalo tú.
+          </p>
+        </div>
+      )}
+
+      {/* Dieta guardada: el cuadro y la distribución quedan en solo lectura */}
       {paciente && soloLectura && pestana !== 'ia' && (
         <div className={styles.avisoFinalizada}>
-          <span>
-            Esta dieta es la <strong>versión definitiva</strong>: el cuadro y la distribución no
-            pueden modificarse.
+          <svg
+            className={styles.avisoFinalizadaIcono}
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            aria-hidden
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M20 6L9 17l-5-5" />
+          </svg>
+          <span className={styles.avisoFinalizadaTexto}>
+            Dieta guardada · el cuadro no se puede modificar
           </span>
           <Button variant="secondary" onClick={() => setPestana('ia')}>
             Ver la dieta
@@ -2735,8 +3405,15 @@ export default function DietasPage() {
               </div>
 
               <div className={styles.acciones}>
-                <Button onClick={intentarGuardar} disabled={guardando || soloLectura}>
-                  {guardando ? 'Guardando…' : 'Guardar dieta completa'}
+                <span className={styles.accionAyuda}>
+                  Guarda los cálculos y el reparto. La dieta se guarda aparte, en la pestaña de IA.
+                </span>
+                <Button
+                  variant="secondary"
+                  onClick={intentarGuardar}
+                  disabled={guardando || soloLectura}
+                >
+                  {guardando ? 'Guardando…' : 'Guardar cuadro'}
                 </Button>
               </div>
               {error && <p className={styles.error}>{error}</p>}
@@ -2757,13 +3434,34 @@ export default function DietasPage() {
                   <h2 className={styles.cardTitle}>
                     {modoIA === 'recetario' ? 'Recetario de opciones' : 'Dieta propuesta por IA'}
                   </h2>
-                  {estadoDieta && (
+                  {indicadorGuardado && (
                     <span
-                      className={
-                        soloLectura ? styles.badgeFinalizada : styles.badgeBorrador
-                      }
+                      className={`${styles.badgeGuardado} ${
+                        TONO_GUARDADO[indicadorGuardado.tono]
+                      }`}
+                      // El texto cambia solo; que un lector de pantalla lo anuncie
+                      // sin interrumpir lo que el nutriólogo esté haciendo.
+                      role="status"
+                      aria-live="polite"
                     >
-                      {soloLectura ? '✓ Versión definitiva' : 'Borrador'}
+                      {indicadorGuardado.tono === 'trabajando' && (
+                        <span className={styles.puntoGuardando} aria-hidden />
+                      )}
+                      {(indicadorGuardado.tono === 'ok' ||
+                        indicadorGuardado.tono === 'definitiva') && (
+                        <svg
+                          width="11"
+                          height="11"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          aria-hidden
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M20 6L9 17l-5-5" />
+                        </svg>
+                      )}
+                      {indicadorGuardado.texto}
                     </span>
                   )}
                 </div>
@@ -2827,7 +3525,7 @@ export default function DietasPage() {
                   <Button
                     onClick={() => generarDietaIA()}
                     disabled={generando || soloLectura}
-                    variant={modoIA === 'recetario' ? 'secondary' : 'primary'}
+                    variant="secondary"
                   >
                     {generando
                       ? 'Generando…'
@@ -2835,20 +3533,46 @@ export default function DietasPage() {
                         ? 'Regenerar'
                         : 'Generar'}
                   </Button>
+
+                  {/* Guardar aquí arriba: con un recetario largo, tenerlo solo
+                      al final obliga a recorrer toda la dieta para llegar. */}
+                  {(dietaIA || recetario) && !soloLectura && (
+                    <Button
+                      onClick={() => setConfirmandoFinalizar(true)}
+                      disabled={generando || chateando || finalizando || !puedeGuardarDieta}
+                      title={
+                        puedeGuardarDieta
+                          ? 'Guarda el cuadro y la dieta juntos'
+                          : validacionGuardado.bloqueos[0] ?? 'Corrige lo indicado para guardar'
+                      }
+                    >
+                      {finalizando ? 'Guardando…' : 'Guardar dieta'}
+                    </Button>
+                  )}
                 </div>
               </div>
 
               {/* Confirmación breve de que se deshizo/rehizo */}
               {avisoDeshacer && <div className={styles.avisoFlotante}>{avisoDeshacer}</div>}
 
-              {/* Aviso de solo lectura cuando la dieta ya es definitiva */}
+              {/* Dieta ya guardada: se ve, y para cambiarla se pulsa Editar */}
               {soloLectura && (
                 <div className={styles.avisoFinalizada}>
-                  <span>
-                    Esta dieta es la <strong>versión definitiva</strong> y no puede editarse.
-                  </span>
+                  <svg
+                    className={styles.avisoFinalizadaIcono}
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    aria-hidden
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20 6L9 17l-5-5" />
+                  </svg>
+                  <span className={styles.avisoFinalizadaTexto}>Dieta guardada</span>
                   <Button variant="secondary" onClick={crearVersionNueva} disabled={finalizando}>
-                    {finalizando ? 'Creando…' : 'Crear versión nueva'}
+                    {finalizando ? 'Abriendo…' : 'Editar'}
                   </Button>
                 </div>
               )}
@@ -3076,8 +3800,8 @@ export default function DietasPage() {
                                 {/* Ingredientes con sus controles */}
                                 <div className={styles.opcionIngredientes}>
                                   {o.alimentos.map((a, j) => (
+                                    <div key={j}>
                                     <div
-                                      key={j}
                                       className={`${styles.iaAlimento} ${a.fijado ? styles.alimentoFijado : ''}`}
                                       style={
                                         {
@@ -3129,6 +3853,33 @@ export default function DietasPage() {
                                       )}
                                       {!soloLectura && (
                                         <span className={styles.alimentoAcciones}>
+                                          {/* Alternativas para este ingrediente */}
+                                          <button
+                                            className={`${styles.accionBtn} ${styles.accionBtnIA} ${
+                                              alternativasDe === `${t.id}|${i}|${j}`
+                                                ? styles.accionBtnActiva
+                                                : ''
+                                            }`}
+                                            onClick={() =>
+                                              pedirAlternativas(
+                                                `${t.id}|${i}|${j}`,
+                                                a,
+                                                `${t.nombre} · ${o.nombre || `opción ${i + 1}`}`
+                                              )
+                                            }
+                                            disabled={a.fijado || cargandoAlternativas}
+                                            title={
+                                              a.fijado
+                                                ? 'Libera el ingrediente para poder cambiarlo'
+                                                : 'Ver otras opciones equivalentes'
+                                            }
+                                            aria-label="Ver alternativas"
+                                          >
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                                              <path d="M12 2l1.9 5.5L19.5 9l-5.6 1.5L12 16l-1.9-5.5L4.5 9l5.6-1.5L12 2z" />
+                                              <path d="M19 14l.8 2.3L22 17l-2.2.7L19 20l-.8-2.3L16 17l2.2-.7L19 14z" opacity="0.7" />
+                                            </svg>
+                                          </button>
                                           <button
                                             className={`${styles.accionBtn} ${a.fijado ? styles.accionBtnActiva : ''}`}
                                             onClick={() =>
@@ -3165,6 +3916,20 @@ export default function DietasPage() {
                                           </button>
                                         </span>
                                       )}
+                                    </div>
+
+                                    {/* Alternativas para este ingrediente */}
+                                    {alternativasDe === `${t.id}|${i}|${j}` && (
+                                      <PanelAlternativas
+                                        cargando={cargandoAlternativas}
+                                        error={errorAlternativas}
+                                        alternativas={alternativas}
+                                        onElegir={(alt) =>
+                                          aplicarAlternativaRecetario(t.id, i, j, alt)
+                                        }
+                                        onCerrar={() => setAlternativasDe(null)}
+                                      />
+                                    )}
                                     </div>
                                   ))}
 
@@ -3384,8 +4149,8 @@ export default function DietasPage() {
                           )
                         })()}
                         {t.alimentos.map((a, i) => (
+                          <div key={i}>
                           <div
-                            key={i}
                             className={`${styles.iaAlimento} ${
                               elementosCambiados.has(`${t.id}|${i}`) ? styles.recienEditado : ''
                             } ${a.fijado ? styles.alimentoFijado : ''} ${
@@ -3433,6 +4198,25 @@ export default function DietasPage() {
                             )}
                             {!soloLectura && (
                               <span className={styles.alimentoAcciones}>
+                                {/* Alternativas para ESTE alimento, sin tocar el resto */}
+                                <button
+                                  className={`${styles.accionBtn} ${styles.accionBtnIA} ${
+                                    alternativasDe === `${t.id}|${i}` ? styles.accionBtnActiva : ''
+                                  }`}
+                                  onClick={() => pedirAlternativas(`${t.id}|${i}`, a, t.nombre)}
+                                  disabled={a.fijado || cargandoAlternativas}
+                                  title={
+                                    a.fijado
+                                      ? 'Libera el alimento para poder cambiarlo'
+                                      : 'Ver otras opciones equivalentes'
+                                  }
+                                  aria-label="Ver alternativas"
+                                >
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2l1.9 5.5L19.5 9l-5.6 1.5L12 16l-1.9-5.5L4.5 9l5.6-1.5L12 2z" />
+                                    <path d="M19 14l.8 2.3L22 17l-2.2.7L19 20l-.8-2.3L16 17l2.2-.7L19 14z" opacity="0.7" />
+                                  </svg>
+                                </button>
                                 <button
                                   className={`${styles.accionBtn} ${a.fijado ? styles.accionBtnActiva : ''}`}
                                   onClick={() => alternarFijado(t.id, i)}
@@ -3482,6 +4266,18 @@ export default function DietasPage() {
                                   </svg>
                                 </button>
                               </span>
+                            )}
+                            </div>
+
+                            {/* Alternativas para este alimento */}
+                            {alternativasDe === `${t.id}|${i}` && (
+                              <PanelAlternativas
+                                cargando={cargandoAlternativas}
+                                error={errorAlternativas}
+                                alternativas={alternativas}
+                                onElegir={(alt) => aplicarAlternativa(t.id, i, alt)}
+                                onCerrar={() => setAlternativasDe(null)}
+                              />
                             )}
                           </div>
                         ))}
@@ -3672,35 +4468,58 @@ export default function DietasPage() {
                 </div>
               )}
 
-              {/* Guardar / cerrar la dieta, aquí mismo donde se termina de trabajar */}
-              {(dietaIA || recetario) && !soloLectura && (
-                <div className={styles.iaAcciones}>
-                  <Button
-                    variant="secondary"
-                    onClick={() => guardarDietaGenerada(false)}
-                    disabled={generando || chateando || finalizando}
-                  >
-                    {finalizando ? 'Guardando…' : 'Guardar borrador'}
-                  </Button>
-                  <Button
-                    onClick={() => setConfirmandoFinalizar(true)}
-                    disabled={generando || chateando || finalizando}
-                    title="Cierra la dieta como versión definitiva"
-                  >
-                    Finalizar dieta
-                  </Button>
+              {/* Qué falta o qué revisar antes de guardar. El botón vive arriba,
+                  junto a Regenerar, para no tener que recorrer toda la dieta. */}
+              {(dietaIA || recetario) &&
+                !soloLectura &&
+                (validacionGuardado.bloqueos.length > 0 ||
+                  validacionGuardado.avisos.length > 0) && (
+                <div className={styles.guardarZona}>
+                  {/* Lo que impide guardar */}
+                  {validacionGuardado.bloqueos.length > 0 && (
+                    <div className={styles.bloqueoLista}>
+                      <span className={styles.bloqueoTitulo}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
+                          <circle cx="12" cy="12" r="9" />
+                          <path strokeLinecap="round" d="M12 8v5M12 16.5v.5" />
+                        </svg>
+                        Falta esto para poder guardar
+                      </span>
+                      <ul>
+                        {validacionGuardado.bloqueos.slice(0, 4).map((b, i) => (
+                          <li key={i}>{b}</li>
+                        ))}
+                        {validacionGuardado.bloqueos.length > 4 && (
+                          <li>y {validacionGuardado.bloqueos.length - 4} más…</li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Lo que solo merece un aviso */}
+                  {puedeGuardarDieta && validacionGuardado.avisos.length > 0 && (
+                    <div className={styles.avisoLista}>
+                      {validacionGuardado.avisos.map((a, i) => (
+                        <span key={i}>⚠ {a}</span>
+                      ))}
+                    </div>
+                  )}
+
                 </div>
               )}
 
               {error && <p className={styles.error}>{error}</p>}
             </div>
 
-            {/* Columna derecha: chat copiloto */}
-            <div className={styles.card}>
+            {/* Columna derecha: chat copiloto. El envoltorio ocupa toda la altura
+                de la fila y la tarjeta se ancla dentro, para que acompañe al
+                scroll en lugar de quedarse arriba con dietas largas. */}
+            <div className={styles.chatColumna}>
+            <div className={`${styles.card} ${styles.chatPegajoso}`}>
               <h2 className={styles.cardTitle}>Ajustar con la IA</h2>
               <p className={styles.smaeAyuda}>
                 {soloLectura
-                  ? 'Esta dieta está finalizada. Crea una versión nueva para poder ajustarla con la IA.'
+                  ? 'Esta dieta está guardada. Pulsa Editar para poder ajustarla con la IA.'
                   : 'Conversa: pregunta “¿por qué esa porción?”, o pide “cambia la fruta”, “no uses lácteos”, “hazlo más económico”. La IA responde y ajusta la dieta cuando aplica.'}
               </p>
 
@@ -3718,7 +4537,7 @@ export default function DietasPage() {
                 {mensajesIA.length === 0 && !chateando ? (
                   <p className={styles.chatVacio}>
                     {soloLectura
-                      ? 'Dieta finalizada: el chat está desactivado.'
+                      ? 'Dieta guardada: pulsa Editar para ajustarla.'
                       : (modoIA === 'recetario' ? recetario : dietaIA)
                         ? `Escríbele a la IA para afinar ${modoIA === 'recetario' ? 'el recetario' : 'la dieta'}.`
                         : `Genera ${modoIA === 'recetario' ? 'un recetario' : 'una dieta'} primero para poder conversar.`}
@@ -3778,7 +4597,7 @@ export default function DietasPage() {
                   onChange={(e) => setInputChat(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && enviarMensajeChat()}
                   placeholder={
-                    soloLectura ? 'Dieta finalizada (solo lectura)' : 'Escribe tu mensaje…'
+                    soloLectura ? 'Dieta guardada (pulsa Editar)' : 'Escribe tu mensaje…'
                   }
                   disabled={
                     chateando ||
@@ -3801,6 +4620,7 @@ export default function DietasPage() {
                 </Button>
               </div>
             </div>
+            </div>
           </div>
         </div>
       )}
@@ -3810,11 +4630,11 @@ export default function DietasPage() {
         createPortal(
           <div className={styles.modalOverlay} onClick={() => setConfirmando(false)}>
             <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-              <h3 className={styles.modalTitulo}>Guardar dieta</h3>
+              <h3 className={styles.modalTitulo}>Guardar cuadro</h3>
               <p className={styles.modalTexto}>
-                Se guardará como una <strong>versión nueva</strong> (no reemplaza las anteriores).
-                Incluye el cuadro dietosintético, los equivalentes
-                {tieneDistribucion ? ' y la distribución en tiempos de comida.' : '.'}
+                Se guardan los cálculos, los equivalentes
+                {tieneDistribucion ? ' y su reparto en tiempos de comida' : ''}, sin la dieta. No
+                reemplaza los cuadros anteriores del paciente.
               </p>
               {!tieneDistribucion && (
                 <p className={styles.modalAviso}>
@@ -3869,29 +4689,27 @@ export default function DietasPage() {
         createPortal(
           <div className={styles.modalOverlay} onClick={() => setConfirmandoFinalizar(false)}>
             <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-              <h3 className={styles.modalTitulo}>Finalizar dieta</h3>
+              <h3 className={styles.modalTitulo}>Guardar dieta</h3>
               <p className={styles.modalTexto}>
-                Se guardará como <strong>versión definitiva</strong>. Ya no podrás editarla ni
-                ajustarla con la IA; para cambiarla tendrás que crear una versión nueva.
+                Se guardan el <strong>cuadro dietosintético</strong> y la dieta juntos. Quedará
+                como solo lectura; si necesitas cambiar algo después, pulsa{' '}
+                <strong>Editar</strong>.
               </p>
-              {tablaComprobacion &&
-                !(
-                  Math.abs(tablaComprobacion.diferencia.kcal) <= 30 &&
-                  Math.abs(tablaComprobacion.diferencia.hco) <= 5 &&
-                  Math.abs(tablaComprobacion.diferencia.proteina) <= 5 &&
-                  Math.abs(tablaComprobacion.diferencia.lipidos) <= 5
-                ) && (
-                  <p className={styles.modalAviso}>
-                    ⚠ La dieta no cuadra del todo con la meta del cuadro. Revísala antes de
-                    finalizarla.
-                  </p>
-                )}
+              {validacionGuardado.avisos.length > 0 && (
+                <p className={styles.modalAviso}>
+                  ⚠ {validacionGuardado.avisos.join(' ')} Puedes guardar igualmente si es
+                  intencional.
+                </p>
+              )}
               <div className={styles.modalAcciones}>
                 <Button variant="secondary" onClick={() => setConfirmandoFinalizar(false)}>
                   Cancelar
                 </Button>
-                <Button onClick={() => guardarDietaGenerada(true)} disabled={finalizando}>
-                  {finalizando ? 'Finalizando…' : 'Finalizar dieta'}
+                <Button
+                  onClick={() => guardarDietaGenerada(true)}
+                  disabled={finalizando || !puedeGuardarDieta}
+                >
+                  {finalizando ? 'Guardando…' : 'Guardar dieta'}
                 </Button>
               </div>
             </div>

@@ -98,12 +98,26 @@ export interface TiempoConEquivalentes {
   equivalentes: Equivalentes
 }
 
+/**
+ * Restricciones alimentarias del paciente. Se pasan aparte del perfil del
+ * nutriólogo porque son del paciente y tienen prioridad sobre cualquier
+ * preferencia de estilo.
+ */
+export interface RestriccionesPaciente {
+  alergias?: string | null
+  intolerancias?: string | null
+  preferencias?: string | null
+  disgustos?: string | null
+}
+
 /** Entrada para generar una dieta. */
 export interface EntradaGeneracion {
   kcalMeta: number
   macros: { proteina_g: number; grasa_g: number; carbohidrato_g: number }
   tiempos: TiempoConEquivalentes[]
   perfil: PerfilEstilo
+  // Alergias y demás restricciones del paciente: mandan sobre todo lo demás.
+  restricciones?: RestriccionesPaciente
   // Ejemplos de dietas pasadas del nutriólogo (few-shot), como texto ya formateado.
   ejemplos?: string[]
   // Ajustes del nutriólogo desde el chat (ej. "no uses lácteos hoy").
@@ -181,15 +195,54 @@ const NOMBRE_GRUPO: Record<GrupoSMAEId, string> = Object.fromEntries(
 /**
  * Construye el prompt del sistema con el perfil del nutriólogo.
  */
-function construirPromptSistema(perfil: PerfilEstilo, ejemplos?: string[]): string {
+function construirPromptSistema(
+  perfil: PerfilEstilo,
+  ejemplos?: string[],
+  restricciones?: RestriccionesPaciente
+): string {
   const partes: string[] = [
     'Eres el asistente de nutrición de un nutriólogo profesional. Tu trabajo es proponer',
     'los ALIMENTOS CONCRETOS de una dieta, respetando EXACTAMENTE el número de equivalentes',
     'del Sistema Mexicano de Alimentos Equivalentes (SMAE) que se te indica para cada tiempo',
     'de comida. NO cambies el número de equivalentes: solo eliges qué alimentos los cumplen.',
-    '',
-    'Debes imitar el estilo del nutriólogo, descrito a continuación:',
   ]
+
+  // Las restricciones del paciente van ANTES que nada: mandan sobre el estilo
+  // del nutriólogo y sobre cualquier otra consideración.
+  const r = restricciones
+  if (r?.alergias || r?.intolerancias || r?.preferencias || r?.disgustos) {
+    partes.push('', '=== RESTRICCIONES DEL PACIENTE (prioridad máxima) ===')
+
+    if (r.alergias) {
+      partes.push(
+        `ALERGIAS: ${r.alergias}`,
+        'PROHIBIDO ABSOLUTO. Es un riesgo para su salud. No propongas esos alimentos',
+        'ni NINGÚN platillo o preparación que los contenga como ingrediente, por poco que',
+        'sea (ej. si es alérgico al huevo, tampoco pan, empanizados ni salsas que lleven',
+        'huevo). Ante la duda sobre si algo lo contiene, NO lo uses. Esta regla no admite',
+        'excepciones aunque el nutriólogo pida lo contrario.'
+      )
+    }
+    if (r.intolerancias) {
+      partes.push(
+        `INTOLERANCIAS: ${r.intolerancias}`,
+        'Evítalos también en preparaciones. Si existe una versión tolerada (deslactosada,',
+        'sin gluten), úsala y acláralo en la descripción.'
+      )
+    }
+    if (r.preferencias) {
+      partes.push(`PREFERENCIAS: ${r.preferencias}`, 'Respétalas al elegir los alimentos.')
+    }
+    if (r.disgustos) {
+      partes.push(
+        `NO LE GUSTAN: ${r.disgustos}`,
+        'Evítalos salvo que no exista alternativa razonable en ese grupo.'
+      )
+    }
+    partes.push('=== FIN DE LAS RESTRICCIONES ===')
+  }
+
+  partes.push('', 'Debes imitar el estilo del nutriólogo, descrito a continuación:')
 
   if (perfil.region) partes.push(`- Región / contexto: ${perfil.region}`)
   if (perfil.alimentos_tipicos)
@@ -365,7 +418,7 @@ export async function generarDietaConIA(entrada: EntradaGeneracion): Promise<Die
     )
   }
 
-  const promptSistema = construirPromptSistema(entrada.perfil, entrada.ejemplos)
+  const promptSistema = construirPromptSistema(entrada.perfil, entrada.ejemplos, entrada.restricciones)
   const promptUsuario = construirPromptUsuario(entrada)
 
   // Primera generación.
@@ -425,7 +478,7 @@ export async function generarRecetario(
     )
   }
 
-  const promptSistema = construirPromptSistemaRecetario(entrada.perfil, entrada.ejemplos)
+  const promptSistema = construirPromptSistemaRecetario(entrada.perfil, entrada.ejemplos, entrada.restricciones)
   const promptUsuario = construirPromptUsuarioRecetario(entrada, opcionesPorTiempo)
 
   const client = getCliente()
@@ -544,10 +597,14 @@ async function revisarPorcionesRecetario(
 }
 
 /** Prompt de sistema para el recetario (reusa el estilo, pide varias opciones). */
-function construirPromptSistemaRecetario(perfil: PerfilEstilo, ejemplos?: string[]): string {
+function construirPromptSistemaRecetario(
+  perfil: PerfilEstilo,
+  ejemplos?: string[],
+  restricciones?: RestriccionesPaciente
+): string {
   // Reusamos todo el prompt de estilo/reglas de la dieta precisa, y añadimos la
   // instrucción de formato "varias opciones por tiempo".
-  const base = construirPromptSistema(perfil, ejemplos)
+  const base = construirPromptSistema(perfil, ejemplos, restricciones)
   return (
     base +
     '\n\n' +
@@ -731,6 +788,123 @@ async function llamarIA(promptSistema: string, promptUsuario: string): Promise<D
  * @returns un AsyncIterable de trozos de texto (el texto conversacional).
  *          La dieta actualizada se obtiene aparte con extraerDietaDeRespuesta.
  */
+/** Una alternativa propuesta para sustituir un alimento. */
+export interface AlternativaAlimento {
+  descripcion: string // "1 filete de pescado (100 g)"
+  calculo?: string // cómo se obtuvo la porción
+  nota?: string // por qué encaja aquí
+}
+
+/**
+ * Propone alternativas para UN alimento concreto, sin tocar el resto de la dieta.
+ *
+ * A diferencia del chat —que reescribe todo— esto resuelve el caso más común en
+ * consulta: "cámbiame el pollo por otra cosa". Las alternativas mantienen el
+ * mismo grupo y los mismos equivalentes, así que el cuadre no se altera.
+ */
+export async function sugerirAlternativas(params: {
+  grupo: GrupoSMAEId
+  equivalentes: number
+  descripcionActual: string
+  /** Dónde está el alimento, para que la propuesta encaje con el platillo. */
+  contexto?: string
+  perfil: PerfilEstilo
+  restricciones?: RestriccionesPaciente
+  cuantas?: number
+}): Promise<AlternativaAlimento[]> {
+  const { grupo, equivalentes, descripcionActual, contexto, cuantas = 3 } = params
+  const info = GRUPOS_SMAE.find((g) => g.id === grupo)
+  if (!info) return []
+
+  const referencias = PORCIONES_REFERENCIA[grupo]
+  const r = params.restricciones
+
+  const partes: string[] = [
+    'Eres el asistente de un nutriólogo mexicano. Propón alternativas para UN alimento',
+    'concreto de una dieta, manteniendo su aporte nutricional.',
+    '',
+    `Alimento actual: "${descripcionActual}"`,
+    `Grupo SMAE: ${info.nombre} · ${equivalentes} equivalente(s)`,
+    `Aporte por equivalente: HCO ${info.hco} g · Proteína ${info.proteina} g · Lípidos ${info.lipidos} g · ${info.kcal} kcal`,
+  ]
+
+  if (contexto) partes.push(`Va en: ${contexto}`)
+
+  if (referencias?.length) {
+    partes.push('', 'Porciones de referencia de este grupo (1 equivalente cada una):')
+    partes.push(...referencias.map((p) => `- ${p}`))
+  }
+
+  // Las restricciones del paciente mandan sobre cualquier otra consideración.
+  if (r?.alergias) {
+    partes.push(
+      '',
+      `ALERGIAS (prohibido absoluto): ${r.alergias}.`,
+      'No propongas esos alimentos ni nada que los contenga.'
+    )
+  }
+  if (r?.intolerancias) partes.push(`Intolerancias a evitar: ${r.intolerancias}.`)
+  if (r?.preferencias) partes.push(`Preferencias: ${r.preferencias}.`)
+  if (r?.disgustos) partes.push(`No le gustan: ${r.disgustos}.`)
+
+  if (params.perfil.region) partes.push('', `Región del paciente: ${params.perfil.region}.`)
+  if (params.perfil.alimentos_tipicos)
+    partes.push(`Alimentos que el nutriólogo suele usar: ${params.perfil.alimentos_tipicos}.`)
+  if (params.perfil.alimentos_evitar)
+    partes.push(`Alimentos que evita: ${params.perfil.alimentos_evitar}.`)
+
+  partes.push(
+    '',
+    'REGLAS:',
+    `1. Propón ${cuantas} alternativas DISTINTAS entre sí y distintas del alimento actual.`,
+    '2. Todas del MISMO grupo SMAE y equivalentes a la misma cantidad.',
+    '3. Calcula la porción a partir de la composición del alimento (por 100 g) y del',
+    '   aporte por equivalente. Pon ese cálculo en "calculo".',
+    '4. En cereales y leguminosas usa medidas caseras COCIDAS (tazas), no gramos crudos.',
+    '5. Alimentos comunes y accesibles en México, que combinen con el platillo.',
+    '',
+    'Devuelve SOLO este JSON:',
+    '{"alternativas":[{"descripcion":"<porción concreta>","calculo":"<cómo la obtuviste>","nota":"<por qué encaja, breve>"}]}'
+  )
+
+  const client = getCliente()
+  const model = modeloConfigurado()
+
+  try {
+    const completion = await client.chat.completions.create({
+      model,
+      messages: [
+        { role: 'system', content: partes.join('\n') },
+        {
+          role: 'user',
+          content: `Dame ${cuantas} alternativas para "${descripcionActual}".`,
+        },
+      ],
+      ...paramsModelo(model, 0.6), // algo de variedad entre las opciones
+      response_format: { type: 'json_object' },
+    })
+
+    const contenido = completion.choices[0]?.message?.content || '{}'
+    const parsed = JSON.parse(contenido) as { alternativas?: unknown }
+    if (!Array.isArray(parsed.alternativas)) return []
+
+    return parsed.alternativas
+      .map((a) => {
+        const item = a as Record<string, unknown>
+        return {
+          descripcion: String(item.descripcion ?? '').trim(),
+          calculo: item.calculo ? String(item.calculo) : undefined,
+          nota: item.nota ? String(item.nota) : undefined,
+        }
+      })
+      .filter((a) => a.descripcion.length > 0)
+      .slice(0, cuantas)
+  } catch (error) {
+    captureError(error as Error, { module: 'sugerirAlternativas' })
+    return []
+  }
+}
+
 export async function* chatDietaStream(params: {
   entrada: EntradaGeneracion
   // Estado actual sobre el que se conversa: una dieta precisa o un recetario.
@@ -858,7 +1032,7 @@ function construirPromptSistemaChat(
   modo: 'dieta' | 'recetario',
   estadoActual: DietaGenerada | RecetarioGenerado
 ): string {
-  const base = construirPromptSistema(entrada.perfil, entrada.ejemplos)
+  const base = construirPromptSistema(entrada.perfil, entrada.ejemplos, entrada.restricciones)
 
   const equivalentesPorTiempo = entrada.tiempos
     .map((t) => {

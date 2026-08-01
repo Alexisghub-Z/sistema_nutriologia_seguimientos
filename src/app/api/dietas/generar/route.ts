@@ -75,6 +75,14 @@ export async function POST(request: NextRequest) {
   // Perfil de estilo del nutriólogo (singleton).
   const perfil = (await prisma.perfilEstiloDietas.findFirst()) ?? {}
 
+  // Restricciones del paciente: mandan sobre el estilo del nutriólogo.
+  const restricciones = data.paciente_id
+    ? await prisma.paciente.findUnique({
+        where: { id: data.paciente_id },
+        select: { alergias: true, intolerancias: true, preferencias: true, disgustos: true },
+      })
+    : null
+
   // Contexto del paciente: sus últimas dietas + evolución clínica (few-shot por paciente).
   const ejemplos = await construirContextoPaciente(data.paciente_id)
 
@@ -87,6 +95,7 @@ export async function POST(request: NextRequest) {
     },
     tiempos: data.tiempos as TiempoConEquivalentes[],
     perfil,
+    restricciones: restricciones ?? undefined,
     ejemplos,
     instruccionesExtra: data.instrucciones_extra,
   }

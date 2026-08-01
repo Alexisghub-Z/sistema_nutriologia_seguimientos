@@ -42,8 +42,17 @@ model Paciente {
   email            String   @unique
   telefono         String   @unique
   fecha_nacimiento DateTime
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+
+  // --- Restricciones alimentarias ---
+  // Se guardan separadas porque no pesan igual al generar una dieta: una alergia
+  // es una prohibición absoluta, un "no le gusta" solo una preferencia.
+  alergias      String? @db.Text // riesgo clínico: nunca proponerlos
+  intolerancias String? @db.Text // causan malestar (lactosa, gluten…)
+  preferencias  String? @db.Text // decisión personal (vegetariano, sin cerdo…)
+  disgustos     String? @db.Text // simplemente no le gustan
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relaciones
   citas                   Cita[]

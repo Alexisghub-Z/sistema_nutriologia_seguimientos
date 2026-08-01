@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import { useToast } from '@/components/ui/Toast'
 import styles from './ModalDetalleCita.module.css'
 
 interface Cita {
@@ -32,7 +33,15 @@ interface ModalDetalleCitaProps {
   onActualizar: () => void
 }
 
+/** Qué decir tras cambiar el estado, en lenguaje del nutriólogo. */
+const ESTADO_CONFIRMADO: Record<string, string> = {
+  NO_ASISTIO: 'Marcada como no asistió',
+  CANCELADA: 'Cita cancelada',
+  COMPLETADA: 'Cita completada',
+}
+
 export default function ModalDetalleCita({ cita, onClose, onActualizar }: ModalDetalleCitaProps) {
+  const toast = useToast()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -111,12 +120,14 @@ export default function ModalDetalleCita({ cita, onClose, onActualizar }: ModalD
 
       onActualizar()
       onClose()
+      // El modal se cierra: el aviso tiene que vivir fuera de él.
+      toast.exito(ESTADO_CONFIRMADO[nuevoEstado] ?? 'Cita actualizada')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al actualizar')
     } finally {
       setLoading(false)
     }
-  }, [cita, onActualizar, onClose])
+  }, [cita, onActualizar, onClose, toast])
 
   const confirmarCambioEstado = useCallback((nuevoEstado: string, mensaje: string) => {
     if (confirm(mensaje)) {

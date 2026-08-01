@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Button from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
+import RestriccionesCard from '@/components/pacientes/RestriccionesCard'
 import Badge from '@/components/ui/Badge'
 import Spinner from '@/components/ui/Spinner'
 import Alert from '@/components/ui/Alert'
+import { useToast } from '@/components/ui/Toast'
 import ModalDetalleCita from '@/components/citas/ModalDetalleCita'
 import styles from './detalle.module.css'
 
@@ -17,6 +19,11 @@ interface Paciente {
   telefono: string
   fecha_nacimiento: string
   createdAt: string
+  // Restricciones alimentarias: permanentes del paciente, no de una consulta.
+  alergias?: string | null
+  intolerancias?: string | null
+  preferencias?: string | null
+  disgustos?: string | null
   citas: Array<{
     id: string
     fecha_hora: string
@@ -52,6 +59,7 @@ interface Paciente {
 export default function DetallePacientePage() {
   const params = useParams()
   const router = useRouter()
+  const toast = useToast()
   const pacienteId = params.id as string
 
   const [paciente, setPaciente] = useState<Paciente | null>(null)
@@ -78,6 +86,10 @@ export default function DetallePacientePage() {
       kcal_meta: number
       objetivo: string
       consulta_id: string | null
+      imc?: number
+      peso?: number
+      etiqueta?: string | null
+      dietas?: Array<{ id: string; modo: string; estado: string }>
     }>
   >([])
 
@@ -173,9 +185,12 @@ export default function DetallePacientePage() {
 
       // Refrescar datos del paciente
       refrescarPaciente()
+      toast.exito('Cita cancelada')
     } catch (err) {
       console.error('Error al cancelar cita:', err)
-      alert('Error al cancelar la cita')
+      toast.error('No se pudo cancelar la cita', {
+        descripcion: 'Revisa tu conexión e inténtalo de nuevo.',
+      })
     }
   }
 
@@ -259,10 +274,14 @@ export default function DetallePacientePage() {
 
       // Refrescar datos del paciente
       refrescarPaciente()
-      alert('Seguimiento programado exitosamente')
+      toast.exito('Seguimiento programado', {
+        descripcion: 'El paciente recibirá el mensaje automáticamente.',
+      })
     } catch (err) {
       console.error('Error:', err)
-      alert(err instanceof Error ? err.message : 'Error al programar seguimiento')
+      // El backend explica el motivo (p. ej. ya hay uno programado): mostrarlo
+      // es más útil que un mensaje genérico.
+      toast.error(err instanceof Error ? err.message : 'Error al programar seguimiento')
     } finally {
       setProgramandoSeguimiento(false)
     }
@@ -287,10 +306,10 @@ export default function DetallePacientePage() {
 
       // Refrescar datos del paciente
       refrescarPaciente()
-      alert('Seguimiento cancelado exitosamente')
+      toast.exito('Seguimiento cancelado')
     } catch (err) {
       console.error('Error:', err)
-      alert(err instanceof Error ? err.message : 'Error al cancelar seguimiento')
+      toast.error(err instanceof Error ? err.message : 'Error al cancelar seguimiento')
     } finally {
       setCancelandoSeguimiento(false)
     }
@@ -860,6 +879,19 @@ export default function DetallePacientePage() {
           </CardContent>
         </Card>
 
+        {/* Restricciones alimentarias: justo antes de las dietas, que es para lo
+            que sirven. Se capturan una vez y aplican a todas ellas, por eso van
+            en el paciente y no en cada consulta. */}
+        <RestriccionesCard
+          pacienteId={paciente.id}
+          valores={{
+            alergias: paciente.alergias ?? null,
+            intolerancias: paciente.intolerancias ?? null,
+            preferencias: paciente.preferencias ?? null,
+            disgustos: paciente.disgustos ?? null,
+          }}
+        />
+
         {/* Dietas del paciente */}
         <Card className={styles.consultasCard}>
           <CardHeader>
@@ -872,44 +904,114 @@ export default function DetallePacientePage() {
           </CardHeader>
           <CardContent>
             {dietas.length === 0 ? (
-              <div className={styles.emptyState}>
-                <p>No hay dietas registradas</p>
+              <div className={styles.dietaVacio}>
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.6a1 1 0 01.7.3l5.4 5.4a1 1 0 01.3.7V19a2 2 0 01-2 2z" />
+                </svg>
+                <p className={styles.dietaVacioTitulo}>Sin dietas todavía</p>
+                <p className={styles.dietaVacioPista}>
+                  Crea la primera para este paciente desde el botón de arriba
+                </p>
               </div>
             ) : (
-              <div className={styles.consultasList}>
+              <div className={styles.dietasLista}>
                 {dietas.map((dieta, index) => {
                   const consultaLigada = dieta.consulta_id
                     ? paciente.consultas.find((c) => c.id === dieta.consulta_id)
                     : null
+                  const tieneDefinitiva = dieta.dietas?.some((d) => d.estado === 'FINALIZADA')
+                  const tieneDieta = (dieta.dietas?.length ?? 0) > 0
+                  // Variación de peso respecto a la dieta anterior del paciente.
+                  const anterior = dietas[index + 1]
+                  const deltaPeso =
+                    dieta.peso != null && anterior?.peso != null
+                      ? Math.round((dieta.peso - anterior.peso) * 10) / 10
+                      : null
+
                   return (
                     <div
                       key={dieta.id}
-                      className={styles.consultaItem}
+                      className={`${styles.dietaItem} ${tieneDefinitiva ? styles.dietaItemFinal : ''}`}
                       onClick={() => router.push('/dietas')}
+                      title="Abrir en la sección de dietas"
                     >
-                      <div className={styles.consultaHeader}>
-                        <div className={styles.consultaFecha}>
-                          <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-                            <path
-                              fillRule="evenodd"
-                              d="M3 3a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V3zm0 5a1 1 0 011-1h6a1 1 0 011 1v8a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm10 0a1 1 0 011-1h2a1 1 0 011 1v8a1 1 0 01-1 1h-2a1 1 0 01-1-1V8z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          {formatearFecha(dieta.createdAt)}
-                          {index === 0 && <Badge variant="info">Más reciente</Badge>}
-                        </div>
-                        <Badge variant="secondary">{Math.round(dieta.kcal_meta)} kcal</Badge>
+                      {/* Kcal como dato principal, a la izquierda */}
+                      <div className={styles.dietaKcalBloque}>
+                        <span className={styles.dietaKcalNum}>{Math.round(dieta.kcal_meta)}</span>
+                        <span className={styles.dietaKcalUnidad}>kcal</span>
                       </div>
-                      <div className={styles.dietaMeta}>
-                        {consultaLigada ? (
-                          <span className={styles.dietaLigada}>
-                            Ligada a la consulta del {formatearFecha(consultaLigada.fecha)}
+
+                      <div className={styles.dietaCuerpo}>
+                        {/* Primera línea: etiqueta o fecha + estado */}
+                        <div className={styles.dietaLinea1}>
+                          <span className={styles.dietaTitulo}>
+                            {dieta.etiqueta || formatearFecha(dieta.createdAt)}
                           </span>
-                        ) : (
-                          <span className={styles.dietaSuelta}>Dieta suelta (sin consulta)</span>
-                        )}
+                          {index === 0 && (
+                            <span className={styles.dietaChipReciente}>Más reciente</span>
+                          )}
+                          {tieneDefinitiva ? (
+                            <span className={styles.dietaChipFinal}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M20 6L9 17l-5-5" />
+                              </svg>
+                              Definitiva
+                            </span>
+                          ) : tieneDieta ? (
+                            <span className={styles.dietaChipBorrador}>Borrador</span>
+                          ) : null}
+                        </div>
+
+                        {/* Segunda línea: los datos clínicos */}
+                        <div className={styles.dietaDatos}>
+                          {dieta.etiqueta && (
+                            <span className={styles.dietaDato}>
+                              {formatearFechaCorta(dieta.createdAt)}
+                            </span>
+                          )}
+                          <span className={styles.dietaDato}>
+                            {dieta.objetivo === 'BAJAR_PESO'
+                              ? 'Bajar peso'
+                              : dieta.objetivo === 'SUBIR_PESO'
+                                ? 'Subir peso'
+                                : 'Mantener'}
+                          </span>
+                          {dieta.peso != null && (
+                            <span className={styles.dietaDato}>
+                              {dieta.peso} kg
+                              {deltaPeso !== null && deltaPeso !== 0 && (
+                                <span
+                                  className={deltaPeso < 0 ? styles.dietaBaja : styles.dietaSube}
+                                >
+                                  {deltaPeso < 0 ? '↓' : '↑'}
+                                  {Math.abs(deltaPeso)}
+                                </span>
+                              )}
+                            </span>
+                          )}
+                          {dieta.imc != null && (
+                            <span className={styles.dietaDato}>IMC {dieta.imc.toFixed(1)}</span>
+                          )}
+                          <span className={styles.dietaDato}>
+                            {consultaLigada
+                              ? `Consulta del ${formatearFechaCorta(consultaLigada.fecha)}`
+                              : 'Sin consulta ligada'}
+                          </span>
+                        </div>
                       </div>
+
+                      <svg
+                        className={styles.dietaFlecha}
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        aria-hidden
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 6l6 6-6 6" />
+                      </svg>
                     </div>
                   )
                 })}
