@@ -1184,8 +1184,12 @@
 
 .acciones {
   display: flex;
+  align-items: center;
+  justify-content: flex-end;
   gap: var(--spacing-md);
-  margin-top: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-gray-200);
 }
 
 /* Panel de resultado */
@@ -1610,11 +1614,98 @@
 /* ============================================================
    Pestaña 3: Generar con IA
    ============================================================ */
+/* Sin `align-items: start`: con él, cada celda mide solo lo que su contenido y
+   el chat sticky no tendría recorrido por el que desplazarse. Al estirarse
+   (`stretch`, el valor por defecto), la columna del chat es tan alta como la
+   dieta y el sticky sí funciona. */
 .iaGrid {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   gap: var(--spacing-xl);
-  align-items: start;
+}
+
+/* El chat acompaña al scroll: con dietas largas, si se quedara arriba habría que
+   subir cada vez para pedirle un cambio a la IA.
+   Se ancla al viewport, por debajo del header (70px, sticky en el layout). */
+/* Envoltorio de la columna: se estira a la altura de la fila (tan alto como la
+   dieta) y es el recorrido por el que se desplaza el chat anclado dentro. */
+.chatColumna {
+  min-width: 0;
+  height: 100%;
+}
+
+.chatPegajoso {
+  position: sticky;
+  top: calc(70px + var(--spacing-md));
+  /* Si el chat es más alto que el hueco visible, se desplaza por dentro en lugar
+     de cortarse. */
+  max-height: calc(100vh - 70px - var(--spacing-xl));
+  overflow-y: auto;
+  /* Sombra suave que lo despega de la dieta mientras la recorres. */
+  box-shadow: 0 8px 24px -14px rgba(16, 40, 28, 0.22);
+  transition:
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+  /* Barra de desplazamiento discreta dentro del chat. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gray-300) transparent;
+}
+
+/* Entrada del chat. Solo se anima la opacidad: un `transform`, tanto aquí como
+   en el propio sticky, crea un contexto que rompería su anclaje al viewport. */
+.chatColumna {
+  animation: chatAparece 0.45s ease-out both;
+}
+
+@keyframes chatAparece {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Al pasar el cursor se eleva un poco: refuerza que es un panel independiente. */
+.chatPegajoso:hover {
+  box-shadow: 0 12px 30px -14px rgba(16, 40, 28, 0.28);
+  border-color: var(--color-gray-300);
+}
+
+/* Scrollbar del chat en navegadores WebKit. */
+.chatPegajoso::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chatPegajoso::-webkit-scrollbar-thumb {
+  background-color: var(--color-gray-300);
+  border-radius: var(--radius-full);
+}
+
+.chatPegajoso::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chatPegajoso,
+  .chatColumna {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* A 900px las columnas se apilan (ver .iaGrid), así que el chat queda debajo de
+   la dieta y fijarlo no tendría sentido: taparía el contenido. */
+@media (max-width: 900px) {
+  .chatColumna {
+    height: auto;
+  }
+
+  .chatPegajoso {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
 }
 
 @media (max-width: 900px) {
@@ -1666,12 +1757,108 @@
   border: 1px solid #a7f3d0;
 }
 
+/* ============================================================
+   Indicador de autoguardado
+   La dieta se guarda sola; esto es lo único que se lo cuenta al
+   nutriólogo, así que tiene que ser legible de un vistazo y no robar
+   atención.
+   ============================================================ */
+.badgeGuardado {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  /* Solo opacidad y color: un transform aquí rompería el `position: sticky`
+     del panel de chat. */
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+  animation: apareceGuardado 0.24s ease-out;
+}
+
+@keyframes apareceGuardado {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Versión definitiva: el verde fuerte, reservado a este estado. */
+.badgeDefinitiva {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+/* Borrador guardado. Verde apagado a propósito: es una buena noticia, pero no
+   debe confundirse con la versión definitiva, que es otra cosa clínicamente. */
+.badgeOk {
+  background: var(--color-gray-50, #f9fafb);
+  color: #3f6b52;
+  border: 1px solid var(--color-gray-200);
+}
+
+.badgeTrabajando {
+  background: var(--color-gray-100);
+  color: var(--color-gray-600);
+  border: 1px solid var(--color-gray-200);
+}
+
+.badgePendiente {
+  background: var(--color-gray-100);
+  color: var(--color-gray-600);
+  border: 1px solid var(--color-gray-200);
+}
+
+/* Ámbar, no rojo: el guardado falló pero no es culpa del usuario ni ha perdido
+   nada todavía; se reintenta al siguiente cambio. */
+.badgeErrorGuardado {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+/* Punto que late mientras se guarda: más discreto que un spinner. */
+.puntoGuardando {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  animation: lateGuardando 1.2s ease-in-out infinite;
+}
+
+@keyframes lateGuardando {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badgeGuardado,
+  .puntoGuardando {
+    animation: none;
+  }
+}
+
 /* Aviso de solo lectura sobre una dieta ya finalizada. */
+/* Dieta ya guardada: confirma el estado y ofrece editarla. Verde porque es una
+   buena noticia (está guardada), no una restricción. */
 .avisoFinalizada {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-md);
+  gap: 0.5rem;
   flex-wrap: wrap;
   margin: var(--spacing-sm) 0 var(--spacing-md);
   padding: var(--spacing-sm) var(--spacing-md);
@@ -1680,6 +1867,18 @@
   border-radius: var(--radius-md);
   color: #065f46;
   font-size: 0.85rem;
+}
+
+.avisoFinalizadaIcono {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: #059669;
+}
+
+/* Empuja el botón al extremo derecho. */
+.avisoFinalizadaTexto {
+  flex: 1;
+  font-weight: 600;
 }
 
 /* Fieldset usado solo para deshabilitar en cascada: sin estilo propio, para no
@@ -1700,15 +1899,69 @@
   opacity: 0.75;
 }
 
-/* Acciones de guardado/cierre al pie de la dieta generada. */
-.iaAcciones {
+/* ============================================================
+   Guardado de la dieta: validaciones y acciones
+   ============================================================ */
+/* Solo contiene los avisos de validación: el botón de guardar vive en la
+   cabecera, junto a Regenerar. */
+.guardarZona {
+  margin-top: var(--spacing-md);
+}
+
+.guardarZona > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Lo que impide guardar: rojo, porque hay que corregirlo. */
+.bloqueoLista {
+  margin-bottom: var(--spacing-sm);
+  padding: 0.6rem 0.8rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+  animation: avisoEntra 0.24s ease-out both;
+}
+
+.bloqueoTitulo {
   display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-sm);
-  flex-wrap: wrap;
-  margin-top: var(--spacing-lg);
-  padding-top: var(--spacing-md);
-  border-top: 1px solid var(--color-gray-200);
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #991b1b;
+}
+
+.bloqueoLista ul {
+  margin: 0;
+  padding-left: 1.3rem;
+  font-size: 0.76rem;
+  color: #7f1d1d;
+}
+
+.bloqueoLista li {
+  margin-bottom: 1px;
+}
+
+/* Lo que solo merece aviso: ámbar, se puede guardar igual. */
+.avisoLista {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: var(--spacing-sm);
+  padding: 0.5rem 0.7rem;
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-md);
+  font-size: 0.76rem;
+  color: #92400e;
+}
+
+/* Texto que explica qué guarda cada botón. */
+.accionAyuda {
+  flex: 1;
+  font-size: 0.74rem;
+  color: var(--color-gray-500);
 }
 
 .iaTiempos {
@@ -1960,6 +2213,13 @@
   cursor: not-allowed;
 }
 
+/* Botón de alternativas: la chispa se tiñe de verde al pasar el cursor para
+   distinguirlo de las acciones neutras (fijar, quitar). */
+.accionBtnIA:hover:not(:disabled) {
+  background-color: rgba(45, 159, 93, 0.14);
+  color: var(--color-primary);
+}
+
 /* Candado activo: verde sólido, se lee como un estado y no como un botón más. */
 .accionBtnActiva {
   background-color: rgba(45, 159, 93, 0.14);
@@ -2208,6 +2468,95 @@
   border-style: solid;
   color: var(--color-primary);
   background-color: rgba(45, 159, 93, 0.05);
+}
+
+/* ============================================================
+   Restricciones del paciente
+   ============================================================ */
+/* Van dentro de la tarjeta del paciente, como etiquetas compactas: son datos
+   suyos y no merecen una franja propia que sume altura a la página. */
+.restriccionesChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+}
+
+.restriccionChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 100%;
+  padding: 1px 8px;
+  background-color: var(--color-gray-100);
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  color: var(--color-gray-600);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* La alergia destaca: es la única con riesgo clínico. */
+.restriccionChipAlergia {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+/* Alérgeno encontrado en la dieta ya generada. */
+.alergenoAlerta {
+  margin-bottom: var(--spacing-md);
+  padding: 0.7rem 0.9rem;
+  background-color: #fef2f2;
+  border: 1px solid #dc2626;
+  border-radius: var(--radius-md);
+  animation: alergenoEntra 0.3s ease-out both;
+}
+
+@keyframes alergenoEntra {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.alergenoTitulo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #991b1b;
+}
+
+.alergenoLista {
+  margin: 0 0 0.4rem;
+  padding-left: 1.4rem;
+  font-size: 0.8rem;
+  color: #7f1d1d;
+}
+
+.alergenoLista li {
+  margin-bottom: 2px;
+}
+
+.alergenoNota {
+  margin: 0;
+  font-size: 0.72rem;
+  color: #b91c1c;
+  opacity: 0.85;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alergenoAlerta {
+    animation: none;
+  }
 }
 
 /* ============================================================
@@ -2546,7 +2895,9 @@
   flex-direction: column;
   gap: 0.5rem;
   min-height: 180px;
-  max-height: 400px;
+  /* Se adapta a la altura de la ventana para que, con el chat fijo, el campo de
+     escritura no quede fuera de la pantalla en portátiles. */
+  max-height: min(400px, calc(100vh - 340px));
   overflow-y: auto;
   padding: var(--spacing-sm) 0;
   margin-bottom: var(--spacing-md);
