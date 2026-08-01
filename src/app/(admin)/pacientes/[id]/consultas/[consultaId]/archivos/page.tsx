@@ -8,6 +8,7 @@ import Alert from '@/components/ui/Alert'
 import Spinner from '@/components/ui/Spinner'
 import Badge from '@/components/ui/Badge'
 import FilePreviewModal from '@/components/ui/FilePreviewModal'
+import { useToast } from '@/components/ui/Toast'
 import styles from './archivos.module.css'
 
 interface Archivo {
@@ -24,6 +25,7 @@ interface Archivo {
 export default function ArchivosConsultaPage() {
   const params = useParams()
   const router = useRouter()
+  const toast = useToast()
   const pacienteId = params.id as string
   const consultaId = params.consultaId as string
 
@@ -100,8 +102,10 @@ export default function ArchivosConsultaPage() {
       await fetchArchivos()
 
       // DESPUÉS limpiar el formulario
+      const cuantos = selectedFiles.length
       setSelectedFiles([])
       setDescripcion('')
+      toast.exito(cuantos === 1 ? 'Archivo subido' : `${cuantos} archivos subidos`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al subir archivos')
     } finally {
@@ -155,8 +159,9 @@ export default function ArchivosConsultaPage() {
 
       // Recargar lista de archivos
       fetchArchivos()
+      toast.exito('Archivo eliminado')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al eliminar archivo')
+      toast.error(err instanceof Error ? err.message : 'Error al eliminar archivo')
     }
   }
 

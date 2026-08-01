@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import Spinner from '@/components/ui/Spinner'
 import Alert from '@/components/ui/Alert'
+import { useToast } from '@/components/ui/Toast'
 import styles from './plantillas.module.css'
 
 interface Plantilla {
@@ -20,6 +21,7 @@ interface Plantilla {
 
 export default function PlantillasPage() {
   const router = useRouter()
+  const toast = useToast()
   const [plantillas, setPlantillas] = useState<Plantilla[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -111,10 +113,10 @@ export default function PlantillasPage() {
         throw new Error('Error al eliminar plantilla')
       }
 
-      setSuccess('Plantilla eliminada')
       await fetchPlantillas()
+      toast.exito('Plantilla eliminada')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al eliminar')
+      toast.error(err instanceof Error ? err.message : 'Error al eliminar')
     }
   }
 
