@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/auth-utils'
+import prisma from '@/lib/prisma'
 import { z } from 'zod'
 import { GRUPOS_SMAE, type GrupoSMAEId } from '@/lib/utils/smae'
 import {
@@ -33,6 +34,9 @@ export const maxDuration = 300
 const GRUPO_IDS = GRUPOS_SMAE.map((g) => g.id) as [GrupoSMAEId, ...GrupoSMAEId[]]
 
 const chatSchema = z.object({
+  // Para cargar las restricciones del paciente: los ajustes por chat también
+  // tienen que respetar sus alergias.
+  paciente_id: z.string().min(1).optional(),
   kcal_meta: z.number().min(500).max(6000),
   proteina_g: z.number().min(0).max(600),
   grasa_g: z.number().min(0).max(400),
@@ -74,6 +78,19 @@ export async function POST(request: NextRequest) {
   }
   const data = parsed.data
 
+  // El estilo del nutriólogo y las restricciones del paciente también aplican a
+  // los ajustes por chat: si no, un cambio pedido aquí podría reintroducir un
+  // alérgeno que la generación inicial había evitado.
+  const [perfil, restricciones] = await Promise.all([
+    prisma.perfilEstiloDietas.findFirst(),
+    data.paciente_id
+      ? prisma.paciente.findUnique({
+          where: { id: data.paciente_id },
+          select: { alergias: true, intolerancias: true, preferencias: true, disgustos: true },
+        })
+      : Promise.resolve(null),
+  ])
+
   const entrada: EntradaGeneracion = {
     kcalMeta: data.kcal_meta,
     macros: {
@@ -82,7 +99,8 @@ export async function POST(request: NextRequest) {
       carbohidrato_g: data.carbohidrato_g,
     },
     tiempos: data.tiempos as TiempoConEquivalentes[],
-    perfil: {},
+    perfil: perfil ?? {},
+    restricciones: restricciones ?? undefined,
   }
   const estadoActual = data.estado_actual as DietaGenerada | RecetarioGenerado
   const historial = data.historial as MensajeChatIA[]

@@ -1,0 +1,209 @@
+/* Panel de alternativas para un alimento. Se despliega justo debajo de él, con
+   un aire distinto al de la dieta para que se lea como una capa temporal. */
+
+.panel {
+  margin: 0.35rem 0 0.6rem 12px;
+  padding: 0.55rem 0.7rem;
+  background: linear-gradient(180deg, rgba(45, 159, 93, 0.05), rgba(45, 159, 93, 0.02));
+  border: 1px solid rgba(45, 159, 93, 0.22);
+  border-radius: var(--radius-md);
+  animation: panelEntra 0.24s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes panelEntra {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-primary);
+}
+
+.cerrar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-gray-400);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.cerrar:hover {
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-700);
+}
+
+/* --- Opciones --- */
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.opcion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  background-color: white;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.14s ease,
+    box-shadow 0.14s ease,
+    transform 0.14s ease;
+  animation: opcionEntra 0.26s ease-out both;
+}
+
+@keyframes opcionEntra {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.opcion:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(45, 159, 93, 0.12);
+  transform: translateX(2px);
+}
+
+.opcion:active {
+  transform: translateX(1px) scale(0.995);
+}
+
+.opcionTexto {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.opcionDescripcion {
+  font-size: 0.85rem;
+  color: var(--color-gray-800);
+}
+
+.opcionNota {
+  font-size: 0.7rem;
+  color: var(--color-gray-500);
+}
+
+/* El "Usar" solo se destaca al pasar el cursor: la fila entera es clicable. */
+.opcionUsar {
+  flex-shrink: 0;
+  padding: 2px 9px;
+  background-color: var(--color-gray-100);
+  border-radius: var(--radius-full);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-gray-500);
+  transition:
+    background-color 0.14s ease,
+    color 0.14s ease;
+}
+
+.opcion:hover .opcionUsar {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+/* Cómo se obtuvo la porción: transparencia sin robar protagonismo. */
+.opcionCalculo {
+  display: block;
+  margin: 2px 0 0 0.6rem;
+  font-size: 0.66rem;
+  color: var(--color-gray-400);
+}
+
+/* --- Carga --- */
+.cargando {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.skeleton {
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, #f3f5f4 25%, #e9edeb 50%, #f3f5f4 75%);
+  background-size: 200% 100%;
+  animation: skelBrilla 1.3s ease-in-out infinite;
+}
+
+@keyframes skelBrilla {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.cargandoTexto {
+  font-size: 0.7rem;
+  color: var(--color-gray-500);
+  text-align: center;
+}
+
+.error {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--color-gray-500);
+  text-align: center;
+  padding: 0.4rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .opcion,
+  .skeleton {
+    animation: none;
+  }
+
+  .opcion:hover,
+  .opcion:active {
+    transform: none;
+  }
+}
