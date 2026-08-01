@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Button from '@/components/ui/Button'
 import Alert from '@/components/ui/Alert'
+import { useToast } from '@/components/ui/Toast'
 import styles from './ConsultaForm.module.css'
 
 interface PacienteResumen {
@@ -54,6 +55,7 @@ export default function ConsultaForm({
   onCancel,
 }: ConsultaFormProps) {
   const router = useRouter()
+  const toast = useToast()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -409,7 +411,9 @@ export default function ConsultaForm({
 
       await response.json() // Consumir respuesta
 
-      // Éxito
+      // Éxito. El toast va antes de navegar: vive en el layout raíz, así que
+      // sobrevive al cambio de pantalla.
+      toast.exito('Consulta registrada')
       if (onSuccess) {
         onSuccess()
       } else {

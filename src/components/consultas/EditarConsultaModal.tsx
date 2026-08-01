@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { useToast } from '@/components/ui/Toast'
 import styles from './EditarConsultaModal.module.css'
 
 interface ConsultaDetalle {
@@ -185,6 +186,7 @@ export default function EditarConsultaModal({
   onClose,
   onActualizar,
 }: EditarConsultaModalProps) {
+  const toast = useToast()
   const today = new Date().toLocaleDateString('en-CA') // YYYY-MM-DD en hora local
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -440,7 +442,11 @@ export default function EditarConsultaModal({
 
       onActualizar()
       onClose()
+      // El modal se cierra: un aviso dentro ya no se vería.
+      toast.exito('Consulta actualizada')
     } catch (err) {
+      // El error SÍ se queda dentro del modal, junto al formulario que hay que
+      // corregir.
       setError(err instanceof Error ? err.message : 'Error desconocido')
     } finally {
       setSaving(false)
