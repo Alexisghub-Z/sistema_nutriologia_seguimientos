@@ -1,0 +1,249 @@
+/* Restricciones alimentarias del paciente. Las alergias se destacan en rojo
+   porque son las únicas con riesgo clínico; el resto son preferencias. */
+
+.card {
+  margin-bottom: var(--spacing-lg);
+}
+
+.cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+}
+
+.editarBtn {
+  padding: 0.25rem 0.7rem;
+  background-color: transparent;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  color: var(--color-gray-600);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.editarBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background-color: rgba(45, 159, 93, 0.05);
+}
+
+/* --- Vista de lectura --- */
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.7rem 0.8rem;
+  background-color: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.item:hover {
+  border-color: var(--color-gray-300);
+}
+
+/* Las alergias saltan a la vista: son las de riesgo. */
+.itemCritico {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+}
+
+.itemCritico:hover {
+  border-color: #fca5a5;
+}
+
+/* Icono en su propia pastilla, como en el dashboard. */
+.itemIcono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-600);
+}
+
+.itemCritico .itemIcono {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.itemContenido {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.itemEtiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-gray-500);
+}
+
+.itemCritico .itemEtiqueta {
+  color: #b91c1c;
+}
+
+.itemAviso {
+  padding: 1px 6px;
+  background-color: #dc2626;
+  color: white;
+  border-radius: var(--radius-full);
+  font-size: 0.58rem;
+  letter-spacing: 0.03em;
+}
+
+/* Cada término como etiqueta propia: se lee mejor que una lista con comas. */
+.itemTerminos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.termino {
+  padding: 2px 9px;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  color: var(--color-gray-700);
+}
+
+.terminoCritico {
+  border-color: #fca5a5;
+  background-color: white;
+  color: #991b1b;
+  font-weight: 600;
+}
+
+/* Recordatorio de para qué sirven estos datos. */
+.nota {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  color: var(--color-gray-500);
+}
+
+/* Estado vacío */
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: var(--spacing-xl) var(--spacing-lg);
+  text-align: center;
+  color: var(--color-gray-300);
+}
+
+.vacioTitulo {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-gray-700);
+}
+
+.vacioPista {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-gray-500);
+}
+
+/* --- Formulario --- */
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.etiqueta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-gray-700);
+}
+
+.marcaCritica {
+  padding: 1px 6px;
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-radius: var(--radius-full);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.input {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 0.88rem;
+  color: var(--color-gray-800);
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(45, 159, 93, 0.1);
+}
+
+.inputCritico:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.ayuda {
+  font-size: 0.72rem;
+  color: var(--color-gray-500);
+}
+
+.error {
+  margin: 0;
+  padding: 0.45rem 0.6rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  color: #b91c1c;
+}
+
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+}
