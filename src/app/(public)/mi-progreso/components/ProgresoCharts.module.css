@@ -105,10 +105,18 @@
   letter-spacing: 0.5px;
 }
 
-.badgeNormal { color: #000; }
-.badgeSobrepeso { color: #666; }
-.badgeObesidad { color: #999; }
-.badgeBajoPeso { color: #666; }
+.badgeNormal {
+  color: #000;
+}
+.badgeSobrepeso {
+  color: #666;
+}
+.badgeObesidad {
+  color: #999;
+}
+.badgeBajoPeso {
+  color: #666;
+}
 
 /* Gráficas */
 .chartCard {
