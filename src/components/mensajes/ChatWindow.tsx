@@ -41,6 +41,9 @@ export default function ChatWindow({ pacienteId, tipo, onMessageSent, onBack }: 
   const [paciente, setPaciente] = useState<Paciente | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Mientras el mensaje viaja a WhatsApp se muestran los tres puntos, para
+  // que el envío no parezca que se quedó colgado.
+  const [enviando, setEnviando] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const prevMensajesLengthRef = useRef(0)
@@ -202,6 +205,7 @@ export default function ChatWindow({ pacienteId, tipo, onMessageSent, onBack }: 
 
   // Manejar envío de mensaje
   const handleSendMessage = async (contenido: string) => {
+    setEnviando(true)
     try {
       const response = await fetch('/api/mensajes', {
         method: 'POST',
@@ -224,6 +228,8 @@ export default function ChatWindow({ pacienteId, tipo, onMessageSent, onBack }: 
     } catch (err) {
       console.error('Error al enviar mensaje:', err)
       setError(err instanceof Error ? err.message : 'Error al enviar mensaje')
+    } finally {
+      setEnviando(false)
     }
   }
 
@@ -358,6 +364,15 @@ export default function ChatWindow({ pacienteId, tipo, onMessageSent, onBack }: 
                 </div>
               </div>
             ))}
+            {enviando && (
+              <div className={styles.typingWrapper} role="status" aria-label="Enviando mensaje">
+                <div className={styles.typingBubble}>
+                  <span className={styles.typingDot} />
+                  <span className={styles.typingDot} />
+                  <span className={styles.typingDot} />
+                </div>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </>
         )}
