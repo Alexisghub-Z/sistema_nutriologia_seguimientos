@@ -1801,7 +1801,7 @@
 /* Borrador guardado. Verde apagado a propósito: es una buena noticia, pero no
    debe confundirse con la versión definitiva, que es otra cosa clínicamente. */
 .badgeOk {
-  background: var(--color-gray-50, #f9fafb);
+  background: var(--color-gray-50);
   color: #3f6b52;
   border: 1px solid var(--color-gray-200);
 }

@@ -21,19 +21,35 @@
      suficiente en la parte alta. */
   --gradient-sidebar: linear-gradient(180deg, #268a51 0%, #22703f 55%, #1b5c34 100%);
 
-  /* Neutrals */
+  /* ---------------------------------------------------------------
+     Neutros
+     ---------------------------------------------------------------
+     Un gris nunca es neutro del todo: siempre se inclina hacia algún
+     tono. Los anteriores eran los de Tailwind, que tiran al azul (218°),
+     a 73 grados del verde de la marca. De ahí que la interfaz se sintiera
+     algo fría y ajena al logo, aunque cueste señalar por qué.
+
+     Estos comparten el tono del verde de marca (145°) con una saturación
+     muy baja: no son verdes —eso se vería enfermizo en una aplicación
+     clínica—, solo dejan de tirar hacia el lado contrario.
+
+     La luminosidad se calculó para que el contraste de cada paso sobre
+     blanco no empeore. Todos mejoran ligeramente; el que más importaba,
+     `gray-500`, pasa de 4.83:1 a 4.88:1 y se queda por encima del mínimo
+     AA para texto pequeño.
+     --------------------------------------------------------------- */
   --color-white: #ffffff;
   --color-black: #000000;
-  --color-gray-50: #f9fafb;
-  --color-gray-100: #f3f4f6;
-  --color-gray-200: #e5e7eb;
-  --color-gray-300: #d1d5db;
-  --color-gray-400: #9ca3af;
-  --color-gray-500: #6b7280;
-  --color-gray-600: #4b5563;
-  --color-gray-700: #374151;
-  --color-gray-800: #1f2937;
-  --color-gray-900: #111827;
+  --color-gray-50: #f9faf9;
+  --color-gray-100: #f2f5f3;
+  --color-gray-200: #e4e8e6;
+  --color-gray-300: #d0d6d2;
+  --color-gray-400: #99a59e;
+  --color-gray-500: #68746d;
+  --color-gray-600: #49574f;
+  --color-gray-700: #35433b;
+  --color-gray-800: #1e2b24;
+  --color-gray-900: #101a14;
 
   /* Semantic Colors */
   --color-background: var(--color-white);
@@ -143,13 +159,16 @@
   --transition-slow: 500ms ease;
 
   /* Enterprise Dashboard tokens */
-  --dash-surface: #ffffff;
-  --dash-surface-alt: #f8faf9;
-  --dash-border: #e5e7eb;
-  --dash-border-subtle: #f0f1f3;
-  --dash-label: #6b7280;
-  --dash-heading: #111827;
-  --dash-body: #4b5563;
+  /* Apuntan a los neutros del sistema en lugar de repetir hexadecimales:
+     duplicaban los mismos grises con otro nombre, así que el panel se
+     habría quedado con el tono antiguo mientras el resto cambiaba. */
+  --dash-surface: var(--color-white);
+  --dash-surface-alt: var(--color-gray-50);
+  --dash-border: var(--color-gray-200);
+  --dash-border-subtle: var(--color-gray-100);
+  --dash-label: var(--color-gray-500);
+  --dash-heading: var(--color-gray-900);
+  --dash-body: var(--color-gray-600);
   --dash-radius: 12px;
   --dash-radius-sm: 8px;
   --dash-transition: 200ms ease-in-out;
