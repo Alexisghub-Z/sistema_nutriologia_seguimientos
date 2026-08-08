@@ -219,12 +219,12 @@
 .input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(45, 159, 93, 0.1);
+  box-shadow: var(--ring-focus);
 }
 
 .inputCritico:focus {
   border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+  box-shadow: var(--ring-error);
 }
 
 .ayuda {

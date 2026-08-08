@@ -4,9 +4,7 @@
   z-index: 1050;
   background: var(--color-white);
   border-radius: var(--radius-lg);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.22),
-    0 2px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-xl);
   display: flex;
   flex-direction: column;
   overflow: hidden;

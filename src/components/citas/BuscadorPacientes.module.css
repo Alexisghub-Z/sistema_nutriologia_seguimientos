@@ -85,7 +85,7 @@
 
 .buscador:focus-within {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(45, 159, 93, 0.1);
+  box-shadow: var(--ring-focus);
 }
 
 .iconoBuscar {

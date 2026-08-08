@@ -85,7 +85,7 @@
   background-color: var(--color-white);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-gray-200);
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .sectionTitle {
@@ -135,7 +135,7 @@
 .textarea:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(45, 159, 93, 0.1);
+  box-shadow: var(--ring-focus);
 }
 
 .input:disabled,
@@ -208,7 +208,7 @@
 
 .inputError {
   border-color: var(--color-error) !important;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+  box-shadow: var(--ring-error);
 }
 
 .errorText {
