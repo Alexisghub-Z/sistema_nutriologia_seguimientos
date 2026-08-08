@@ -103,32 +103,34 @@ export async function crearCitaParaPaciente(input: CrearCitaInput): Promise<Crea
     // Validar disponibilidad del horario
     const config = await prisma.configuracionGeneral.findFirst()
     if (config) {
-      const inicioDia = new Date(fechaHora)
-      inicioDia.setHours(0, 0, 0, 0)
-      const finDia = new Date(fechaHora)
-      finDia.setHours(23, 59, 59, 999)
+      const finCitaNueva = new Date(fechaHora.getTime() + duracionMinutos * 60000)
 
-      const citasExistentes = await prisma.cita.findMany({
+      // Se busca por rango alrededor de la cita en lugar de "el día natural":
+      // delimitar el día con setHours() usaba la hora del proceso, y el VPS no
+      // corre en horario de México. Un margen de un día a cada lado abarca de
+      // sobra cualquier cita que pueda solaparse.
+      const margen = 24 * 60 * 60 * 1000
+      const citasCercanas = await prisma.cita.findMany({
         where: {
-          fecha_hora: { gte: inicioDia, lte: finDia },
+          fecha_hora: {
+            gte: new Date(fechaHora.getTime() - margen),
+            lte: new Date(finCitaNueva.getTime() + margen),
+          },
           estado: { not: 'CANCELADA' },
         },
         select: { fecha_hora: true, duracion_minutos: true },
       })
 
-      const finCitaNueva = new Date(fechaHora.getTime() + duracionMinutos * 60000)
-
-      const hayConflicto = citasExistentes.some((cita) => {
-        const inicioCita = new Date(cita.fecha_hora)
+      // Solo cuentan las que de verdad pisan este hueco. Antes se comparaba
+      // contra el total de citas del día, así que una agenda con varias citas
+      // en horas distintas podía bloquear un hueco libre.
+      const citasEnConflicto = citasCercanas.filter((cita) => {
+        const inicioCita = cita.fecha_hora
         const finCita = new Date(inicioCita.getTime() + cita.duracion_minutos * 60000)
-        return (
-          (fechaHora >= inicioCita && fechaHora < finCita) ||
-          (finCitaNueva > inicioCita && finCitaNueva <= finCita) ||
-          (fechaHora <= inicioCita && finCitaNueva >= finCita)
-        )
+        return fechaHora < finCita && finCitaNueva > inicioCita
       })
 
-      if (hayConflicto && citasExistentes.length >= config.citas_simultaneas_max) {
+      if (citasEnConflicto.length >= config.citas_simultaneas_max) {
         return {
           ok: false,
           motivo: 'ocupado',
