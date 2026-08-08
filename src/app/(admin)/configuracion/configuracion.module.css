@@ -153,8 +153,12 @@
 }
 
 @keyframes girar {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .recursosGrid {
@@ -200,9 +204,15 @@
   transition: width 0.4s ease;
 }
 
-.barraVerde { background: #22c55e; }
-.barraAmarilla { background: #f59e0b; }
-.barraRoja { background: #ef4444; }
+.barraVerde {
+  background: #22c55e;
+}
+.barraAmarilla {
+  background: #f59e0b;
+}
+.barraRoja {
+  background: #ef4444;
+}
 
 .metricaValor {
   font-size: var(--font-size-xs);

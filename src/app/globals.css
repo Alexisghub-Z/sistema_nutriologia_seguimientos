@@ -65,15 +65,34 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 
-  /* Font Sizes - Desktop (original) */
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.875rem;
-  --font-size-md: 1rem;
-  --font-size-lg: 1.125rem;
-  --font-size-xl: 1.25rem;
-  --font-size-2xl: 1.5rem;
-  --font-size-3xl: 1.875rem;
-  --font-size-4xl: 2.25rem;
+  /* ---------------------------------------------------------------
+     Escala tipográfica
+     ---------------------------------------------------------------
+     En píxeles y no en rem a propósito: la raíz está en 13.6px, así que
+     `0.9rem` no son 14.4px sino 12.2px. Trabajar en rem sobre esa base
+     invitaba a inventar valores a ojo (0.82, 0.85, 0.9, 0.95…), que es
+     como se llegó a tener 37 tamaños distintos conviviendo.
+
+     Los pasos se eligieron a partir de los tamaños que la aplicación ya
+     usaba, así que adoptar la escala apenas mueve nada en pantalla. Son
+     estrechos entre 10 y 16px (donde vive casi todo el panel) y más
+     amplios arriba, donde el salto sí tiene que leerse.
+
+     Regla: ningún `font-size` nuevo fuera de esta escala. Si un texto
+     "casi encaja", va al paso más cercano; media diferencia de píxel no
+     comunica jerarquía, solo descuido.
+     --------------------------------------------------------------- */
+  --font-size-2xs: 10px; /* microetiquetas, contadores */
+  --font-size-xs: 11px; /* etiquetas en mayúsculas */
+  --font-size-sm: 12px; /* texto auxiliar y de apoyo */
+  --font-size-base: 13px; /* el más repetido: tablas y fichas de datos */
+  --font-size-md: 14px; /* cuerpo */
+  --font-size-lg: 16px; /* texto destacado */
+  --font-size-xl: 18px; /* subtítulo */
+  --font-size-2xl: 21px; /* título de sección */
+  --font-size-3xl: 25px; /* título de página */
+  --font-size-4xl: 30px; /* cifras grandes */
+  --font-size-5xl: 38px; /* portadas de la web pública */
 
   /* Font Weights */
   --font-weight-normal: 400;
@@ -126,15 +145,14 @@
     --spacing-2xl: 1.75rem;
     --spacing-3xl: 2.5rem;
 
-    /* Font Sizes - Mobile (más pequeño) */
-    --font-size-xs: 0.6875rem;
-    --font-size-sm: 0.75rem;
-    --font-size-md: 0.8125rem;
-    --font-size-lg: 0.9375rem;
-    --font-size-xl: 1.0625rem;
-    --font-size-2xl: 1.1875rem;
-    --font-size-3xl: 1.375rem;
-    --font-size-4xl: 1.75rem;
+    /* Escala en móvil: solo se recortan los títulos, que en una pantalla
+       estrecha resultan desproporcionados. El texto de lectura se mantiene:
+       los valores anteriores lo dejaban en 11px y el auxiliar en 9.3px, y a
+       ese tamaño un nutriólogo no puede consultar una dieta con comodidad. */
+    --font-size-2xl: 19px;
+    --font-size-3xl: 22px;
+    --font-size-4xl: 26px;
+    --font-size-5xl: 30px;
   }
 }
 
@@ -148,15 +166,12 @@
     --spacing-2xl: 1.5rem;
     --spacing-3xl: 2rem;
 
-    /* Font Sizes - Landscape (más pequeño para aprovechar espacio) */
-    --font-size-xs: 0.6875rem;
-    --font-size-sm: 0.75rem;
-    --font-size-md: 0.8125rem;
-    --font-size-lg: 0.9375rem;
-    --font-size-xl: 1.0625rem;
-    --font-size-2xl: 1.1875rem;
-    --font-size-3xl: 1.375rem;
-    --font-size-4xl: 1.75rem;
+    /* En horizontal falta alto, así que los títulos se recortan algo más que
+       en vertical. El texto de lectura, igual que allí, no se toca. */
+    --font-size-2xl: 18px;
+    --font-size-3xl: 20px;
+    --font-size-4xl: 24px;
+    --font-size-5xl: 28px;
   }
 }
 
@@ -185,9 +200,9 @@ html {
 body {
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell',
+    'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   font-size: var(--font-size-md);
   line-height: var(--line-height-normal);
   color: var(--color-text);
@@ -207,7 +222,9 @@ body {
 .fade-in {
   opacity: 0;
   transform: translateY(30px);
-  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  transition:
+    opacity 0.8s ease-out,
+    transform 0.8s ease-out;
 }
 
 .fade-in.visible {
@@ -226,7 +243,9 @@ body {
 .fade-in-left {
   opacity: 0;
   transform: translateX(-50px);
-  transition: opacity 1s ease-out, transform 1s ease-out;
+  transition:
+    opacity 1s ease-out,
+    transform 1s ease-out;
 }
 
 .fade-in-left.visible {
@@ -244,7 +263,9 @@ body {
 .fade-in-right {
   opacity: 0;
   transform: translateX(50px);
-  transition: opacity 1s ease-out, transform 1s ease-out;
+  transition:
+    opacity 1s ease-out,
+    transform 1s ease-out;
 }
 
 .fade-in-right.visible {
@@ -262,7 +283,9 @@ body {
 .scale-in {
   opacity: 0;
   transform: scale(0.9);
-  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  transition:
+    opacity 0.8s ease-out,
+    transform 0.8s ease-out;
 }
 
 .scale-in.visible {
@@ -280,7 +303,9 @@ body {
 .slide-up {
   opacity: 0;
   transform: translateY(50px);
-  transition: opacity 1s ease-out, transform 1s ease-out;
+  transition:
+    opacity 1s ease-out,
+    transform 1s ease-out;
 }
 
 .slide-up.visible {
@@ -298,7 +323,12 @@ body {
    TYPOGRAPHY
    ============================================ */
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   margin: 0;
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
@@ -367,15 +397,31 @@ a:hover {
   text-align: left;
 }
 
-.mb-sm { margin-bottom: var(--spacing-sm); }
-.mb-md { margin-bottom: var(--spacing-md); }
-.mb-lg { margin-bottom: var(--spacing-lg); }
-.mb-xl { margin-bottom: var(--spacing-xl); }
+.mb-sm {
+  margin-bottom: var(--spacing-sm);
+}
+.mb-md {
+  margin-bottom: var(--spacing-md);
+}
+.mb-lg {
+  margin-bottom: var(--spacing-lg);
+}
+.mb-xl {
+  margin-bottom: var(--spacing-xl);
+}
 
-.mt-sm { margin-top: var(--spacing-sm); }
-.mt-md { margin-top: var(--spacing-md); }
-.mt-lg { margin-top: var(--spacing-lg); }
-.mt-xl { margin-top: var(--spacing-xl); }
+.mt-sm {
+  margin-top: var(--spacing-sm);
+}
+.mt-md {
+  margin-top: var(--spacing-md);
+}
+.mt-lg {
+  margin-top: var(--spacing-lg);
+}
+.mt-xl {
+  margin-top: var(--spacing-xl);
+}
 
 .flex {
   display: flex;
@@ -397,6 +443,12 @@ a:hover {
   justify-content: space-between;
 }
 
-.gap-sm { gap: var(--spacing-sm); }
-.gap-md { gap: var(--spacing-md); }
-.gap-lg { gap: var(--spacing-lg); }
+.gap-sm {
+  gap: var(--spacing-sm);
+}
+.gap-md {
+  gap: var(--spacing-md);
+}
+.gap-lg {
+  gap: var(--spacing-lg);
+}

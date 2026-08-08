@@ -83,14 +83,14 @@
 }
 
 .chatTitle {
-  font-size: 1rem;
+  font-size: var(--font-size-md);
   font-weight: 600;
   margin: 0;
   color: white;
 }
 
 .chatStatus {
-  font-size: 0.75rem;
+  font-size: var(--font-size-2xs);
   margin: 0;
   color: rgba(255, 255, 255, 0.8);
 }
@@ -187,7 +187,7 @@
   max-width: 80%;
   padding: 0.75rem 1rem;
   border-radius: 12px;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   line-height: 1.5;
 }
 
@@ -206,7 +206,7 @@
 
 /* Título de preguntas */
 .preguntasTitulo {
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: #000;
   margin: 0 0 1rem 0;
@@ -225,7 +225,7 @@
   padding: 0.85rem 1rem;
   border-radius: 8px;
   text-align: left;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   color: #000;
   cursor: pointer;
   transition: all 0.2s;
@@ -256,7 +256,7 @@
   background: white;
   border: 1px solid #e5e5e5;
   border-radius: 6px;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   color: #666;
   cursor: pointer;
@@ -278,7 +278,7 @@
   background: #000;
   border: none;
   border-radius: 6px;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: white;
   text-decoration: none;

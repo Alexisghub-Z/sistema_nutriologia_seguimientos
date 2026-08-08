@@ -23,7 +23,7 @@
 
 .mesTitle {
   margin: 0;
-  font-size: 1.4rem;
+  font-size: var(--font-size-xl);
   font-weight: 700;
   color: #000;
   letter-spacing: -0.5px;
@@ -32,7 +32,7 @@
 .navButton {
   background: transparent;
   border: none;
-  font-size: 1.8rem;
+  font-size: var(--font-size-3xl);
   color: #000;
   cursor: pointer;
   padding: 0.5rem 1rem;
@@ -54,7 +54,7 @@
 
 .diaSemana {
   text-align: center;
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: #999;
   padding: 0.5rem 0;
@@ -74,7 +74,7 @@
   background: white;
   border-radius: 0;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: var(--font-size-base);
   font-weight: 600;
   color: #000;
   transition: all 0.2s;
@@ -126,7 +126,7 @@
 
 .horariosTitle {
   margin: 0 0 1.5rem 0;
-  font-size: 1.2rem;
+  font-size: var(--font-size-lg);
   font-weight: 700;
   color: #000;
   display: flex;
@@ -136,7 +136,7 @@
 }
 
 .duracion {
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   color: #999;
 }
@@ -170,7 +170,7 @@
   background: white;
   border-radius: 0;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: var(--font-size-base);
   font-weight: 600;
   color: #000;
   transition: all 0.2s;
@@ -224,11 +224,11 @@
 
 .sinHorarios p {
   margin: 0.5rem 0;
-  font-size: 1rem;
+  font-size: var(--font-size-md);
 }
 
 .hint {
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   color: #ccc;
 }
 
@@ -238,7 +238,7 @@
   padding: 3rem 1.5rem;
   text-align: center;
   color: #999;
-  font-size: 1rem;
+  font-size: var(--font-size-md);
 }
 
 .placeholderHorarios p {
@@ -261,15 +261,15 @@
   }
 
   .mesTitle {
-    font-size: 1.2rem;
+    font-size: var(--font-size-lg);
   }
 
   .diaSemana {
-    font-size: 0.7rem;
+    font-size: var(--font-size-2xs);
   }
 
   .dia {
-    font-size: 0.9rem;
+    font-size: var(--font-size-sm);
   }
 }
 
@@ -285,10 +285,10 @@
 
   .navButton {
     padding: 0.25rem 0.75rem;
-    font-size: 1.5rem;
+    font-size: var(--font-size-2xl);
   }
 
   .mesTitle {
-    font-size: 1.1rem;
+    font-size: var(--font-size-md);
   }
 }

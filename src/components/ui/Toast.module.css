@@ -32,7 +32,7 @@
   border-radius: 4px;
   /* Sombra dura, sin difuminar: la firma del estilo brutalista. */
   box-shadow: 5px 5px 0 0 #000;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   line-height: 1.4;
   pointer-events: auto;
 
@@ -154,7 +154,7 @@
 
 .descripcion {
   margin: 0.2rem 0 0;
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   font-weight: 400;
   color: #444;
   overflow-wrap: anywhere;
@@ -168,7 +168,7 @@
   border: 2px solid #000;
   border-radius: 3px;
   font-family: inherit;
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;

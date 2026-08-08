@@ -26,7 +26,7 @@
 }
 
 .modalTitulo {
-  font-size: 1.2rem;
+  font-size: var(--font-size-lg);
   font-weight: 700;
   color: var(--color-gray-900);
   margin: 0 0 var(--spacing-sm);
@@ -34,7 +34,7 @@
 
 .modalTexto {
   color: var(--color-gray-600);
-  font-size: 0.92rem;
+  font-size: var(--font-size-base);
   line-height: 1.5;
   margin: 0 0 var(--spacing-md);
 }
@@ -43,7 +43,7 @@
   background: #fef3c7;
   border: 1px solid #fcd34d;
   color: #92400e;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   border-radius: var(--radius-md);
   padding: 0.65rem 0.85rem;
   margin: 0 0 var(--spacing-md);
@@ -54,7 +54,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.88rem;
+  font-size: var(--font-size-sm);
   color: var(--color-gray-700);
   cursor: pointer;
   margin-bottom: var(--spacing-lg);
@@ -78,7 +78,7 @@
 }
 
 .title {
-  font-size: 1.75rem;
+  font-size: var(--font-size-3xl);
   font-weight: 700;
   color: var(--color-gray-900);
   margin: 0 0 var(--spacing-xs);
@@ -112,7 +112,7 @@
 .buscadorInput {
   width: 100%;
   padding: 0.9rem 2.75rem;
-  font-size: 1.02rem;
+  font-size: var(--font-size-md);
   border: 1px solid var(--color-gray-300);
   border-radius: var(--radius-full);
   background: white;
@@ -144,7 +144,7 @@
   background: var(--color-gray-100);
   color: var(--color-gray-500);
   border-radius: 50%;
-  font-size: 1.1rem;
+  font-size: var(--font-size-md);
   line-height: 1;
   cursor: pointer;
   transition: background 0.12s ease;
@@ -199,7 +199,7 @@
   background: var(--color-primary);
   color: white;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: var(--font-size-md);
 }
 
 .resultadoInfo {
@@ -219,7 +219,7 @@
 }
 
 .resultadoEmail {
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   color: var(--color-gray-500);
   white-space: nowrap;
   overflow: hidden;
@@ -267,7 +267,7 @@
   background: var(--color-primary);
   color: white;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: var(--font-size-md);
 }
 
 .pacienteSelTexto {
@@ -280,12 +280,12 @@
 .pacienteSelNombre {
   font-weight: 700;
   color: var(--color-gray-900);
-  font-size: 1.02rem;
+  font-size: var(--font-size-md);
   line-height: 1.2;
 }
 
 .pacienteSelEmail {
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   color: var(--color-gray-500);
 }
 
@@ -301,7 +301,7 @@
 }
 
 .pacienteSelConsulta label {
-  font-size: 0.72rem;
+  font-size: var(--font-size-2xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -314,7 +314,7 @@
   padding: 0.45rem 0.65rem;
   border: 1px solid var(--color-gray-300);
   border-radius: var(--radius-md);
-  font-size: 0.88rem;
+  font-size: var(--font-size-sm);
   background: var(--color-gray-50);
   cursor: pointer;
   transition:
@@ -336,7 +336,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-gray-600);
   background: var(--color-gray-100);
   border: none;
@@ -354,7 +354,7 @@
 }
 
 .consultaLigadaAviso {
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   color: var(--color-primary);
   margin: 0 0 var(--spacing-md);
 }
@@ -379,7 +379,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-gray-600);
 }
@@ -394,7 +394,7 @@
   background: transparent;
   border: 0;
   border-radius: var(--radius-sm);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-gray-600);
   cursor: pointer;
@@ -408,7 +408,7 @@
 /* Flecha que gira según el estado (abajo = desplegado). */
 .historialFlecha {
   display: inline-block;
-  font-size: 0.7rem;
+  font-size: var(--font-size-2xs);
   line-height: 1;
   color: var(--color-gray-400);
   transition: transform 0.18s ease;
@@ -439,7 +439,7 @@
   background: var(--color-gray-100);
   color: var(--color-gray-600);
   border-radius: var(--radius-full);
-  font-size: 0.7rem;
+  font-size: var(--font-size-2xs);
   font-weight: 700;
 }
 
@@ -460,7 +460,7 @@
   border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-sm);
   color: var(--color-gray-600);
-  font-size: 1.1rem;
+  font-size: var(--font-size-md);
   line-height: 1;
   cursor: pointer;
   transition:
@@ -479,7 +479,7 @@
 }
 
 .pagInfo {
-  font-size: 0.75rem;
+  font-size: var(--font-size-2xs);
   color: var(--color-gray-500);
   font-variant-numeric: tabular-nums;
   min-width: 42px;
@@ -619,7 +619,7 @@
 }
 
 .cuadroFecha {
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-gray-800);
 }
@@ -639,7 +639,7 @@
   border: 0;
   border-radius: var(--radius-sm);
   color: var(--color-gray-500);
-  font-size: 1.15rem;
+  font-size: var(--font-size-lg);
   line-height: 1;
   cursor: pointer;
 }
@@ -677,7 +677,7 @@
   border: 0;
   border-radius: var(--radius-sm);
   color: var(--color-gray-700);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   text-align: left;
   cursor: pointer;
 }
@@ -701,7 +701,7 @@
 
 /* Etiqueta (nombre corto) del cuadro */
 .cuadroEtiqueta {
-  font-size: 0.72rem;
+  font-size: var(--font-size-2xs);
   font-weight: 600;
   color: var(--color-primary);
   background: rgba(16, 185, 129, 0.08);
@@ -715,7 +715,7 @@
   padding: 2px 6px;
   border: 1px solid var(--color-primary);
   border-radius: var(--radius-sm);
-  font-size: 0.75rem;
+  font-size: var(--font-size-2xs);
 }
 
 /* Datos clave */
@@ -726,14 +726,14 @@
 }
 
 .cuadroKcal {
-  font-size: 0.95rem;
+  font-size: var(--font-size-base);
   font-weight: 700;
   color: var(--color-primary);
   font-variant-numeric: tabular-nums;
 }
 
 .cuadroMeta {
-  font-size: 0.72rem;
+  font-size: var(--font-size-2xs);
   color: var(--color-gray-500);
 }
 
@@ -749,7 +749,7 @@
 }
 
 .chipSinDieta {
-  font-size: 0.66rem;
+  font-size: var(--font-size-2xs);
   font-weight: 600;
   color: var(--color-gray-400);
 }
@@ -764,7 +764,7 @@
   border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-md);
   color: var(--color-gray-700);
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   cursor: pointer;
   transition:
@@ -782,7 +782,7 @@
 /* Etiquetas de estado dentro de la tarjeta del historial. */
 .chipFinalizada,
 .chipBorrador {
-  font-size: 0.66rem;
+  font-size: var(--font-size-2xs);
   font-weight: 600;
   letter-spacing: 0.02em;
 }
@@ -796,19 +796,19 @@
 }
 
 .historialFecha {
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-gray-800);
 }
 
 .historialKcal {
-  font-size: 0.72rem;
+  font-size: var(--font-size-2xs);
   color: var(--color-primary);
   font-weight: 600;
 }
 
 .historialVacio {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-gray-400);
   margin-bottom: var(--spacing-lg);
 }
@@ -825,7 +825,7 @@
   padding: 0.65rem 1.25rem;
   border: none;
   background: none;
-  font-size: 0.95rem;
+  font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--color-gray-500);
   cursor: pointer;
@@ -883,7 +883,7 @@
   min-width: 640px;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -916,7 +916,7 @@
 
 .thCuadre {
   min-width: 118px;
-  font-size: 0.7rem;
+  font-size: var(--font-size-2xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--color-gray-400);
@@ -939,7 +939,7 @@
 
 .tablaTiempos thead .thGrupo {
   background: var(--color-gray-50);
-  font-size: 0.7rem;
+  font-size: var(--font-size-2xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--color-gray-400);
@@ -963,7 +963,7 @@
 .tiempoNombre {
   width: 100%;
   min-width: 0;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 700;
   color: var(--color-gray-800);
   text-transform: none;
@@ -993,7 +993,7 @@
   border: none;
   background: none;
   color: var(--color-gray-300);
-  font-size: 1.15rem;
+  font-size: var(--font-size-lg);
   line-height: 1;
   cursor: pointer;
   padding: 0 0.15rem;
@@ -1012,7 +1012,7 @@
   text-align: center;
   border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-md);
-  font-size: 0.95rem;
+  font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--color-gray-800);
   font-variant-numeric: tabular-nums;
@@ -1075,7 +1075,7 @@
 
 .filaMacroValor {
   color: var(--color-gray-600);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 /* Layout de dos columnas del mismo ancho: datos | (resultado + distribución) */
@@ -1116,7 +1116,7 @@
 }
 
 .cardTitle {
-  font-size: 1.1rem;
+  font-size: var(--font-size-md);
   font-weight: 700;
   color: var(--color-gray-900);
   margin: 0 0 var(--spacing-md);
@@ -1137,7 +1137,7 @@
 }
 
 .formGroup label {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-gray-700);
 }
@@ -1146,7 +1146,7 @@
 .formGroup select,
 .formGroup textarea {
   padding: 0.55rem 0.7rem;
-  font-size: 0.95rem;
+  font-size: var(--font-size-base);
   border: 1px solid var(--color-gray-300);
   border-radius: var(--radius-md);
   background: white;
@@ -1167,7 +1167,7 @@
 }
 
 .macrosSuma {
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   margin-top: 4px;
 }
 
@@ -1197,7 +1197,7 @@
 }
 
 .subCardTitle {
-  font-size: 1rem;
+  font-size: var(--font-size-md);
   font-weight: 700;
   color: var(--color-gray-900);
   margin: var(--spacing-lg) 0 var(--spacing-xs);
@@ -1229,18 +1229,18 @@
 
 .metricaLabel {
   color: var(--color-gray-600);
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
 }
 
 .metricaValor {
   font-weight: 700;
   color: var(--color-gray-900);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   white-space: nowrap;
 }
 
 .metricaDestacada .metricaValor {
-  font-size: 1.2rem;
+  font-size: var(--font-size-lg);
   color: var(--color-primary);
 }
 
@@ -1254,7 +1254,7 @@
 .kcalInput {
   width: 90px;
   padding: 0.35rem 0.5rem;
-  font-size: 1.2rem;
+  font-size: var(--font-size-lg);
   font-weight: 700;
   text-align: right;
   color: var(--color-primary);
@@ -1270,7 +1270,7 @@
 
 .kcalUnidad {
   color: var(--color-gray-500);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .recalcularBtn {
@@ -1281,7 +1281,7 @@
   height: 28px;
   border-radius: 50%;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: var(--font-size-md);
   line-height: 1;
 }
 
@@ -1291,7 +1291,7 @@
 
 .kcalAviso {
   margin: 0 0 var(--spacing-sm);
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   color: #d97706;
   text-align: right;
 }
@@ -1307,7 +1307,7 @@
   text-align: right;
   border: 1px solid var(--color-gray-300);
   border-radius: var(--radius-sm);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1338,7 +1338,7 @@
 }
 
 .macroNombre {
-  font-size: 0.65rem;
+  font-size: var(--font-size-2xs);
   text-transform: uppercase;
   letter-spacing: 0.01em;
   color: var(--color-gray-500);
@@ -1364,7 +1364,7 @@
 }
 
 .macroKcal {
-  font-size: 0.72rem;
+  font-size: var(--font-size-2xs);
   color: var(--color-gray-500);
   white-space: nowrap;
 }
@@ -1373,7 +1373,7 @@
   display: inline-block;
   padding: 2px 10px;
   border-radius: var(--radius-full);
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   background: var(--color-gray-100);
   color: var(--color-gray-700);
@@ -1382,7 +1382,7 @@
 /* Tabla SMAE */
 .smaeAyuda {
   color: var(--color-gray-500);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   margin: 0 0 var(--spacing-md);
 }
 
@@ -1391,7 +1391,7 @@
   display: block;
   margin-top: 4px;
   color: var(--color-gray-500);
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   line-height: 1.35;
 }
 
@@ -1408,7 +1408,7 @@
 }
 
 .pasoSelector label {
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-gray-600);
 }
@@ -1417,7 +1417,7 @@
   padding: 0.3rem 0.5rem;
   border: 1px solid var(--color-gray-300);
   border-radius: var(--radius-sm);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   background: white;
@@ -1454,7 +1454,7 @@
 
 .tablaSmae {
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .tablaSmae th,
@@ -1467,7 +1467,7 @@
 
 .tablaSmae thead th {
   color: var(--color-gray-500);
-  font-size: 0.75rem;
+  font-size: var(--font-size-2xs);
   text-transform: uppercase;
   letter-spacing: 0.03em;
   font-weight: 600;
@@ -1617,7 +1617,7 @@
 
 .error {
   color: #dc2626;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   margin-top: var(--spacing-sm);
 }
 
@@ -1739,7 +1739,7 @@
   align-items: center;
   padding: 2px 10px;
   border-radius: var(--radius-full);
-  font-size: 0.72rem;
+  font-size: var(--font-size-2xs);
   font-weight: 600;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -1769,7 +1769,7 @@
   gap: 4px;
   padding: 2px 10px;
   border-radius: var(--radius-full);
-  font-size: 0.72rem;
+  font-size: var(--font-size-2xs);
   font-weight: 600;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -1866,7 +1866,7 @@
   border: 1px solid #a7f3d0;
   border-radius: var(--radius-md);
   color: #065f46;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .avisoFinalizadaIcono {
@@ -1927,7 +1927,7 @@
   align-items: center;
   gap: 0.35rem;
   margin-bottom: 0.3rem;
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   color: #991b1b;
 }
@@ -1935,7 +1935,7 @@
 .bloqueoLista ul {
   margin: 0;
   padding-left: 1.3rem;
-  font-size: 0.76rem;
+  font-size: var(--font-size-2xs);
   color: #7f1d1d;
 }
 
@@ -1953,14 +1953,14 @@
   background-color: #fffbeb;
   border: 1px solid #fde68a;
   border-radius: var(--radius-md);
-  font-size: 0.76rem;
+  font-size: var(--font-size-2xs);
   color: #92400e;
 }
 
 /* Texto que explica qué guarda cada botón. */
 .accionAyuda {
   flex: 1;
-  font-size: 0.74rem;
+  font-size: var(--font-size-2xs);
   color: var(--color-gray-500);
 }
 
@@ -2012,7 +2012,7 @@
   flex: 1;
   min-width: 0;
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -2025,13 +2025,13 @@
   align-items: baseline;
   gap: 0.4rem;
   flex-shrink: 0;
-  font-size: 0.76rem;
+  font-size: var(--font-size-2xs);
   color: var(--color-gray-500);
   font-variant-numeric: tabular-nums;
 }
 
 .tiempoAporte strong {
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   font-weight: 700;
   color: var(--color-gray-800);
 }
@@ -2039,7 +2039,7 @@
 .tiempoMacros {
   padding-left: 0.4rem;
   border-left: 1px solid var(--color-gray-200);
-  font-size: 0.72rem;
+  font-size: var(--font-size-2xs);
   color: var(--color-gray-400);
 }
 
@@ -2131,7 +2131,7 @@
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   font-family: inherit;
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   color: var(--color-familia, var(--color-primary));
   text-align: right;
@@ -2252,7 +2252,7 @@
   background-color: #fffbeb;
   border: 1px solid #fde68a;
   border-radius: var(--radius-sm);
-  font-size: 0.74rem;
+  font-size: var(--font-size-2xs);
   color: #92400e;
   animation: avisoEntra 0.24s ease-out both;
 }
@@ -2293,7 +2293,7 @@
   border-radius: var(--radius-full);
   background-color: var(--color-gray-100);
   color: var(--color-gray-500);
-  font-size: 0.68rem;
+  font-size: var(--font-size-2xs);
   white-space: nowrap;
   cursor: help;
   transition:
@@ -2350,7 +2350,7 @@
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   font-family: inherit;
-  font-size: 0.92rem;
+  font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--color-gray-800);
   transition:
@@ -2380,7 +2380,7 @@
   align-items: center;
   gap: 0.3rem;
   flex-shrink: 0;
-  font-size: 0.74rem;
+  font-size: var(--font-size-2xs);
   font-weight: 600;
   color: var(--color-gray-500);
   font-variant-numeric: tabular-nums;
@@ -2416,7 +2416,7 @@
 .prepLabel {
   display: block;
   margin-bottom: 3px;
-  font-size: 0.7rem;
+  font-size: var(--font-size-2xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -2431,7 +2431,7 @@
   border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-sm);
   font-family: inherit;
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   line-height: 1.5;
   color: var(--color-gray-700);
   resize: vertical;
@@ -2457,7 +2457,7 @@
   border: 1px dashed var(--color-gray-300);
   border-radius: var(--radius-md);
   color: var(--color-gray-500);
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.14s ease;
@@ -2490,7 +2490,7 @@
   padding: 1px 8px;
   background-color: var(--color-gray-100);
   border-radius: var(--radius-full);
-  font-size: 0.7rem;
+  font-size: var(--font-size-2xs);
   color: var(--color-gray-600);
   white-space: nowrap;
   overflow: hidden;
@@ -2530,7 +2530,7 @@
   align-items: center;
   gap: 0.4rem;
   margin-bottom: 0.4rem;
-  font-size: 0.86rem;
+  font-size: var(--font-size-sm);
   font-weight: 700;
   color: #991b1b;
 }
@@ -2538,7 +2538,7 @@
 .alergenoLista {
   margin: 0 0 0.4rem;
   padding-left: 1.4rem;
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   color: #7f1d1d;
 }
 
@@ -2548,7 +2548,7 @@
 
 .alergenoNota {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: var(--font-size-2xs);
   color: #b91c1c;
   opacity: 0.85;
 }
@@ -2636,7 +2636,7 @@
   background-color: var(--color-gray-800);
   color: white;
   border-radius: var(--radius-full);
-  font-size: 0.75rem;
+  font-size: var(--font-size-2xs);
   font-weight: 600;
   animation: avisoFlota 1.8s ease-out both;
 }
@@ -2685,7 +2685,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 0.7rem;
+  font-size: var(--font-size-2xs);
   font-weight: 600;
   color: var(--color-gray-600);
   white-space: nowrap;
@@ -2705,7 +2705,7 @@
   background-color: var(--color-gray-50);
   border: 1px dashed var(--color-gray-300);
   border-radius: var(--radius-sm);
-  font-size: 0.76rem;
+  font-size: var(--font-size-2xs);
   color: var(--color-gray-500);
   animation: avisoEntra 0.24s ease-out both;
 }
@@ -2720,7 +2720,7 @@
   background-color: rgba(45, 159, 93, 0.07);
   border: 1px solid rgba(45, 159, 93, 0.2);
   border-radius: var(--radius-sm);
-  font-size: 0.75rem;
+  font-size: var(--font-size-2xs);
   color: #065f46;
   animation: avisoEntra 0.24s ease-out both;
 }
@@ -2738,7 +2738,7 @@
   border: 1px dashed var(--color-gray-300);
   border-radius: var(--radius-md);
   color: var(--color-gray-500);
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.14s ease;
@@ -2769,7 +2769,7 @@
   padding: 0.3rem 0.5rem;
   border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-sm);
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   background-color: white;
 }
 
@@ -2784,7 +2784,7 @@
   padding: 0.3rem 0.4rem;
   border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-sm);
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -2796,7 +2796,7 @@
 }
 
 .agregarEquivLabel {
-  font-size: 0.74rem;
+  font-size: var(--font-size-2xs);
   color: var(--color-gray-500);
 }
 
@@ -2805,7 +2805,7 @@
   background: transparent;
   border: 0;
   color: var(--color-gray-500);
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   cursor: pointer;
 }
 
@@ -2830,7 +2830,7 @@
 .iaAlimentoGrupo {
   flex: 0 0 auto;
   min-width: 92px;
-  font-size: 0.72rem;
+  font-size: var(--font-size-2xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -2848,7 +2848,7 @@
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   font-family: inherit;
-  font-size: 0.88rem;
+  font-size: var(--font-size-sm);
   color: var(--color-gray-800);
   transition:
     background-color 0.12s ease,
@@ -2883,7 +2883,7 @@
 }
 
 .iaTiempoNota {
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   color: var(--color-gray-500);
   font-style: italic;
   margin: 0.4rem 0 0;
@@ -2905,7 +2905,7 @@
 
 .chatVacio {
   color: var(--color-gray-400);
-  font-size: 0.88rem;
+  font-size: var(--font-size-sm);
   text-align: center;
   margin: auto;
 }
@@ -2915,7 +2915,7 @@
   max-width: 85%;
   padding: 0.55rem 0.8rem;
   border-radius: var(--radius-md);
-  font-size: 0.88rem;
+  font-size: var(--font-size-sm);
   line-height: 1.45;
   white-space: pre-wrap; /* respeta saltos de línea del texto de la IA */
   word-break: break-word;
@@ -2946,7 +2946,7 @@
   padding: 0.55rem 0.75rem;
   border: 1px solid var(--color-gray-300);
   border-radius: var(--radius-md);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .chatInput input:focus {
@@ -3000,14 +3000,14 @@
 
 .comprobacionOk {
   margin: var(--spacing-md) 0 0;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: #16a34a;
 }
 
 .comprobacionAviso {
   margin: var(--spacing-md) 0 0;
-  font-size: 0.88rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: #ea580c;
   line-height: 1.4;
@@ -3017,7 +3017,7 @@
   flex: 0 0 auto;
   color: var(--color-gray-400);
   cursor: help;
-  font-size: 0.95rem;
+  font-size: var(--font-size-base);
 }
 
 .iaCalculo:hover {
@@ -3038,7 +3038,7 @@
   border: none;
   background: none;
   padding: 0.4rem 0.85rem;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-gray-600);
   border-radius: var(--radius-sm);
@@ -3067,13 +3067,13 @@
 
 .recetarioIndicaciones p {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-gray-700);
   line-height: 1.5;
 }
 
 .recetarioSubtitulo {
-  font-size: 0.75rem;
+  font-size: var(--font-size-2xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -3106,7 +3106,7 @@
 }
 
 .recetarioOpcionNum {
-  font-size: 0.68rem;
+  font-size: var(--font-size-2xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -3120,13 +3120,13 @@
   margin: 0;
   padding-left: 1.2rem;
   color: var(--color-gray-700);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   line-height: 1.6;
 }
 
 .recetarioPrep {
   margin: 0.5rem 0 0;
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   color: var(--color-gray-600);
   background: var(--color-gray-50);
   padding: 0.5rem 0.7rem;
@@ -3231,7 +3231,7 @@
 }
 
 .aplicandoTexto {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   background: linear-gradient(90deg, var(--color-primary), #22d3ee, var(--color-primary));
   background-size: 200% 100%;
@@ -3318,7 +3318,7 @@
 }
 
 .editandoTexto {
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   background: linear-gradient(90deg, var(--color-primary), #22d3ee, var(--color-primary));
   background-size: 200% 100%;
