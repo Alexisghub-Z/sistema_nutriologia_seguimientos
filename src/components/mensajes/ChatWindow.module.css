@@ -3,6 +3,59 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  /* Referencia para anclar el botón de bajar sobre los mensajes. */
+  position: relative;
+}
+
+/* ── Ir al último mensaje ──────────────────────────────────────────
+   Aparece solo cuando el nutriólogo se aleja del final, para que leer
+   mensajes antiguos no le devuelva abajo por sorpresa. Se sitúa justo
+   encima del campo de escritura. */
+.bajarBtn {
+  position: absolute;
+  right: var(--spacing-xl);
+  bottom: 92px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  background-color: var(--color-white);
+  color: var(--color-gray-700);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  animation: bajarEntra 0.2s ease-out both;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.bajarBtn:hover {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+@keyframes bajarEntra {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bajarBtn {
+    animation: none;
+  }
 }
 
 .loadingContainer,
@@ -251,33 +304,30 @@
   }
 }
 
-/* Cascada al abrir una conversación: las primeras burbujas entran
-   escalonadas en lugar de aparecer todas de golpe. Se ancla en los hijos
-   directos del contenedor, así que un mensaje nuevo al final no vuelve a
-   animar los anteriores. */
-.messagesContainer > .messageWrapper:nth-child(1) .messageBubble {
+/* Cascada al abrir una conversación: las últimas burbujas —las que
+   quedan a la vista, porque el chat abre abajo— entran escalonadas de
+   arriba abajo en lugar de aparecer todas de golpe.
+
+   Se cuenta desde el final con `nth-last-child` justamente porque la
+   vista aterriza en el último mensaje: escalonar los primeros animaría
+   burbujas que nadie llega a ver. */
+.messagesContainer > .messageWrapper:nth-last-child(8) .messageBubble {
   animation-delay: 0.03s;
 }
-.messagesContainer > .messageWrapper:nth-child(2) .messageBubble {
+.messagesContainer > .messageWrapper:nth-last-child(7) .messageBubble {
   animation-delay: 0.07s;
 }
-.messagesContainer > .messageWrapper:nth-child(3) .messageBubble {
+.messagesContainer > .messageWrapper:nth-last-child(6) .messageBubble {
   animation-delay: 0.11s;
 }
-.messagesContainer > .messageWrapper:nth-child(4) .messageBubble {
+.messagesContainer > .messageWrapper:nth-last-child(5) .messageBubble {
   animation-delay: 0.15s;
 }
-.messagesContainer > .messageWrapper:nth-child(5) .messageBubble {
+.messagesContainer > .messageWrapper:nth-last-child(4) .messageBubble {
   animation-delay: 0.19s;
 }
-.messagesContainer > .messageWrapper:nth-child(6) .messageBubble {
+.messagesContainer > .messageWrapper:nth-last-child(3) .messageBubble {
   animation-delay: 0.23s;
-}
-.messagesContainer > .messageWrapper:nth-child(7) .messageBubble {
-  animation-delay: 0.27s;
-}
-.messagesContainer > .messageWrapper:nth-child(8) .messageBubble {
-  animation-delay: 0.31s;
 }
 
 .messageContent {
