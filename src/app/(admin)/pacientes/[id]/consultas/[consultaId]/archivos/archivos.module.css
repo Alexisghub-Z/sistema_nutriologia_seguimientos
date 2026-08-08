@@ -89,7 +89,7 @@
 .fileInput:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(45, 159, 93, 0.1);
+  box-shadow: var(--ring-focus);
 }
 
 .select:disabled,
@@ -195,7 +195,7 @@
 
 .archivoCard:hover {
   border-color: var(--color-primary);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 

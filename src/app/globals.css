@@ -59,11 +59,43 @@
   --radius-xl: 1rem;
   --radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  /* ---------------------------------------------------------------
+     Elevación
+     ---------------------------------------------------------------
+     Cuatro niveles y ninguno más. Antes convivían 41 sombras distintas
+     para 45 usos —casi una por sitio—, y tres tarjetas vecinas con tres
+     sombras diferentes parecen recortadas de tres aplicaciones.
+
+     Van teñidas con el color del texto (#111827) en lugar de negro puro:
+     el negro sobre fondo claro ensucia y se ve como una mancha gris,
+     mientras que el tono teñido se integra con el resto de la interfaz.
+
+     Cada nivel combina un contacto corto (define el borde del elemento)
+     con una difusión amplia (da la sensación de altura). Esa doble capa
+     es lo que separa una sombra creíble de un desenfoque plano.
+
+     Regla: ninguna sombra de elevación fuera de estos cuatro tokens. Las
+     sombras de color (WhatsApp, avisos, foco) son otra cosa y se definen
+     aparte, en su componente.
+     --------------------------------------------------------------- */
+  --shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.04);
+  --shadow-md: 0 1px 2px rgba(17, 24, 39, 0.04), 0 2px 6px -1px rgba(17, 24, 39, 0.06);
+  --shadow-lg: 0 2px 4px rgba(17, 24, 39, 0.05), 0 6px 16px -3px rgba(17, 24, 39, 0.08);
+  --shadow-xl: 0 4px 8px rgba(17, 24, 39, 0.05), 0 12px 28px -6px rgba(17, 24, 39, 0.1);
+
+  /* ---------------------------------------------------------------
+     Anillo de foco
+     ---------------------------------------------------------------
+     Se repetía a mano 42 veces con 18 variantes, y algunas apuntaban a
+     variables inexistentes (`--color-primary-rgb`), cayendo a un verde
+     ajeno a la marca o incluso a un morado.
+     --------------------------------------------------------------- */
+  --ring-focus: 0 0 0 3px rgba(45, 159, 93, 0.14);
+  --ring-error: 0 0 0 3px rgba(239, 68, 68, 0.14);
+
+  /* Componente RGB del verde de marca, para construir transparencias sin
+     repetir el hexadecimal. Faltaba y varios archivos ya la usaban. */
+  --color-primary-rgb: 45, 159, 93;
 
   /* Font Sizes - Desktop (original) */
   --font-size-xs: 0.75rem;
@@ -185,9 +217,9 @@ html {
 body {
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell',
+    'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   font-size: var(--font-size-md);
   line-height: var(--line-height-normal);
   color: var(--color-text);
@@ -207,7 +239,9 @@ body {
 .fade-in {
   opacity: 0;
   transform: translateY(30px);
-  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  transition:
+    opacity 0.8s ease-out,
+    transform 0.8s ease-out;
 }
 
 .fade-in.visible {
@@ -226,7 +260,9 @@ body {
 .fade-in-left {
   opacity: 0;
   transform: translateX(-50px);
-  transition: opacity 1s ease-out, transform 1s ease-out;
+  transition:
+    opacity 1s ease-out,
+    transform 1s ease-out;
 }
 
 .fade-in-left.visible {
@@ -244,7 +280,9 @@ body {
 .fade-in-right {
   opacity: 0;
   transform: translateX(50px);
-  transition: opacity 1s ease-out, transform 1s ease-out;
+  transition:
+    opacity 1s ease-out,
+    transform 1s ease-out;
 }
 
 .fade-in-right.visible {
@@ -262,7 +300,9 @@ body {
 .scale-in {
   opacity: 0;
   transform: scale(0.9);
-  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  transition:
+    opacity 0.8s ease-out,
+    transform 0.8s ease-out;
 }
 
 .scale-in.visible {
@@ -280,7 +320,9 @@ body {
 .slide-up {
   opacity: 0;
   transform: translateY(50px);
-  transition: opacity 1s ease-out, transform 1s ease-out;
+  transition:
+    opacity 1s ease-out,
+    transform 1s ease-out;
 }
 
 .slide-up.visible {
@@ -298,7 +340,12 @@ body {
    TYPOGRAPHY
    ============================================ */
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   margin: 0;
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
@@ -367,15 +414,31 @@ a:hover {
   text-align: left;
 }
 
-.mb-sm { margin-bottom: var(--spacing-sm); }
-.mb-md { margin-bottom: var(--spacing-md); }
-.mb-lg { margin-bottom: var(--spacing-lg); }
-.mb-xl { margin-bottom: var(--spacing-xl); }
+.mb-sm {
+  margin-bottom: var(--spacing-sm);
+}
+.mb-md {
+  margin-bottom: var(--spacing-md);
+}
+.mb-lg {
+  margin-bottom: var(--spacing-lg);
+}
+.mb-xl {
+  margin-bottom: var(--spacing-xl);
+}
 
-.mt-sm { margin-top: var(--spacing-sm); }
-.mt-md { margin-top: var(--spacing-md); }
-.mt-lg { margin-top: var(--spacing-lg); }
-.mt-xl { margin-top: var(--spacing-xl); }
+.mt-sm {
+  margin-top: var(--spacing-sm);
+}
+.mt-md {
+  margin-top: var(--spacing-md);
+}
+.mt-lg {
+  margin-top: var(--spacing-lg);
+}
+.mt-xl {
+  margin-top: var(--spacing-xl);
+}
 
 .flex {
   display: flex;
@@ -397,6 +460,12 @@ a:hover {
   justify-content: space-between;
 }
 
-.gap-sm { gap: var(--spacing-sm); }
-.gap-md { gap: var(--spacing-md); }
-.gap-lg { gap: var(--spacing-lg); }
+.gap-sm {
+  gap: var(--spacing-sm);
+}
+.gap-md {
+  gap: var(--spacing-md);
+}
+.gap-lg {
+  gap: var(--spacing-lg);
+}

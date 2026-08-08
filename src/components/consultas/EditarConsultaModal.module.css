@@ -20,7 +20,7 @@
   position: relative;
   background: white;
   border-radius: var(--radius-lg);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-xl);
   width: 100%;
   max-width: 800px;
   max-height: calc(100vh - 2 * var(--spacing-lg));
@@ -36,8 +36,12 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
@@ -182,7 +186,7 @@
 .textarea:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 99, 102, 241), 0.1);
+  box-shadow: var(--ring-focus);
 }
 
 .textarea {
@@ -199,7 +203,7 @@
 
 .inputError {
   border-color: var(--color-error) !important;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+  box-shadow: var(--ring-error);
 }
 
 .errorText {

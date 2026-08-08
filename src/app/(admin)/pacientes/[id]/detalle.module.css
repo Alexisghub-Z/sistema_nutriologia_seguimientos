@@ -1024,7 +1024,7 @@
 }
 
 .nuevaDietaBtn:hover {
-  background: rgba(var(--color-primary-rgb, 34 197 94), 0.08);
+  background: rgba(var(--color-primary-rgb), 0.08);
 }
 
 /* ============================================================
