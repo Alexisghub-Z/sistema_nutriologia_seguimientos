@@ -103,7 +103,7 @@
 
 /* --- Texto que cicla con puntos animados --- */
 .texto {
-  font-size: 0.95rem;
+  font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--color-gray-700);
   text-align: center;

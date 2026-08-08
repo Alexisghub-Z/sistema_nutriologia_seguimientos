@@ -86,7 +86,9 @@
 .socialIcon {
   display: flex;
   align-items: center;
-  transition: transform 0.2s, opacity 0.2s;
+  transition:
+    transform 0.2s,
+    opacity 0.2s;
   opacity: 0.85;
 }
 
@@ -108,15 +110,7 @@
   align-items: center;
   justify-content: center;
   padding: 8rem 2rem 4rem;
-  background: linear-gradient(
-    -45deg,
-    #e8f5e9,
-    #fff9c4,
-    #ffe0b2,
-    #f1f8e9,
-    #fff3e0,
-    #e8f5e9
-  );
+  background: linear-gradient(-45deg, #e8f5e9, #fff9c4, #ffe0b2, #f1f8e9, #fff3e0, #e8f5e9);
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
   position: relative;
@@ -250,7 +244,9 @@
 .heroSocialIcon {
   display: flex;
   align-items: center;
-  transition: transform 0.2s, opacity 0.2s;
+  transition:
+    transform 0.2s,
+    opacity 0.2s;
   opacity: 0.9;
 }
 
@@ -529,7 +525,7 @@
 
 /* Sombra sutil debajo */
 .sobreMiFotoWrapper::after {
-  content: "";
+  content: '';
   background-color: rgba(0, 0, 0, 0.03);
   height: 20px;
   position: absolute;
@@ -544,7 +540,7 @@
 /* Contenedor interno con clip-path personalizado */
 .sobreMiFotoInner {
   clip-path: path(
-    "M 390,400 C 390,504.9341 304.9341,590 200,590 95.065898,590 10,504.9341 10,400 V 10 H 200 390 Z"
+    'M 390,400 C 390,504.9341 304.9341,590 200,590 95.065898,590 10,504.9341 10,400 V 10 H 200 390 Z'
   );
   position: relative;
   transform-origin: 50%;
@@ -894,10 +890,7 @@
       rgb(var(--mark-color) / 0.12) 80%,
       rgb(var(--mark-color) / 0.46)
     ),
-    linear-gradient(
-      rgb(var(--mark-color) / 0.5),
-      rgb(var(--mark-color) / 0.5)
-    );
+    linear-gradient(rgb(var(--mark-color) / 0.5), rgb(var(--mark-color) / 0.5));
 }
 
 .markAmarillo {
@@ -971,7 +964,7 @@
   content: '✓';
   position: absolute;
   left: 0;
-  color: #25D366;
+  color: #25d366;
   font-weight: 700;
 }
 
@@ -980,7 +973,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.875rem 1.75rem;
-  background: #25D366;
+  background: #25d366;
   color: white;
   border: none;
   border-radius: 6px;
@@ -991,7 +984,7 @@
 }
 
 .asistenteBoton:hover {
-  background: #20BA5A;
+  background: #20ba5a;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
 }
@@ -1385,7 +1378,9 @@
   margin: 3rem 0;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
 .mapa {
@@ -1612,7 +1607,7 @@
 
   /* Tablets - Escala reducida pero proporcional */
   .sobreMiFotoWrapper {
-    transform: scale(1.0);
+    transform: scale(1);
   }
 
   .sobreMiFotoWrapper:hover {
@@ -1626,7 +1621,6 @@
   .sobreMiCtaButton {
     width: 100%;
   }
-
 
   .sectionTitle {
     font-size: 2.5rem;
@@ -1786,7 +1780,7 @@
   }
 
   .sobreMiFotoWrapper:hover {
-    transform: scale(0.70);
+    transform: scale(0.7);
   }
 
   /* Ajustar elementos internos para centrado perfecto */
