@@ -234,7 +234,10 @@
 }
 
 .messageSent .messageBubble {
-  background-color: var(--color-primary);
+  /* Verde profundo y no el de marca: con `--color-primary` el texto blanco
+     daba 3.37:1, por debajo del mínimo legible. Así queda en 5.32:1 y las
+     burbujas ganan peso sobre el fondo claro. */
+  background-color: var(--color-primary-dark);
   color: var(--color-white);
   /* La esquina recortada es la "cola": apunta a quien habla. Antes usaba
      una variable que no existe, así que las burbujas salían con las
@@ -247,7 +250,8 @@
   background-color: var(--color-white);
   color: var(--color-gray-900);
   border-bottom-left-radius: 4px;
-  border: 1px solid var(--color-gray-200);
+  /* Sin borde: sobre el fondo con patrón, la sombra teñida ya separa la
+     burbuja y el contorno gris solo la ensuciaba. */
   transform-origin: 0 100%;
 }
 
@@ -346,9 +350,13 @@
   margin-top: var(--spacing-xs);
 }
 
+/* La hora acompaña al mensaje, así que va discreta, pero al 70% de opacidad
+   quedaba en 2.19:1 y había que fijarse para leerla. Se sube el valor y el
+   tono se ajusta en cada variante. */
 .messageTime {
   font-size: var(--font-size-xs);
-  opacity: 0.7;
+  opacity: 0.88;
+  font-variant-numeric: tabular-nums;
 }
 
 .messageSent .messageTime {
