@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth-utils'
 import prisma from '@/lib/prisma'
+import { validarContenido } from '@/lib/dietas/contenido-schema'
 
 /**
  * Crea una versión nueva a partir de una dieta finalizada.
@@ -20,6 +21,16 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ i
   const original = await prisma.dietaGenerada.findUnique({ where: { id } })
   if (!original) {
     return NextResponse.json({ error: 'Dieta no encontrada' }, { status: 404 })
+  }
+
+  // No se duplica un contenido que no se podrá abrir: copiarlo solo repartiría
+  // el dato dañado por más registros. Mejor avisar y que se regenere.
+  const contenidoOk = validarContenido(original.modo, original.contenido)
+  if (!contenidoOk.ok) {
+    return NextResponse.json(
+      { error: `No se puede duplicar: ${contenidoOk.error}` },
+      { status: 409 }
+    )
   }
 
   const copia = await prisma.dietaGenerada.create({
