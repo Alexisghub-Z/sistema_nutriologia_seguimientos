@@ -61,7 +61,6 @@
   gap: var(--spacing-sm);
   padding: var(--spacing-md) var(--spacing-lg);
   border-bottom: 1px solid var(--color-gray-200);
-  background-color: var(--color-white);
 }
 
 .filterButton {
@@ -109,7 +108,8 @@
 .conversationsList {
   flex: 1;
   overflow-y: auto;
-  background-color: var(--color-white);
+  /* Sin fondo propio: hereda el de la bandeja, que va un punto más apagada
+     que la conversación para marcar que es el índice y no el contenido. */
 }
 
 .conversationItem {
@@ -122,13 +122,23 @@
   border-bottom: 1px solid var(--color-gray-100);
 }
 
+/* Sobre la bandeja gris el hover aclara: oscurecer con el mismo gris del
+   fondo no se notaría. */
 .conversationItem:hover {
-  background-color: var(--color-gray-50);
+  background-color: var(--color-white);
 }
 
+/* La conversación abierta se marca con un verde muy diluido y una barra
+   lateral, no con el verde de marca a plena saturación: sobre ese fondo la
+   vista previa del mensaje quedaba en 1.96:1 y no se leía. Así sube a
+   4.46:1 y además resulta más sobrio.
+
+   El borde izquierdo se compensa con padding para que el contenido no se
+   desplace tres píxeles al seleccionar. */
 .conversationItem.active {
-  background-color: var(--color-primary-light);
+  background-color: #eef7f1;
   border-left: 3px solid var(--color-primary);
+  padding-left: calc(var(--spacing-lg) - 3px);
 }
 
 /* Avatar */
@@ -206,13 +216,13 @@
 }
 
 .badgePaciente {
-  background-color: #10b981;
-  color: white;
+  background-color: var(--color-success);
+  color: var(--color-white);
 }
 
 .badgeProspecto {
-  background-color: #f59e0b;
-  color: white;
+  background-color: var(--color-warning);
+  color: var(--color-gray-900);
 }
 
 .timestamp {

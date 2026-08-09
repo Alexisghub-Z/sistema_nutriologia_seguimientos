@@ -41,6 +41,13 @@ export default function ChatWindow({ pacienteId, tipo, onMessageSent, onBack }: 
   const [paciente, setPaciente] = useState<Paciente | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Mientras el mensaje viaja a WhatsApp se muestran los tres puntos, para
+  // que el envío no parezca que se quedó colgado.
+  const [enviando, setEnviando] = useState(false)
+  // El botón de bajar solo aparece cuando te has alejado del final.
+  const [mostrarBajar, setMostrarBajar] = useState(false)
+  // Se lee dentro del efecto de mensajes; como ref no lo vuelve a disparar.
+  const estabaAlFinalRef = useRef(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const prevMensajesLengthRef = useRef(0)
@@ -138,30 +145,63 @@ export default function ChatWindow({ pacienteId, tipo, onMessageSent, onBack }: 
     return () => clearInterval(interval)
   }, [pacienteId])
 
-  // Scroll inteligente: solo si el usuario está al final o si hay nuevos mensajes
+  /** Distancia al final por debajo de la cual se considera que estás "abajo". */
+  const MARGEN_FINAL = 120
+
+  /**
+   * Sigue la posición del scroll para dos cosas: decidir si un mensaje nuevo
+   * debe arrastrar la vista, y mostrar el botón de bajar cuando te alejas.
+   */
+  const alHacerScroll = () => {
+    const c = messagesContainerRef.current
+    if (!c) return
+    const alFinal = c.scrollHeight - c.scrollTop - c.clientHeight <= MARGEN_FINAL
+    estabaAlFinalRef.current = alFinal
+    setMostrarBajar(!alFinal)
+  }
+
+  /** Lleva la conversación al último mensaje, a petición del nutriólogo. */
+  const bajarAlFinal = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    estabaAlFinalRef.current = true
+    setMostrarBajar(false)
+  }
+
+  /**
+   * Posición del chat al llegar mensajes.
+   *
+   * Tres situaciones distintas, y antes se trataban igual:
+   *
+   * 1. Al abrir la conversación hay que estar abajo, pero SIN animación:
+   *    con scroll suave se veía el historial desde arriba y luego bajaba
+   *    de golpe.
+   * 2. Con un mensaje nuevo solo se baja si ya estabas al final. Si estás
+   *    leyendo mensajes antiguos no se te mueve el sitio; para eso está el
+   *    botón de bajar.
+   * 3. El refresco cada cinco segundos no debe mover nada, porque no trae
+   *    mensajes nuevos. Antes arrastraba hacia abajo mientras leías si el
+   *    último mensaje era tuyo.
+   */
   useEffect(() => {
-    if (!messagesContainerRef.current) return
-
     const container = messagesContainerRef.current
-    const isAtBottom =
-      container.scrollHeight - container.scrollTop <= container.clientHeight + 100
+    if (!container || mensajes.length === 0) return
 
-    // Detectar nuevo mensaje ENTRANTE
-    const nuevoMensaje = mensajes.length > prevMensajesLengthRef.current
+    const huboMensajeNuevo = mensajes.length > prevMensajesLengthRef.current
+    const primeraCarga = prevMensajesLengthRef.current === 0
     const ultimoMensaje = mensajes[mensajes.length - 1]
-    const esNuevoMensajeEntrante = nuevoMensaje && ultimoMensaje?.direccion === 'ENTRANTE'
 
-    // Mostrar notificación del navegador si es un mensaje entrante nuevo
-    if (esNuevoMensajeEntrante && prevMensajesLengthRef.current > 0) {
-      // Mostrar notificación del navegador si el usuario no está en la pestaña
+    // Avisar de un mensaje entrante cuando la pestaña no está a la vista.
+    if (huboMensajeNuevo && !primeraCarga && ultimoMensaje?.direccion === 'ENTRANTE') {
       if (document.hidden && paciente) {
         showBrowserNotification(paciente.nombre, ultimoMensaje.contenido)
       }
     }
 
-    // Hacer scroll si el usuario estaba al final O si envió un mensaje (último es SALIENTE)
-    const ultimoEsSaliente = ultimoMensaje?.direccion === 'SALIENTE'
-    if (isAtBottom || ultimoEsSaliente || mensajes.length === 1) {
+    if (primeraCarga) {
+      // Sin animación: la conversación aparece ya abajo, como en cualquier
+      // aplicación de mensajería.
+      container.scrollTop = container.scrollHeight
+    } else if (huboMensajeNuevo && estabaAlFinalRef.current) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
 
@@ -202,6 +242,7 @@ export default function ChatWindow({ pacienteId, tipo, onMessageSent, onBack }: 
 
   // Manejar envío de mensaje
   const handleSendMessage = async (contenido: string) => {
+    setEnviando(true)
     try {
       const response = await fetch('/api/mensajes', {
         method: 'POST',
@@ -224,6 +265,8 @@ export default function ChatWindow({ pacienteId, tipo, onMessageSent, onBack }: 
     } catch (err) {
       console.error('Error al enviar mensaje:', err)
       setError(err instanceof Error ? err.message : 'Error al enviar mensaje')
+    } finally {
+      setEnviando(false)
     }
   }
 
@@ -289,7 +332,7 @@ export default function ChatWindow({ pacienteId, tipo, onMessageSent, onBack }: 
       )}
 
       {/* Mensajes */}
-      <div className={styles.messagesContainer} ref={messagesContainerRef}>
+      <div className={styles.messagesContainer} ref={messagesContainerRef} onScroll={alHacerScroll}>
         {mensajes.length === 0 ? (
           <div className={styles.emptyState}>
             <p>No hay mensajes aún</p>
@@ -358,10 +401,43 @@ export default function ChatWindow({ pacienteId, tipo, onMessageSent, onBack }: 
                 </div>
               </div>
             ))}
+            {enviando && (
+              <div className={styles.typingWrapper} role="status" aria-label="Enviando mensaje">
+                <div className={styles.typingBubble}>
+                  <span className={styles.typingDot} />
+                  <span className={styles.typingDot} />
+                  <span className={styles.typingDot} />
+                </div>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </>
         )}
       </div>
+
+      {/* Bajar al último mensaje. Aparece solo al alejarse del final: leer
+          mensajes antiguos ya no te devuelve abajo por sorpresa. */}
+      {mostrarBajar && mensajes.length > 0 && (
+        <button
+          type="button"
+          className={styles.bajarBtn}
+          onClick={bajarAlFinal}
+          aria-label="Ir al último mensaje"
+          title="Ir al último mensaje"
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            aria-hidden
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M19 12l-7 7-7-7" />
+          </svg>
+        </button>
+      )}
 
       {/* Input */}
       <MessageInput
