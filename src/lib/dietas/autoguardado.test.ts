@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { firmaContenido, textoAutoguardado, type ContenidoAutoguardado } from './autoguardado'
+import {
+  firmaContenido,
+  formaDeTiempos,
+  textoAutoguardado,
+  type ContenidoAutoguardado,
+} from './autoguardado'
 
 /** Contenido de ejemplo, con la forma que devuelve el generador. */
 function contenido(over: Partial<ContenidoAutoguardado> = {}): ContenidoAutoguardado {
@@ -119,5 +124,38 @@ describe('textoAutoguardado', () => {
       expect(r?.texto).not.toBe('Guardada')
       expect(r?.tono).not.toBe('definitiva')
     }
+  })
+})
+
+describe('formaDeTiempos', () => {
+  it('reconoce una dieta por su campo alimentos', () => {
+    expect(formaDeTiempos([{ id: 'd', nombre: 'Desayuno', alimentos: [] }])).toBe('DIETA')
+  })
+
+  it('reconoce un recetario por su campo opciones', () => {
+    expect(formaDeTiempos([{ id: 'd', nombre: 'Desayuno', opciones: [] }])).toBe('RECETARIO')
+  })
+
+  it('detecta el recetario disfrazado de dieta que tumbaba la pantalla', () => {
+    // Caso real de producción: el borrador cmshypr2500... estaba guardado con
+    // modo DIETA pero sus tiempos eran { id, nombre, opciones }. Al hacerle
+    // caso a la etiqueta se leía `tiempo.alimentos`, undefined, y `.filter`
+    // lanzaba un TypeError que se llevaba por delante toda la pantalla.
+    const contenidoReal = [
+      { id: 't1', nombre: 'Desayuno', opciones: [{ nombre: 'Avena', alimentos: [] }] },
+      { id: 't2', nombre: 'Comida', opciones: [] },
+    ]
+    expect(formaDeTiempos(contenidoReal)).toBe('RECETARIO')
+  })
+
+  it('devuelve null cuando no reconoce la forma, para no adivinar', () => {
+    expect(formaDeTiempos([{ id: 'x', nombre: 'Raro' }])).toBeNull()
+    expect(formaDeTiempos([])).toBeNull()
+    expect(formaDeTiempos(null)).toBeNull()
+    expect(formaDeTiempos('no es un array')).toBeNull()
+  })
+
+  it('ignora entradas nulas y se queda con el primer tiempo reconocible', () => {
+    expect(formaDeTiempos([null, { id: 'd', nombre: 'D', alimentos: [] }])).toBe('DIETA')
   })
 })

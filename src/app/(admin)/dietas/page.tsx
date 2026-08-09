@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/Toast'
 import { buscarAlergenos } from '@/lib/dietas/alergenos'
 import {
   firmaContenido,
+  formaDeTiempos,
   textoAutoguardado,
   type EstadoAutoguardado,
   type ContenidoAutoguardado,
@@ -233,6 +234,8 @@ interface CtxGuardado {
   cuadroId: string | null
   dietaId: string | null
   soloLectura: boolean
+  /** Modo activo: decide con qué etiqueta se guarda el contenido. */
+  modoIA: 'dieta' | 'recetario'
   recetario: RecetarioUI | null
   dietaIA: TiempoGeneradoUI[] | null
   generando: boolean
@@ -411,6 +414,7 @@ export default function DietasPage() {
     cuadroId: null,
     dietaId: null,
     soloLectura: false,
+    modoIA: 'dieta',
     recetario: null,
     dietaIA: null,
     generando: false,
@@ -1164,24 +1168,47 @@ export default function DietasPage() {
       if (preferida && tiemposGuardados) {
         setDietaId(preferida.id)
         setEstadoDieta(preferida.estado)
+        // Manda la forma real del contenido, no la etiqueta `modo`. En
+        // producción apareció un borrador marcado DIETA que por dentro era un
+        // recetario: al hacerle caso a la etiqueta se leía `tiempo.alimentos`,
+        // que allí no existe, y la pantalla se caía entera. Si la forma no se
+        // reconoce, se cae a la etiqueta como antes.
+        const forma = formaDeTiempos(tiemposGuardados)
+        const modoReal = forma ?? (preferida.modo === 'RECETARIO' ? 'RECETARIO' : 'DIETA')
         // Esto acaba de salir de la base de datos: fijamos su firma para que
         // restaurarlo en pantalla no dispare un guardado de lo mismo.
         firmaGuardada.current = firmaContenido({
-          modo: preferida.modo === 'RECETARIO' ? 'RECETARIO' : 'DIETA',
+          modo: modoReal,
           tiempos: tiemposGuardados,
           indicacionesInicio: preferida.indicaciones_inicio ?? '',
         })
         setEstadoAutoguardado('guardado')
-        if (preferida.modo === 'RECETARIO') {
+        if (modoReal === 'RECETARIO') {
           setModoIA('recetario')
           setRecetario({
             indicacionesInicio: preferida.indicaciones_inicio ?? '',
             tiempos: tiemposGuardados as TiempoRecetarioUI[],
             mensaje: '',
           })
-        } else {
+          // El estado del otro modo se limpia siempre: dejarlo poblado es justo
+          // lo que acaba guardando contenido bajo la etiqueta equivocada.
+          setDietaIA(null)
+        } else if (forma === 'DIETA') {
           setModoIA('dieta')
           setDietaIA(tiemposGuardados as TiempoGeneradoUI[])
+          setRecetario(null)
+        } else {
+          // Etiqueta DIETA pero contenido irreconocible: no se puede pintar sin
+          // caerse. Se avisa en lugar de tumbar la pantalla, y se deja el
+          // cuadro abierto para que el nutriólogo pueda regenerar la dieta.
+          setDietaIA(null)
+          setRecetario(null)
+          setEstadoAutoguardado('inactivo')
+          setPestana('cuadro')
+          toast.error('No se pudo abrir la dieta guardada', {
+            descripcion: 'El contenido quedó dañado. Genérala de nuevo, por favor.',
+          })
+          return
         }
         // Si hay dieta, el nutriólogo quiere verla, no el formulario.
         setPestana('ia')
@@ -1452,11 +1479,16 @@ export default function DietasPage() {
           } else if (evento.tipo === 'aplicando') {
             setAplicandoCambio(true)
           } else if (evento.tipo === 'dieta' && evento.dieta?.tiempos) {
+            // Se ignora un evento del modo contrario: aceptarlo dejaría los dos
+            // estados poblados a la vez y el contenido acabaría guardado bajo
+            // la etiqueta equivocada.
+            if (modoIA !== 'dieta') continue
             const cambiados = diffDieta(dietaIA, evento.dieta.tiempos)
             setDietaIA(evento.dieta.tiempos)
             setAplicandoCambio(false)
             resaltarCambios(cambiados)
           } else if (evento.tipo === 'recetario' && evento.recetario?.tiempos) {
+            if (modoIA !== 'recetario') continue
             const cambiados = diffRecetario(recetario?.tiempos ?? null, evento.recetario.tiempos)
             setRecetario(evento.recetario)
             setAplicandoCambio(false)
@@ -1529,14 +1561,21 @@ export default function DietasPage() {
     if (c.finalizando) return
     if (!contenidoExplicito && (c.generando || c.chateando)) return
 
+    // Manda el modo ACTIVO, no "el primero que tenga contenido". Al alternar
+    // entre Dieta y Recetario el estado del otro sigue en memoria, así que la
+    // regla anterior (recetario primero) etiquetaba mal en cuanto el
+    // nutriólogo cambiaba de modo: así nació el borrador DIETA con contenido de
+    // recetario que tumbaba la pantalla al abrirlo.
     const cont: ContenidoAutoguardado | null =
       contenidoExplicito ??
-      (c.recetario
-        ? {
-            modo: 'RECETARIO',
-            tiempos: c.recetario.tiempos,
-            indicacionesInicio: c.recetario.indicacionesInicio,
-          }
+      (c.modoIA === 'recetario'
+        ? c.recetario
+          ? {
+              modo: 'RECETARIO',
+              tiempos: c.recetario.tiempos,
+              indicacionesInicio: c.recetario.indicacionesInicio,
+            }
+          : null
         : c.dietaIA
           ? { modo: 'DIETA', tiempos: c.dietaIA }
           : null)
@@ -2147,6 +2186,7 @@ export default function DietasPage() {
       cuadroId: cuadroId ?? (mismoPaciente ? previo.cuadroId : null),
       dietaId: dietaId ?? (mismoPaciente ? previo.dietaId : null),
       soloLectura,
+      modoIA,
       recetario,
       dietaIA,
       generando,
