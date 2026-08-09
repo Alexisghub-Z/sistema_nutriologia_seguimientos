@@ -39,6 +39,37 @@ export function firmaContenido(contenido: ContenidoAutoguardado): string {
   })
 }
 
+/**
+ * Deduce la forma REAL de unos tiempos guardados, sin fiarse de la etiqueta.
+ *
+ * La columna `modo` dice qué se creyó guardar; esto mira qué se guardó de
+ * verdad. Hicieron falta las dos porque en producción apareció un borrador
+ * marcado como DIETA cuyo contenido era un recetario: al abrirlo, el código
+ * confiaba en la etiqueta y accedía a `tiempo.alimentos`, que no existía en esa
+ * estructura, y la pantalla entera se caía con un TypeError.
+ *
+ * Las dos formas se distinguen sin ambigüedad:
+ *   - dieta:     { id, nombre, alimentos: [...] }
+ *   - recetario: { id, nombre, opciones:  [...] }
+ *
+ * Devuelve `null` si no reconoce ninguna, para que quien llame decida (mejor no
+ * mostrar nada que romperse).
+ */
+export function formaDeTiempos(tiempos: unknown): 'DIETA' | 'RECETARIO' | null {
+  if (!Array.isArray(tiempos) || tiempos.length === 0) return null
+
+  // Basta el primer tiempo con forma reconocible: un contenido a medias ya es
+  // un dato corrupto, y adivinar por mayoría solo escondería el problema.
+  for (const t of tiempos) {
+    if (typeof t !== 'object' || t === null) continue
+    const tiempo = t as Record<string, unknown>
+    if (Array.isArray(tiempo.alimentos)) return 'DIETA'
+    if (Array.isArray(tiempo.opciones)) return 'RECETARIO'
+  }
+
+  return null
+}
+
 /** Tono visual del indicador; el componente lo traduce a una clase CSS. */
 export type TonoAutoguardado = 'ok' | 'pendiente' | 'trabajando' | 'error' | 'definitiva'
 

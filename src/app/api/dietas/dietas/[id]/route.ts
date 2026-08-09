@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth-utils'
 import prisma from '@/lib/prisma'
 import { z } from 'zod'
 import { alFinalizarDieta } from '@/lib/dietas/finalizacion'
+import { validarContenido } from '@/lib/dietas/contenido-schema'
 
 /**
  * Una dieta generada.
@@ -38,7 +39,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
 
   const dieta = await prisma.dietaGenerada.findUnique({
     where: { id },
-    select: { id: true, estado: true, finalizada_at: true },
+    select: { id: true, estado: true, finalizada_at: true, modo: true },
   })
   if (!dieta) {
     return NextResponse.json({ error: 'Dieta no encontrada' }, { status: 404 })
@@ -83,6 +84,17 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     return NextResponse.json(
       { error: 'Esta dieta está guardada. Pulsa Editar para poder modificarla.' },
       { status: 409 }
+    )
+  }
+
+  // El contenido debe corresponder al modo con el que se creó la dieta: si no,
+  // quedaría guardada con la etiqueta equivocada y al abrirla se leería una
+  // estructura que no existe (el fallo que tumbó la pantalla en producción).
+  const contenidoOk = validarContenido(dieta.modo, data.contenido)
+  if (!contenidoOk.ok) {
+    return NextResponse.json(
+      { error: contenidoOk.error, detalles: contenidoOk.detalles },
+      { status: 400 }
     )
   }
 

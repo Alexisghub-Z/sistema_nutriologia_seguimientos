@@ -9,6 +9,12 @@ import {
   ErrorCalculoCuadro,
 } from '@/lib/services/cuadros'
 import { alFinalizarDieta } from '@/lib/dietas/finalizacion'
+import { validarContenido } from '@/lib/dietas/contenido-schema'
+
+/** La dieta que se iba a actualizar ya estaba cerrada como definitiva. */
+class ErrorDietaFinalizada extends Error {}
+/** Se intentó guardar contenido de un modo sobre una dieta de otro modo. */
+class ErrorModoDistinto extends Error {}
 
 /**
  * Dietas y recetarios generados.
@@ -30,7 +36,9 @@ const guardarDietaSchema = z.object({
   dieta_id: z.string().min(1).optional(),
 
   modo: z.enum(['DIETA', 'RECETARIO']),
-  // Estructura libre: la forma de los tiempos la define el generador de IA.
+  // Solo la envoltura. La forma concreta depende del modo y se comprueba justo
+  // después con `validarContenido`, que cruza contenido y modo; aquí se deja
+  // `any` porque Prisma exige un tipo Json asignable para escribirlo.
   contenido: z.object({ tiempos: z.array(z.any()).min(1, 'La dieta no tiene tiempos') }),
   indicaciones_inicio: z.string().max(4000).optional(),
 
@@ -55,6 +63,17 @@ export async function POST(request: NextRequest) {
     )
   }
   const data = parsed.data
+
+  // El contenido tiene que corresponder al modo con el que se guarda. Sin esta
+  // comprobación se coló en producción un borrador etiquetado DIETA que por
+  // dentro era un recetario, y al abrirlo tumbaba la pantalla entera.
+  const contenidoOk = validarContenido(data.modo, data.contenido)
+  if (!contenidoOk.ok) {
+    return NextResponse.json(
+      { error: contenidoOk.error, detalles: contenidoOk.detalles },
+      { status: 400 }
+    )
+  }
 
   if (!data.cuadro_id && !data.cuadro) {
     return NextResponse.json(
@@ -88,7 +107,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const dieta = await guardarDieta(cuadro.id, cuadro.paciente_id, data)
+    let dieta
+    try {
+      dieta = await guardarDieta(cuadro.id, cuadro.paciente_id, data)
+    } catch (e) {
+      if (e instanceof ErrorDietaFinalizada) {
+        return NextResponse.json(
+          { error: 'Esta dieta ya está guardada como definitiva. Pulsa Editar para modificarla.' },
+          { status: 409 }
+        )
+      }
+      if (e instanceof ErrorModoDistinto) {
+        return NextResponse.json(
+          { error: 'Esa dieta se guardó con otro tipo (dieta/recetario). Crea una nueva.' },
+          { status: 409 }
+        )
+      }
+      throw e
+    }
     if (dieta.estado === 'FINALIZADA') await alFinalizarDieta(dieta.id)
     return NextResponse.json({ cuadro_id: cuadro.id, dieta }, { status: 201 })
   }
@@ -157,12 +193,24 @@ async function guardarDieta(
   const borrador = data.dieta_id
     ? await prisma.dietaGenerada.findFirst({
         where: { id: data.dieta_id, cuadro_id: cuadroId },
-        select: { id: true },
+        select: { id: true, estado: true, modo: true },
       })
     : await prisma.dietaGenerada.findFirst({
         where: { cuadro_id: cuadroId, modo: data.modo, estado: 'BORRADOR' },
-        select: { id: true },
+        select: { id: true, estado: true, modo: true },
       })
+
+  // Una dieta ya cerrada no se sobrescribe. `dieta_id` viene del cliente, que
+  // pudo quedarse con un id finalizado entretanto en otra pestaña: sin esta
+  // comprobación el autoguardado pisaría una versión definitiva.
+  if (borrador?.estado === 'FINALIZADA') {
+    throw new ErrorDietaFinalizada()
+  }
+  // Tampoco se le cambia el modo a una dieta existente: sería reetiquetarla
+  // dejando dentro el contenido del modo anterior.
+  if (borrador && borrador.modo !== data.modo) {
+    throw new ErrorModoDistinto()
+  }
 
   const comunes = {
     contenido: data.contenido,

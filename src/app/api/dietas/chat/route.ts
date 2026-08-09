@@ -15,6 +15,7 @@ import {
   type MensajeChatIA,
   type TiempoConEquivalentes,
 } from '@/lib/services/generador-dietas'
+import { validarContenido, LIMITES } from '@/lib/dietas/contenido-schema'
 
 // El chat puede reescribir la dieta con modelos de razonamiento (gpt-5); damos
 // margen de duración para que el stream no se corte.
@@ -50,10 +51,12 @@ const chatSchema = z.object({
       })
     )
     .min(1),
-  // Modo activo y el estado (dieta o recetario) sobre el que se conversa.
-  // Se valida de forma laxa: la estructura la maneja el servicio.
+  // Modo activo y el estado (dieta o recetario) sobre el que se conversa. La
+  // forma concreta se comprueba después con `validarContenido`, que la cruza
+  // con el modo; aquí solo se acota el tamaño para no mandar a la IA (ni
+  // guardar) un payload desbocado.
   modo: z.enum(['dieta', 'recetario']).default('dieta'),
-  estado_actual: z.object({ tiempos: z.array(z.any()) }),
+  estado_actual: z.object({ tiempos: z.array(z.any()).max(LIMITES.tiempos) }),
   indicaciones_inicio: z.string().optional().default(''),
   historial: z
     .array(z.object({ rol: z.enum(['user', 'assistant']), contenido: z.string() }))
@@ -77,6 +80,15 @@ export async function POST(request: NextRequest) {
     return new Response(JSON.stringify({ error: 'Datos inválidos' }), { status: 400 })
   }
   const data = parsed.data
+
+  // Que el estado sobre el que se conversa corresponda al modo declarado. Se
+  // comprueba antes de llamar a la IA: con datos cruzados el modelo devolvería
+  // la estructura equivocada y el cambio acabaría guardado mal etiquetado.
+  const modoContenido = data.modo === 'recetario' ? 'RECETARIO' : 'DIETA'
+  const contenidoOk = validarContenido(modoContenido, data.estado_actual)
+  if (!contenidoOk.ok) {
+    return new Response(JSON.stringify({ error: contenidoOk.error }), { status: 400 })
+  }
 
   // El estilo del nutriólogo y las restricciones del paciente también aplican a
   // los ajustes por chat: si no, un cambio pedido aquí podría reintroducir un
