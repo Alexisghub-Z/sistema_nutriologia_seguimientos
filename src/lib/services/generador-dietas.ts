@@ -122,6 +122,10 @@ export interface EntradaGeneracion {
   ejemplos?: string[]
   // Ajustes del nutriólogo desde el chat (ej. "no uses lácteos hoy").
   instruccionesExtra?: string
+  // Alimentos que este paciente ya recibió, para no repetirle la comida. Se
+  // pasa aparte de `ejemplos` porque tira en sentido contrario: los ejemplos
+  // se imitan, esto se evita.
+  instruccionVariedad?: string
 }
 
 /** Un alimento propuesto dentro de un tiempo. */
@@ -354,6 +358,10 @@ function construirPromptUsuario(entrada: EntradaGeneracion): string {
     lineas.push(`- ${t.nombre} (id="${t.id}"): ${grupos || 'sin equivalentes'}`)
   }
 
+  if (entrada.instruccionVariedad) {
+    lineas.push('', entrada.instruccionVariedad)
+  }
+
   if (entrada.instruccionesExtra) {
     lineas.push('', `Instrucciones adicionales del nutriólogo: ${entrada.instruccionesExtra}`)
   }
@@ -452,7 +460,21 @@ export async function generarDietaConIA(entrada: EntradaGeneracion): Promise<Die
 
   // Auto-revisión de porciones: la IA revisa sus propios gramajes y corrige los
   // que no correspondan a los equivalentes (sin cambiar el número de equivalentes).
-  dieta = await revisarPorciones(promptSistema, dieta)
+  //
+  // El resultado se vuelve a validar: esta llamada devuelve una dieta NUEVA y,
+  // aunque el prompt le prohíbe tocar los equivalentes, nada garantiza que
+  // obedezca. Sin esta comprobación, el último paso podía deshacer en silencio
+  // todo lo que había conseguido el reintento.
+  const revisada = await revisarPorciones(promptSistema, dieta)
+  const discRevisada = validarDietaGenerada(entrada, revisada)
+  if (discRevisada.length <= discrepancias.length) {
+    dieta = revisada
+  } else {
+    logDebug('La revisión de porciones descuadró los equivalentes; se conserva la anterior', {
+      antes: discrepancias.length,
+      despues: discRevisada.length,
+    })
+  }
 
   return dieta
 }
@@ -641,6 +663,10 @@ function construirPromptUsuarioRecetario(
       .map(([id, n]) => `${n} de ${NOMBRE_GRUPO[id as GrupoSMAEId]}`)
       .join(', ')
     lineas.push(`- ${t.nombre} (id="${t.id}"): ${grupos || 'sin equivalentes'}`)
+  }
+
+  if (entrada.instruccionVariedad) {
+    lineas.push('', entrada.instruccionVariedad)
   }
 
   if (entrada.instruccionesExtra) {

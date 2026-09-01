@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth-utils'
 import prisma from '@/lib/prisma'
+import { alimentosYaUsados, instruccionDeVariedad } from '@/lib/dietas/variedad'
 import { z } from 'zod'
 import { GRUPOS_SMAE, type Equivalentes, type GrupoSMAEId } from '@/lib/utils/smae'
 import {
@@ -86,6 +87,12 @@ export async function POST(request: NextRequest) {
   // Contexto del paciente: sus últimas dietas + evolución clínica (few-shot por paciente).
   const ejemplos = await construirContextoPaciente(data.paciente_id)
 
+  // Qué ha comido ya, para no repetírselo. Los ejemplos de arriba se le piden
+  // imitar —dan continuidad al tratamiento—, y eso mismo hacía que el modelo
+  // propusiera siempre pollo, frijol y tortilla. Esta instrucción tira en el
+  // sentido contrario, sin tocar el estilo del nutriólogo.
+  const instruccionVariedad = await construirInstruccionVariedad(data.paciente_id)
+
   const entrada: EntradaGeneracion = {
     kcalMeta: data.kcal_meta,
     macros: {
@@ -97,6 +104,7 @@ export async function POST(request: NextRequest) {
     perfil,
     restricciones: restricciones ?? undefined,
     ejemplos,
+    instruccionVariedad,
     instruccionesExtra: data.instrucciones_extra,
   }
 
@@ -122,6 +130,28 @@ export async function POST(request: NextRequest) {
  * clínica (peso y objetivo de sus consultas recientes). Cada bloque de texto se
  * inyecta como few-shot en el prompt. Sin paciente_id, no aporta contexto.
  */
+/**
+ * Instrucción para que la IA no repita los alimentos que este paciente ya
+ * recibió. Devuelve cadena vacía si no hay paciente o no tiene dietas previas.
+ *
+ * Se miran también los BORRADORES, no solo las finalizadas: si el nutriólogo
+ * está preparando la segunda dieta del día, esa primera todavía sin cerrar ya
+ * cuenta como comida asignada.
+ */
+async function construirInstruccionVariedad(pacienteId?: string): Promise<string> {
+  if (!pacienteId) return ''
+
+  const previas = await prisma.dietaGenerada.findMany({
+    where: { paciente_id: pacienteId },
+    orderBy: { createdAt: 'desc' },
+    take: 4,
+    select: { contenido: true },
+  })
+  if (previas.length === 0) return ''
+
+  return instruccionDeVariedad(alimentosYaUsados(previas.map((d) => d.contenido)))
+}
+
 async function construirContextoPaciente(pacienteId?: string): Promise<string[]> {
   if (!pacienteId) return []
   const bloques: string[] = []
