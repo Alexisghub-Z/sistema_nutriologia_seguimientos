@@ -336,7 +336,7 @@ export default function DietasPage() {
   // Paso entre porciones de los sliders de equivalentes (0.25 / 0.5 / 1).
   const [pasoEquiv, setPasoEquiv] = useState(0.5)
   // Pestaña activa: 'cuadro' (dietosintético) | 'tiempos' (distribución) | 'ia' (generar).
-  const [pestana, setPestana] = useState<'cuadro' | 'tiempos' | 'ia'>('cuadro')
+  const [pestana, setPestana] = useState<'cuadro' | 'grupos' | 'tiempos' | 'ia'>('cuadro')
   // Tiempos de comida y su reparto de equivalentes.
   const [tiempos, setTiempos] = useState<TiempoComida[]>(() =>
     TIEMPOS_DEFAULT.map((t) => ({ ...t }))
@@ -2765,10 +2765,24 @@ export default function DietasPage() {
             Cuadro dietosintético
           </button>
           <button
-            className={`${styles.tab} ${pestana === 'tiempos' ? styles.tabActivo : ''}`}
-            onClick={() => setPestana('tiempos')}
+            className={`${styles.tab} ${pestana === 'grupos' ? styles.tabActivo : ''}`}
+            onClick={() => setPestana('grupos')}
             disabled={!resultado}
             title={!resultado ? 'Primero calcula el cuadro' : ''}
+          >
+            Grupos (SMAE)
+          </button>
+          <button
+            className={`${styles.tab} ${pestana === 'tiempos' ? styles.tabActivo : ''}`}
+            onClick={() => setPestana('tiempos')}
+            disabled={!resultado || gruposConEquiv.length === 0}
+            title={
+              !resultado
+                ? 'Primero calcula el cuadro'
+                : gruposConEquiv.length === 0
+                  ? 'Primero define los equivalentes por grupo'
+                  : ''
+            }
           >
             Distribución en tiempos
           </button>
@@ -3166,11 +3180,11 @@ export default function DietasPage() {
           </Button>
           <Button
             variant="secondary"
-            onClick={() => setPestana('tiempos')}
+            onClick={() => setPestana('grupos')}
             disabled={!resultado}
             title={!resultado ? 'Primero calcula el cuadro' : ''}
           >
-            Continuar a distribución →
+            Continuar a grupos →
           </Button>
         </div>
       )}
@@ -3178,7 +3192,7 @@ export default function DietasPage() {
       {paciente && pestana === 'cuadro' && exito && <p className={styles.exito}>{exito}</p>}
 
       {/* Distribución por equivalentes (SMAE) — aparece al calcular */}
-      {paciente && pestana === 'cuadro' && resultado && diferenciaSmae && distribucion && (
+      {paciente && pestana === 'grupos' && resultado && diferenciaSmae && distribucion && (
         <>
           <div className={styles.card} style={{ marginTop: 'var(--spacing-lg)' }}>
             <div className={styles.tiemposHeader}>
@@ -3302,10 +3316,30 @@ export default function DietasPage() {
               </table>
             </div>
           </div>
+
+          {/* Navegación del paso: se puede volver al cuadro a corregir un dato
+              y regresar aquí sin perder los equivalentes ya repartidos. */}
+          <div className={styles.barraAcciones}>
+            <Button variant="secondary" onClick={() => setPestana('cuadro')}>
+              ← Volver al cuadro
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setPestana('tiempos')}
+              disabled={gruposConEquiv.length === 0}
+              title={
+                gruposConEquiv.length === 0
+                  ? 'Reparte los equivalentes antes de continuar'
+                  : ''
+              }
+            >
+              Continuar a tiempos →
+            </Button>
+          </div>
         </>
       )}
 
-      {/* PESTAÑA 2: Distribución en tiempos de comida */}
+      {/* PESTAÑA 3: Distribución en tiempos de comida */}
       {paciente && pestana === 'tiempos' && resultado && (
         <div className={styles.tiemposWrap}>
           <div className={styles.tiemposHeader}>
@@ -3463,10 +3497,25 @@ export default function DietasPage() {
               {exito && <p className={styles.exito}>{exito}</p>}
             </fieldset>
           )}
+
+          {/* Mismo patrón que los pasos anteriores: se puede retroceder a
+              cambiar los equivalentes y volver sin perder el reparto. */}
+          <div className={styles.barraAcciones}>
+            <Button variant="secondary" onClick={() => setPestana('grupos')}>
+              ← Volver a grupos
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setPestana('ia')}
+              disabled={gruposConEquiv.length === 0}
+            >
+              Continuar a la dieta →
+            </Button>
+          </div>
         </div>
       )}
 
-      {/* PESTAÑA 3: Generar con IA */}
+      {/* PESTAÑA 4: Generar con IA */}
       {paciente && pestana === 'ia' && resultado && (
         <div className={styles.iaWrap}>
           <div className={styles.iaGrid}>
