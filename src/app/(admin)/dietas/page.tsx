@@ -3392,7 +3392,9 @@ export default function DietasPage() {
                   {GRUPOS_SMAE.map((g) => {
                     const n = equivalentes[g.id] ?? 0
                     return (
-                      <tr key={g.id}>
+                      // Los grupos en cero se atenúan para que no compitan con
+                      // los que la dieta sí usa; siguen editables.
+                      <tr key={g.id} className={n === 0 ? styles.filaSinUso : ''}>
                         <td className={styles.tdGrupo}>{g.nombre}</td>
                         <td>
                           <div className={styles.equivControl}>

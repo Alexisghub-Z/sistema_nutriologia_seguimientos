@@ -1669,19 +1669,62 @@
 
 .tablaSmae th,
 .tablaSmae td {
-  padding: 0.4rem 0.6rem;
+  padding: 0.45rem 0.7rem;
   text-align: right;
   border-bottom: 1px solid var(--color-gray-100);
   white-space: nowrap;
 }
 
+/* La cabecera se queda fija al desplazar: con 17 grupos, a media tabla ya no
+   se sabe qué columna se está leyendo. */
 .tablaSmae thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: white;
   color: var(--color-gray-500);
   font-size: var(--font-size-2xs);
   text-transform: uppercase;
   letter-spacing: 0.03em;
   font-weight: 600;
   border-bottom: 2px solid var(--color-gray-200);
+}
+
+/* Seguir una fila de ocho columnas sin ayuda visual es fácil de perder. */
+.tablaSmae tbody tr:hover td {
+  background: rgba(var(--color-primary-rgb), 0.035);
+}
+
+.tablaSmae tbody tr:hover .tdGrupo {
+  color: var(--color-primary-dark);
+}
+
+/* Los grupos en cero se atenúan: de 17, una dieta normal usa seis o siete, y
+   los vacíos sepultaban a los que sí importan. Siguen ahí —hay que poder
+   añadirlos— pero dejan de competir por la atención. */
+.filaSinUso .tdGrupo,
+.filaSinUso .tdNum,
+.filaSinUso .tdPct {
+  color: var(--color-gray-400);
+  font-weight: 400;
+}
+
+.filaSinUso:hover .tdGrupo,
+.filaSinUso:hover .tdNum,
+.filaSinUso:hover .tdPct {
+  color: var(--color-gray-600);
+}
+
+/* El pie lleva los totales: es lo que se consulta al cuadrar, así que se
+   separa del cuerpo en vez de ser una fila más. */
+.tablaSmae tfoot td {
+  border-top: 2px solid var(--color-gray-200);
+  border-bottom: none;
+  font-weight: 700;
+  color: var(--color-gray-800);
+  background: var(--color-gray-50);
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
 }
 
 .thGrupo,
@@ -2184,9 +2227,48 @@
 /* Un tiempo de comida se lee como una sección de documento: sin caja, separado
    por aire y una regla fina. Así la jerarquía la marca la tipografía, no bordes
    que compiten entre sí. */
+/* Cada tiempo de comida es una pieza, no un párrafo separado por una línea.
+   Con cinco tiempos y sus alimentos, la lista plana obligaba a rastrear dónde
+   acababa uno y empezaba el siguiente. */
 .iaTiempo {
-  padding: 0 0 var(--spacing-md);
-  border-bottom: 1px solid var(--color-gray-100);
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  background: white;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+/* Al apuntar un tiempo se despega del resto: ayuda a no perder el sitio
+   mientras se revisan los alimentos uno por uno. */
+.iaTiempo:hover {
+  border-color: var(--color-gray-300);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Un filo del color de marca en el borde izquierdo marca dónde empieza cada
+   tiempo sin añadir una línea más que leer. */
+.iaTiempo::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--spacing-md);
+  bottom: var(--spacing-md);
+  width: 3px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  opacity: 0.28;
+}
+
+.iaTiempo {
+  position: relative;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iaTiempo {
+    transition: none;
+  }
 }
 
 .iaTiempo:last-child {
