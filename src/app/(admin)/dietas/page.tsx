@@ -312,11 +312,11 @@ type PasoId = 'cuadro' | 'grupos' | 'tiempos' | 'ia'
  * explica qué se hace en cada uno: sin ella el nombre solo tiene sentido para
  * quien ya conoce la pantalla.
  */
-const PASOS: Array<{ id: PasoId; nombre: string; pista: string }> = [
-  { id: 'cuadro', nombre: 'Cuadro', pista: 'Datos y meta calórica' },
-  { id: 'grupos', nombre: 'Grupos', pista: 'Equivalentes SMAE' },
-  { id: 'tiempos', nombre: 'Tiempos', pista: 'Reparto del día' },
-  { id: 'ia', nombre: 'Dieta', pista: 'Los platillos' },
+const PASOS: Array<{ id: PasoId; nombre: string; pista: string; tono: string }> = [
+  { id: 'cuadro', nombre: 'Cuadro', pista: 'Datos y meta calórica', tono: 'azul' },
+  { id: 'grupos', nombre: 'Grupos', pista: 'Equivalentes SMAE', tono: 'morado' },
+  { id: 'tiempos', nombre: 'Tiempos', pista: 'Reparto del día', tono: 'ambar' },
+  { id: 'ia', nombre: 'Dieta', pista: 'Los platillos', tono: 'verde' },
 ]
 
 /** Cuadros por página en el historial. */
@@ -2842,6 +2842,7 @@ export default function DietasPage() {
                 type="button"
                 className={[
                   styles.paso,
+                  styles[`tono_${paso.tono}`],
                   actual ? styles.pasoActual : '',
                   hecho ? styles.pasoHecho : '',
                   bloqueo ? styles.pasoBloqueado : '',
@@ -2942,9 +2943,13 @@ export default function DietasPage() {
           se repita; sin ella React reutilizaría el nodo y no se vería nada. */}
       <div
         key={pestana}
-        className={`${styles.pasoContenido} ${
-          sentido === 'avanza' ? styles.entraDerecha : styles.entraIzquierda
-        }`}
+        className={[
+          styles.pasoContenido,
+          // El contenido hereda el tono del paso: al entrar se sabe dónde se
+          // está sin volver a mirar la barra de arriba.
+          styles[`tono_${PASOS.find((x) => x.id === pestana)?.tono ?? 'verde'}`],
+          sentido === 'avanza' ? styles.entraDerecha : styles.entraIzquierda,
+        ].join(' ')}
       >
       {paciente && pestana === 'cuadro' && (
         <div className={styles.grid}>
