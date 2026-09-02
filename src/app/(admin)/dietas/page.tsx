@@ -878,10 +878,15 @@ export default function DietasPage() {
     const tiemposImpresos = recetario
       ? recetario.tiempos.map((t) => ({
           nombre: t.nombre,
-          // En un recetario cada opción es un platillo alternativo: se numeran
-          // para que el paciente entienda que elige uno, no que come todos.
-          alimentos: t.opciones.map((o, i) => ({
-            descripcion: `Opción ${i + 1}: ${o.nombre || o.alimentos.map((a) => a.descripcion).join(', ')}`,
+          // Cada opción va entera —nombre, ingredientes y preparación— porque
+          // el paciente elige una y tiene que poder cocinarla. Aplanarlas en
+          // una línea dejaba fuera justo lo que hace falta para hacerlo.
+          opciones: t.opciones.map((o) => ({
+            nombre: o.nombre,
+            alimentos: o.alimentos
+              .filter((a) => a.descripcion.trim())
+              .map((a) => ({ descripcion: a.descripcion })),
+            preparacion: o.preparacion,
           })),
         }))
       : (dietaIA ?? []).map((t) => {
@@ -924,8 +929,21 @@ export default function DietasPage() {
           }
         : undefined,
       restricciones: evitar.length > 0 ? evitar : undefined,
+      // Las medidas con que se calculó el plan: anclan la hoja a un momento
+      // del tratamiento, que es lo que permite comparar cuando el paciente
+      // vuelve con la hoja anterior en la mano.
+      consulta: resultado
+        ? {
+            peso: form.peso ? Number(form.peso) : undefined,
+            talla: form.talla_cm ? Number(form.talla_cm) : undefined,
+            imc: resultado.imc,
+            clasificacionImc: resultado.clasificacionImc,
+            pesoIdeal: resultado.pesoIdeal,
+            objetivo: form.objetivo || undefined,
+          }
+        : undefined,
     }
-  }, [dietaIA, recetario, paciente, resultado, kcalMeta, restricciones])
+  }, [dietaIA, recetario, paciente, resultado, kcalMeta, restricciones, form])
 
   const resumenPaso = useCallback(
     (paso: PasoId): string | null => {

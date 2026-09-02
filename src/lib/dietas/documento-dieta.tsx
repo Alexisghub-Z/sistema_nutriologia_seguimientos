@@ -28,9 +28,23 @@ export interface AlimentoImpreso {
   descripcion: string
 }
 
-export interface TiempoImpreso {
+/**
+ * Una opción de platillo en un recetario: el paciente elige UNA de ellas.
+ * Lleva sus propios ingredientes y su preparación, que es lo que la convierte
+ * en algo cocinable y no en una lista de compra.
+ */
+export interface OpcionImpresa {
   nombre: string
   alimentos: AlimentoImpreso[]
+  preparacion?: string
+}
+
+export interface TiempoImpreso {
+  nombre: string
+  /** Dieta precisa: los alimentos de ese tiempo, sin alternativas. */
+  alimentos?: AlimentoImpreso[]
+  /** Recetario: varias opciones entre las que elegir. */
+  opciones?: OpcionImpresa[]
   nota?: string
   /** Aporte del tiempo; solo se pinta si se pidió mostrarlo. */
   kcal?: number
@@ -43,22 +57,30 @@ export interface TiempoImpreso {
  */
 export interface OpcionesDocumento {
   indicaciones: boolean
+  datosConsulta: boolean
   metaCalorica: boolean
   macros: boolean
   kcalPorTiempo: boolean
   restricciones: boolean
   notasTiempo: boolean
+  preparacion: boolean
   espacioNotas: boolean
 }
 
 export const OPCIONES_POR_DEFECTO: OpcionesDocumento = {
-  // Lo mínimo que hace útil la hoja: qué comer y cómo empezar.
+  // Qué comer, cómo empezar, y de dónde sale el plan: el peso y la fecha de
+  // la consulta anclan la hoja a un momento concreto del tratamiento, que es
+  // lo que permite comparar cuando el paciente vuelve.
   indicaciones: true,
+  datosConsulta: true,
   metaCalorica: true,
   macros: false,
   kcalPorTiempo: false,
   restricciones: false,
   notasTiempo: true,
+  // La preparación viene con el platillo: sin ella el recetario es una lista
+  // de ingredientes que nadie sabe cocinar.
+  preparacion: true,
   espacioNotas: false,
 }
 
@@ -72,6 +94,15 @@ export interface DatosDocumento {
   macros?: { proteina: number; grasa: number; carbohidrato: number }
   /** Alergias e intolerancias, para que queden por escrito. */
   restricciones?: string[]
+  /** Medidas de la consulta en que se hizo el plan. */
+  consulta?: {
+    peso?: number
+    talla?: number
+    imc?: number
+    clasificacionImc?: string
+    pesoIdeal?: number
+    objetivo?: string
+  }
 }
 
 // Helvetica va incrustada en el propio PDF: no depende de fuentes del sistema
@@ -180,7 +211,9 @@ const s = StyleSheet.create({
   // contenido, así que se leen de un vistazo y se apartan.
   cifras: {
     flexDirection: 'row',
-    gap: 22,
+    flexWrap: 'wrap',
+    gap: 20,
+    rowGap: 10,
     marginBottom: 18,
     paddingBottom: 12,
     borderBottomWidth: 1,
@@ -208,6 +241,45 @@ const s = StyleSheet.create({
   restriccionesTexto: { fontSize: 9.5, color: TINTA, lineHeight: 1.45 },
 
   kcalTiempo: { fontSize: 9, color: GRIS, fontFamily: 'Helvetica' },
+
+  // ── Opciones del recetario ──
+  // Cada opción es un platillo alternativo. Se numeran y se separan porque el
+  // paciente elige UNA: presentarlas seguidas haría pensar que se comen todas.
+  opcion: {
+    marginBottom: 9,
+    paddingLeft: 10,
+    borderLeftWidth: 1,
+    borderLeftColor: '#e4f4fb',
+  },
+  opcionCabecera: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 3 },
+  opcionNumero: {
+    fontSize: 8,
+    fontFamily: 'Helvetica-Bold',
+    color: 'white',
+    backgroundColor: LIMA,
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 7,
+    marginRight: 7,
+  },
+  opcionNombre: { fontSize: 10.5, fontFamily: 'Helvetica-Bold', color: TINTA, flex: 1 },
+  opcionIngrediente: { fontSize: 10, lineHeight: 1.4, marginLeft: 2 },
+  preparacion: {
+    fontSize: 9,
+    color: GRIS,
+    lineHeight: 1.45,
+    marginTop: 3,
+    marginLeft: 2,
+    fontStyle: 'italic',
+  },
+
+  // ── Datos de la consulta ──
+  consulta: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 18,
+    marginBottom: 16,
+  },
 
   // Renglones en blanco para que el paciente apunte a mano lo que comió.
   espacioNotas: {
@@ -248,6 +320,17 @@ export function DocumentoDieta({ datos, opciones = OPCIONES_POR_DEFECTO, logo, m
   if (opciones.metaCalorica && datos.kcalMeta) {
     cifras.push({ valor: datos.kcalMeta.toLocaleString('es-MX'), etiqueta: 'kcal al día' })
   }
+  if (opciones.datosConsulta && datos.consulta) {
+    const c = datos.consulta
+    if (c.peso) cifras.push({ valor: `${c.peso} kg`, etiqueta: 'Peso actual' })
+    if (c.imc) {
+      cifras.push({
+        valor: c.imc.toFixed(1),
+        etiqueta: c.clasificacionImc ? `IMC · ${c.clasificacionImc}` : 'IMC',
+      })
+    }
+    if (c.pesoIdeal) cifras.push({ valor: `${Math.round(c.pesoIdeal)} kg`, etiqueta: 'Peso ideal' })
+  }
   if (opciones.macros && datos.macros) {
     cifras.push(
       { valor: `${Math.round(datos.macros.proteina)} g`, etiqueta: 'Proteína' },
@@ -272,7 +355,11 @@ export function DocumentoDieta({ datos, opciones = OPCIONES_POR_DEFECTO, logo, m
           )}
           <View style={s.destinatario}>
             <Text style={s.paraQuien}>{datos.paciente}</Text>
-            <Text style={s.cuando}>{datos.fecha}</Text>
+            <Text style={s.cuando}>
+              {opciones.datosConsulta && datos.consulta?.objetivo
+                ? `${datos.consulta.objetivo} · ${datos.fecha}`
+                : datos.fecha}
+            </Text>
           </View>
         </View>
 
@@ -312,7 +399,29 @@ export function DocumentoDieta({ datos, opciones = OPCIONES_POR_DEFECTO, logo, m
                   <Text style={s.kcalTiempo}>{t.kcal} kcal</Text>
                 ) : null}
               </View>
-              {t.alimentos.map((a, j) => (
+              {/* Recetario: cada opción con sus ingredientes y preparación.
+                  Aplanarlas en una línea perdía justo lo que hace cocinable
+                  el platillo. */}
+              {t.opciones?.map((o, j) => (
+                <View key={j} style={s.opcion} wrap={false}>
+                  <View style={s.opcionCabecera}>
+                    <Text style={s.opcionNumero}>{j + 1}</Text>
+                    <Text style={s.opcionNombre}>{o.nombre || `Opción ${j + 1}`}</Text>
+                  </View>
+                  {o.alimentos.map((a, k) => (
+                    <View key={k} style={s.alimento}>
+                      <View style={s.vineta} />
+                      <Text style={s.opcionIngrediente}>{a.descripcion}</Text>
+                    </View>
+                  ))}
+                  {opciones.preparacion && o.preparacion ? (
+                    <Text style={s.preparacion}>{o.preparacion}</Text>
+                  ) : null}
+                </View>
+              ))}
+
+              {/* Dieta precisa: los alimentos del tiempo, sin alternativas. */}
+              {t.alimentos?.map((a, j) => (
                 <View key={j} style={s.alimento}>
                   <View style={s.vineta} />
                   <Text style={s.alimentoTexto}>{a.descripcion}</Text>

@@ -53,6 +53,11 @@ const AJUSTES: Array<{
     ayuda: 'Lo que escribiste al inicio del plan',
   },
   {
+    campo: 'datosConsulta',
+    nombre: 'Peso, IMC y peso ideal',
+    ayuda: 'Las medidas de la consulta en que se hizo el plan',
+  },
+  {
     campo: 'metaCalorica',
     nombre: 'Meta calórica',
     ayuda: 'Las kcal diarias del plan',
@@ -76,6 +81,11 @@ const AJUSTES: Array<{
     campo: 'notasTiempo',
     nombre: 'Notas de cada tiempo',
     ayuda: 'Las indicaciones sueltas que añadiste',
+  },
+  {
+    campo: 'preparacion',
+    nombre: 'Cómo se prepara',
+    ayuda: 'Las instrucciones de cada platillo del recetario',
   },
   {
     campo: 'espacioNotas',
@@ -120,11 +130,13 @@ export default function VistaPreviaDieta({ datos, onCerrar }: Props) {
   // la casilla encendida sin que cambie nada en la hoja.
   const disponible: Record<keyof OpcionesDocumento, boolean> = {
     indicaciones: !!datos.indicacionesInicio,
+    datosConsulta: !!datos.consulta?.peso || !!datos.consulta?.imc,
     metaCalorica: !!datos.kcalMeta,
     macros: !!datos.macros,
     kcalPorTiempo: datos.tiempos.some((t) => !!t.kcal),
     restricciones: !!datos.restricciones?.length,
     notasTiempo: datos.tiempos.some((t) => !!t.nota),
+    preparacion: datos.tiempos.some((t) => t.opciones?.some((o) => !!o.preparacion)),
     espacioNotas: true,
   }
 
