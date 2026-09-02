@@ -884,13 +884,26 @@ export default function DietasPage() {
             descripcion: `Opción ${i + 1}: ${o.nombre || o.alimentos.map((a) => a.descripcion).join(', ')}`,
           })),
         }))
-      : (dietaIA ?? []).map((t) => ({
-          nombre: t.nombre,
-          alimentos: t.alimentos
-            .filter((a) => a.descripcion.trim())
-            .map((a) => ({ descripcion: a.descripcion })),
-          nota: t.nota,
-        }))
+      : (dietaIA ?? []).map((t) => {
+          const equiv: Equivalentes = {}
+          for (const a of t.alimentos) {
+            equiv[a.grupo] = (equiv[a.grupo] ?? 0) + a.equivalentes
+          }
+          return {
+            nombre: t.nombre,
+            alimentos: t.alimentos
+              .filter((a) => a.descripcion.trim())
+              .map((a) => ({ descripcion: a.descripcion })),
+            nota: t.nota,
+            kcal: resumenTiempo(equiv).kcal,
+          }
+        })
+
+    // Alergias e intolerancias, que son las que no se pueden olvidar. Las
+    // preferencias y disgustos no van: ya están reflejados en los platillos.
+    const evitar = [restricciones?.alergias, restricciones?.intolerancias]
+      .filter((x): x is string => !!x?.trim())
+      .map((x) => x.trim())
 
     return {
       paciente: paciente?.nombre ?? 'Paciente',
@@ -902,8 +915,17 @@ export default function DietasPage() {
       }),
       tiempos: tiemposImpresos,
       indicacionesInicio: recetario?.indicacionesInicio?.trim() || undefined,
+      kcalMeta: resultado ? Math.round(kcalMeta) : undefined,
+      macros: resultado
+        ? {
+            proteina: resultado.macros.proteina.gramos,
+            grasa: resultado.macros.grasa.gramos,
+            carbohidrato: resultado.macros.carbohidrato.gramos,
+          }
+        : undefined,
+      restricciones: evitar.length > 0 ? evitar : undefined,
     }
-  }, [dietaIA, recetario, paciente])
+  }, [dietaIA, recetario, paciente, resultado, kcalMeta, restricciones])
 
   const resumenPaso = useCallback(
     (paso: PasoId): string | null => {

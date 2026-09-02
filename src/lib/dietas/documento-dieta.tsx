@@ -32,6 +32,34 @@ export interface TiempoImpreso {
   nombre: string
   alimentos: AlimentoImpreso[]
   nota?: string
+  /** Aporte del tiempo; solo se pinta si se pidió mostrarlo. */
+  kcal?: number
+}
+
+/**
+ * Qué se incluye en la hoja. Cada opción es una decisión clínica, no un
+ * adorno: un paciente que empieza necesita saber qué comer y poco más,
+ * mientras que uno que ya maneja el sistema aprovecha las cifras.
+ */
+export interface OpcionesDocumento {
+  indicaciones: boolean
+  metaCalorica: boolean
+  macros: boolean
+  kcalPorTiempo: boolean
+  restricciones: boolean
+  notasTiempo: boolean
+  espacioNotas: boolean
+}
+
+export const OPCIONES_POR_DEFECTO: OpcionesDocumento = {
+  // Lo mínimo que hace útil la hoja: qué comer y cómo empezar.
+  indicaciones: true,
+  metaCalorica: true,
+  macros: false,
+  kcalPorTiempo: false,
+  restricciones: false,
+  notasTiempo: true,
+  espacioNotas: false,
 }
 
 export interface DatosDocumento {
@@ -39,6 +67,11 @@ export interface DatosDocumento {
   fecha: string
   tiempos: TiempoImpreso[]
   indicacionesInicio?: string
+  /** Meta diaria, si se decide mostrarla. */
+  kcalMeta?: number
+  macros?: { proteina: number; grasa: number; carbohidrato: number }
+  /** Alergias e intolerancias, para que queden por escrito. */
+  restricciones?: string[]
 }
 
 // Helvetica va incrustada en el propio PDF: no depende de fuentes del sistema
@@ -142,6 +175,54 @@ const s = StyleSheet.create({
     marginLeft: 13,
   },
 
+  // ── Cifras del plan ──
+  // Una tira sobria bajo el membrete: son datos de referencia, no el
+  // contenido, así que se leen de un vistazo y se apartan.
+  cifras: {
+    flexDirection: 'row',
+    gap: 22,
+    marginBottom: 18,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e8eef1',
+  },
+  cifra: { flexDirection: 'column' },
+  cifraValor: { fontSize: 13, fontFamily: 'Helvetica-Bold', color: TINTA },
+  cifraEtiqueta: { fontSize: 8, color: GRIS, marginTop: 2 },
+
+  // ── Restricciones ──
+  restricciones: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#f0b429',
+    backgroundColor: '#fffbf0',
+    paddingVertical: 8,
+    paddingHorizontal: 13,
+    marginBottom: 18,
+  },
+  restriccionesTitulo: {
+    fontSize: 9,
+    fontFamily: 'Helvetica-Bold',
+    color: '#8a6100',
+    marginBottom: 3,
+  },
+  restriccionesTexto: { fontSize: 9.5, color: TINTA, lineHeight: 1.45 },
+
+  kcalTiempo: { fontSize: 9, color: GRIS, fontFamily: 'Helvetica' },
+
+  // Renglones en blanco para que el paciente apunte a mano lo que comió.
+  espacioNotas: {
+    marginTop: 14,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#e8eef1',
+  },
+  espacioNotasTitulo: { fontSize: 9, color: GRIS, marginBottom: 8 },
+  renglon: {
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#dbe4e8',
+    height: 18,
+  },
+
   // ── Pie ──
   pie: {
     position: 'absolute',
@@ -157,11 +238,24 @@ const s = StyleSheet.create({
   pieTexto: { fontSize: 8, color: GRIS },
 })
 
-export function DocumentoDieta({ datos, logo, manzana }: {
+export function DocumentoDieta({ datos, opciones = OPCIONES_POR_DEFECTO, logo, manzana }: {
   datos: DatosDocumento
+  opciones?: OpcionesDocumento
   logo?: string
   manzana?: string
 }) {
+  const cifras: Array<{ valor: string; etiqueta: string }> = []
+  if (opciones.metaCalorica && datos.kcalMeta) {
+    cifras.push({ valor: datos.kcalMeta.toLocaleString('es-MX'), etiqueta: 'kcal al día' })
+  }
+  if (opciones.macros && datos.macros) {
+    cifras.push(
+      { valor: `${Math.round(datos.macros.proteina)} g`, etiqueta: 'Proteína' },
+      { valor: `${Math.round(datos.macros.grasa)} g`, etiqueta: 'Grasas' },
+      { valor: `${Math.round(datos.macros.carbohidrato)} g`, etiqueta: 'Carbohidratos' }
+    )
+  }
+
   return (
     <Document
       title={`Plan de alimentación · ${datos.paciente}`}
@@ -182,7 +276,25 @@ export function DocumentoDieta({ datos, logo, manzana }: {
           </View>
         </View>
 
-        {datos.indicacionesInicio ? (
+        {cifras.length > 0 && (
+          <View style={s.cifras}>
+            {cifras.map((c, i) => (
+              <View key={i} style={s.cifra}>
+                <Text style={s.cifraValor}>{c.valor}</Text>
+                <Text style={s.cifraEtiqueta}>{c.etiqueta}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {opciones.restricciones && datos.restricciones?.length ? (
+          <View style={s.restricciones}>
+            <Text style={s.restriccionesTitulo}>Evitar</Text>
+            <Text style={s.restriccionesTexto}>{datos.restricciones.join(' · ')}</Text>
+          </View>
+        ) : null}
+
+        {opciones.indicaciones && datos.indicacionesInicio ? (
           <View style={s.indicaciones}>
             <Text style={s.indicacionesTexto}>{datos.indicacionesInicio}</Text>
           </View>
@@ -194,17 +306,31 @@ export function DocumentoDieta({ datos, logo, manzana }: {
           <View key={i} style={s.tiempo} wrap={false}>
             <View style={s.guia} />
             <View style={s.guiaCuerpo}>
-              <Text style={s.tiempoNombre}>{t.nombre}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 7 }}>
+                <Text style={[s.tiempoNombre, { marginBottom: 0, flex: 1 }]}>{t.nombre}</Text>
+                {opciones.kcalPorTiempo && t.kcal ? (
+                  <Text style={s.kcalTiempo}>{t.kcal} kcal</Text>
+                ) : null}
+              </View>
               {t.alimentos.map((a, j) => (
                 <View key={j} style={s.alimento}>
                   <View style={s.vineta} />
                   <Text style={s.alimentoTexto}>{a.descripcion}</Text>
                 </View>
               ))}
-              {t.nota ? <Text style={s.nota}>{t.nota}</Text> : null}
+              {opciones.notasTiempo && t.nota ? <Text style={s.nota}>{t.nota}</Text> : null}
             </View>
           </View>
         ))}
+
+        {opciones.espacioNotas && (
+          <View style={s.espacioNotas} wrap={false}>
+            <Text style={s.espacioNotasTitulo}>Notas</Text>
+            {[0, 1, 2, 3].map((i) => (
+              <View key={i} style={s.renglon} />
+            ))}
+          </View>
+        )}
 
         <View style={s.pie} fixed>
           <Text style={s.pieTexto}>Eder Paul Alavez Cortes · Nutriólogo · 951 130 15 54</Text>
