@@ -103,9 +103,9 @@ const MAX_POR_GRUPO = 6
  *
  * Se le pide variar SIN romper lo demás: los equivalentes siguen siendo
  * obligatorios y el estilo del nutriólogo se mantiene. Y se deja una salida
- * —"si no hay alternativa razonable, repite"— porque en grupos con pocas
- * opciones (aceites, tortilla como base de la dieta mexicana) forzar la
- * variación daría un plan peor, no más variado.
+ * —"si no hay alternativa razonable, repite"— porque hay grupos con pocas
+ * opciones reales (los aceites) o cuyo alimento es la base de la cocina local
+ * y se repite a diario; forzar ahí la variación daría un plan peor.
  */
 export function instruccionDeVariedad(porGrupo: Map<GrupoSMAEId, Set<string>>): string {
   const nombreGrupo = Object.fromEntries(GRUPOS_SMAE.map((g) => [g.id, g.nombre]))
