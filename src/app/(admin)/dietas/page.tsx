@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import Button from '@/components/ui/Button'
 import GenerandoIA from '@/components/dietas/GenerandoIA'
 import ResumenDietas from '@/components/dietas/ResumenDietas'
+import dynamic from 'next/dynamic'
 import PanelAlternativas from '@/components/dietas/PanelAlternativas'
 import { useToast } from '@/components/ui/Toast'
 import { buscarAlergenos } from '@/lib/dietas/alergenos'
@@ -324,6 +325,12 @@ const PASOS: Array<{ id: PasoId; nombre: string; pista: string; tono: string }> 
 const POR_PAGINA = 6
 
 // Mapa id de grupo SMAE → nombre legible (para mostrar en la dieta de IA).
+// El visor de PDF solo se carga al abrirlo: pesa bastante y la mayoría de las
+// veces no se usa. `ssr: false` porque necesita el navegador.
+const VistaPreviaDieta = dynamic(() => import('@/components/dietas/VistaPreviaDieta'), {
+  ssr: false,
+})
+
 const NOMBRE_GRUPO = Object.fromEntries(GRUPOS_SMAE.map((g) => [g.id, g.nombre])) as Record<
   GrupoSMAEId,
   string
@@ -423,6 +430,8 @@ export default function DietasPage() {
   const [estadoDieta, setEstadoDieta] = useState<EstadoDieta | null>(null)
   const [finalizando, setFinalizando] = useState(false)
   const [confirmandoFinalizar, setConfirmandoFinalizar] = useState(false)
+  /** Visor del plan tal como lo recibirá el paciente. */
+  const [vistaPrevia, setVistaPrevia] = useState(false)
 
   // --- Autoguardado ---
   // La dieta se persiste sola: antes, salir de la pantalla sin pulsar "Guardar
@@ -858,6 +867,44 @@ export default function DietasPage() {
    * "18 equivalentes". Es lo que convierte la barra en un resumen del trabajo
    * y no en una simple botonera; si el paso aún no da nada, devuelve su pista.
    */
+  /**
+   * Lo que va a la hoja del paciente.
+   *
+   * Deja fuera equivalentes y kcal a propósito: son el lenguaje con el que
+   * trabaja el nutriólogo. El paciente necesita saber qué comer, y una hoja
+   * llena de cifras técnicas se lee peor, no mejor.
+   */
+  const datosParaImprimir = useMemo(() => {
+    const tiemposImpresos = recetario
+      ? recetario.tiempos.map((t) => ({
+          nombre: t.nombre,
+          // En un recetario cada opción es un platillo alternativo: se numeran
+          // para que el paciente entienda que elige uno, no que come todos.
+          alimentos: t.opciones.map((o, i) => ({
+            descripcion: `Opción ${i + 1}: ${o.nombre || o.alimentos.map((a) => a.descripcion).join(', ')}`,
+          })),
+        }))
+      : (dietaIA ?? []).map((t) => ({
+          nombre: t.nombre,
+          alimentos: t.alimentos
+            .filter((a) => a.descripcion.trim())
+            .map((a) => ({ descripcion: a.descripcion })),
+          nota: t.nota,
+        }))
+
+    return {
+      paciente: paciente?.nombre ?? 'Paciente',
+      fecha: new Date().toLocaleDateString('es-MX', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'America/Mexico_City',
+      }),
+      tiempos: tiemposImpresos,
+      indicacionesInicio: recetario?.indicacionesInicio?.trim() || undefined,
+    }
+  }, [dietaIA, recetario, paciente])
+
   const resumenPaso = useCallback(
     (paso: PasoId): string | null => {
       switch (paso) {
@@ -3866,6 +3913,19 @@ export default function DietasPage() {
                       {finalizando ? 'Guardando…' : 'Guardar dieta'}
                     </Button>
                   )}
+
+                  {/* La hoja del paciente: se revisa antes de entregarla, que
+                      es cuando todavía se puede corregir una porción. */}
+                  {(dietaIA || recetario) && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => setVistaPrevia(true)}
+                      disabled={generando || chateando}
+                      title="Ver el plan como lo recibirá el paciente"
+                    >
+                      Vista previa
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -4943,6 +5003,10 @@ export default function DietasPage() {
       )}
 
       </div>
+
+      {vistaPrevia && (
+        <VistaPreviaDieta datos={datosParaImprimir} onCerrar={() => setVistaPrevia(false)} />
+      )}
 
       {/* Modal de confirmación antes de guardar */}
       {confirmando &&

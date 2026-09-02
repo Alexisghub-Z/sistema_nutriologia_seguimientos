@@ -1,0 +1,133 @@
+/* Vista previa del plan antes de entregarlo. */
+
+.fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+  /* Oscuro y neutro: lo que se juzga es la hoja, y cualquier tinte de fondo
+     alteraría cómo se percibe su blanco. */
+  background: rgba(15, 23, 30, 0.72);
+  backdrop-filter: blur(2px);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: min(940px, 100%);
+  height: min(92vh, 1000px);
+  background: white;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+}
+
+.cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: 0.85rem 1.15rem;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.titulo {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--color-gray-900);
+}
+
+.subtitulo {
+  margin: 2px 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}
+
+.acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* El cian de la marca, no el verde del sistema: este botón produce un
+   documento de Paul, y el color lo anticipa. */
+.descargar {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  background: #00b3e3;
+  color: white;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.14s ease;
+}
+
+.descargar:hover {
+  background: #0098c2;
+}
+
+.descargar:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 179, 227, 0.35);
+}
+
+.cerrar {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--color-gray-500);
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.14s ease, color 0.14s ease;
+}
+
+.cerrar:hover {
+  border-color: var(--color-gray-400);
+  color: var(--color-gray-700);
+}
+
+.cerrar:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+/* Gris medio alrededor de la hoja: es el fondo con el que los lectores de PDF
+   presentan una página, y deja el blanco del papel sin contaminar. */
+.visor {
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--color-gray-300);
+}
+
+.visor iframe {
+  border: none;
+  display: block;
+}
+
+@media (max-width: 720px) {
+  .fondo {
+    padding: 0;
+  }
+  .panel {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .descargar, .cerrar {
+    transition: none;
+  }
+}
