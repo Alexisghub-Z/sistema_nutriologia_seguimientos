@@ -846,6 +846,39 @@ export default function DietasPage() {
    * pasar por una pantalla no es completarla, y una marca de "listo" que
    * miente es peor que no tener marca.
    */
+  /**
+   * Lo que ha producido cada paso, en pocas palabras: "1,850 kcal",
+   * "18 equivalentes". Es lo que convierte la barra en un resumen del trabajo
+   * y no en una simple botonera; si el paso aún no da nada, devuelve su pista.
+   */
+  const resumenPaso = useCallback(
+    (paso: PasoId): string | null => {
+      switch (paso) {
+        case 'cuadro':
+          return resultado ? `${Math.round(kcalMeta).toLocaleString('es-MX')} kcal` : null
+        case 'grupos': {
+          const total = gruposConEquiv.reduce((n, g) => n + (equivalentes[g.id] ?? 0), 0)
+          return total > 0 ? `${redondear2(total)} equivalentes` : null
+        }
+        case 'tiempos': {
+          const conReparto = tiempos.filter((t) =>
+            Object.values(reparto[t.id] ?? {}).some((n) => (n ?? 0) > 0)
+          ).length
+          return conReparto > 0 ? `${conReparto} de ${tiempos.length} tiempos` : null
+        }
+        case 'ia': {
+          if (recetario) return `${recetario.tiempos.length} tiempos con opciones`
+          if (dietaIA) {
+            const platillos = dietaIA.reduce((n, t) => n + t.alimentos.length, 0)
+            return `${platillos} alimentos`
+          }
+          return null
+        }
+      }
+    },
+    [resultado, kcalMeta, gruposConEquiv, equivalentes, tiempos, reparto, dietaIA, recetario]
+  )
+
   const pasoCompletado = useCallback(
     (paso: PasoId): boolean => {
       switch (paso) {
@@ -2825,16 +2858,27 @@ export default function DietasPage() {
         <p className={styles.historialVacio}>Buscando cuadros guardados…</p>
       )}
 
-      {/* Los pasos del proceso. No son pestañas decoradas: la barra ES el
-          recorrido —cuadro, grupos, tiempos, dieta— y muestra por dónde vas y
-          qué falta. Un paso se marca hecho cuando de verdad lo está. */}
+      {/* El recorrido de la dieta. Cada paso enseña lo que produjo —kcal,
+          equivalentes, tiempos, alimentos—, así que la barra funciona como
+          resumen del trabajo y no solo como navegación. */}
       {paciente && (
-        <nav className={styles.pasos} aria-label="Progreso de la dieta">
+        <nav className={styles.recorrido} aria-label="Progreso de la dieta">
+          {/* Riel continuo por detrás de los nodos: sostiene el recorrido y
+              evita que se lean como cuatro botones sueltos. */}
+          <div className={styles.riel} aria-hidden>
+            <div
+              className={styles.rielAvance}
+              style={{
+                width: `${(PASOS.findIndex((x) => x.id === pestana) / (PASOS.length - 1)) * 100}%`,
+              }}
+            />
+          </div>
+
           {PASOS.map((paso, i) => {
             const bloqueo = motivoBloqueo(paso.id)
             const actual = pestana === paso.id
             const hecho = pasoCompletado(paso.id)
-            const indiceActual = PASOS.findIndex((x) => x.id === pestana)
+            const resumen = resumenPaso(paso.id)
 
             return (
               <button
@@ -2854,20 +2898,11 @@ export default function DietasPage() {
                 title={bloqueo ?? paso.nombre}
                 aria-current={actual ? 'step' : undefined}
               >
-                {i > 0 && (
-                  <span
-                    className={`${styles.union} ${
-                      i <= indiceActual || hecho ? styles.unionHecha : ''
-                    }`}
-                    aria-hidden
-                  />
-                )}
-
                 <span className={styles.nodo} aria-hidden>
                   {hecho && !actual ? (
                     <svg
-                      width="13"
-                      height="13"
+                      width="14"
+                      height="14"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -2882,7 +2917,11 @@ export default function DietasPage() {
 
                 <span className={styles.pasoTexto}>
                   <span className={styles.pasoNombre}>{paso.nombre}</span>
-                  <span className={styles.pasoPista}>{bloqueo ?? paso.pista}</span>
+                  {/* El dato producido manda sobre la pista: cuando existe
+                      dice más que cualquier descripción. */}
+                  <span className={`${styles.pasoDato} ${resumen ? styles.pasoDatoLleno : ''}`}>
+                    {bloqueo ?? resumen ?? paso.pista}
+                  </span>
                 </span>
               </button>
             )
