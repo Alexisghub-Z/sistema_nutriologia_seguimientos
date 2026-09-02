@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/Toast'
 import { buscarAlergenos } from '@/lib/dietas/alergenos'
 import {
   firmaContenido,
+  hayTrabajoEnElAire,
   formaDeTiempos,
   textoAutoguardado,
   type EstadoAutoguardado,
@@ -359,12 +360,18 @@ export default function DietasPage() {
    * siempre por el mismo lado y al retroceder daría sensación de avance, que
    * es lo contrario de lo que acaba de ocurrir.
    */
+  /** Se levanta al cambiar de paso para que lo pendiente se guarde ya. */
+  const cambioDePaso = useRef(false)
+
   const setPestana = useCallback((destino: PasoId) => {
     setPestanaRaw((actual) => {
       if (destino === actual) return actual
       const iActual = PASOS.findIndex((x) => x.id === actual)
       const iDestino = PASOS.findIndex((x) => x.id === destino)
       setSentido(iDestino >= iActual ? 'avanza' : 'retrocede')
+      // Cambiar de paso es un punto natural de guardado: lo que se acaba de
+      // escribir no debería quedarse esperando el temporizador.
+      cambioDePaso.current = true
       return destino
     })
   }, [])
@@ -1784,6 +1791,37 @@ export default function DietasPage() {
     }, RETRASO_AUTOGUARDADO)
   }, [autoguardar])
 
+  /**
+   * Guarda YA lo que esté pendiente, sin esperar los 3 segundos.
+   *
+   * Se usa en los momentos en que el trabajo corre peligro: al cambiar de paso
+   * y al dejar la pestaña. Cancela el temporizador porque el guardado que
+   * dispara lo sustituye.
+   */
+  const guardarPendienteYa = useCallback(() => {
+    if (!temporizadorAutoguardado.current) return
+    clearTimeout(temporizadorAutoguardado.current)
+    temporizadorAutoguardado.current = null
+    void autoguardar()
+  }, [autoguardar])
+
+  /**
+   * ¿Hay algo escrito que todavía no está en la base de datos?
+   *
+   * Es la pregunta que decide si avisar antes de cerrar. Mira el temporizador
+   * y el estado, no el contenido: si hay un guardado programado o en curso,
+   * hay trabajo en el aire.
+   */
+  const hayCambiosSinGuardar = useCallback(
+    () =>
+      hayTrabajoEnElAire({
+        estado: estadoAutoguardado,
+        temporizadorActivo: temporizadorAutoguardado.current !== null,
+        guardadoEnCurso: autoguardadoEnCurso.current,
+      }),
+    [estadoAutoguardado]
+  )
+
   /** Cancela el autoguardado pendiente (cambio de contexto o guardado manual). */
   const cancelarAutoguardado = useCallback(() => {
     if (temporizadorAutoguardado.current) {
@@ -1791,6 +1829,52 @@ export default function DietasPage() {
       temporizadorAutoguardado.current = null
     }
   }, [])
+
+  /**
+   * Red de seguridad al abandonar la pantalla.
+   *
+   * El autoguardado espera 3 segundos desde el último cambio, así que hay una
+   * ventana en la que lo escrito todavía no está en la base de datos. Cerrar
+   * la pestaña ahí perdía el trabajo sin decir nada.
+   *
+   * Se atacan los dos casos por separado porque el navegador los trata
+   * distinto:
+   *  - `visibilitychange` salta al cambiar de pestaña o minimizar, y ahí SÍ da
+   *    tiempo a guardar de verdad. Es el que salva el trabajo.
+   *  - `beforeunload` salta al cerrar, donde ya no se puede esperar a una
+   *    petición: solo queda avisar y dejar que el nutriólogo decida.
+   */
+  useEffect(() => {
+    const alOcultar = () => {
+      if (document.visibilityState === 'hidden') guardarPendienteYa()
+    }
+
+    const alCerrar = (e: BeforeUnloadEvent) => {
+      if (!hayCambiosSinGuardar()) return
+      // El texto lo decide el navegador; lo que cuenta es prevenir el evento.
+      e.preventDefault()
+      e.returnValue = ''
+    }
+
+    document.addEventListener('visibilitychange', alOcultar)
+    window.addEventListener('beforeunload', alCerrar)
+    return () => {
+      document.removeEventListener('visibilitychange', alOcultar)
+      window.removeEventListener('beforeunload', alCerrar)
+    }
+  }, [guardarPendienteYa, hayCambiosSinGuardar])
+
+  /**
+   * Al cambiar de paso, lo pendiente se guarda sin esperar el temporizador.
+   *
+   * Va en un efecto y no dentro de `setPestana` porque esa función se declara
+   * antes que `guardarPendienteYa`; la ref traslada la intención hasta aquí.
+   */
+  useEffect(() => {
+    if (!cambioDePaso.current) return
+    cambioDePaso.current = false
+    guardarPendienteYa()
+  }, [pestana, guardarPendienteYa])
 
   /**
    * Autoguardado: cualquier cambio en la dieta o el recetario programa un

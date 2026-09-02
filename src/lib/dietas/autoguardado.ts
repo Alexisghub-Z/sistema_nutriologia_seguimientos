@@ -136,3 +136,21 @@ export function textoAutoguardado(
         : { texto: 'Borrador', tono: 'pendiente' }
   }
 }
+
+/**
+ * ¿Hay trabajo escrito que todavía no está en la base de datos?
+ *
+ * El autoguardado espera unos segundos desde el último cambio, así que existe
+ * una ventana en la que lo editado solo vive en la pantalla. Esta función
+ * decide si hay que avisar antes de cerrar: mira el estado del ciclo y si hay
+ * un guardado programado o en vuelo, no el contenido.
+ */
+export function hayTrabajoEnElAire(opciones: {
+  estado: EstadoAutoguardado
+  temporizadorActivo: boolean
+  guardadoEnCurso: boolean
+}): boolean {
+  const { estado, temporizadorActivo, guardadoEnCurso } = opciones
+  if (temporizadorActivo || guardadoEnCurso) return true
+  return estado === 'pendiente' || estado === 'guardando'
+}

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   firmaContenido,
   formaDeTiempos,
+  hayTrabajoEnElAire,
   textoAutoguardado,
   type ContenidoAutoguardado,
 } from './autoguardado'
@@ -157,5 +158,44 @@ describe('formaDeTiempos', () => {
 
   it('ignora entradas nulas y se queda con el primer tiempo reconocible', () => {
     expect(formaDeTiempos([null, { id: 'd', nombre: 'D', alimentos: [] }])).toBe('DIETA')
+  })
+})
+
+describe('hayTrabajoEnElAire: cuándo avisar antes de cerrar', () => {
+  const caso = (over: Partial<Parameters<typeof hayTrabajoEnElAire>[0]> = {}) =>
+    hayTrabajoEnElAire({
+      estado: 'guardado',
+      temporizadorActivo: false,
+      guardadoEnCurso: false,
+      ...over,
+    })
+
+  it('avisa mientras el temporizador de los 3 segundos corre', () => {
+    // Es la ventana que perdía trabajo: escrito en pantalla, no en la base.
+    expect(caso({ temporizadorActivo: true })).toBe(true)
+  })
+
+  it('avisa con una petición en vuelo', () => {
+    expect(caso({ guardadoEnCurso: true })).toBe(true)
+  })
+
+  it('avisa en los estados pendiente y guardando', () => {
+    expect(caso({ estado: 'pendiente' })).toBe(true)
+    expect(caso({ estado: 'guardando' })).toBe(true)
+  })
+
+  it('NO avisa cuando todo está guardado', () => {
+    // Un aviso que salta siempre se ignora, y entonces no protege nada.
+    expect(caso({ estado: 'guardado' })).toBe(false)
+  })
+
+  it('NO avisa sin dieta abierta', () => {
+    expect(caso({ estado: 'inactivo' })).toBe(false)
+  })
+
+  it('NO avisa tras un fallo: reintentará al siguiente cambio', () => {
+    // El error ya se le comunicó al nutriólogo por su propio aviso; bloquear
+    // además la salida sería insistir dos veces sobre lo mismo.
+    expect(caso({ estado: 'error' })).toBe(false)
   })
 })
