@@ -1,0 +1,190 @@
+/* Lista de pacientes para elegir a quién hacerle una dieta. */
+
+.contenedor {
+  max-width: 900px;
+  margin: 0 auto var(--spacing-xl);
+}
+
+.encabezado {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.titulo {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-gray-900);
+  margin: 0;
+}
+
+.cuenta {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-500);
+}
+
+/* Dos columnas en escritorio; una sola en móvil, donde el ancho no da para
+   leer nombre y contexto en la misma fila. */
+.rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.tarjeta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem;
+  text-align: left;
+  background: white;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition:
+    border-color 0.14s ease,
+    box-shadow 0.14s ease,
+    transform 0.14s ease;
+}
+
+.tarjeta:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.tarjeta:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+  border-color: var(--color-primary);
+}
+
+.avatar {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  font-weight: 700;
+  font-size: var(--font-size-md);
+}
+
+.datos {
+  flex: 1 1 auto;
+  min-width: 0; /* deja que el nombre largo se recorte en vez de desbordar */
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nombre {
+  font-weight: 600;
+  font-size: var(--font-size-md);
+  color: var(--color-gray-900);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}
+
+.metaDato {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-2xs, 0.6875rem);
+  font-weight: 600;
+  line-height: 1.5;
+  border: 1px solid transparent;
+}
+
+/* Cita próxima: es la señal accionable, así que lleva el color de marca. */
+.chipCita {
+  background: rgba(var(--color-primary-rgb), 0.1);
+  color: var(--color-primary-dark, var(--color-primary));
+  border-color: rgba(var(--color-primary-rgb), 0.25);
+}
+
+.chipDieta {
+  background: var(--color-gray-100);
+  color: var(--color-gray-600);
+  border-color: var(--color-gray-200);
+}
+
+/* "Sin dieta" es lo que el nutriólogo viene a resolver: se marca, pero sin
+   alarmar — no es un error, es trabajo pendiente. */
+.chipSinDieta {
+  background: #fff7ed;
+  color: #9a3412;
+  border-color: #fed7aa;
+}
+
+.flecha {
+  flex: 0 0 auto;
+  color: var(--color-gray-300);
+  transition: color 0.14s ease;
+}
+
+.tarjeta:hover .flecha {
+  color: var(--color-primary);
+}
+
+.vacio {
+  text-align: center;
+  color: var(--color-gray-500);
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-lg) 0;
+  margin: 0;
+}
+
+/* Carga: tres filas fantasma para que la pantalla no salte al llegar los datos. */
+.esqueletoFila {
+  height: 66px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(90deg, var(--color-gray-100) 25%, var(--color-gray-50) 50%, var(--color-gray-100) 75%);
+  background-size: 200% 100%;
+  animation: brillo 1.4s ease-in-out infinite;
+  margin-bottom: var(--spacing-sm);
+}
+
+@keyframes brillo {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tarjeta,
+  .flecha { transition: none; }
+  .tarjeta:hover { transform: none; }
+  .esqueletoFila { animation: none; }
+}
+
+@media (max-width: 640px) {
+  .rejilla {
+    grid-template-columns: 1fr;
+  }
+}
