@@ -6,6 +6,7 @@ import chartStyles from '@/components/dashboard/Charts.module.css'
 import DietasAreaChart from './DietasAreaChart'
 import DietasTimeline from './DietasTimeline'
 import styles from './ResumenDietas.module.css'
+import ListaPacientes from './ListaPacientes'
 
 /** Una fila de las tablas del resumen. */
 export interface FilaResumen {
@@ -48,6 +49,8 @@ export interface ResumenDietasData {
 interface Props {
   /** Abre el cuadro de esa dieta: selecciona al paciente y repuebla la pantalla. */
   onAbrir: (paciente: { id: string; nombre: string; email: string }, cuadroId: string) => void
+  /** Empezar una dieta para el paciente recomendado. */
+  onElegirPaciente: (p: { id: string; nombre: string; email: string }) => void
 }
 
 /**
@@ -55,7 +58,7 @@ interface Props {
  * hay un paciente seleccionado. Carga sus propios datos al montarse, así que
  * al volver del trabajo con un paciente se refresca solo.
  */
-export default function ResumenDietas({ onAbrir }: Props) {
+export default function ResumenDietas({ onAbrir, onElegirPaciente }: Props) {
   const [datos, setDatos] = useState<ResumenDietasData | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(false)
@@ -143,7 +146,10 @@ export default function ResumenDietas({ onAbrir }: Props) {
         <DietasTimeline dietas={datos.ultimasDietas} onAbrir={onAbrir} />
       </div>
 
-      <div className={styles.panelAncho}>
+      <div className={styles.tablasRow}>
+        {/* A quién conviene hacerle una dieta ahora. */}
+        <ListaPacientes onElegir={onElegirPaciente} />
+
         {/* Borradores pendientes de cerrar */}
         <section className={styles.panel}>
           <div className={styles.panelHeader}>

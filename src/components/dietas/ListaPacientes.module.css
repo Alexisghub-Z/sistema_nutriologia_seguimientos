@@ -1,25 +1,33 @@
-/* Lista compacta de pacientes: punto de partida, no el contenido principal. */
+/* "Pendientes de dieta": un panel más del resumen, hermano de "Borradores". */
 
 .contenedor {
-  max-width: 560px; /* mismo ancho que el buscador de arriba: forman un bloque */
-  margin: 0 auto var(--spacing-lg);
+  background-color: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .encabezado {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: var(--spacing-sm);
-  margin-bottom: 0.5rem;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--dash-border);
 }
 
 .titulo {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-gray-500);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dash-heading);
+}
+
+.conteo {
+  font-size: 12px;
+  color: var(--dash-muted, var(--color-gray-500));
 }
 
 /* --- Paginación --- */
@@ -31,16 +39,16 @@
 }
 
 .pagBoton {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--dash-border);
   border-radius: var(--radius-sm);
-  background: white;
-  color: var(--color-gray-600);
-  font-size: var(--font-size-md);
+  background: transparent;
+  color: var(--dash-muted, var(--color-gray-500));
+  font-size: 14px;
   line-height: 1;
   cursor: pointer;
   transition: border-color 0.12s ease, color 0.12s ease;
@@ -52,7 +60,7 @@
 }
 
 .pagBoton:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: default;
 }
 
@@ -62,35 +70,36 @@
 }
 
 .pagTexto {
-  font-size: var(--font-size-xs);
-  color: var(--color-gray-500);
-  font-variant-numeric: tabular-nums; /* el ancho no baila al cambiar de página */
-  min-width: 34px;
+  font-size: 11px;
+  color: var(--dash-muted, var(--color-gray-500));
+  font-variant-numeric: tabular-nums; /* el ancho no baila al pasar de página */
+  min-width: 30px;
   text-align: center;
 }
 
 /* --- Filas --- */
 
+.cuerpo {
+  padding: 8px 20px;
+}
+
 .lista {
   list-style: none;
   margin: 0;
   padding: 0;
-  border: 1px solid var(--color-gray-200);
-  border-radius: var(--radius-lg);
-  overflow: hidden; /* las esquinas redondeadas recortan la primera y la última */
-  background: white;
+  flex: 1 1 auto;
 }
 
 .lista > li + li {
-  border-top: 1px solid var(--color-gray-100);
+  border-top: 1px solid var(--dash-border);
 }
 
 .fila {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.65rem;
   width: 100%;
-  padding: 0.5rem 0.75rem;
+  padding: 0.55rem 20px;
   border: none;
   background: none;
   text-align: left;
@@ -99,19 +108,18 @@
 }
 
 .fila:hover {
-  background: var(--color-gray-50);
+  background: rgba(var(--color-primary-rgb), 0.04);
 }
 
 .fila:focus-visible {
   outline: none;
   box-shadow: var(--ring-focus);
-  border-radius: var(--radius-sm);
 }
 
 .avatar {
   flex: 0 0 auto;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -119,81 +127,98 @@
   background: var(--color-primary);
   color: white;
   font-weight: 700;
-  font-size: var(--font-size-xs);
+  font-size: 12px;
+}
+
+/* Cita en tres días o menos: el ámbar avisa sin gritar, porque sigue siendo
+   trabajo por hacer y no un error. */
+.avatarUrgente {
+  background: #f59e0b;
+}
+
+.datos {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .nombre {
-  flex: 1 1 auto;
-  min-width: 0;
   font-weight: 500;
-  font-size: var(--font-size-sm);
-  color: var(--color-gray-900);
+  font-size: 13px;
+  color: var(--dash-heading);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.contexto {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.dato {
-  font-size: var(--font-size-xs);
-  color: var(--color-gray-400);
+/* El motivo es lo que justifica la recomendación: sin él, la lista sería
+   un orden arbitrario que el nutriólogo no puede juzgar. */
+.motivo {
+  font-size: 11px;
+  color: var(--dash-muted, var(--color-gray-500));
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.chipCita,
-.chipSinDieta {
-  display: inline-flex;
-  align-items: center;
-  padding: 1px 6px;
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-2xs);
+.motivoUrgente {
+  color: #b45309;
   font-weight: 600;
-  line-height: 1.5;
-  white-space: nowrap;
-  border: 1px solid transparent;
 }
 
-/* La cita próxima es la señal accionable: lleva el color de marca. */
-.chipCita {
-  background: rgba(var(--color-primary-rgb), 0.1);
-  color: var(--color-primary-dark);
-  border-color: rgba(var(--color-primary-rgb), 0.22);
-}
-
-/* "Sin dieta" es trabajo pendiente, no un error: ámbar suave, no rojo. */
-.chipSinDieta {
-  background: #fff7ed;
-  color: #9a3412;
-  border-color: #fed7aa;
-}
-
-.flecha {
+.accion {
   flex: 0 0 auto;
-  color: var(--color-gray-300);
-  transition: color 0.12s ease, transform 0.12s ease;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-primary);
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(var(--color-primary-rgb), 0.25);
+  background: rgba(var(--color-primary-rgb), 0.06);
+  opacity: 0;
+  transition: opacity 0.12s ease;
 }
 
-.fila:hover .flecha {
-  color: var(--color-primary);
-  transform: translateX(2px);
+/* La acción aparece al apuntar la fila: en reposo el panel se lee limpio,
+   y al acercarse queda claro qué pasa si haces clic. */
+.fila:hover .accion,
+.fila:focus-visible .accion {
+  opacity: 1;
 }
+
+/* --- Vacío y carga --- */
 
 .vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 20px;
   text-align: center;
-  color: var(--color-gray-500);
-  font-size: var(--font-size-sm);
-  padding: var(--spacing-md) 0;
+}
+
+.vacioIcono {
+  color: #2d9f5d;
+  margin-bottom: 8px;
+}
+
+.vacioTexto {
   margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dash-heading);
+}
+
+.vacioPista {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: var(--dash-muted, var(--color-gray-500));
 }
 
 .esqueleto {
-  height: 41px;
+  height: 38px;
   border-radius: var(--radius-md);
   background: linear-gradient(
     90deg,
@@ -203,7 +228,7 @@
   );
   background-size: 200% 100%;
   animation: brillo 1.4s ease-in-out infinite;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 @keyframes brillo {
@@ -212,15 +237,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fila, .flecha, .pagBoton { transition: none; }
-  .fila:hover .flecha { transform: none; }
+  .fila, .accion, .pagBoton { transition: none; }
   .esqueleto { animation: none; }
-}
-
-/* En móvil el ancho no da para nombre y contexto: se conserva lo accionable
-   (cita, sin dieta) y se cede el dato de la última consulta. */
-@media (max-width: 520px) {
-  .dato {
-    display: none;
-  }
+  /* Sin animación, la acción se muestra siempre: ocultarla dependía del hover. */
+  .accion { opacity: 1; }
 }

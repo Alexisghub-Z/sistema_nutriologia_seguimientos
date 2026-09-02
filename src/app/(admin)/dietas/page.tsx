@@ -5,7 +5,6 @@ import { createPortal } from 'react-dom'
 import Button from '@/components/ui/Button'
 import GenerandoIA from '@/components/dietas/GenerandoIA'
 import ResumenDietas from '@/components/dietas/ResumenDietas'
-import ListaPacientes from '@/components/dietas/ListaPacientes'
 import PanelAlternativas from '@/components/dietas/PanelAlternativas'
 import { useToast } from '@/components/ui/Toast'
 import { buscarAlergenos } from '@/lib/dietas/alergenos'
@@ -318,6 +317,8 @@ const NOMBRE_GRUPO = Object.fromEntries(GRUPOS_SMAE.map((g) => [g.id, g.nombre])
 export default function DietasPage() {
   const toast = useToast()
   const [query, setQuery] = useState('')
+  const [resultados, setResultados] = useState<PacienteLite[]>([])
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [paciente, setPaciente] = useState<PacienteLite | null>(null)
   const [form, setForm] = useState({ ...FORM_INICIAL })
   const [resultado, setResultado] = useState<ResultadoCuadro | null>(null)
@@ -880,8 +881,31 @@ export default function DietasPage() {
     }
   }, [mensajesIA])
 
+  // El buscador consulta por su cuenta: es la vía directa cuando ya sabes a
+  // quién buscas. Las recomendaciones de abajo son para cuando no lo sabes.
+  useEffect(() => {
+    if (paciente) return
+    if (query.trim().length < 2) {
+      setResultados([])
+      return
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/pacientes/buscar?q=${encodeURIComponent(query)}&limit=8`)
+        if (res.ok) {
+          const data = await res.json()
+          setResultados(data.pacientes || [])
+        }
+      } catch {
+        /* silencioso */
+      }
+    }, 250)
+  }, [query, paciente])
+
   const seleccionarPaciente = useCallback(async (p: PacienteLite) => {
     setPaciente(p)
+    setResultados([])
     setQuery('')
     setResultado(null)
     setEquivalentes({})
@@ -2418,14 +2442,39 @@ export default function DietasPage() {
               </button>
             )}
           </div>
+          {resultados.length > 0 && (
+            <div className={styles.resultados}>
+              {resultados.map((p) => (
+                <button
+                  key={p.id}
+                  className={styles.resultadoItem}
+                  onClick={() => seleccionarPaciente(p)}
+                >
+                  <span className={styles.resultadoAvatar}>{p.nombre.charAt(0).toUpperCase()}</span>
+                  <span className={styles.resultadoInfo}>
+                    <span className={styles.resultadoNombre}>{p.nombre}</span>
+                    <span className={styles.resultadoEmail}>{p.email}</span>
+                  </span>
+                  <svg
+                    className={styles.resultadoFlecha}
+                    width="18"
+                    height="18"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 4l6 6-6 6" />
+                  </svg>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Los pacientes, visibles desde el primer momento: sin esto había que
-            recordar el nombre y escribirlo para que apareciera alguno. */}
-        <ListaPacientes filtro={query} onElegir={seleccionarPaciente} />
-
-        {/* Resumen del trabajo: solo mientras no hay un paciente elegido. */}
-        <ResumenDietas onAbrir={abrirDesdeResumen} />
+        {/* Resumen del trabajo: solo mientras no hay un paciente elegido.
+            Lleva dentro la lista de pacientes, que es desde donde se empieza. */}
+        <ResumenDietas onAbrir={abrirDesdeResumen} onElegirPaciente={seleccionarPaciente} />
         </>
       ) : (
         <div className={styles.pacienteSel}>
