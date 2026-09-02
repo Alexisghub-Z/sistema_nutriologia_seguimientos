@@ -305,6 +305,20 @@ const FORM_INICIAL = {
 // Distribución calórica por defecto (% de HCO / lípidos / proteína).
 const PCT_DEFAULT = { hco: 50, lip: 25, pro: 25 }
 
+type PasoId = 'cuadro' | 'grupos' | 'tiempos' | 'ia'
+
+/**
+ * Los cuatro pasos del proceso, en el orden en que se recorren. La pista
+ * explica qué se hace en cada uno: sin ella el nombre solo tiene sentido para
+ * quien ya conoce la pantalla.
+ */
+const PASOS: Array<{ id: PasoId; nombre: string; pista: string }> = [
+  { id: 'cuadro', nombre: 'Cuadro', pista: 'Datos y meta calórica' },
+  { id: 'grupos', nombre: 'Grupos', pista: 'Equivalentes SMAE' },
+  { id: 'tiempos', nombre: 'Tiempos', pista: 'Reparto del día' },
+  { id: 'ia', nombre: 'Dieta', pista: 'Los platillos' },
+]
+
 /** Cuadros por página en el historial. */
 const POR_PAGINA = 6
 
@@ -336,7 +350,24 @@ export default function DietasPage() {
   // Paso entre porciones de los sliders de equivalentes (0.25 / 0.5 / 1).
   const [pasoEquiv, setPasoEquiv] = useState(0.5)
   // Pestaña activa: 'cuadro' (dietosintético) | 'tiempos' (distribución) | 'ia' (generar).
-  const [pestana, setPestana] = useState<'cuadro' | 'grupos' | 'tiempos' | 'ia'>('cuadro')
+  const [pestana, setPestanaRaw] = useState<PasoId>('cuadro')
+  /** Hacia dónde fue el último cambio: el contenido entra por ese lado. */
+  const [sentido, setSentido] = useState<'avanza' | 'retrocede'>('avanza')
+
+  /**
+   * Cambia de paso recordando la dirección. Sin esto el contenido entraría
+   * siempre por el mismo lado y al retroceder daría sensación de avance, que
+   * es lo contrario de lo que acaba de ocurrir.
+   */
+  const setPestana = useCallback((destino: PasoId) => {
+    setPestanaRaw((actual) => {
+      if (destino === actual) return actual
+      const iActual = PASOS.findIndex((x) => x.id === actual)
+      const iDestino = PASOS.findIndex((x) => x.id === destino)
+      setSentido(iDestino >= iActual ? 'avanza' : 'retrocede')
+      return destino
+    })
+  }, [])
   // Tiempos de comida y su reparto de equivalentes.
   const [tiempos, setTiempos] = useState<TiempoComida[]>(() =>
     TIEMPOS_DEFAULT.map((t) => ({ ...t }))
@@ -792,6 +823,45 @@ export default function DietasPage() {
   const gruposConEquiv = useMemo(
     () => GRUPOS_SMAE.filter((g) => (equivalentes[g.id] ?? 0) > 0),
     [equivalentes]
+  )
+
+  /**
+   * Por qué no se puede entrar todavía a un paso, o null si está abierto.
+   * Devuelve el motivo y no un booleano porque es lo que se le enseña al
+   * nutriólogo: un paso apagado sin explicación solo genera dudas.
+   */
+  const motivoBloqueo = useCallback(
+    (paso: PasoId): string | null => {
+      if (paso === 'cuadro') return null
+      if (!resultado) return 'Calcula el cuadro primero'
+      if (paso === 'grupos') return null
+      if (gruposConEquiv.length === 0) return 'Reparte los equivalentes primero'
+      return null
+    },
+    [resultado, gruposConEquiv.length]
+  )
+
+  /**
+   * Si un paso está resuelto. Se mira el TRABAJO hecho, no si se visitó:
+   * pasar por una pantalla no es completarla, y una marca de "listo" que
+   * miente es peor que no tener marca.
+   */
+  const pasoCompletado = useCallback(
+    (paso: PasoId): boolean => {
+      switch (paso) {
+        case 'cuadro':
+          return !!resultado
+        case 'grupos':
+          return gruposConEquiv.length > 0
+        case 'tiempos':
+          return Object.values(reparto).some((eq) =>
+            Object.values(eq ?? {}).some((n) => (n ?? 0) > 0)
+          )
+        case 'ia':
+          return !!dietaIA || !!recetario
+      }
+    },
+    [resultado, gruposConEquiv.length, reparto, dietaIA, recetario]
   )
 
   // Cuadre por grupo: repartido vs total.
@@ -2755,52 +2825,68 @@ export default function DietasPage() {
         <p className={styles.historialVacio}>Buscando cuadros guardados…</p>
       )}
 
-      {/* Pestañas */}
+      {/* Los pasos del proceso. No son pestañas decoradas: la barra ES el
+          recorrido —cuadro, grupos, tiempos, dieta— y muestra por dónde vas y
+          qué falta. Un paso se marca hecho cuando de verdad lo está. */}
       {paciente && (
-        <div className={styles.tabs}>
-          <button
-            className={`${styles.tab} ${pestana === 'cuadro' ? styles.tabActivo : ''}`}
-            onClick={() => setPestana('cuadro')}
-          >
-            Cuadro dietosintético
-          </button>
-          <button
-            className={`${styles.tab} ${pestana === 'grupos' ? styles.tabActivo : ''}`}
-            onClick={() => setPestana('grupos')}
-            disabled={!resultado}
-            title={!resultado ? 'Primero calcula el cuadro' : ''}
-          >
-            Grupos (SMAE)
-          </button>
-          <button
-            className={`${styles.tab} ${pestana === 'tiempos' ? styles.tabActivo : ''}`}
-            onClick={() => setPestana('tiempos')}
-            disabled={!resultado || gruposConEquiv.length === 0}
-            title={
-              !resultado
-                ? 'Primero calcula el cuadro'
-                : gruposConEquiv.length === 0
-                  ? 'Primero define los equivalentes por grupo'
-                  : ''
-            }
-          >
-            Distribución en tiempos
-          </button>
-          <button
-            className={`${styles.tab} ${pestana === 'ia' ? styles.tabActivo : ''}`}
-            onClick={() => setPestana('ia')}
-            disabled={!resultado || gruposConEquiv.length === 0}
-            title={
-              !resultado
-                ? 'Primero calcula el cuadro'
-                : gruposConEquiv.length === 0
-                  ? 'Primero define equivalentes'
-                  : ''
-            }
-          >
-            Generar con IA ✨
-          </button>
-        </div>
+        <nav className={styles.pasos} aria-label="Progreso de la dieta">
+          {PASOS.map((paso, i) => {
+            const bloqueo = motivoBloqueo(paso.id)
+            const actual = pestana === paso.id
+            const hecho = pasoCompletado(paso.id)
+            const indiceActual = PASOS.findIndex((x) => x.id === pestana)
+
+            return (
+              <button
+                key={paso.id}
+                type="button"
+                className={[
+                  styles.paso,
+                  actual ? styles.pasoActual : '',
+                  hecho ? styles.pasoHecho : '',
+                  bloqueo ? styles.pasoBloqueado : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                onClick={() => !bloqueo && setPestana(paso.id)}
+                disabled={!!bloqueo}
+                title={bloqueo ?? paso.nombre}
+                aria-current={actual ? 'step' : undefined}
+              >
+                {i > 0 && (
+                  <span
+                    className={`${styles.union} ${
+                      i <= indiceActual || hecho ? styles.unionHecha : ''
+                    }`}
+                    aria-hidden
+                  />
+                )}
+
+                <span className={styles.nodo} aria-hidden>
+                  {hecho && !actual ? (
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3.2"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 6L9 17l-5-5" />
+                    </svg>
+                  ) : (
+                    <span className={styles.nodoNumero}>{i + 1}</span>
+                  )}
+                </span>
+
+                <span className={styles.pasoTexto}>
+                  <span className={styles.pasoNombre}>{paso.nombre}</span>
+                  <span className={styles.pasoPista}>{bloqueo ?? paso.pista}</span>
+                </span>
+              </button>
+            )
+          })}
+        </nav>
       )}
 
       {/* Alérgenos encontrados en la dieta ya generada: red de seguridad */}
@@ -2851,6 +2937,15 @@ export default function DietasPage() {
         </div>
       )}
 
+      {/* El contenido del paso entra deslizándose desde el lado hacia el que
+          se navegó. La `key` lo remonta en cada cambio para que la animación
+          se repita; sin ella React reutilizaría el nodo y no se vería nada. */}
+      <div
+        key={pestana}
+        className={`${styles.pasoContenido} ${
+          sentido === 'avanza' ? styles.entraDerecha : styles.entraIzquierda
+        }`}
+      >
       {paciente && pestana === 'cuadro' && (
         <div className={styles.grid}>
           {/* Columna izquierda: datos del paciente */}
@@ -4716,6 +4811,8 @@ export default function DietasPage() {
           </div>
         </div>
       )}
+
+      </div>
 
       {/* Modal de confirmación antes de guardar */}
       {confirmando &&
