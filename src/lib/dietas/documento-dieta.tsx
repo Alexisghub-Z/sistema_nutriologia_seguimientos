@@ -396,7 +396,12 @@ export function DocumentoDieta({ datos, opciones = OPCIONES_POR_DEFECTO, logo, m
           </View>
         ) : null}
 
-        {datos.tiempos.map((t, i) => (
+        {/* Un tiempo sin nada que comer no se imprime: sacaría su cabecera y su
+            guía dejando un hueco en blanco, y el paciente leería un desayuno
+            que no existe. Puede pasar si se genera la dieta a medias. */}
+        {datos.tiempos
+          .filter((t) => (t.alimentos?.length ?? 0) > 0 || (t.opciones?.length ?? 0) > 0)
+          .map((t, i) => (
           // `wrap={false}` mantiene junto cada tiempo: partir un desayuno entre
           // dos páginas obliga a girar la hoja para saber qué desayunar.
           <View key={i} style={s.tiempo} wrap={false}>
@@ -438,8 +443,8 @@ export function DocumentoDieta({ datos, opciones = OPCIONES_POR_DEFECTO, logo, m
               ))}
               {opciones.notasTiempo && t.nota ? <Text style={s.nota}>{t.nota}</Text> : null}
             </View>
-          </View>
-        ))}
+            </View>
+          ))}
 
         {opciones.espacioNotas && (
           <View style={s.espacioNotas} wrap={false}>

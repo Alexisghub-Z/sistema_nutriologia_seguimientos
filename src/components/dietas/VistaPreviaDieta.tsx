@@ -24,15 +24,31 @@ interface Props {
   onCerrar: () => void
 }
 
-/** Nombre del archivo: reconocible en la carpeta de descargas. */
-function nombreArchivo(paciente: string): string {
-  const limpio = paciente
+/** Convierte un nombre en algo que un sistema de archivos acepte. */
+function comoNombreDeArchivo(texto: string): string {
+  return texto
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-zA-Z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
     .toLowerCase()
-  return `plan-${limpio || 'paciente'}.pdf`
+}
+
+/**
+ * Nombre del archivo, reconocible en la carpeta de descargas.
+ *
+ * Lleva la fecha porque un paciente recibe varios planes a lo largo del
+ * tratamiento: sin ella el segundo se guardaba como "plan-ana (1).pdf" o
+ * pisaba al primero, y ninguno decía de cuándo era.
+ */
+function nombreArchivo(paciente: string): string {
+  const hoy = new Date()
+  const fecha = [
+    hoy.getFullYear(),
+    String(hoy.getMonth() + 1).padStart(2, '0'),
+    String(hoy.getDate()).padStart(2, '0'),
+  ].join('-')
+  return `plan-${comoNombreDeArchivo(paciente) || 'paciente'}-${fecha}.pdf`
 }
 
 /**
@@ -42,6 +58,9 @@ function nombreArchivo(paciente: string): string {
  * de incluir los macros no es técnica, es sobre si este paciente concreto los
  * va a entender.
  */
+/** Dónde se recuerda qué incluye la hoja. */
+const CLAVE_PREFERENCIAS = 'dietas:opciones-pdf'
+
 const AJUSTES: Array<{
   campo: keyof OpcionesDocumento
   nombre: string
@@ -97,6 +116,30 @@ const AJUSTES: Array<{
 export default function VistaPreviaDieta({ datos, onCerrar }: Props) {
   const [montado, setMontado] = useState(false)
   const [opciones, setOpciones] = useState<OpcionesDocumento>(OPCIONES_POR_DEFECTO)
+
+  // Lo que se elige una vez suele repetirse: cada nutriólogo tiene su forma de
+  // entregar la hoja. Se recuerda entre pacientes y entre sesiones, y si el
+  // navegador no deja guardar se sigue con los valores por defecto.
+  useEffect(() => {
+    try {
+      const guardado = localStorage.getItem(CLAVE_PREFERENCIAS)
+      if (!guardado) return
+      const leido = JSON.parse(guardado) as Partial<OpcionesDocumento>
+      // Se parte de los valores por defecto para que una opción añadida más
+      // adelante no quede indefinida al leer preferencias viejas.
+      setOpciones({ ...OPCIONES_POR_DEFECTO, ...leido })
+    } catch {
+      /* sin preferencias guardadas: se usan las de siempre */
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(CLAVE_PREFERENCIAS, JSON.stringify(opciones))
+    } catch {
+      /* modo privado o almacenamiento lleno: no es motivo para romper nada */
+    }
+  }, [opciones])
 
   // El visor de PDF solo funciona en el navegador.
   useEffect(() => setMontado(true), [])
