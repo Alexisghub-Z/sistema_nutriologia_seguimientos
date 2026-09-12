@@ -116,8 +116,8 @@ const GRIS = '#8a9aa3'
 
 const s = StyleSheet.create({
   pagina: {
-    paddingTop: 34,
-    paddingBottom: 46,
+    paddingTop: 32,
+    paddingBottom: 42,
     paddingHorizontal: 46,
     fontFamily: 'Helvetica',
     color: TINTA,
@@ -160,14 +160,14 @@ const s = StyleSheet.create({
     paddingHorizontal: 13,
     marginBottom: 20,
   },
-  indicacionesTexto: { fontSize: 10, lineHeight: 1.55, color: TINTA },
+  indicacionesTexto: { fontSize: 10, lineHeight: 1.65, color: TINTA },
 
   // ── Tiempos de comida ──
   // El día avanza de arriba abajo, así que los tiempos van sobre una guía
   // vertical: es una secuencia real, no una lista de apartados.
   tiempo: {
     flexDirection: 'row',
-    marginBottom: 17,
+    marginBottom: 22,
   },
   guia: {
     width: 3,
@@ -181,12 +181,12 @@ const s = StyleSheet.create({
     fontSize: 12.5,
     fontFamily: 'Helvetica-Bold',
     color: CIAN,
-    marginBottom: 7,
+    marginBottom: 9,
   },
 
   alimento: {
     flexDirection: 'row',
-    marginBottom: 5,
+    marginBottom: 7,
     paddingRight: 10,
   },
   vineta: {
@@ -194,15 +194,16 @@ const s = StyleSheet.create({
     height: 4,
     borderRadius: 2,
     backgroundColor: LIMA,
-    marginTop: 5,
+    marginTop: 6,
     marginRight: 9,
   },
-  alimentoTexto: { flex: 1, fontSize: 10.5, lineHeight: 1.45 },
+  alimentoTexto: { flex: 1, fontSize: 10.5, lineHeight: 1.55 },
 
   nota: {
     fontSize: 9,
     color: GRIS,
-    marginTop: 4,
+    lineHeight: 1.5,
+    marginTop: 7,
     marginLeft: 13,
   },
 
@@ -238,7 +239,7 @@ const s = StyleSheet.create({
     color: '#8a6100',
     marginBottom: 3,
   },
-  restriccionesTexto: { fontSize: 9.5, color: TINTA, lineHeight: 1.45 },
+  restriccionesTexto: { fontSize: 9.5, color: TINTA, lineHeight: 1.55 },
 
   kcalTiempo: { fontSize: 9, color: GRIS, fontFamily: 'Helvetica' },
 
@@ -246,12 +247,12 @@ const s = StyleSheet.create({
   // Cada opción es un platillo alternativo. Se numeran y se separan porque el
   // paciente elige UNA: presentarlas seguidas haría pensar que se comen todas.
   opcion: {
-    marginBottom: 9,
+    marginBottom: 14,
     paddingLeft: 10,
     borderLeftWidth: 1,
     borderLeftColor: '#e4f4fb',
   },
-  opcionCabecera: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 3 },
+  opcionCabecera: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 5 },
   opcionNumero: {
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
@@ -263,12 +264,12 @@ const s = StyleSheet.create({
     marginRight: 7,
   },
   opcionNombre: { fontSize: 10.5, fontFamily: 'Helvetica-Bold', color: TINTA, flex: 1 },
-  opcionIngrediente: { fontSize: 10, lineHeight: 1.4, marginLeft: 2 },
+  opcionIngrediente: { fontSize: 10, lineHeight: 1.5, marginLeft: 2 },
   preparacion: {
     fontSize: 9,
     color: GRIS,
-    lineHeight: 1.45,
-    marginTop: 3,
+    lineHeight: 1.55,
+    marginTop: 6,
     marginLeft: 2,
     fontStyle: 'italic',
   },
