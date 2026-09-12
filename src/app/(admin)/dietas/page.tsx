@@ -331,6 +331,12 @@ const VistaPreviaDieta = dynamic(() => import('@/components/dietas/VistaPreviaDi
   ssr: false,
 })
 
+// La comparación se carga al abrirla: pide los dos cuadros completos y la
+// mayoría de las veces no se usa.
+const CompararDietas = dynamic(() => import('@/components/dietas/CompararDietas'), {
+  ssr: false,
+})
+
 const NOMBRE_GRUPO = Object.fromEntries(GRUPOS_SMAE.map((g) => [g.id, g.nombre])) as Record<
   GrupoSMAEId,
   string
@@ -5122,17 +5128,11 @@ export default function DietasPage() {
 
       </div>
 
-      {comparando && (
-        <div className={styles.avisoFlotante} role="status">
-          Comparación lista para las {seleccionados.length} dietas marcadas ·{' '}
-          <button
-            type="button"
-            className={styles.barraCompararLimpiar}
-            onClick={() => setComparando(false)}
-          >
-            Cerrar
-          </button>
-        </div>
+      {comparando && seleccionados.length === 2 && (
+        <CompararDietas
+          cuadroIds={[seleccionados[0]!, seleccionados[1]!]}
+          onCerrar={() => setComparando(false)}
+        />
       )}
 
       {vistaPrevia && (

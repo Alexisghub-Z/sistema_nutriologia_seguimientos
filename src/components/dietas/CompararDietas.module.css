@@ -1,0 +1,435 @@
+/* Qué cambió entre dos dietas.
+   Dos niveles en la misma ventana: el resumen clínico se lee de pie, con el
+   paciente delante; el detalle técnico se despliega solo cuando hace falta. */
+
+.fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+  background: rgba(15, 23, 30, 0.72);
+  backdrop-filter: blur(2px);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: min(680px, 100%);
+  max-height: min(88vh, 900px);
+  background: white;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+}
+
+.cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: 1rem 1.15rem;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.titulo {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-gray-900);
+}
+
+.subtitulo {
+  margin: 3px 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-500);
+  font-variant-numeric: tabular-nums;
+}
+
+.cerrar {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--color-gray-500);
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.14s ease, color 0.14s ease;
+}
+
+.cerrar:hover {
+  border-color: var(--color-gray-400);
+  color: var(--color-gray-700);
+}
+
+.cerrar:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.cuerpo {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.15rem;
+}
+
+/* ── Resumen clínico ────────────────────────────────────────────────────
+   Una fila por dato, con el antes tenue y el después firme: se lee la
+   dirección del cambio sin tener que comparar dos cifras del mismo peso. */
+
+.resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cifra {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: 0.75rem 0.6rem;
+  border-radius: var(--radius-md);
+}
+
+.cifra:nth-child(odd) {
+  background: var(--color-gray-50);
+}
+
+.cifraEtiqueta {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+}
+
+.cifraValores {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.cifraAntes {
+  font-size: var(--font-size-md);
+  color: var(--color-gray-400);
+}
+
+.flecha {
+  color: var(--color-gray-300);
+  font-size: var(--font-size-sm);
+}
+
+.cifraDespues {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-gray-900);
+  line-height: 1.1;
+}
+
+.unidad {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-gray-500);
+}
+
+/* El delta se colorea según el OBJETIVO del plan, no según el signo: bajar de
+   peso es lo buscado en un déficit y un problema en uno de volumen. */
+.delta {
+  min-width: 74px;
+  text-align: right;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.delta_favorable {
+  color: #0f7a4d;
+}
+
+.delta_contrario {
+  color: #b45309;
+}
+
+.delta_neutro {
+  color: var(--color-gray-400);
+}
+
+/* En los equivalentes no hay dirección deseada: solo interesa si sube o baja. */
+.delta_sube {
+  color: var(--color-primary-dark);
+}
+
+.delta_baja {
+  color: var(--color-gray-600);
+}
+
+.objetivo {
+  margin: 0.85rem 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}
+
+.objetivo strong {
+  color: var(--color-gray-700);
+}
+
+.sinDatos {
+  margin: 0;
+  padding: var(--spacing-lg) 0;
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-500);
+}
+
+/* ── Detalle técnico ────────────────────────────────────────────────────
+   Plegado por defecto: en consulta estorba, y a solas se abre de un clic. */
+
+.plegable {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 1.15rem;
+  padding: 0.7rem 0.6rem;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  background: white;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-gray-700);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+
+.plegable:hover {
+  border-color: var(--color-gray-300);
+  background: var(--color-gray-50);
+}
+
+.plegable:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.plegableFlecha {
+  display: inline-block;
+  color: var(--color-gray-400);
+  transition: transform 0.16s ease;
+}
+
+.plegableAbierto {
+  transform: rotate(90deg);
+}
+
+.plegablePista {
+  margin-left: auto;
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  color: var(--color-gray-400);
+}
+
+.detalle {
+  padding: 0.9rem 0.6rem 0;
+}
+
+.detalleTitulo {
+  margin: 1.1rem 0 0.55rem;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-gray-500);
+}
+
+.detalleTitulo:first-child {
+  margin-top: 0;
+}
+
+.grupos,
+.tiempos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.grupo {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--color-gray-100);
+  font-size: var(--font-size-sm);
+}
+
+.grupo:last-child {
+  border-bottom: none;
+}
+
+.grupoNombre {
+  color: var(--color-gray-700);
+}
+
+.grupoValores {
+  color: var(--color-gray-400);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--font-size-xs);
+}
+
+/* ── Alimentos ── */
+
+.tiempo {
+  padding: 0.6rem 0.5rem;
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.tiempo:last-child {
+  border-bottom: none;
+}
+
+.tiempoNombre {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-gray-800);
+  margin-bottom: 0.35rem;
+}
+
+.alimentos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+/* Lo que sale y lo que entra se distinguen por color Y por signo: el color
+   solo no basta para quien no lo percibe. */
+.salio,
+.entro {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  border: 1px solid transparent;
+}
+
+.salio {
+  background: #fef2f2;
+  color: #9f1239;
+  border-color: #fecdd3;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.entro {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.siguen {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: var(--font-size-2xs);
+  color: var(--color-gray-400);
+}
+
+.sinCambios {
+  margin: 0;
+  padding: 0.5rem;
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-500);
+}
+
+/* ── Carga y error ── */
+
+.estado {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: var(--spacing-md) 0;
+}
+
+.esqueleto {
+  height: 58px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    90deg,
+    var(--color-gray-100) 25%,
+    var(--color-gray-50) 50%,
+    var(--color-gray-100) 75%
+  );
+  background-size: 200% 100%;
+  animation: brillo 1.4s ease-in-out infinite;
+}
+
+@keyframes brillo {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.errorTexto {
+  margin: 0;
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+}
+
+.reintentar {
+  align-self: center;
+  padding: 0.45rem 1rem;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--color-gray-700);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.reintentar:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+}
+
+.reintentar:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+@media (max-width: 620px) {
+  .fondo {
+    padding: 0;
+  }
+  .panel {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    border-radius: 0;
+  }
+  /* Sin ancho para tres columnas: el delta baja bajo las cifras. */
+  .cifra {
+    grid-template-columns: 1fr auto;
+    row-gap: 0.2rem;
+  }
+  .delta {
+    grid-column: 2;
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plegableFlecha,
+  .plegable,
+  .cerrar {
+    transition: none;
+  }
+  .esqueleto {
+    animation: none;
+  }
+}
