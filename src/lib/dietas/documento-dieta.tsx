@@ -181,7 +181,7 @@ const s = StyleSheet.create({
     fontSize: 12.5,
     fontFamily: 'Helvetica-Bold',
     color: CIAN,
-    marginBottom: 9,
+    marginBottom: 11,
   },
 
   alimento: {
@@ -247,12 +247,20 @@ const s = StyleSheet.create({
   // Cada opción es un platillo alternativo. Se numeran y se separan porque el
   // paciente elige UNA: presentarlas seguidas haría pensar que se comen todas.
   opcion: {
-    marginBottom: 14,
-    paddingLeft: 10,
+    marginBottom: 16,
+    paddingTop: 2,
+    paddingLeft: 12,
     borderLeftWidth: 1,
     borderLeftColor: '#e4f4fb',
   },
-  opcionCabecera: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 5 },
+  opcionCabecera: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 9,
+    paddingBottom: 6,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#eef4f7',
+  },
   opcionNumero: {
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
@@ -263,8 +271,8 @@ const s = StyleSheet.create({
     borderRadius: 7,
     marginRight: 7,
   },
-  opcionNombre: { fontSize: 10.5, fontFamily: 'Helvetica-Bold', color: TINTA, flex: 1 },
-  opcionIngrediente: { fontSize: 10, lineHeight: 1.5, marginLeft: 2 },
+  opcionNombre: { fontSize: 11.5, fontFamily: 'Helvetica-Bold', color: TINTA, flex: 1, letterSpacing: 0.1 },
+  opcionIngrediente: { fontSize: 10, lineHeight: 1.5, marginLeft: 4 },
   preparacion: {
     fontSize: 9,
     color: GRIS,
