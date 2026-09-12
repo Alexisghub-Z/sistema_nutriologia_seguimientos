@@ -430,6 +430,28 @@ export default function DietasPage() {
   const [estadoDieta, setEstadoDieta] = useState<EstadoDieta | null>(null)
   const [finalizando, setFinalizando] = useState(false)
   const [confirmandoFinalizar, setConfirmandoFinalizar] = useState(false)
+  /**
+   * Cuadros marcados para comparar. Se limita a DOS: con tres la comparación
+   * deja de leerse, y "qué cambió" es siempre una pregunta entre dos planes.
+   */
+  const [seleccionados, setSeleccionados] = useState<string[]>([])
+
+  /**
+   * Marca o desmarca un cuadro. Al marcar un tercero se suelta el más antiguo
+   * en vez de bloquear: obligar a desmarcar a mano para cambiar de pareja es
+   * un clic de más en la acción más repetida.
+   */
+  const alternarSeleccion = useCallback((id: string) => {
+    setSeleccionados((previos) =>
+      previos.includes(id)
+        ? previos.filter((x) => x !== id)
+        : [...previos, id].slice(-2)
+    )
+  }, [])
+
+  /** Modal de comparación entre las dos dietas marcadas. */
+  const [comparando, setComparando] = useState(false)
+
   /** Visor del plan tal como lo recibirá el paciente. */
   const [vistaPrevia, setVistaPrevia] = useState(false)
 
@@ -560,6 +582,8 @@ export default function DietasPage() {
     // es la función de "cambiamos de contexto", evita olvidarlo en cada sitio
     // que la llama.
     cancelarAutoguardado()
+    setSeleccionados([])
+    setComparando(false)
     autoguardadoPendiente.current = false
     autoguardadoBloqueado.current = false
     firmaGuardada.current = null
@@ -2908,10 +2932,32 @@ export default function DietasPage() {
                   key={h.id}
                   className={`${styles.cuadroCard} ${tieneFinalizada ? styles.cuadroCardFinal : ''} ${
                     abierto ? styles.cuadroCardAbierto : ''
-                  }`}
+                  } ${seleccionados.includes(h.id) ? styles.cuadroCardMarcado : ''}`}
                 >
-                  {/* Encabezado: fecha + menú de acciones */}
+                  {/* Encabezado: casilla de comparación + fecha + acciones */}
                   <div className={styles.cuadroCardTop}>
+                    {/* Solo los cuadros CON dieta se pueden comparar: sin ella
+                        no hay nada que cruzar. */}
+                    {dietaVer ? (
+                      <label
+                        className={styles.compararCasilla}
+                        title={
+                          seleccionados.includes(h.id)
+                            ? 'Quitar de la comparación'
+                            : 'Marcar para comparar'
+                        }
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={seleccionados.includes(h.id)}
+                          onChange={() => alternarSeleccion(h.id)}
+                          aria-label={`Comparar la dieta del ${new Date(h.createdAt).toLocaleDateString('es-MX')}`}
+                        />
+                      </label>
+                    ) : (
+                      <span className={styles.compararHueco} aria-hidden />
+                    )}
                     <span className={styles.cuadroFecha}>
                       {new Date(h.createdAt).toLocaleDateString('es-MX', {
                         day: '2-digit',
@@ -3021,6 +3067,38 @@ export default function DietasPage() {
               )
             })}
           </div>
+
+          {/* Barra de comparación: aparece al marcar cuadros y dice qué falta
+              para poder comparar, en vez de dejar el botón apagado sin motivo. */}
+          {seleccionados.length > 0 && (
+            <div className={styles.barraComparar}>
+              <span className={styles.barraCompararTexto}>
+                {seleccionados.length === 1
+                  ? 'Marca otra dieta para compararla'
+                  : 'Dos dietas marcadas'}
+              </span>
+              <div className={styles.barraCompararAcciones}>
+                <button
+                  type="button"
+                  className={styles.barraCompararLimpiar}
+                  onClick={() => setSeleccionados([])}
+                >
+                  Quitar marcas
+                </button>
+                <Button
+                  onClick={() => setComparando(true)}
+                  disabled={seleccionados.length !== 2}
+                  title={
+                    seleccionados.length !== 2
+                      ? 'Hacen falta dos dietas para comparar'
+                      : 'Ver qué cambió entre las dos'
+                  }
+                >
+                  Comparar
+                </Button>
+              </div>
+            </div>
+          )}
           </div>
           </div>
         </div>
@@ -5043,6 +5121,19 @@ export default function DietasPage() {
       )}
 
       </div>
+
+      {comparando && (
+        <div className={styles.avisoFlotante} role="status">
+          Comparación lista para las {seleccionados.length} dietas marcadas ·{' '}
+          <button
+            type="button"
+            className={styles.barraCompararLimpiar}
+            onClick={() => setComparando(false)}
+          >
+            Cerrar
+          </button>
+        </div>
+      )}
 
       {vistaPrevia && (
         <VistaPreviaDieta datos={datosParaImprimir} onCerrar={() => setVistaPrevia(false)} />

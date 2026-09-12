@@ -3994,3 +3994,96 @@
     animation: none;
   }
 }
+
+/* ── Comparar dos dietas ────────────────────────────────────────────────
+   La casilla vive en la cabecera de cada tarjeta del historial. Solo la
+   llevan los cuadros CON dieta: sin ella no hay nada que cruzar, y los que
+   no la tienen reservan el hueco para que las fechas sigan alineadas. */
+
+.compararCasilla {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  cursor: pointer;
+  /* Área de toque mayor que la casilla, sin desplazar el resto de la fila. */
+  margin: -6px 0 -6px -4px;
+  padding: 6px 4px;
+}
+
+.compararCasilla input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+  margin: 0;
+}
+
+.compararCasilla input:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+  border-radius: var(--radius-sm);
+}
+
+/* Mantiene la fecha a la misma altura en las tarjetas sin dieta. */
+.compararHueco {
+  flex: 0 0 auto;
+  width: 14px;
+}
+
+.cuadroCardMarcado {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+/* La barra solo aparece cuando hay algo marcado, así que no ocupa sitio
+   mientras no se usa. */
+.barraComparar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+  margin-top: var(--spacing-md);
+  padding: 0.6rem 0.85rem;
+  background: rgba(var(--color-primary-rgb), 0.05);
+  border: 1px solid rgba(var(--color-primary-rgb), 0.25);
+  border-radius: var(--radius-md);
+}
+
+.barraCompararTexto {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-700);
+}
+
+.barraCompararAcciones {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.barraCompararLimpiar {
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--color-gray-600);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+
+.barraCompararLimpiar:hover {
+  border-color: var(--color-gray-400);
+  color: var(--color-gray-800);
+}
+
+.barraCompararLimpiar:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barraCompararLimpiar {
+    transition: none;
+  }
+}
