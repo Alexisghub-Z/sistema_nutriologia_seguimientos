@@ -12,6 +12,7 @@
   padding: var(--spacing-lg);
   background: rgba(15, 23, 30, 0.72);
   backdrop-filter: blur(2px);
+  animation: comparaFondo 0.2s ease-out both;
 }
 
 .panel {
@@ -23,6 +24,9 @@
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-xl);
+  /* Misma curva que `entradaDatos` en el resto de la sección: el panel debe
+     sentirse parte del mismo sistema, no de otra aplicación. */
+  animation: comparaPanel 0.28s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
 .cabecera {
@@ -91,7 +95,12 @@
   gap: 2px;
 }
 
+/* Cada fila entra 60 ms después de la anterior: el ojo recorre peso, IMC y
+   meta en ese orden, que es como se leen en voz alta en consulta. El retraso
+   lo pone el componente, igual que en los tiempos de la dieta. */
 .cifra {
+  opacity: 0;
+  animation: entraFila 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) both;
   display: grid;
   grid-template-columns: 1fr auto auto;
   align-items: center;
@@ -246,8 +255,12 @@
   color: var(--color-gray-400);
 }
 
+/* Al desplegar, el contenido baja en vez de aparecer de golpe: así se ve que
+   sale del propio botón y no que la ventana cambió de contenido. */
 .detalle {
   padding: 0.9rem 0.6rem 0;
+  animation: abreDetalle 0.26s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  transform-origin: top center;
 }
 
 .detalleTitulo {
@@ -360,6 +373,7 @@
 /* ── Carga y error ── */
 
 .estado {
+  animation: entraAviso 0.24s ease-out both;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -439,14 +453,25 @@
   .cerrar {
     transition: none;
   }
+  /* Sin animación las filas seguirían en opacity: 0, así que se reponen
+     visibles en lugar de solo apagar el movimiento. */
+  .fondo,
+  .panel,
+  .cifra,
+  .todoIgual,
+  .detalle,
+  .estado,
   .esqueleto {
     animation: none;
+    opacity: 1;
+    transform: none;
   }
 }
 
 /* Cuando ninguna medida se movió. Va ANTES de las filas, no en lugar de ellas:
    el dato sigue estando disponible, pero la conclusión se lee primero. */
 .todoIgual {
+  animation: entraAviso 0.24s ease-out both;
   margin: 0 0 0.9rem;
   padding: 0.7rem 0.85rem;
   background: var(--color-gray-50);
@@ -454,4 +479,57 @@
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
   color: var(--color-gray-600);
+}
+
+/* ── Entradas ───────────────────────────────────────────────────────────
+   Las curvas y duraciones son las que ya usa la sección de dietas
+   (`entradaDatos` y `avisoEntra`), para que todo se mueva igual. */
+
+@keyframes comparaFondo {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes comparaPanel {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes entraFila {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes entraAviso {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes abreDetalle {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

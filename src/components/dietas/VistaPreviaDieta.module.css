@@ -12,6 +12,7 @@
      alteraría cómo se percibe su blanco. */
   background: rgba(15, 23, 30, 0.72);
   backdrop-filter: blur(2px);
+  animation: visorFondo 0.2s ease-out both;
 }
 
 .panel {
@@ -23,6 +24,9 @@
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-xl);
+  /* Misma curva y duración que el comparador: las dos ventanas de la sección
+     tienen que abrirse igual. */
+  animation: visorPanel 0.28s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
 .cabecera {
@@ -247,5 +251,27 @@
 @media (prefers-reduced-motion: reduce) {
   .descargar, .cerrar {
     transition: none;
+  }
+  .fondo,
+  .panel {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes visorFondo {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes visorPanel {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }

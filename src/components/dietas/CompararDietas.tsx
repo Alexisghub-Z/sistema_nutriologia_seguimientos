@@ -222,10 +222,16 @@ export default function CompararDietas({ cuadroIds, onCerrar }: Props) {
 
               {comparacion.contexto.length > 0 ? (
                 <section className={styles.resumen}>
-                  {comparacion.contexto.map((c) => {
+                  {comparacion.contexto.map((c, i) => {
                     const sentido = sentidoDelCambio(c.etiqueta, c.delta, objetivo)
                     return (
-                      <div key={c.etiqueta} className={styles.cifra}>
+                      <div
+                        key={c.etiqueta}
+                        className={styles.cifra}
+                        // Escalonado: peso, IMC y meta entran en el orden en
+                        // que se leen en voz alta durante la consulta.
+                        style={{ animationDelay: `${i * 60}ms` }}
+                      >
                         <span className={styles.cifraEtiqueta}>{c.etiqueta}</span>
                         <span className={styles.cifraValores}>
                           <span className={styles.cifraAntes}>
