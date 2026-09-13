@@ -138,11 +138,13 @@ export default function ListaPacientes({ onElegir }: Props) {
         </div>
       ) : (
         <ul className={styles.lista}>
-          {enPantalla.map(({ paciente: p, motivo, urgente }) => (
+          {enPantalla.map(({ paciente: p, motivo, urgente }, i) => (
             <li key={p.id}>
               <button
                 type="button"
                 className={styles.fila}
+                // Escalonado en el orden de prioridad en que se recomiendan.
+                style={{ animationDelay: `${i * 45}ms` }}
                 onClick={() => onElegir({ id: p.id, nombre: p.nombre, email: p.email })}
               >
                 <span

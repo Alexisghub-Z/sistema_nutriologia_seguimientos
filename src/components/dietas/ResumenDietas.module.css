@@ -198,3 +198,45 @@
     animation: none;
   }
 }
+
+/* ── Entradas del contenido ─────────────────────────────────────────────
+   Hasta ahora solo se animaba el esqueleto de carga: al llegar los datos
+   reales aparecían de golpe, justo en la primera pantalla de la sección.
+   Las curvas son las que ya usa el resto de dietas. */
+
+.header {
+  opacity: 0;
+  animation: resumenEntra 0.34s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+/* Los paneles y las filas escalonan desde el componente, que es quien sabe
+   cuántos hay; aquí solo se define el movimiento. */
+.panel,
+.panelAncho,
+.tablasRow {
+  opacity: 0;
+  animation: resumenEntra 0.34s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes resumenEntra {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Sin animación seguirían en opacity: 0, así que se reponen visibles. */
+  .header,
+  .panel,
+  .panelAncho,
+  .tablasRow {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

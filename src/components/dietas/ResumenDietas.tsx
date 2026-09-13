@@ -146,7 +146,7 @@ export default function ResumenDietas({ onAbrir, onElegirPaciente }: Props) {
         <DietasTimeline dietas={datos.ultimasDietas} onAbrir={onAbrir} />
       </div>
 
-      <div className={styles.tablasRow}>
+      <div className={styles.tablasRow} style={{ animationDelay: '120ms' }}>
         {/* A quién conviene hacerle una dieta ahora. */}
         <ListaPacientes onElegir={onElegirPaciente} />
 
@@ -242,7 +242,7 @@ function Esqueleto() {
           </div>
         ))}
       </div>
-      <div className={styles.panelAncho}>
+      <div className={styles.panelAncho} style={{ animationDelay: '160ms' }}>
         <div className={styles.skelPanel}>
           <div className={`${styles.skelLinea} ${styles.skelCorta}`} />
           <div className={styles.skelLinea} />

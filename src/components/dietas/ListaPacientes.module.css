@@ -242,3 +242,31 @@
   /* Sin animación, la acción se muestra siempre: ocultarla dependía del hover. */
   .accion { opacity: 1; }
 }
+
+/* ── Entrada de las filas ───────────────────────────────────────────────
+   Las recomendaciones aparecían de golpe al terminar la carga. Entran
+   escalonadas, en el mismo orden de prioridad en que se leen. */
+
+.fila {
+  opacity: 0;
+  animation: filaEntra 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes filaEntra {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fila {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
