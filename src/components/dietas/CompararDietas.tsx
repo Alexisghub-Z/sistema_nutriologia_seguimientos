@@ -159,6 +159,20 @@ export default function CompararDietas({ cuadroIds, onCerrar }: Props) {
 
   const objetivo = comparacion?.nueva.cuadro.objetivo ?? null
 
+  /** Qué hay dentro del detalle, en pocas palabras. */
+  const resumenDelDetalle = (() => {
+    if (!comparacion) return ''
+    const grupos = comparacion.grupos.filter((g) => g.delta !== 0).length
+    const alimentos = (comparacion.platillos ?? []).reduce(
+      (n, t) => n + t.entraron.length + t.salieron.length,
+      0
+    )
+    const partes: string[] = []
+    if (grupos > 0) partes.push(`${grupos} ${grupos === 1 ? 'grupo' : 'grupos'}`)
+    if (alimentos > 0) partes.push(`${alimentos} ${alimentos === 1 ? 'alimento' : 'alimentos'}`)
+    return partes.length > 0 ? partes.join(' · ') : 'sin cambios'
+  })()
+
   return createPortal(
     <div className={styles.fondo} onClick={onCerrar} role="dialog" aria-modal="true">
       <div className={styles.panel} onClick={(e) => e.stopPropagation()}>
@@ -197,6 +211,15 @@ export default function CompararDietas({ cuadroIds, onCerrar }: Props) {
           {comparacion && !cargando && !error && (
             <>
               {/* ── Resumen clínico: lo que se le enseña al paciente ── */}
+              {/* Que el paciente vuelva igual es un resultado en sí mismo, y
+                  tres filas de "78.5 → 78.5" no lo dicen: obligan a leer seis
+                  cifras para deducir que ninguna se movió. */}
+              {comparacion.contexto.length > 0 && comparacion.contexto.every((c) => c.delta === 0) && (
+                <p className={styles.todoIgual}>
+                  Las medidas no cambiaron entre las dos consultas.
+                </p>
+              )}
+
               {comparacion.contexto.length > 0 ? (
                 <section className={styles.resumen}>
                   {comparacion.contexto.map((c) => {
@@ -247,9 +270,9 @@ export default function CompararDietas({ cuadroIds, onCerrar }: Props) {
                   ▸
                 </span>
                 Detalle técnico
-                <span className={styles.plegablePista}>
-                  equivalentes y alimentos
-                </span>
+                {/* Cuántos cambios hay dentro: sin este dato hay que abrir
+                    el detalle para saber si merece la pena abrirlo. */}
+                <span className={styles.plegablePista}>{resumenDelDetalle}</span>
               </button>
 
               {detalleAbierto && (

@@ -127,8 +127,8 @@
 }
 
 .cifraDespues {
-  font-size: var(--font-size-xl);
-  font-weight: 700;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
   color: var(--color-gray-900);
   line-height: 1.1;
 }
@@ -142,11 +142,21 @@
 /* El delta se colorea según el OBJETIVO del plan, no según el signo: bajar de
    peso es lo buscado en un déficit y un problema en uno de volumen. */
 .delta {
-  min-width: 74px;
+  min-width: 88px;
   text-align: right;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-2xl);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+/* Dentro del detalle el delta vuelve a ser un dato más entre muchos: ahí la
+   fila entera mide 12px y un número a 21px la rompería. */
+.grupo .delta {
+  min-width: 52px;
+  font-size: var(--font-size-sm);
+  letter-spacing: 0;
 }
 
 .delta_favorable {
@@ -432,4 +442,16 @@
   .esqueleto {
     animation: none;
   }
+}
+
+/* Cuando ninguna medida se movió. Va ANTES de las filas, no en lugar de ellas:
+   el dato sigue estando disponible, pero la conclusión se lee primero. */
+.todoIgual {
+  margin: 0 0 0.9rem;
+  padding: 0.7rem 0.85rem;
+  background: var(--color-gray-50);
+  border-left: 3px solid var(--color-gray-300);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
 }
