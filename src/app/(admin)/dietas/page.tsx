@@ -337,6 +337,12 @@ const CompararDietas = dynamic(() => import('@/components/dietas/CompararDietas'
   ssr: false,
 })
 
+// Las plantillas solo aparecen si hay alguna guardada, así que su carga no
+// bloquea la pantalla del cuadro.
+const PlantillasDieta = dynamic(() => import('@/components/dietas/PlantillasDieta'), {
+  ssr: false,
+})
+
 const NOMBRE_GRUPO = Object.fromEntries(GRUPOS_SMAE.map((g) => [g.id, g.nombre])) as Record<
   GrupoSMAEId,
   string
@@ -457,6 +463,14 @@ export default function DietasPage() {
 
   /** Modal de comparación entre las dos dietas marcadas. */
   const [comparando, setComparando] = useState(false)
+
+  /** Cuadro que se está guardando como plantilla, y el nombre en curso. */
+  const [guardandoPlantilla, setGuardandoPlantilla] = useState<string | null>(null)
+  const [nombrePlantilla, setNombrePlantilla] = useState('')
+  const [errorPlantilla, setErrorPlantilla] = useState('')
+  const [guardandoP, setGuardandoP] = useState(false)
+  /** Cambia al guardar una plantilla, para que el selector recargue. */
+  const [refrescoPlantillas, setRefrescoPlantillas] = useState(0)
 
   /** Visor del plan tal como lo recibirá el paciente. */
   const [vistaPrevia, setVistaPrevia] = useState(false)
@@ -1317,6 +1331,86 @@ export default function DietasPage() {
   }
 
   // Abre un cuadro guardado y repuebla toda la pantalla.
+  /**
+   * Vuelca la receta de una plantilla en el formulario.
+   *
+   * Solo toca lo que la plantilla guarda: peso, talla y edad se quedan como
+   * estén, porque son del paciente que se tiene delante. Si la plantilla trae
+   * equivalentes y reparto, se aplican también y el cuadro queda a un cálculo
+   * de estar listo.
+   */
+  const aplicarPlantilla = useCallback(
+    (pl: {
+      nombre: string
+      objetivo: string
+      nivel_actividad: string
+      formula: string
+      pct_proteina: number
+      pct_grasa: number
+      pct_carbohidrato: number
+      equivalentes: Record<string, number> | null
+      distribucion_tiempos: { tiempos?: unknown[]; reparto?: Record<string, unknown> } | null
+    }) => {
+      setForm((f) => ({
+        ...f,
+        objetivo: pl.objetivo,
+        nivel_actividad: pl.nivel_actividad,
+        formula: pl.formula,
+      }))
+      setPct({ pro: pl.pct_proteina, lip: pl.pct_grasa, hco: pl.pct_carbohidrato })
+
+      if (pl.equivalentes && Object.keys(pl.equivalentes).length > 0) {
+        setEquivalentes(pl.equivalentes as Equivalentes)
+      }
+
+      const dt = pl.distribucion_tiempos
+      if (Array.isArray(dt?.tiempos) && dt.tiempos.length > 0) {
+        setTiempos(dt.tiempos as TiempoComida[])
+        setReparto((dt.reparto ?? {}) as DistribucionTiempos)
+      }
+
+      toast.exito(`Plantilla «${pl.nombre}» aplicada`, {
+        descripcion: 'Captura peso, talla y edad para calcular el cuadro.',
+      })
+    },
+    [toast]
+  )
+
+  /** Guarda el cuadro abierto como plantilla reutilizable. */
+  const confirmarGuardarPlantilla = useCallback(async () => {
+    const nombre = nombrePlantilla.trim()
+    if (!nombre) {
+      setErrorPlantilla('Ponle un nombre para reconocerla después')
+      return
+    }
+    if (!guardandoPlantilla) return
+
+    setGuardandoP(true)
+    setErrorPlantilla('')
+    try {
+      const res = await fetch('/api/dietas/plantillas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, cuadro_id: guardandoPlantilla }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setErrorPlantilla(data.error ?? 'No se pudo guardar')
+        return
+      }
+      setGuardandoPlantilla(null)
+      setNombrePlantilla('')
+      setRefrescoPlantillas((n) => n + 1)
+      toast.exito(`Plantilla «${nombre}» guardada`, {
+        descripcion: 'La verás al empezar un cuadro nuevo.',
+      })
+    } catch {
+      setErrorPlantilla('Error de conexión. Inténtalo otra vez.')
+    } finally {
+      setGuardandoP(false)
+    }
+  }, [nombrePlantilla, guardandoPlantilla, toast])
+
   const cargarCuadro = async (id: string) => {
     setError('')
     setExito('')
@@ -3005,6 +3099,19 @@ export default function DietasPage() {
                             </button>
                             <button onClick={() => duplicarCuadro(h.id)}>Duplicar</button>
                             <button
+                              onClick={() => {
+                                setMenuCuadro(null)
+                                setGuardandoPlantilla(h.id)
+                                // Se propone la etiqueta del cuadro: casi
+                                // siempre es el nombre que se querría poner.
+                                setNombrePlantilla(h.etiqueta ?? '')
+                                setErrorPlantilla('')
+                              }}
+                              title="Reutilizar esta receta con otros pacientes"
+                            >
+                              Guardar como plantilla
+                            </button>
+                            <button
                               className={styles.menuPeligro}
                               onClick={() => {
                                 setMenuCuadro(null)
@@ -3245,6 +3352,16 @@ export default function DietasPage() {
           sentido === 'avanza' ? styles.entraDerecha : styles.entraIzquierda,
         ].join(' ')}
       >
+      {/* Las recetas guardadas: aplicarlas deja solo peso, talla y edad por
+          capturar. El componente se oculta solo si no hay ninguna. */}
+      {paciente && pestana === 'cuadro' && (
+        <PlantillasDieta
+          onAplicar={aplicarPlantilla}
+          refresco={refrescoPlantillas}
+          soloLectura={soloLectura}
+        />
+      )}
+
       {paciente && pestana === 'cuadro' && (
         <div className={styles.grid}>
           {/* Columna izquierda: datos del paciente */}
@@ -5127,6 +5244,55 @@ export default function DietasPage() {
       )}
 
       </div>
+
+      {guardandoPlantilla && (
+        <div
+          className={styles.modalFondo}
+          onClick={() => !guardandoP && setGuardandoPlantilla(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className={styles.modalCaja} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitulo}>Guardar como plantilla</h3>
+            <p className={styles.modalTexto}>
+              Se guardará la fórmula, los macros y los equivalentes. El peso, la talla y la
+              edad se capturan en cada paciente.
+            </p>
+
+            <input
+              className={styles.modalInput}
+              value={nombrePlantilla}
+              onChange={(e) => {
+                setNombrePlantilla(e.target.value)
+                if (errorPlantilla) setErrorPlantilla('')
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !guardandoP) void confirmarGuardarPlantilla()
+                if (e.key === 'Escape' && !guardandoP) setGuardandoPlantilla(null)
+              }}
+              placeholder="Ej. Déficit 1500"
+              maxLength={60}
+              autoFocus
+              aria-label="Nombre de la plantilla"
+            />
+
+            {errorPlantilla && <p className={styles.modalError}>{errorPlantilla}</p>}
+
+            <div className={styles.modalAcciones}>
+              <Button
+                variant="secondary"
+                onClick={() => setGuardandoPlantilla(null)}
+                disabled={guardandoP}
+              >
+                Cancelar
+              </Button>
+              <Button onClick={() => void confirmarGuardarPlantilla()} disabled={guardandoP}>
+                {guardandoP ? 'Guardando…' : 'Guardar plantilla'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {comparando && seleccionados.length === 2 && (
         <CompararDietas
