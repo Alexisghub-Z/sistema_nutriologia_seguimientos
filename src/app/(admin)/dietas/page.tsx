@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { createPortal } from 'react-dom'
 import Button from '@/components/ui/Button'
+import ModalCentrado from '@/components/ui/ModalCentrado'
 import GenerandoIA from '@/components/dietas/GenerandoIA'
 import ResumenDietas from '@/components/dietas/ResumenDietas'
 import dynamic from 'next/dynamic'
@@ -5246,13 +5246,12 @@ export default function DietasPage() {
       </div>
 
       {guardandoPlantilla && (
-        <div
-          className={styles.modalFondo}
-          onClick={() => !guardandoP && setGuardandoPlantilla(null)}
-          role="dialog"
-          aria-modal="true"
+        <ModalCentrado
+          titulo="Guardar como plantilla"
+          onCerrar={() => setGuardandoPlantilla(null)}
+          bloqueado={guardandoP}
         >
-          <div className={styles.modalCaja} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.modalCuerpo}>
             <h3 className={styles.modalTitulo}>Guardar como plantilla</h3>
             <p className={styles.modalTexto}>
               Se guardará la fórmula, los macros y los equivalentes. El peso, la talla y la
@@ -5268,7 +5267,6 @@ export default function DietasPage() {
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !guardandoP) void confirmarGuardarPlantilla()
-                if (e.key === 'Escape' && !guardandoP) setGuardandoPlantilla(null)
               }}
               placeholder="Ej. Déficit 1500"
               maxLength={60}
@@ -5291,7 +5289,7 @@ export default function DietasPage() {
               </Button>
             </div>
           </div>
-        </div>
+        </ModalCentrado>
       )}
 
       {comparando && seleccionados.length === 2 && (
@@ -5306,10 +5304,9 @@ export default function DietasPage() {
       )}
 
       {/* Modal de confirmación antes de guardar */}
-      {confirmando &&
-        createPortal(
-          <div className={styles.modalOverlay} onClick={() => setConfirmando(false)}>
-            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      {confirmando && (
+        <ModalCentrado titulo="Guardar cuadro" onCerrar={() => setConfirmando(false)}>
+          <div className={styles.modalCuerpo}>
               <h3 className={styles.modalTitulo}>Guardar cuadro</h3>
               <p className={styles.modalTexto}>
                 Se guardan los cálculos, los equivalentes
@@ -5336,16 +5333,14 @@ export default function DietasPage() {
                 </Button>
                 <Button onClick={confirmarGuardar}>Guardar</Button>
               </div>
-            </div>
-          </div>,
-          document.body
-        )}
+          </div>
+        </ModalCentrado>
+      )}
 
       {/* Modal de confirmación antes de eliminar un cuadro */}
-      {confirmandoBorrar &&
-        createPortal(
-          <div className={styles.modalOverlay} onClick={() => setConfirmandoBorrar(null)}>
-            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      {confirmandoBorrar && (
+        <ModalCentrado titulo="Eliminar cuadro" onCerrar={() => setConfirmandoBorrar(null)}>
+          <div className={styles.modalCuerpo}>
               <h3 className={styles.modalTitulo}>Eliminar cuadro</h3>
               <p className={styles.modalTexto}>
                 Se borrará este cuadro y la dieta en borrador que tenga. Esta acción no se puede
@@ -5359,16 +5354,14 @@ export default function DietasPage() {
                   Eliminar
                 </Button>
               </div>
-            </div>
-          </div>,
-          document.body
-        )}
+          </div>
+        </ModalCentrado>
+      )}
 
       {/* Modal de confirmación antes de finalizar (acción irreversible) */}
-      {confirmandoFinalizar &&
-        createPortal(
-          <div className={styles.modalOverlay} onClick={() => setConfirmandoFinalizar(false)}>
-            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      {confirmandoFinalizar && (
+        <ModalCentrado titulo="Guardar dieta" onCerrar={() => setConfirmandoFinalizar(false)}>
+          <div className={styles.modalCuerpo}>
               <h3 className={styles.modalTitulo}>Guardar dieta</h3>
               <p className={styles.modalTexto}>
                 Se guardan el <strong>cuadro dietosintético</strong> y la dieta juntos. Quedará
@@ -5392,10 +5385,9 @@ export default function DietasPage() {
                   {finalizando ? 'Guardando…' : 'Guardar dieta'}
                 </Button>
               </div>
-            </div>
-          </div>,
-          document.body
-        )}
+          </div>
+        </ModalCentrado>
+      )}
     </div>
   )
 }

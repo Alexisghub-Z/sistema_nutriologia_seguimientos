@@ -5,16 +5,6 @@
 }
 
 /* Modal de confirmación de guardado */
-.modalOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: var(--spacing-lg);
-}
 
 .modal {
   background: white;
@@ -4092,27 +4082,7 @@
    Ventana pequeña: pide un dato y se va. Mismas curvas que el resto de la
    sección para que se abra igual que el comparador y el visor. */
 
-.modalFondo {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-lg);
-  background: rgba(15, 23, 30, 0.72);
-  backdrop-filter: blur(2px);
-  animation: modalFondoEntra 0.2s ease-out both;
-}
 
-.modalCaja {
-  width: min(400px, 100%);
-  padding: 1.15rem;
-  background: white;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xl);
-  animation: modalCajaEntra 0.28s cubic-bezier(0.22, 0.61, 0.36, 1) both;
-}
 
 
 
@@ -4142,15 +4112,7 @@
 }
 
 
-@keyframes modalFondoEntra {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
 
-@keyframes modalCajaEntra {
-  from { opacity: 0; transform: translateY(10px) scale(0.99); }
-  to { opacity: 1; transform: none; }
-}
 
 @keyframes modalErrorEntra {
   from { opacity: 0; transform: translateY(-3px); }
@@ -4158,8 +4120,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .modalFondo,
-  .modalCaja,
   .modalError {
     animation: none;
     opacity: 1;
@@ -4168,4 +4128,11 @@
   .modalInput {
     transition: none;
   }
+}
+
+/* Interior de las ventanas de la sección.
+   `ModalCentrado` aporta la caja, el centrado y el scroll; el relleno va aquí
+   para que cada pantalla ajuste el suyo sin tocar el componente común. */
+.modalCuerpo {
+  padding: 1.15rem;
 }
