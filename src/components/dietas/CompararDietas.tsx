@@ -28,6 +28,12 @@ interface Props {
   onCerrar: () => void
 }
 
+/**
+ * Cuánto dura la despedida. Debe coincidir con `.saliendo` en el CSS: si el
+ * temporizador es más corto, la ventana desaparece a mitad de la animación.
+ */
+const MS_SALIDA = 180
+
 /** Etiquetas del objetivo, como se leen en el resto de la aplicación. */
 const NOMBRE_OBJETIVO: Record<string, string> = {
   BAJAR_PESO: 'Bajar peso',
@@ -90,11 +96,26 @@ export default function CompararDietas({ cuadroIds, onCerrar }: Props) {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [detalleAbierto, setDetalleAbierto] = useState(false)
+  const [saliendo, setSaliendo] = useState(false)
+
+  /**
+   * Cierra con animación: marca la salida y desmonta cuando termina.
+   *
+   * Mismo patrón que los toasts del sistema. El guardia evita que pulsar ✕ y
+   * Escape seguidos encadene dos desmontajes.
+   */
+  const cerrar = useCallback(() => {
+    setSaliendo((yaSale) => {
+      if (yaSale) return yaSale
+      setTimeout(onCerrar, MS_SALIDA)
+      return true
+    })
+  }, [onCerrar])
 
   // Escape cierra, y el fondo no se desplaza mientras el modal está abierto.
   useEffect(() => {
     const alPulsar = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCerrar()
+      if (e.key === 'Escape') cerrar()
     }
     document.addEventListener('keydown', alPulsar)
     const overflowPrevio = document.body.style.overflow
@@ -103,7 +124,7 @@ export default function CompararDietas({ cuadroIds, onCerrar }: Props) {
       document.removeEventListener('keydown', alPulsar)
       document.body.style.overflow = overflowPrevio
     }
-  }, [onCerrar])
+  }, [cerrar])
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -174,8 +195,16 @@ export default function CompararDietas({ cuadroIds, onCerrar }: Props) {
   })()
 
   return createPortal(
-    <div className={styles.fondo} onClick={onCerrar} role="dialog" aria-modal="true">
-      <div className={styles.panel} onClick={(e) => e.stopPropagation()}>
+    <div
+      className={`${styles.fondo} ${saliendo ? styles.fondoSaliendo : ''}`}
+      onClick={cerrar}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className={`${styles.panel} ${saliendo ? styles.panelSaliendo : ''}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <header className={styles.cabecera}>
           <div>
             <h2 className={styles.titulo}>Qué cambió</h2>
@@ -186,7 +215,7 @@ export default function CompararDietas({ cuadroIds, onCerrar }: Props) {
               </p>
             )}
           </div>
-          <button type="button" className={styles.cerrar} onClick={onCerrar} aria-label="Cerrar">
+          <button type="button" className={styles.cerrar} onClick={cerrar} aria-label="Cerrar">
             ✕
           </button>
         </header>

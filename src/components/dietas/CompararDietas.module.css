@@ -466,6 +466,13 @@
     opacity: 1;
     transform: none;
   }
+  /* La salida se conserva como desvanecido simple: sin ella la ventana se
+     quedaría visible los 180 ms del temporizador y desaparecería de golpe. */
+  .fondoSaliendo,
+  .panelSaliendo {
+    animation: none;
+    opacity: 0;
+  }
 }
 
 /* Cuando ninguna medida se movió. Va ANTES de las filas, no en lugar de ellas:
@@ -531,5 +538,29 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* ── Salida ─────────────────────────────────────────────────────────────
+   Más rápida que la entrada (180 ms frente a 280): al abrir hay algo que
+   mirar, al cerrar la decisión ya está tomada y esperar molesta. Debe
+   coincidir con MS_SALIDA en el componente. */
+
+.fondoSaliendo {
+  animation: comparaFondoSale 0.18s ease-in forwards;
+}
+
+.panelSaliendo {
+  animation: comparaPanelSale 0.18s ease-in forwards;
+}
+
+@keyframes comparaFondoSale {
+  to { opacity: 0; }
+}
+
+@keyframes comparaPanelSale {
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.99);
   }
 }

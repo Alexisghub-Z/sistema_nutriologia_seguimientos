@@ -8,7 +8,7 @@
  * cuando el paciente ya lo tiene en la mano no tiene arreglo.
  */
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer'
 import {
@@ -58,6 +58,9 @@ function nombreArchivo(paciente: string): string {
  * de incluir los macros no es técnica, es sobre si este paciente concreto los
  * va a entender.
  */
+/** Debe coincidir con `.saliendo` en el CSS. */
+const MS_SALIDA = 180
+
 /** Dónde se recuerda qué incluye la hoja. */
 const CLAVE_PREFERENCIAS = 'dietas:opciones-pdf'
 
@@ -115,6 +118,16 @@ const AJUSTES: Array<{
 
 export default function VistaPreviaDieta({ datos, onCerrar }: Props) {
   const [montado, setMontado] = useState(false)
+  const [saliendo, setSaliendo] = useState(false)
+
+  /** Cierra con animación, igual que el comparador y los toasts. */
+  const cerrar = useCallback(() => {
+    setSaliendo((yaSale) => {
+      if (yaSale) return yaSale
+      setTimeout(onCerrar, MS_SALIDA)
+      return true
+    })
+  }, [onCerrar])
   const [opciones, setOpciones] = useState<OpcionesDocumento>(OPCIONES_POR_DEFECTO)
 
   // Lo que se elige una vez suele repetirse: cada nutriólogo tiene su forma de
@@ -147,7 +160,7 @@ export default function VistaPreviaDieta({ datos, onCerrar }: Props) {
   // Escape cierra, y el fondo no se desplaza mientras el visor está abierto.
   useEffect(() => {
     const alPulsar = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCerrar()
+      if (e.key === 'Escape') cerrar()
     }
     document.addEventListener('keydown', alPulsar)
     const overflowPrevio = document.body.style.overflow
@@ -156,7 +169,7 @@ export default function VistaPreviaDieta({ datos, onCerrar }: Props) {
       document.removeEventListener('keydown', alPulsar)
       document.body.style.overflow = overflowPrevio
     }
-  }, [onCerrar])
+  }, [cerrar])
 
   if (!montado) return null
 
@@ -184,8 +197,16 @@ export default function VistaPreviaDieta({ datos, onCerrar }: Props) {
   }
 
   return createPortal(
-    <div className={styles.fondo} onClick={onCerrar} role="dialog" aria-modal="true">
-      <div className={styles.panel} onClick={(e) => e.stopPropagation()}>
+    <div
+      className={`${styles.fondo} ${saliendo ? styles.fondoSaliendo : ''}`}
+      onClick={cerrar}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className={`${styles.panel} ${saliendo ? styles.panelSaliendo : ''}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <header className={styles.cabecera}>
           <div>
             <h2 className={styles.titulo}>Plan de {datos.paciente}</h2>
@@ -201,7 +222,7 @@ export default function VistaPreviaDieta({ datos, onCerrar }: Props) {
               {({ loading }) => (loading ? 'Preparando…' : 'Descargar PDF')}
             </PDFDownloadLink>
 
-            <button type="button" className={styles.cerrar} onClick={onCerrar} aria-label="Cerrar">
+            <button type="button" className={styles.cerrar} onClick={cerrar} aria-label="Cerrar">
               ✕
             </button>
           </div>
