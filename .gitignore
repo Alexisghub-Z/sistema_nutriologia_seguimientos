@@ -49,6 +49,9 @@ prisma/migrations/*
 logs
 *.log
 
+# pruebas de navegador (Playwright): capturas y trazas de los fallos
+test-results/
+
 # redis dump
 dump.rdb
 /uploads/*

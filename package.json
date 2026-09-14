@@ -36,7 +36,10 @@
     "demo:chats:limpiar": "tsx scripts/demo-conversaciones.ts --limpiar",
     "demo:seguimiento": "tsx scripts/demo-conversaciones.ts --seguimiento",
     "demo:consultas": "tsx scripts/demo-conversaciones.ts --consultas",
-    "demo:consultas:limpiar": "tsx scripts/demo-conversaciones.ts --consultas-limpiar"
+    "demo:consultas:limpiar": "tsx scripts/demo-conversaciones.ts --consultas-limpiar",
+    "test:e2e": "playwright test",
+    "test:e2e:ver": "playwright test --headed",
+    "test:e2e:reporte": "playwright show-report e2e/.reporte"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",
@@ -78,6 +81,7 @@
   "devDependencies": {
     "@bull-board/api": "^6.16.4",
     "@bull-board/express": "^6.16.4",
+    "@playwright/test": "^1.63.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/file-saver": "^2.0.7",
     "@types/node": "^22",
@@ -87,6 +91,7 @@
     "@typescript-eslint/eslint-plugin": "^8.21.0",
     "@typescript-eslint/parser": "^8.21.0",
     "@vitest/coverage-v8": "^4.1.10",
+    "dotenv": "^16.6.1",
     "eslint": "^9",
     "eslint-config-next": "^15.1.7",
     "eslint-config-prettier": "^9.1.0",
