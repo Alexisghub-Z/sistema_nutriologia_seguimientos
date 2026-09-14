@@ -1,7 +1,19 @@
-/* Plantillas de dieta: las recetas que se repiten entre pacientes. */
+/* Plantillas de dieta: las recetas que se repiten entre pacientes.
+   Tienen color propio —teal— porque el verde de marca ya viste los botones,
+   el último paso del recorrido y buena parte de la pantalla: con él, este
+   bloque se leía como una sección más del formulario en lugar de como un
+   atajo. El teal es el único tono libre; azul, morado y ámbar están tomados
+   por los pasos, y el rojo por el botón de quitar de la propia tarjeta. */
 
 .contenedor {
+  /* El color vive aquí para que lo hereden todos los descendientes. */
+  --plantilla: #0d9488;
+  --plantilla-fuerte: #0f766e;
+  --plantilla-rgb: 13, 148, 136;
+
   margin-bottom: var(--spacing-lg);
+  padding-left: 0.7rem;
+  border-left: 3px solid var(--plantilla);
   opacity: 0;
   animation: plantillasEntra 0.34s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
@@ -18,7 +30,7 @@
   margin: 0;
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--color-gray-700);
+  color: var(--plantilla-fuerte);
 }
 
 .cuenta {
@@ -70,7 +82,7 @@
 }
 
 .tarjeta:hover:not(:disabled) {
-  border-color: var(--color-primary);
+  border-color: var(--plantilla);
   box-shadow: var(--shadow-sm);
   transform: translateY(-1px);
 }
@@ -82,8 +94,8 @@
 
 .tarjeta:focus-visible {
   outline: none;
-  box-shadow: var(--ring-focus);
-  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--plantilla-rgb), 0.35);
+  border-color: var(--plantilla);
 }
 
 .tarjeta:disabled {
@@ -140,15 +152,10 @@
   font-size: var(--font-size-2xs);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  background: var(--color-gray-100);
-  color: var(--color-gray-600);
+  background: rgba(var(--plantilla-rgb), 0.12);
+  color: var(--plantilla-fuerte);
 }
 
-/* Tener equivalentes es lo que ahorra más trabajo: se destaca del resto. */
-.conEquiv {
-  background: rgba(var(--color-primary-rgb), 0.1);
-  color: var(--color-primary-dark);
-}
 
 /* Confirmación al aplicar: cubre la tarjeta y se va sola. */
 .confirmacion {
@@ -158,7 +165,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  background: rgba(var(--color-primary-rgb), 0.94);
+  background: rgba(var(--plantilla-rgb), 0.95);
   color: white;
   font-size: var(--font-size-sm);
   font-weight: 600;
