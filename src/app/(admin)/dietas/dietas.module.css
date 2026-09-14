@@ -3933,28 +3933,8 @@
 
 .pasoContenido {
   animation: entraDerecha 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
-  position: relative;
 }
 
-/* Un filo del color del paso, arriba del contenido. Ata lo que se ve con el
-   nodo de la barra sin teñir la pantalla: el color identifica, no decora. */
-.pasoContenido::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  border-radius: var(--radius-full);
-  background: linear-gradient(
-    90deg,
-    var(--tono, var(--color-primary)) 0%,
-    rgba(var(--tono-rgb, var(--color-primary-rgb)), 0.15) 55%,
-    transparent 100%
-  );
-  opacity: 0.9;
-  pointer-events: none;
-}
 
 .entraDerecha {
   animation-name: entraDerecha;

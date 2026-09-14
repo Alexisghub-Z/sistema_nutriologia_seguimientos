@@ -3,7 +3,12 @@
    el último paso del recorrido y buena parte de la pantalla: con él, este
    bloque se leía como una sección más del formulario en lugar de como un
    atajo. El teal es el único tono libre; azul, morado y ámbar están tomados
-   por los pasos, y el rojo por el botón de quitar de la propia tarjeta. */
+   por los pasos, y el rojo por el botón de quitar de la propia tarjeta.
+
+   El color va en el título y en las tarjetas, NO en un filo lateral: junto al
+   del paso activo formaban dos líneas de colores distintos en ángulo recto,
+   marcando cosas distintas en la misma esquina. Ninguna se leía como
+   intencionada. */
 
 .contenedor {
   /* El color vive aquí para que lo hereden todos los descendientes. */
@@ -12,8 +17,6 @@
   --plantilla-rgb: 13, 148, 136;
 
   margin-bottom: var(--spacing-lg);
-  padding-left: 0.7rem;
-  border-left: 3px solid var(--plantilla);
   opacity: 0;
   animation: plantillasEntra 0.34s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
