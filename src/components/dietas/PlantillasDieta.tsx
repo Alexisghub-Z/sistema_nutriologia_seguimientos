@@ -134,20 +134,25 @@ export default function PlantillasDieta({
             >
               <span className={styles.nombre}>{p.nombre}</span>
 
-              <span className={styles.receta}>
-                {p.kcal_referencia ? `≈ ${Math.round(p.kcal_referencia)} kcal · ` : ''}
-                {NOMBRE_OBJETIVO[p.objetivo] ?? p.objetivo}
-              </span>
-
-              <span className={styles.macros}>
-                <span className={styles.macro}>P{Math.round(p.pct_proteina)}</span>
-                <span className={styles.macro}>G{Math.round(p.pct_grasa)}</span>
-                <span className={styles.macro}>C{Math.round(p.pct_carbohidrato)}</span>
-                {p.equivalentes && Object.keys(p.equivalentes).length > 0 && (
+              {/* Los equivalentes son lo que de verdad cambia la decisión:
+                  dicen cuánto trabajo ahorra la plantilla. Los macros P/G/C
+                  se quitaron porque nadie elige una plantilla por su reparto,
+                  la elige por el nombre. */}
+              {p.equivalentes && Object.keys(p.equivalentes).length > 0 && (
+                <span className={styles.macros}>
                   <span className={styles.conEquiv}>
                     {Object.keys(p.equivalentes).length} grupos
                   </span>
+                </span>
+              )}
+
+              <span className={styles.receta}>
+                {p.kcal_referencia && (
+                  <span>{Math.round(p.kcal_referencia).toLocaleString('es-MX')} kcal</span>
                 )}
+                <span className={styles.objetivo}>
+                  {NOMBRE_OBJETIVO[p.objetivo] ?? p.objetivo}
+                </span>
               </span>
 
               {/* La confirmación va dentro de la tarjeta: aparece donde estaba
