@@ -6,6 +6,7 @@ import { useScrollReveal } from '@/hooks/useScrollReveal'
 import CalendarioCitas from '@/components/calendario/CalendarioCitas'
 import { extraerDigitosTelefono } from '@/lib/utils/phone'
 import styles from './agendar.module.css'
+import { mensajeDeError } from '@/lib/utils/mensaje-error'
 
 interface PacienteExistente {
   id: string
@@ -303,7 +304,7 @@ export default function AgendarCitaPage() {
 
       setPaso(3)
     } catch (err) {
-      setError('Error de conexión. Por favor, intenta de nuevo.')
+      setError(mensajeDeError(err))
     } finally {
       setVerificandoEmail(false)
     }
@@ -346,7 +347,7 @@ export default function AgendarCitaPage() {
         setError(data.error || 'Error al agendar la cita')
       }
     } catch (err) {
-      setError('Error de conexión. Por favor, intenta de nuevo.')
+      setError(mensajeDeError(err))
     } finally {
       setLoading(false)
     }

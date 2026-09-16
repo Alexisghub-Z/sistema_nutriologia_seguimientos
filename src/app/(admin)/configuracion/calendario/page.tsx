@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button'
 import Alert from '@/components/ui/Alert'
 import Spinner from '@/components/ui/Spinner'
 import styles from './calendario.module.css'
+import { mensajeDeError } from '@/lib/utils/mensaje-error'
 
 interface Configuracion {
   id: string
@@ -55,7 +56,7 @@ export default function ConfiguracionCalendarioPage() {
         setError('Error al cargar configuración')
       }
     } catch (err) {
-      setError('Error de conexión')
+      setError(mensajeDeError(err))
     } finally {
       setLoading(false)
     }
@@ -118,7 +119,7 @@ export default function ConfiguracionCalendarioPage() {
         setError(data.error || 'Error al guardar configuración')
       }
     } catch (err) {
-      setError('Error de conexión')
+      setError(mensajeDeError(err))
     } finally {
       setSaving(false)
     }

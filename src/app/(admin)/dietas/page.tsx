@@ -37,6 +37,7 @@ import {
   type DistribucionTiempos,
 } from '@/lib/utils/smae'
 import styles from './dietas.module.css'
+import { mensajeDeError } from '@/lib/utils/mensaje-error'
 
 // Genera un id único simple para un tiempo de comida nuevo.
 let contadorTiempo = 100
@@ -1280,8 +1281,8 @@ export default function DietasPage() {
       } else {
         setError(data.error || 'No se pudo eliminar el cuadro')
       }
-    } catch {
-      setError('Error de conexión al eliminar')
+    } catch (err) {
+      setError(mensajeDeError(err, 'eliminar'))
     } finally {
       setConfirmandoBorrar(null)
     }
@@ -1306,8 +1307,8 @@ export default function DietasPage() {
       } else {
         setError(data.error || 'No se pudo duplicar el cuadro')
       }
-    } catch {
-      setError('Error de conexión al duplicar')
+    } catch (err) {
+      setError(mensajeDeError(err, 'duplicar'))
     }
   }
 
@@ -1404,8 +1405,8 @@ export default function DietasPage() {
       toast.exito(`Plantilla «${nombre}» guardada`, {
         descripcion: 'La verás al empezar un cuadro nuevo.',
       })
-    } catch {
-      setErrorPlantilla('Error de conexión. Inténtalo otra vez.')
+    } catch (err) {
+      setErrorPlantilla(mensajeDeError(err))
     } finally {
       setGuardandoP(false)
     }
@@ -1549,8 +1550,8 @@ export default function DietasPage() {
         setPestana('cuadro')
         setExito('Cuadro cargado.')
       }
-    } catch {
-      setError('Error de conexión al cargar el cuadro.')
+    } catch (err) {
+      setError(mensajeDeError(err, 'cargar el cuadro'))
     }
   }
 
@@ -1658,8 +1659,8 @@ export default function DietasPage() {
       } else {
         setError(data.error || 'Error al generar con IA')
       }
-    } catch {
-      setError('Error de conexión al generar')
+    } catch (err) {
+      setError(mensajeDeError(err, 'generar'))
     } finally {
       setGenerando(false)
     }
@@ -1821,8 +1822,8 @@ export default function DietasPage() {
           }
         }
       }
-    } catch {
-      setError('Error de conexión en la conversación')
+    } catch (err) {
+      setError(mensajeDeError(err))
     } finally {
       setChateando(false)
       setAplicandoCambio(false)
@@ -2249,8 +2250,8 @@ export default function DietasPage() {
       } else {
         setErrorAlternativas(data.error || 'No se pudieron obtener alternativas')
       }
-    } catch {
-      setErrorAlternativas('Error de conexión')
+    } catch (err) {
+      setErrorAlternativas(mensajeDeError(err))
     } finally {
       setCargandoAlternativas(false)
     }
@@ -2625,8 +2626,8 @@ export default function DietasPage() {
       } else {
         setError(data.error || 'Error al calcular')
       }
-    } catch {
-      setError('Error de conexión')
+    } catch (err) {
+      setError(mensajeDeError(err))
     } finally {
       setCalculando(false)
     }
@@ -2675,8 +2676,8 @@ export default function DietasPage() {
       } else {
         setError(data.error || 'Error al guardar')
       }
-    } catch {
-      setError('Error de conexión')
+    } catch (err) {
+      setError(mensajeDeError(err))
     } finally {
       setGuardando(false)
     }
@@ -2751,8 +2752,8 @@ export default function DietasPage() {
       } else {
         setError(data.error || 'Error al guardar la dieta')
       }
-    } catch {
-      setError('Error de conexión al guardar la dieta')
+    } catch (err) {
+      setError(mensajeDeError(err, 'guardar la dieta'))
     } finally {
       setFinalizando(false)
       setConfirmandoFinalizar(false)
@@ -2785,8 +2786,8 @@ export default function DietasPage() {
       } else {
         setError(data.error || 'No se pudo abrir la dieta para editar')
       }
-    } catch {
-      setError('Error de conexión')
+    } catch (err) {
+      setError(mensajeDeError(err))
     } finally {
       setFinalizando(false)
     }

@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button'
 import Alert from '@/components/ui/Alert'
 import Spinner from '@/components/ui/Spinner'
 import styles from '../calendario/calendario.module.css'
+import { mensajeDeError } from '@/lib/utils/mensaje-error'
 
 interface PerfilEstilo {
   region: string
@@ -46,7 +47,7 @@ export default function EstiloDietasPage() {
           setError('Error al cargar el perfil')
         }
       })
-      .catch(() => setError('Error de conexión'))
+      .catch((err) => setError(mensajeDeError(err, 'cargar el perfil')))
       .finally(() => setLoading(false))
   }, [])
 
@@ -69,8 +70,8 @@ export default function EstiloDietasPage() {
         const data = await res.json()
         setError(data.error || 'Error al guardar')
       }
-    } catch {
-      setError('Error de conexión')
+    } catch (err) {
+      setError(mensajeDeError(err))
     } finally {
       setSaving(false)
     }

@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import styles from './cita.module.css'
+import { mensajeDeError } from '@/lib/utils/mensaje-error'
 
 interface Paciente {
   id: string
@@ -62,7 +63,7 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
         setError('Error al cargar la cita')
       }
     } catch (err) {
-      setError('Error de conexión')
+      setError(mensajeDeError(err))
     } finally {
       setLoading(false)
     }
@@ -89,7 +90,7 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
         setError(data.error || 'Error al confirmar la cita')
       }
     } catch (err) {
-      setError('Error de conexión')
+      setError(mensajeDeError(err))
     } finally {
       setConfirmando(false)
     }
@@ -115,7 +116,7 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
         setError('Error al cancelar la cita')
       }
     } catch (err) {
-      setError('Error de conexión')
+      setError(mensajeDeError(err))
     } finally {
       setCancelando(false)
     }
@@ -195,7 +196,7 @@ export default function CitaPage({ params }: { params: Promise<{ codigo: string 
       // Redirigir a agendar
       router.push('/agendar?reagendar=true')
     } catch (err) {
-      setError('Error de conexión al reagendar')
+      setError(mensajeDeError(err, 'reagendar'))
     } finally {
       setReagendando(false)
       setMostrarConfirmacionReagendar(false)
