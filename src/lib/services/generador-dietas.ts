@@ -122,6 +122,10 @@ export interface EntradaGeneracion {
   ejemplos?: string[]
   // Ajustes del nutriólogo desde el chat (ej. "no uses lácteos hoy").
   instruccionesExtra?: string
+  // Alimentos que este paciente ya recibió, para no repetirle la comida. Se
+  // pasa aparte de `ejemplos` porque tira en sentido contrario: los ejemplos
+  // se imitan, esto se evita.
+  instruccionVariedad?: string
 }
 
 /** Un alimento propuesto dentro de un tiempo. */
@@ -193,6 +197,19 @@ const NOMBRE_GRUPO: Record<GrupoSMAEId, string> = Object.fromEntries(
 ) as Record<GrupoSMAEId, string>
 
 /**
+ * Cómo nombrar la cocina de referencia al pedir platillos sencillos.
+ *
+ * El prompt decía "combinaciones comunes en México" con ejemplos mexicanos
+ * fijos. Funciona para un consultorio en Oaxaca y estorba en cualquier otro:
+ * compite con la región que el propio nutriólogo configuró en su perfil. La
+ * región manda, y sin ella se pide algo casero sin atarlo a ningún país.
+ */
+function cocinaDeReferencia(perfil: PerfilEstilo): string {
+  const region = perfil.region?.trim()
+  return region ? `de ${region}` : 'local del paciente'
+}
+
+/**
  * Construye el prompt del sistema con el perfil del nutriólogo.
  */
 function construirPromptSistema(
@@ -262,8 +279,16 @@ function construirPromptSistema(
     )
 
   if (!perfil.region && !perfil.alimentos_tipicos) {
+    // Sin región configurada no se puede suponer un país: este mismo sistema
+    // lo puede usar un nutriólogo de otro lugar, y darle por defecto cocina
+    // mexicana le obligaría a corregir cada dieta.
     partes.push(
-      '(El nutriólogo no ha definido su estilo aún; usa alimentos comunes en México, saludables y accesibles.)'
+      '(El nutriólogo no ha definido su estilo aún. Usa alimentos básicos, saludables y',
+      'accesibles, de los que se consiguen en cualquier mercado o supermercado, y',
+      'preparaciones neutras que se entiendan en cualquier país hispanohablante: huevo,',
+      'pan, avena, arroz, fruta de temporada, verduras corrientes. NO des por hecho una',
+      'cocina nacional concreta ni uses platillos típicos de un solo país, porque no',
+      'sabes dónde ejerce este nutriólogo.)'
     )
   }
 
@@ -323,9 +348,9 @@ function construirPromptSistema(
     '',
     'SENCILLEZ (importante): los platillos deben ser SENCILLOS, CASEROS y del día a día,',
     'con POCOS ingredientes y preparación fácil y rápida. NO hagas recetas gourmet, elaboradas',
-    'ni de restaurante. Prefiere combinaciones simples y comunes en México (ej. "huevo a la',
-    'mexicana con frijoles y tortilla", "quesadilla de nopal", "fruta con yogur y granola"),',
-    'no platillos rebuscados con muchos pasos o ingredientes poco accesibles.',
+    'ni de restaurante. Prefiere las combinaciones que cualquiera cocina entre semana en la',
+    `cocina ${cocinaDeReferencia(perfil)}, no platillos rebuscados con muchos pasos o`,
+    'ingredientes poco accesibles.',
     '',
     'ESTILO Y FORMATO:',
     '- Elige alimentos del estilo del nutriólogo (región y alimentos típicos de arriba).',
@@ -352,6 +377,10 @@ function construirPromptUsuario(entrada: EntradaGeneracion): string {
       .map(([id, n]) => `${n} de ${NOMBRE_GRUPO[id as GrupoSMAEId]}`)
       .join(', ')
     lineas.push(`- ${t.nombre} (id="${t.id}"): ${grupos || 'sin equivalentes'}`)
+  }
+
+  if (entrada.instruccionVariedad) {
+    lineas.push('', entrada.instruccionVariedad)
   }
 
   if (entrada.instruccionesExtra) {
@@ -452,7 +481,21 @@ export async function generarDietaConIA(entrada: EntradaGeneracion): Promise<Die
 
   // Auto-revisión de porciones: la IA revisa sus propios gramajes y corrige los
   // que no correspondan a los equivalentes (sin cambiar el número de equivalentes).
-  dieta = await revisarPorciones(promptSistema, dieta)
+  //
+  // El resultado se vuelve a validar: esta llamada devuelve una dieta NUEVA y,
+  // aunque el prompt le prohíbe tocar los equivalentes, nada garantiza que
+  // obedezca. Sin esta comprobación, el último paso podía deshacer en silencio
+  // todo lo que había conseguido el reintento.
+  const revisada = await revisarPorciones(promptSistema, dieta)
+  const discRevisada = validarDietaGenerada(entrada, revisada)
+  if (discRevisada.length <= discrepancias.length) {
+    dieta = revisada
+  } else {
+    logDebug('La revisión de porciones descuadró los equivalentes; se conserva la anterior', {
+      antes: discrepancias.length,
+      despues: discRevisada.length,
+    })
+  }
 
   return dieta
 }
@@ -643,6 +686,10 @@ function construirPromptUsuarioRecetario(
     lineas.push(`- ${t.nombre} (id="${t.id}"): ${grupos || 'sin equivalentes'}`)
   }
 
+  if (entrada.instruccionVariedad) {
+    lineas.push('', entrada.instruccionVariedad)
+  }
+
   if (entrada.instruccionesExtra) {
     lineas.push('', `Instrucciones adicionales del nutriólogo: ${entrada.instruccionesExtra}`)
   }
@@ -820,7 +867,7 @@ export async function sugerirAlternativas(params: {
   const r = params.restricciones
 
   const partes: string[] = [
-    'Eres el asistente de un nutriólogo mexicano. Propón alternativas para UN alimento',
+    'Eres el asistente de un nutriólogo profesional. Propón alternativas para UN alimento',
     'concreto de una dieta, manteniendo su aporte nutricional.',
     '',
     `Alimento actual: "${descripcionActual}"`,
@@ -861,7 +908,7 @@ export async function sugerirAlternativas(params: {
     '3. Calcula la porción a partir de la composición del alimento (por 100 g) y del',
     '   aporte por equivalente. Pon ese cálculo en "calculo".',
     '4. En cereales y leguminosas usa medidas caseras COCIDAS (tazas), no gramos crudos.',
-    '5. Alimentos comunes y accesibles en México, que combinen con el platillo.',
+    `5. Alimentos comunes y accesibles en la cocina ${cocinaDeReferencia(params.perfil)}, que combinen con el platillo.`,
     '',
     'Devuelve SOLO este JSON:',
     '{"alternativas":[{"descripcion":"<porción concreta>","calculo":"<cómo la obtuviste>","nota":"<por qué encaja, breve>"}]}'

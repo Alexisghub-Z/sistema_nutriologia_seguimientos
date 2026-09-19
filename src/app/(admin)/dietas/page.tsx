@@ -1,15 +1,17 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { createPortal } from 'react-dom'
 import Button from '@/components/ui/Button'
+import ModalCentrado from '@/components/ui/ModalCentrado'
 import GenerandoIA from '@/components/dietas/GenerandoIA'
 import ResumenDietas from '@/components/dietas/ResumenDietas'
+import dynamic from 'next/dynamic'
 import PanelAlternativas from '@/components/dietas/PanelAlternativas'
 import { useToast } from '@/components/ui/Toast'
 import { buscarAlergenos } from '@/lib/dietas/alergenos'
 import {
   firmaContenido,
+  hayTrabajoEnElAire,
   formaDeTiempos,
   textoAutoguardado,
   type EstadoAutoguardado,
@@ -35,6 +37,7 @@ import {
   type DistribucionTiempos,
 } from '@/lib/utils/smae'
 import styles from './dietas.module.css'
+import { mensajeDeError } from '@/lib/utils/mensaje-error'
 
 // Genera un id único simple para un tiempo de comida nuevo.
 let contadorTiempo = 100
@@ -305,10 +308,42 @@ const FORM_INICIAL = {
 // Distribución calórica por defecto (% de HCO / lípidos / proteína).
 const PCT_DEFAULT = { hco: 50, lip: 25, pro: 25 }
 
+type PasoId = 'cuadro' | 'grupos' | 'tiempos' | 'ia'
+
+/**
+ * Los cuatro pasos del proceso, en el orden en que se recorren. La pista
+ * explica qué se hace en cada uno: sin ella el nombre solo tiene sentido para
+ * quien ya conoce la pantalla.
+ */
+const PASOS: Array<{ id: PasoId; nombre: string; pista: string; tono: string }> = [
+  { id: 'cuadro', nombre: 'Cuadro', pista: 'Datos y meta calórica', tono: 'azul' },
+  { id: 'grupos', nombre: 'Grupos', pista: 'Equivalentes SMAE', tono: 'morado' },
+  { id: 'tiempos', nombre: 'Tiempos', pista: 'Reparto del día', tono: 'ambar' },
+  { id: 'ia', nombre: 'Dieta', pista: 'Los platillos', tono: 'verde' },
+]
+
 /** Cuadros por página en el historial. */
 const POR_PAGINA = 6
 
 // Mapa id de grupo SMAE → nombre legible (para mostrar en la dieta de IA).
+// El visor de PDF solo se carga al abrirlo: pesa bastante y la mayoría de las
+// veces no se usa. `ssr: false` porque necesita el navegador.
+const VistaPreviaDieta = dynamic(() => import('@/components/dietas/VistaPreviaDieta'), {
+  ssr: false,
+})
+
+// La comparación se carga al abrirla: pide los dos cuadros completos y la
+// mayoría de las veces no se usa.
+const CompararDietas = dynamic(() => import('@/components/dietas/CompararDietas'), {
+  ssr: false,
+})
+
+// Las plantillas solo aparecen si hay alguna guardada, así que su carga no
+// bloquea la pantalla del cuadro.
+const PlantillasDieta = dynamic(() => import('@/components/dietas/PlantillasDieta'), {
+  ssr: false,
+})
+
 const NOMBRE_GRUPO = Object.fromEntries(GRUPOS_SMAE.map((g) => [g.id, g.nombre])) as Record<
   GrupoSMAEId,
   string
@@ -318,6 +353,7 @@ export default function DietasPage() {
   const toast = useToast()
   const [query, setQuery] = useState('')
   const [resultados, setResultados] = useState<PacienteLite[]>([])
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [paciente, setPaciente] = useState<PacienteLite | null>(null)
   const [form, setForm] = useState({ ...FORM_INICIAL })
   const [resultado, setResultado] = useState<ResultadoCuadro | null>(null)
@@ -330,13 +366,35 @@ export default function DietasPage() {
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
   const [exito, setExito] = useState('')
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const chatRef = useRef<HTMLDivElement | null>(null)
 
   // Paso entre porciones de los sliders de equivalentes (0.25 / 0.5 / 1).
   const [pasoEquiv, setPasoEquiv] = useState(0.5)
   // Pestaña activa: 'cuadro' (dietosintético) | 'tiempos' (distribución) | 'ia' (generar).
-  const [pestana, setPestana] = useState<'cuadro' | 'tiempos' | 'ia'>('cuadro')
+  const [pestana, setPestanaRaw] = useState<PasoId>('cuadro')
+  /** Hacia dónde fue el último cambio: el contenido entra por ese lado. */
+  const [sentido, setSentido] = useState<'avanza' | 'retrocede'>('avanza')
+
+  /**
+   * Cambia de paso recordando la dirección. Sin esto el contenido entraría
+   * siempre por el mismo lado y al retroceder daría sensación de avance, que
+   * es lo contrario de lo que acaba de ocurrir.
+   */
+  /** Se levanta al cambiar de paso para que lo pendiente se guarde ya. */
+  const cambioDePaso = useRef(false)
+
+  const setPestana = useCallback((destino: PasoId) => {
+    setPestanaRaw((actual) => {
+      if (destino === actual) return actual
+      const iActual = PASOS.findIndex((x) => x.id === actual)
+      const iDestino = PASOS.findIndex((x) => x.id === destino)
+      setSentido(iDestino >= iActual ? 'avanza' : 'retrocede')
+      // Cambiar de paso es un punto natural de guardado: lo que se acaba de
+      // escribir no debería quedarse esperando el temporizador.
+      cambioDePaso.current = true
+      return destino
+    })
+  }, [])
   // Tiempos de comida y su reparto de equivalentes.
   const [tiempos, setTiempos] = useState<TiempoComida[]>(() =>
     TIEMPOS_DEFAULT.map((t) => ({ ...t }))
@@ -385,6 +443,38 @@ export default function DietasPage() {
   const [estadoDieta, setEstadoDieta] = useState<EstadoDieta | null>(null)
   const [finalizando, setFinalizando] = useState(false)
   const [confirmandoFinalizar, setConfirmandoFinalizar] = useState(false)
+  /**
+   * Cuadros marcados para comparar. Se limita a DOS: con tres la comparación
+   * deja de leerse, y "qué cambió" es siempre una pregunta entre dos planes.
+   */
+  const [seleccionados, setSeleccionados] = useState<string[]>([])
+
+  /**
+   * Marca o desmarca un cuadro. Al marcar un tercero se suelta el más antiguo
+   * en vez de bloquear: obligar a desmarcar a mano para cambiar de pareja es
+   * un clic de más en la acción más repetida.
+   */
+  const alternarSeleccion = useCallback((id: string) => {
+    setSeleccionados((previos) =>
+      previos.includes(id)
+        ? previos.filter((x) => x !== id)
+        : [...previos, id].slice(-2)
+    )
+  }, [])
+
+  /** Modal de comparación entre las dos dietas marcadas. */
+  const [comparando, setComparando] = useState(false)
+
+  /** Cuadro que se está guardando como plantilla, y el nombre en curso. */
+  const [guardandoPlantilla, setGuardandoPlantilla] = useState<string | null>(null)
+  const [nombrePlantilla, setNombrePlantilla] = useState('')
+  const [errorPlantilla, setErrorPlantilla] = useState('')
+  const [guardandoP, setGuardandoP] = useState(false)
+  /** Cambia al guardar una plantilla, para que el selector recargue. */
+  const [refrescoPlantillas, setRefrescoPlantillas] = useState(0)
+
+  /** Visor del plan tal como lo recibirá el paciente. */
+  const [vistaPrevia, setVistaPrevia] = useState(false)
 
   // --- Autoguardado ---
   // La dieta se persiste sola: antes, salir de la pantalla sin pulsar "Guardar
@@ -513,6 +603,8 @@ export default function DietasPage() {
     // es la función de "cambiamos de contexto", evita olvidarlo en cada sitio
     // que la llama.
     cancelarAutoguardado()
+    setSeleccionados([])
+    setComparando(false)
     autoguardadoPendiente.current = false
     autoguardadoBloqueado.current = false
     firmaGuardada.current = null
@@ -794,6 +886,156 @@ export default function DietasPage() {
     [equivalentes]
   )
 
+  /**
+   * Por qué no se puede entrar todavía a un paso, o null si está abierto.
+   * Devuelve el motivo y no un booleano porque es lo que se le enseña al
+   * nutriólogo: un paso apagado sin explicación solo genera dudas.
+   */
+  const motivoBloqueo = useCallback(
+    (paso: PasoId): string | null => {
+      if (paso === 'cuadro') return null
+      if (!resultado) return 'Calcula el cuadro primero'
+      if (paso === 'grupos') return null
+      if (gruposConEquiv.length === 0) return 'Reparte los equivalentes primero'
+      return null
+    },
+    [resultado, gruposConEquiv.length]
+  )
+
+  /**
+   * Si un paso está resuelto. Se mira el TRABAJO hecho, no si se visitó:
+   * pasar por una pantalla no es completarla, y una marca de "listo" que
+   * miente es peor que no tener marca.
+   */
+  /**
+   * Lo que ha producido cada paso, en pocas palabras: "1,850 kcal",
+   * "18 equivalentes". Es lo que convierte la barra en un resumen del trabajo
+   * y no en una simple botonera; si el paso aún no da nada, devuelve su pista.
+   */
+  /**
+   * Lo que va a la hoja del paciente.
+   *
+   * Deja fuera equivalentes y kcal a propósito: son el lenguaje con el que
+   * trabaja el nutriólogo. El paciente necesita saber qué comer, y una hoja
+   * llena de cifras técnicas se lee peor, no mejor.
+   */
+  const datosParaImprimir = useMemo(() => {
+    const tiemposImpresos = recetario
+      ? recetario.tiempos.map((t) => ({
+          nombre: t.nombre,
+          // Cada opción va entera —nombre, ingredientes y preparación— porque
+          // el paciente elige una y tiene que poder cocinarla. Aplanarlas en
+          // una línea dejaba fuera justo lo que hace falta para hacerlo.
+          opciones: t.opciones.map((o) => ({
+            nombre: o.nombre,
+            alimentos: o.alimentos
+              .filter((a) => a.descripcion.trim())
+              .map((a) => ({ descripcion: a.descripcion })),
+            preparacion: o.preparacion,
+          })),
+        }))
+      : (dietaIA ?? []).map((t) => {
+          const equiv: Equivalentes = {}
+          for (const a of t.alimentos) {
+            equiv[a.grupo] = (equiv[a.grupo] ?? 0) + a.equivalentes
+          }
+          return {
+            nombre: t.nombre,
+            alimentos: t.alimentos
+              .filter((a) => a.descripcion.trim())
+              .map((a) => ({ descripcion: a.descripcion })),
+            nota: t.nota,
+            kcal: resumenTiempo(equiv).kcal,
+          }
+        })
+
+    // Alergias e intolerancias, que son las que no se pueden olvidar. Las
+    // preferencias y disgustos no van: ya están reflejados en los platillos.
+    const evitar = [restricciones?.alergias, restricciones?.intolerancias]
+      .filter((x): x is string => !!x?.trim())
+      .map((x) => x.trim())
+
+    return {
+      paciente: paciente?.nombre ?? 'Paciente',
+      fecha: new Date().toLocaleDateString('es-MX', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'America/Mexico_City',
+      }),
+      tiempos: tiemposImpresos,
+      indicacionesInicio: recetario?.indicacionesInicio?.trim() || undefined,
+      kcalMeta: resultado ? Math.round(kcalMeta) : undefined,
+      macros: resultado
+        ? {
+            proteina: resultado.macros.proteina.gramos,
+            grasa: resultado.macros.grasa.gramos,
+            carbohidrato: resultado.macros.carbohidrato.gramos,
+          }
+        : undefined,
+      restricciones: evitar.length > 0 ? evitar : undefined,
+      // Las medidas con que se calculó el plan: anclan la hoja a un momento
+      // del tratamiento, que es lo que permite comparar cuando el paciente
+      // vuelve con la hoja anterior en la mano.
+      consulta: resultado
+        ? {
+            peso: form.peso ? Number(form.peso) : undefined,
+            talla: form.talla_cm ? Number(form.talla_cm) : undefined,
+            imc: resultado.imc,
+            clasificacionImc: resultado.clasificacionImc,
+            pesoIdeal: resultado.pesoIdeal,
+            objetivo: form.objetivo || undefined,
+          }
+        : undefined,
+    }
+  }, [dietaIA, recetario, paciente, resultado, kcalMeta, restricciones, form])
+
+  const resumenPaso = useCallback(
+    (paso: PasoId): string | null => {
+      switch (paso) {
+        case 'cuadro':
+          return resultado ? `${Math.round(kcalMeta).toLocaleString('es-MX')} kcal` : null
+        case 'grupos': {
+          const total = gruposConEquiv.reduce((n, g) => n + (equivalentes[g.id] ?? 0), 0)
+          return total > 0 ? `${redondear2(total)} equivalentes` : null
+        }
+        case 'tiempos': {
+          const conReparto = tiempos.filter((t) =>
+            Object.values(reparto[t.id] ?? {}).some((n) => (n ?? 0) > 0)
+          ).length
+          return conReparto > 0 ? `${conReparto} de ${tiempos.length} tiempos` : null
+        }
+        case 'ia': {
+          if (recetario) return `${recetario.tiempos.length} tiempos con opciones`
+          if (dietaIA) {
+            const platillos = dietaIA.reduce((n, t) => n + t.alimentos.length, 0)
+            return `${platillos} alimentos`
+          }
+          return null
+        }
+      }
+    },
+    [resultado, kcalMeta, gruposConEquiv, equivalentes, tiempos, reparto, dietaIA, recetario]
+  )
+
+  const pasoCompletado = useCallback(
+    (paso: PasoId): boolean => {
+      switch (paso) {
+        case 'cuadro':
+          return !!resultado
+        case 'grupos':
+          return gruposConEquiv.length > 0
+        case 'tiempos':
+          return Object.values(reparto).some((eq) =>
+            Object.values(eq ?? {}).some((n) => (n ?? 0) > 0)
+          )
+        case 'ia':
+          return !!dietaIA || !!recetario
+      }
+    },
+    [resultado, gruposConEquiv.length, reparto, dietaIA, recetario]
+  )
+
   // Cuadre por grupo: repartido vs total.
   const cuadres = useMemo(() => validarDistribucion(equivalentes, reparto), [equivalentes, reparto])
   const cuadreDe = (grupo: GrupoSMAEId) => cuadres.find((c) => c.grupo === grupo)
@@ -881,6 +1123,8 @@ export default function DietasPage() {
     }
   }, [mensajesIA])
 
+  // El buscador consulta por su cuenta: es la vía directa cuando ya sabes a
+  // quién buscas. Las recomendaciones de abajo son para cuando no lo sabes.
   useEffect(() => {
     if (paciente) return
     if (query.trim().length < 2) {
@@ -1037,8 +1281,8 @@ export default function DietasPage() {
       } else {
         setError(data.error || 'No se pudo eliminar el cuadro')
       }
-    } catch {
-      setError('Error de conexión al eliminar')
+    } catch (err) {
+      setError(mensajeDeError(err, 'eliminar'))
     } finally {
       setConfirmandoBorrar(null)
     }
@@ -1063,8 +1307,8 @@ export default function DietasPage() {
       } else {
         setError(data.error || 'No se pudo duplicar el cuadro')
       }
-    } catch {
-      setError('Error de conexión al duplicar')
+    } catch (err) {
+      setError(mensajeDeError(err, 'duplicar'))
     }
   }
 
@@ -1088,6 +1332,86 @@ export default function DietasPage() {
   }
 
   // Abre un cuadro guardado y repuebla toda la pantalla.
+  /**
+   * Vuelca la receta de una plantilla en el formulario.
+   *
+   * Solo toca lo que la plantilla guarda: peso, talla y edad se quedan como
+   * estén, porque son del paciente que se tiene delante. Si la plantilla trae
+   * equivalentes y reparto, se aplican también y el cuadro queda a un cálculo
+   * de estar listo.
+   */
+  const aplicarPlantilla = useCallback(
+    (pl: {
+      nombre: string
+      objetivo: string
+      nivel_actividad: string
+      formula: string
+      pct_proteina: number
+      pct_grasa: number
+      pct_carbohidrato: number
+      equivalentes: Record<string, number> | null
+      distribucion_tiempos: { tiempos?: unknown[]; reparto?: Record<string, unknown> } | null
+    }) => {
+      setForm((f) => ({
+        ...f,
+        objetivo: pl.objetivo,
+        nivel_actividad: pl.nivel_actividad,
+        formula: pl.formula,
+      }))
+      setPct({ pro: pl.pct_proteina, lip: pl.pct_grasa, hco: pl.pct_carbohidrato })
+
+      if (pl.equivalentes && Object.keys(pl.equivalentes).length > 0) {
+        setEquivalentes(pl.equivalentes as Equivalentes)
+      }
+
+      const dt = pl.distribucion_tiempos
+      if (Array.isArray(dt?.tiempos) && dt.tiempos.length > 0) {
+        setTiempos(dt.tiempos as TiempoComida[])
+        setReparto((dt.reparto ?? {}) as DistribucionTiempos)
+      }
+
+      toast.exito(`Plantilla «${pl.nombre}» aplicada`, {
+        descripcion: 'Captura peso, talla y edad para calcular el cuadro.',
+      })
+    },
+    [toast]
+  )
+
+  /** Guarda el cuadro abierto como plantilla reutilizable. */
+  const confirmarGuardarPlantilla = useCallback(async () => {
+    const nombre = nombrePlantilla.trim()
+    if (!nombre) {
+      setErrorPlantilla('Ponle un nombre para reconocerla después')
+      return
+    }
+    if (!guardandoPlantilla) return
+
+    setGuardandoP(true)
+    setErrorPlantilla('')
+    try {
+      const res = await fetch('/api/dietas/plantillas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, cuadro_id: guardandoPlantilla }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setErrorPlantilla(data.error ?? 'No se pudo guardar')
+        return
+      }
+      setGuardandoPlantilla(null)
+      setNombrePlantilla('')
+      setRefrescoPlantillas((n) => n + 1)
+      toast.exito(`Plantilla «${nombre}» guardada`, {
+        descripcion: 'La verás al empezar un cuadro nuevo.',
+      })
+    } catch (err) {
+      setErrorPlantilla(mensajeDeError(err))
+    } finally {
+      setGuardandoP(false)
+    }
+  }, [nombrePlantilla, guardandoPlantilla, toast])
+
   const cargarCuadro = async (id: string) => {
     setError('')
     setExito('')
@@ -1226,8 +1550,8 @@ export default function DietasPage() {
         setPestana('cuadro')
         setExito('Cuadro cargado.')
       }
-    } catch {
-      setError('Error de conexión al cargar el cuadro.')
+    } catch (err) {
+      setError(mensajeDeError(err, 'cargar el cuadro'))
     }
   }
 
@@ -1335,8 +1659,8 @@ export default function DietasPage() {
       } else {
         setError(data.error || 'Error al generar con IA')
       }
-    } catch {
-      setError('Error de conexión al generar')
+    } catch (err) {
+      setError(mensajeDeError(err, 'generar'))
     } finally {
       setGenerando(false)
     }
@@ -1498,8 +1822,8 @@ export default function DietasPage() {
           }
         }
       }
-    } catch {
-      setError('Error de conexión en la conversación')
+    } catch (err) {
+      setError(mensajeDeError(err))
     } finally {
       setChateando(false)
       setAplicandoCambio(false)
@@ -1679,6 +2003,37 @@ export default function DietasPage() {
     }, RETRASO_AUTOGUARDADO)
   }, [autoguardar])
 
+  /**
+   * Guarda YA lo que esté pendiente, sin esperar los 3 segundos.
+   *
+   * Se usa en los momentos en que el trabajo corre peligro: al cambiar de paso
+   * y al dejar la pestaña. Cancela el temporizador porque el guardado que
+   * dispara lo sustituye.
+   */
+  const guardarPendienteYa = useCallback(() => {
+    if (!temporizadorAutoguardado.current) return
+    clearTimeout(temporizadorAutoguardado.current)
+    temporizadorAutoguardado.current = null
+    void autoguardar()
+  }, [autoguardar])
+
+  /**
+   * ¿Hay algo escrito que todavía no está en la base de datos?
+   *
+   * Es la pregunta que decide si avisar antes de cerrar. Mira el temporizador
+   * y el estado, no el contenido: si hay un guardado programado o en curso,
+   * hay trabajo en el aire.
+   */
+  const hayCambiosSinGuardar = useCallback(
+    () =>
+      hayTrabajoEnElAire({
+        estado: estadoAutoguardado,
+        temporizadorActivo: temporizadorAutoguardado.current !== null,
+        guardadoEnCurso: autoguardadoEnCurso.current,
+      }),
+    [estadoAutoguardado]
+  )
+
   /** Cancela el autoguardado pendiente (cambio de contexto o guardado manual). */
   const cancelarAutoguardado = useCallback(() => {
     if (temporizadorAutoguardado.current) {
@@ -1686,6 +2041,52 @@ export default function DietasPage() {
       temporizadorAutoguardado.current = null
     }
   }, [])
+
+  /**
+   * Red de seguridad al abandonar la pantalla.
+   *
+   * El autoguardado espera 3 segundos desde el último cambio, así que hay una
+   * ventana en la que lo escrito todavía no está en la base de datos. Cerrar
+   * la pestaña ahí perdía el trabajo sin decir nada.
+   *
+   * Se atacan los dos casos por separado porque el navegador los trata
+   * distinto:
+   *  - `visibilitychange` salta al cambiar de pestaña o minimizar, y ahí SÍ da
+   *    tiempo a guardar de verdad. Es el que salva el trabajo.
+   *  - `beforeunload` salta al cerrar, donde ya no se puede esperar a una
+   *    petición: solo queda avisar y dejar que el nutriólogo decida.
+   */
+  useEffect(() => {
+    const alOcultar = () => {
+      if (document.visibilityState === 'hidden') guardarPendienteYa()
+    }
+
+    const alCerrar = (e: BeforeUnloadEvent) => {
+      if (!hayCambiosSinGuardar()) return
+      // El texto lo decide el navegador; lo que cuenta es prevenir el evento.
+      e.preventDefault()
+      e.returnValue = ''
+    }
+
+    document.addEventListener('visibilitychange', alOcultar)
+    window.addEventListener('beforeunload', alCerrar)
+    return () => {
+      document.removeEventListener('visibilitychange', alOcultar)
+      window.removeEventListener('beforeunload', alCerrar)
+    }
+  }, [guardarPendienteYa, hayCambiosSinGuardar])
+
+  /**
+   * Al cambiar de paso, lo pendiente se guarda sin esperar el temporizador.
+   *
+   * Va en un efecto y no dentro de `setPestana` porque esa función se declara
+   * antes que `guardarPendienteYa`; la ref traslada la intención hasta aquí.
+   */
+  useEffect(() => {
+    if (!cambioDePaso.current) return
+    cambioDePaso.current = false
+    guardarPendienteYa()
+  }, [pestana, guardarPendienteYa])
 
   /**
    * Autoguardado: cualquier cambio en la dieta o el recetario programa un
@@ -1849,8 +2250,8 @@ export default function DietasPage() {
       } else {
         setErrorAlternativas(data.error || 'No se pudieron obtener alternativas')
       }
-    } catch {
-      setErrorAlternativas('Error de conexión')
+    } catch (err) {
+      setErrorAlternativas(mensajeDeError(err))
     } finally {
       setCargandoAlternativas(false)
     }
@@ -2225,8 +2626,8 @@ export default function DietasPage() {
       } else {
         setError(data.error || 'Error al calcular')
       }
-    } catch {
-      setError('Error de conexión')
+    } catch (err) {
+      setError(mensajeDeError(err))
     } finally {
       setCalculando(false)
     }
@@ -2275,8 +2676,8 @@ export default function DietasPage() {
       } else {
         setError(data.error || 'Error al guardar')
       }
-    } catch {
-      setError('Error de conexión')
+    } catch (err) {
+      setError(mensajeDeError(err))
     } finally {
       setGuardando(false)
     }
@@ -2351,8 +2752,8 @@ export default function DietasPage() {
       } else {
         setError(data.error || 'Error al guardar la dieta')
       }
-    } catch {
-      setError('Error de conexión al guardar la dieta')
+    } catch (err) {
+      setError(mensajeDeError(err, 'guardar la dieta'))
     } finally {
       setFinalizando(false)
       setConfirmandoFinalizar(false)
@@ -2385,8 +2786,8 @@ export default function DietasPage() {
       } else {
         setError(data.error || 'No se pudo abrir la dieta para editar')
       }
-    } catch {
-      setError('Error de conexión')
+    } catch (err) {
+      setError(mensajeDeError(err))
     } finally {
       setFinalizando(false)
     }
@@ -2470,8 +2871,9 @@ export default function DietasPage() {
           )}
         </div>
 
-        {/* Resumen del trabajo: solo mientras no hay un paciente elegido. */}
-        <ResumenDietas onAbrir={abrirDesdeResumen} />
+        {/* Resumen del trabajo: solo mientras no hay un paciente elegido.
+            Lleva dentro la lista de pacientes, que es desde donde se empieza. */}
+        <ResumenDietas onAbrir={abrirDesdeResumen} onElegirPaciente={seleccionarPaciente} />
         </>
       ) : (
         <div className={styles.pacienteSel}>
@@ -2631,10 +3033,32 @@ export default function DietasPage() {
                   key={h.id}
                   className={`${styles.cuadroCard} ${tieneFinalizada ? styles.cuadroCardFinal : ''} ${
                     abierto ? styles.cuadroCardAbierto : ''
-                  }`}
+                  } ${seleccionados.includes(h.id) ? styles.cuadroCardMarcado : ''}`}
                 >
-                  {/* Encabezado: fecha + menú de acciones */}
+                  {/* Encabezado: casilla de comparación + fecha + acciones */}
                   <div className={styles.cuadroCardTop}>
+                    {/* Solo los cuadros CON dieta se pueden comparar: sin ella
+                        no hay nada que cruzar. */}
+                    {dietaVer ? (
+                      <label
+                        className={styles.compararCasilla}
+                        title={
+                          seleccionados.includes(h.id)
+                            ? 'Quitar de la comparación'
+                            : 'Marcar para comparar'
+                        }
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={seleccionados.includes(h.id)}
+                          onChange={() => alternarSeleccion(h.id)}
+                          aria-label={`Comparar la dieta del ${new Date(h.createdAt).toLocaleDateString('es-MX')}`}
+                        />
+                      </label>
+                    ) : (
+                      <span className={styles.compararHueco} aria-hidden />
+                    )}
                     <span className={styles.cuadroFecha}>
                       {new Date(h.createdAt).toLocaleDateString('es-MX', {
                         day: '2-digit',
@@ -2675,6 +3099,19 @@ export default function DietasPage() {
                               {h.etiqueta ? 'Renombrar' : 'Poner nombre'}
                             </button>
                             <button onClick={() => duplicarCuadro(h.id)}>Duplicar</button>
+                            <button
+                              onClick={() => {
+                                setMenuCuadro(null)
+                                setGuardandoPlantilla(h.id)
+                                // Se propone la etiqueta del cuadro: casi
+                                // siempre es el nombre que se querría poner.
+                                setNombrePlantilla(h.etiqueta ?? '')
+                                setErrorPlantilla('')
+                              }}
+                              title="Reutilizar esta receta con otros pacientes"
+                            >
+                              Guardar como plantilla
+                            </button>
                             <button
                               className={styles.menuPeligro}
                               onClick={() => {
@@ -2744,6 +3181,38 @@ export default function DietasPage() {
               )
             })}
           </div>
+
+          {/* Barra de comparación: aparece al marcar cuadros y dice qué falta
+              para poder comparar, en vez de dejar el botón apagado sin motivo. */}
+          {seleccionados.length > 0 && (
+            <div className={styles.barraComparar}>
+              <span className={styles.barraCompararTexto}>
+                {seleccionados.length === 1
+                  ? 'Marca otra dieta para compararla'
+                  : 'Dos dietas marcadas'}
+              </span>
+              <div className={styles.barraCompararAcciones}>
+                <button
+                  type="button"
+                  className={styles.barraCompararLimpiar}
+                  onClick={() => setSeleccionados([])}
+                >
+                  Quitar marcas
+                </button>
+                <Button
+                  onClick={() => setComparando(true)}
+                  disabled={seleccionados.length !== 2}
+                  title={
+                    seleccionados.length !== 2
+                      ? 'Hacen falta dos dietas para comparar'
+                      : 'Ver qué cambió entre las dos'
+                  }
+                >
+                  Comparar
+                </Button>
+              </div>
+            </div>
+          )}
           </div>
           </div>
         </div>
@@ -2752,38 +3221,75 @@ export default function DietasPage() {
         <p className={styles.historialVacio}>Buscando cuadros guardados…</p>
       )}
 
-      {/* Pestañas */}
+      {/* El recorrido de la dieta. Cada paso enseña lo que produjo —kcal,
+          equivalentes, tiempos, alimentos—, así que la barra funciona como
+          resumen del trabajo y no solo como navegación. */}
       {paciente && (
-        <div className={styles.tabs}>
-          <button
-            className={`${styles.tab} ${pestana === 'cuadro' ? styles.tabActivo : ''}`}
-            onClick={() => setPestana('cuadro')}
-          >
-            Cuadro dietosintético
-          </button>
-          <button
-            className={`${styles.tab} ${pestana === 'tiempos' ? styles.tabActivo : ''}`}
-            onClick={() => setPestana('tiempos')}
-            disabled={!resultado}
-            title={!resultado ? 'Primero calcula el cuadro' : ''}
-          >
-            Distribución en tiempos
-          </button>
-          <button
-            className={`${styles.tab} ${pestana === 'ia' ? styles.tabActivo : ''}`}
-            onClick={() => setPestana('ia')}
-            disabled={!resultado || gruposConEquiv.length === 0}
-            title={
-              !resultado
-                ? 'Primero calcula el cuadro'
-                : gruposConEquiv.length === 0
-                  ? 'Primero define equivalentes'
-                  : ''
-            }
-          >
-            Generar con IA ✨
-          </button>
-        </div>
+        <nav className={styles.recorrido} aria-label="Progreso de la dieta">
+          {/* Riel continuo por detrás de los nodos: sostiene el recorrido y
+              evita que se lean como cuatro botones sueltos. */}
+          <div className={styles.riel} aria-hidden>
+            <div
+              className={styles.rielAvance}
+              style={{
+                width: `${(PASOS.findIndex((x) => x.id === pestana) / (PASOS.length - 1)) * 100}%`,
+              }}
+            />
+          </div>
+
+          {PASOS.map((paso, i) => {
+            const bloqueo = motivoBloqueo(paso.id)
+            const actual = pestana === paso.id
+            const hecho = pasoCompletado(paso.id)
+            const resumen = resumenPaso(paso.id)
+
+            return (
+              <button
+                key={paso.id}
+                type="button"
+                className={[
+                  styles.paso,
+                  styles[`tono_${paso.tono}`],
+                  actual ? styles.pasoActual : '',
+                  hecho ? styles.pasoHecho : '',
+                  bloqueo ? styles.pasoBloqueado : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                onClick={() => !bloqueo && setPestana(paso.id)}
+                disabled={!!bloqueo}
+                title={bloqueo ?? paso.nombre}
+                aria-current={actual ? 'step' : undefined}
+              >
+                <span className={styles.nodo} aria-hidden>
+                  {hecho && !actual ? (
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3.2"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 6L9 17l-5-5" />
+                    </svg>
+                  ) : (
+                    <span className={styles.nodoNumero}>{i + 1}</span>
+                  )}
+                </span>
+
+                <span className={styles.pasoTexto}>
+                  <span className={styles.pasoNombre}>{paso.nombre}</span>
+                  {/* El dato producido manda sobre la pista: cuando existe
+                      dice más que cualquier descripción. */}
+                  <span className={`${styles.pasoDato} ${resumen ? styles.pasoDatoLleno : ''}`}>
+                    {bloqueo ?? resumen ?? paso.pista}
+                  </span>
+                </span>
+              </button>
+            )
+          })}
+        </nav>
       )}
 
       {/* Alérgenos encontrados en la dieta ya generada: red de seguridad */}
@@ -2832,6 +3338,29 @@ export default function DietasPage() {
             Ver la dieta
           </Button>
         </div>
+      )}
+
+      {/* El contenido del paso entra deslizándose desde el lado hacia el que
+          se navegó. La `key` lo remonta en cada cambio para que la animación
+          se repita; sin ella React reutilizaría el nodo y no se vería nada. */}
+      <div
+        key={pestana}
+        className={[
+          styles.pasoContenido,
+          // El contenido hereda el tono del paso: al entrar se sabe dónde se
+          // está sin volver a mirar la barra de arriba.
+          styles[`tono_${PASOS.find((x) => x.id === pestana)?.tono ?? 'verde'}`],
+          sentido === 'avanza' ? styles.entraDerecha : styles.entraIzquierda,
+        ].join(' ')}
+      >
+      {/* Las recetas guardadas: aplicarlas deja solo peso, talla y edad por
+          capturar. El componente se oculta solo si no hay ninguna. */}
+      {paciente && pestana === 'cuadro' && (
+        <PlantillasDieta
+          onAplicar={aplicarPlantilla}
+          refresco={refrescoPlantillas}
+          soloLectura={soloLectura}
+        />
       )}
 
       {paciente && pestana === 'cuadro' && (
@@ -3163,11 +3692,11 @@ export default function DietasPage() {
           </Button>
           <Button
             variant="secondary"
-            onClick={() => setPestana('tiempos')}
+            onClick={() => setPestana('grupos')}
             disabled={!resultado}
             title={!resultado ? 'Primero calcula el cuadro' : ''}
           >
-            Continuar a distribución →
+            Continuar a grupos →
           </Button>
         </div>
       )}
@@ -3175,7 +3704,7 @@ export default function DietasPage() {
       {paciente && pestana === 'cuadro' && exito && <p className={styles.exito}>{exito}</p>}
 
       {/* Distribución por equivalentes (SMAE) — aparece al calcular */}
-      {paciente && pestana === 'cuadro' && resultado && diferenciaSmae && distribucion && (
+      {paciente && pestana === 'grupos' && resultado && diferenciaSmae && distribucion && (
         <>
           <div className={styles.card} style={{ marginTop: 'var(--spacing-lg)' }}>
             <div className={styles.tiemposHeader}>
@@ -3236,7 +3765,9 @@ export default function DietasPage() {
                   {GRUPOS_SMAE.map((g) => {
                     const n = equivalentes[g.id] ?? 0
                     return (
-                      <tr key={g.id}>
+                      // Los grupos en cero se atenúan para que no compitan con
+                      // los que la dieta sí usa; siguen editables.
+                      <tr key={g.id} className={n === 0 ? styles.filaSinUso : ''}>
                         <td className={styles.tdGrupo}>{g.nombre}</td>
                         <td>
                           <div className={styles.equivControl}>
@@ -3299,10 +3830,30 @@ export default function DietasPage() {
               </table>
             </div>
           </div>
+
+          {/* Navegación del paso: se puede volver al cuadro a corregir un dato
+              y regresar aquí sin perder los equivalentes ya repartidos. */}
+          <div className={styles.barraAcciones}>
+            <Button variant="secondary" onClick={() => setPestana('cuadro')}>
+              ← Volver al cuadro
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setPestana('tiempos')}
+              disabled={gruposConEquiv.length === 0}
+              title={
+                gruposConEquiv.length === 0
+                  ? 'Reparte los equivalentes antes de continuar'
+                  : ''
+              }
+            >
+              Continuar a tiempos →
+            </Button>
+          </div>
         </>
       )}
 
-      {/* PESTAÑA 2: Distribución en tiempos de comida */}
+      {/* PESTAÑA 3: Distribución en tiempos de comida */}
       {paciente && pestana === 'tiempos' && resultado && (
         <div className={styles.tiemposWrap}>
           <div className={styles.tiemposHeader}>
@@ -3460,10 +4011,25 @@ export default function DietasPage() {
               {exito && <p className={styles.exito}>{exito}</p>}
             </fieldset>
           )}
+
+          {/* Mismo patrón que los pasos anteriores: se puede retroceder a
+              cambiar los equivalentes y volver sin perder el reparto. */}
+          <div className={styles.barraAcciones}>
+            <Button variant="secondary" onClick={() => setPestana('grupos')}>
+              ← Volver a grupos
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setPestana('ia')}
+              disabled={gruposConEquiv.length === 0}
+            >
+              Continuar a la dieta →
+            </Button>
+          </div>
         </div>
       )}
 
-      {/* PESTAÑA 3: Generar con IA */}
+      {/* PESTAÑA 4: Generar con IA */}
       {paciente && pestana === 'ia' && resultado && (
         <div className={styles.iaWrap}>
           <div className={styles.iaGrid}>
@@ -3587,6 +4153,19 @@ export default function DietasPage() {
                       }
                     >
                       {finalizando ? 'Guardando…' : 'Guardar dieta'}
+                    </Button>
+                  )}
+
+                  {/* La hoja del paciente: se revisa antes de entregarla, que
+                      es cuando todavía se puede corregir una porción. */}
+                  {(dietaIA || recetario) && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => setVistaPrevia(true)}
+                      disabled={generando || chateando}
+                      title="Ver el plan como lo recibirá el paciente"
+                    >
+                      Vista previa
                     </Button>
                   )}
                 </div>
@@ -4665,11 +5244,70 @@ export default function DietasPage() {
         </div>
       )}
 
+      </div>
+
+      {guardandoPlantilla && (
+        <ModalCentrado
+          titulo="Guardar como plantilla"
+          onCerrar={() => setGuardandoPlantilla(null)}
+          bloqueado={guardandoP}
+        >
+          <div className={styles.modalCuerpo}>
+            <h3 className={styles.modalTitulo}>Guardar como plantilla</h3>
+            <p className={styles.modalTexto}>
+              Se guardará la fórmula, los macros y los equivalentes. El peso, la talla y la
+              edad se capturan en cada paciente.
+            </p>
+
+            <input
+              className={styles.modalInput}
+              value={nombrePlantilla}
+              onChange={(e) => {
+                setNombrePlantilla(e.target.value)
+                if (errorPlantilla) setErrorPlantilla('')
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !guardandoP) void confirmarGuardarPlantilla()
+              }}
+              placeholder="Ej. Déficit 1500"
+              maxLength={60}
+              autoFocus
+              aria-label="Nombre de la plantilla"
+            />
+
+            {errorPlantilla && <p className={styles.modalError}>{errorPlantilla}</p>}
+
+            <div className={styles.modalAcciones}>
+              <Button
+                variant="secondary"
+                onClick={() => setGuardandoPlantilla(null)}
+                disabled={guardandoP}
+              >
+                Cancelar
+              </Button>
+              <Button onClick={() => void confirmarGuardarPlantilla()} disabled={guardandoP}>
+                {guardandoP ? 'Guardando…' : 'Guardar plantilla'}
+              </Button>
+            </div>
+          </div>
+        </ModalCentrado>
+      )}
+
+      {comparando && seleccionados.length === 2 && (
+        <CompararDietas
+          cuadroIds={[seleccionados[0]!, seleccionados[1]!]}
+          onCerrar={() => setComparando(false)}
+        />
+      )}
+
+      {vistaPrevia && (
+        <VistaPreviaDieta datos={datosParaImprimir} onCerrar={() => setVistaPrevia(false)} />
+      )}
+
       {/* Modal de confirmación antes de guardar */}
-      {confirmando &&
-        createPortal(
-          <div className={styles.modalOverlay} onClick={() => setConfirmando(false)}>
-            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      {confirmando && (
+        <ModalCentrado titulo="Guardar cuadro" onCerrar={() => setConfirmando(false)}>
+          <div className={styles.modalCuerpo}>
               <h3 className={styles.modalTitulo}>Guardar cuadro</h3>
               <p className={styles.modalTexto}>
                 Se guardan los cálculos, los equivalentes
@@ -4696,16 +5334,14 @@ export default function DietasPage() {
                 </Button>
                 <Button onClick={confirmarGuardar}>Guardar</Button>
               </div>
-            </div>
-          </div>,
-          document.body
-        )}
+          </div>
+        </ModalCentrado>
+      )}
 
       {/* Modal de confirmación antes de eliminar un cuadro */}
-      {confirmandoBorrar &&
-        createPortal(
-          <div className={styles.modalOverlay} onClick={() => setConfirmandoBorrar(null)}>
-            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      {confirmandoBorrar && (
+        <ModalCentrado titulo="Eliminar cuadro" onCerrar={() => setConfirmandoBorrar(null)}>
+          <div className={styles.modalCuerpo}>
               <h3 className={styles.modalTitulo}>Eliminar cuadro</h3>
               <p className={styles.modalTexto}>
                 Se borrará este cuadro y la dieta en borrador que tenga. Esta acción no se puede
@@ -4719,16 +5355,14 @@ export default function DietasPage() {
                   Eliminar
                 </Button>
               </div>
-            </div>
-          </div>,
-          document.body
-        )}
+          </div>
+        </ModalCentrado>
+      )}
 
       {/* Modal de confirmación antes de finalizar (acción irreversible) */}
-      {confirmandoFinalizar &&
-        createPortal(
-          <div className={styles.modalOverlay} onClick={() => setConfirmandoFinalizar(false)}>
-            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      {confirmandoFinalizar && (
+        <ModalCentrado titulo="Guardar dieta" onCerrar={() => setConfirmandoFinalizar(false)}>
+          <div className={styles.modalCuerpo}>
               <h3 className={styles.modalTitulo}>Guardar dieta</h3>
               <p className={styles.modalTexto}>
                 Se guardan el <strong>cuadro dietosintético</strong> y la dieta juntos. Quedará
@@ -4752,10 +5386,9 @@ export default function DietasPage() {
                   {finalizando ? 'Guardando…' : 'Guardar dieta'}
                 </Button>
               </div>
-            </div>
-          </div>,
-          document.body
-        )}
+          </div>
+        </ModalCentrado>
+      )}
     </div>
   )
 }

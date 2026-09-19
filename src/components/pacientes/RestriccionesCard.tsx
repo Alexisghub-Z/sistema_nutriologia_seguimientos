@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import styles from './RestriccionesCard.module.css'
+import { mensajeDeError } from '@/lib/utils/mensaje-error'
 
 export interface Restricciones {
   alergias: string | null
@@ -130,8 +131,8 @@ export default function RestriccionesCard({ pacienteId, valores }: Props) {
       } else {
         setError(data.error || 'No se pudieron guardar')
       }
-    } catch {
-      setError('Error de conexión')
+    } catch (err) {
+      setError(mensajeDeError(err))
     } finally {
       setGuardando(false)
     }

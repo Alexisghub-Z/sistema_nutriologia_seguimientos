@@ -1,0 +1,85 @@
+/**
+ * Barra de aviso de conexión.
+ *
+ * Va por encima de todo (z-index mayor que el de los modales, 1060): si se cae
+ * internet con una ventana abierta, el aviso debe verse igual — es la
+ * explicación de por qué esa ventana ha dejado de responder.
+ */
+.barra {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1100;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+
+  padding: 0.7rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  text-align: center;
+  color: #fff;
+
+  box-shadow: 0 2px 12px rgb(0 0 0 / 18%);
+  animation: bajar 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Rojo apagado, no el rojo de error puro: informa de un estado del entorno,
+   no de que el usuario haya hecho algo mal. */
+.caida {
+  background: #b23b3b;
+}
+
+.vuelta {
+  background: #2f8a5b;
+}
+
+.icono {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.texto strong {
+  font-weight: 600;
+}
+
+@keyframes bajar {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* En móvil el texto es largo: se deja respirar y se alinea a la izquierda,
+   que se lee mejor en varias líneas que centrado. */
+@media (max-width: 600px) {
+  .barra {
+    justify-content: flex-start;
+    text-align: left;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.8125rem;
+  }
+
+  .icono {
+    margin-top: 0.1rem;
+    align-self: flex-start;
+  }
+}
+
+/* Quien pide menos movimiento no debe perderse el aviso: se quita el
+   desplazamiento, pero hay que devolver la opacidad a 1 explícitamente, o el
+   elemento se queda invisible en el estado inicial del keyframe. */
+@media (prefers-reduced-motion: reduce) {
+  .barra {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

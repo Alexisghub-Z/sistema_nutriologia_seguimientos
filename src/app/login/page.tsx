@@ -1,12 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { destinoSeguro } from '@/lib/auth/destino-seguro'
 import styles from './login.module.css'
 
-export default function LoginPage() {
+function FormularioLogin() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -27,7 +29,9 @@ export default function LoginPage() {
       if (result?.error) {
         setError('Credenciales inválidas. Por favor verifica tu email y contraseña.')
       } else if (result?.ok) {
-        router.push('/dashboard')
+        // Se vuelve a donde se iba antes de toparse con el login, en lugar de
+        // soltar siempre en el panel.
+        router.push(destinoSeguro(searchParams.get('callbackUrl')))
         router.refresh()
       }
     } catch (error) {
@@ -131,5 +135,18 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  )
+}
+
+/**
+ * `useSearchParams` obliga a envolver en Suspense: sin esto el build de
+ * producción falla ("useSearchParams should be wrapped in a suspense
+ * boundary"), aunque `tsc` no diga nada.
+ */
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <FormularioLogin />
+    </Suspense>
   )
 }

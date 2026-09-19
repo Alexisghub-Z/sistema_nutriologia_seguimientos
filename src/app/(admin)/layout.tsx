@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import Header from '@/components/layout/Header'
 import PageTransition from '@/components/layout/PageTransition'
+import AvisoSinConexion from '@/components/ui/AvisoSinConexion'
 import { SidebarProvider, useSidebar } from '@/contexts/SidebarContext'
 import styles from './admin-layout.module.css'
 
@@ -18,6 +19,9 @@ function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={`${styles.layout} ${isCollapsed ? styles.layoutColapsado : ''}`}>
+      {/* Fuera de PageTransition a propósito: esa animación usa `transform`, y
+          un ancestro con transform rompe el `position: fixed` de la barra. */}
+      <AvisoSinConexion />
       <Sidebar />
       <div className={styles.main}>
         <Header />

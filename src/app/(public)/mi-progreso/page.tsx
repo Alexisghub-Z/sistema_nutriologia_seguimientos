@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import styles from './mi-progreso.module.css'
 import ProgresoCharts from './components/ProgresoCharts'
+import { mensajeDeError } from '@/lib/utils/mensaje-error'
 
 interface Consulta {
   fecha: string
@@ -69,8 +70,8 @@ export default function MiProgresoPage() {
       } else {
         setError(data.error || 'Error al buscar tu información')
       }
-    } catch {
-      setError('Error de conexión. Por favor, intenta de nuevo.')
+    } catch (err) {
+      setError(mensajeDeError(err))
     } finally {
       setLoading(false)
     }

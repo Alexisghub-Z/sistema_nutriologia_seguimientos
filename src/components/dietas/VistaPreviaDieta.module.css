@@ -1,0 +1,308 @@
+/* Vista previa del plan antes de entregarlo. */
+
+.fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+  /* Oscuro y neutro: lo que se juzga es la hoja, y cualquier tinte de fondo
+     alteraría cómo se percibe su blanco. */
+  background: rgba(15, 23, 30, 0.72);
+  backdrop-filter: blur(2px);
+  animation: visorFondo 0.2s ease-out both;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: min(940px, 100%);
+  height: min(92vh, 1000px);
+  background: white;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+  /* Misma curva y duración que el comparador: las dos ventanas de la sección
+     tienen que abrirse igual. */
+  animation: visorPanel 0.28s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: 0.85rem 1.15rem;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.titulo {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--color-gray-900);
+}
+
+.subtitulo {
+  margin: 2px 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}
+
+.acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* El cian de la marca, no el verde del sistema: este botón produce un
+   documento de Paul, y el color lo anticipa. */
+.descargar {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  background: #00b3e3;
+  color: white;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.14s ease;
+}
+
+.descargar:hover {
+  background: #0098c2;
+}
+
+.descargar:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 179, 227, 0.35);
+}
+
+.cerrar {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--color-gray-500);
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.14s ease, color 0.14s ease;
+}
+
+.cerrar:hover {
+  border-color: var(--color-gray-400);
+  color: var(--color-gray-700);
+}
+
+.cerrar:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+/* El panel de ajustes a la izquierda y la hoja a la derecha: se marca una
+   casilla y se ve el efecto sin cambiar de pantalla. */
+.cuerpo {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 250px 1fr;
+}
+
+.ajustes {
+  border-right: 1px solid var(--color-gray-200);
+  padding: 1rem 0.9rem;
+  overflow-y: auto;
+  background: var(--color-gray-50);
+}
+
+.ajustesTitulo {
+  margin: 0 0 0.75rem;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-gray-700);
+}
+
+.ajustesLista {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.ajuste {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.5rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.ajuste:hover {
+  background: white;
+}
+
+/* Un dato que la dieta no tiene: se deja a la vista para que se sepa que
+   existe la opción, pero no se puede marcar. */
+.ajusteVacio {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ajusteVacio:hover {
+  background: none;
+}
+
+.casilla {
+  margin-top: 2px;
+  width: 15px;
+  height: 15px;
+  accent-color: #00b3e3;
+  cursor: inherit;
+  flex: 0 0 auto;
+}
+
+.ajusteTexto {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.ajusteNombre {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-800);
+  line-height: 1.3;
+}
+
+.ajusteAyuda {
+  font-size: var(--font-size-2xs);
+  color: var(--color-gray-500);
+  line-height: 1.35;
+}
+
+.restablecer {
+  width: 100%;
+  padding: 0.45rem;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--color-gray-600);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+
+.restablecer:hover {
+  border-color: var(--color-gray-400);
+  color: var(--color-gray-800);
+}
+
+.restablecer:focus-visible,
+.casilla:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+/* Gris medio alrededor de la hoja: es el fondo con el que los lectores de PDF
+   presentan una página, y deja el blanco del papel sin contaminar. */
+.visor {
+  min-height: 0;
+  background: var(--color-gray-300);
+}
+
+.visor iframe {
+  border: none;
+  display: block;
+}
+
+@media (max-width: 860px) {
+  .fondo {
+    padding: 0;
+  }
+  .panel {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+  /* Sin ancho para dos columnas: los ajustes pasan arriba, con altura acotada
+     para que la hoja siga siendo lo que más se ve. */
+  .cuerpo {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .ajustes {
+    border-right: none;
+    border-bottom: 1px solid var(--color-gray-200);
+    max-height: 38vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .descargar, .cerrar {
+    transition: none;
+  }
+  .fondo,
+  .panel {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  /* La salida sí se conserva como desvanecido simple: sin ella la ventana
+     se quedaría visible los 180 ms del temporizador y desaparecería de golpe. */
+  .fondoSaliendo,
+  .panelSaliendo {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+@keyframes visorFondo {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes visorPanel {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Salida ─────────────────────────────────────────────────────────────
+   Más rápida que la entrada (180 ms frente a 280): al abrir hay algo que
+   mirar, al cerrar la decisión ya está tomada y esperar molesta. Debe
+   coincidir con MS_SALIDA en el componente. */
+
+.fondoSaliendo {
+  animation: visorFondoSale 0.18s ease-in forwards;
+}
+
+.panelSaliendo {
+  animation: visorPanelSale 0.18s ease-in forwards;
+}
+
+@keyframes visorFondoSale {
+  to { opacity: 0; }
+}
+
+@keyframes visorPanelSale {
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.99);
+  }
+}

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import styles from './mis-citas.module.css'
+import { mensajeDeError } from '@/lib/utils/mensaje-error'
 
 export default function MisCitasPage() {
   const router = useRouter()
@@ -45,7 +46,7 @@ export default function MisCitasPage() {
         setError(data.mensaje || data.error || 'Error al buscar tu cita')
       }
     } catch (err) {
-      setError('Error de conexión. Por favor, intenta de nuevo.')
+      setError(mensajeDeError(err))
     } finally {
       setLoading(false)
     }

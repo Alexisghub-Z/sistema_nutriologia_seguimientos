@@ -8,6 +8,7 @@ import Alert from '@/components/ui/Alert'
 import Spinner from '@/components/ui/Spinner'
 import styles from '../calendario/calendario.module.css'
 import propio from './notificaciones.module.css'
+import { mensajeDeError } from '@/lib/utils/mensaje-error'
 
 interface ConfigNotif {
   notif_email_activa: boolean
@@ -63,8 +64,8 @@ export default function ConfiguracionNotificacionesPage() {
       } else {
         setError('Error al cargar configuración')
       }
-    } catch {
-      setError('Error de conexión')
+    } catch (err) {
+      setError(mensajeDeError(err))
     } finally {
       setLoading(false)
     }
@@ -102,8 +103,8 @@ export default function ConfiguracionNotificacionesPage() {
         const data = await res.json()
         setError(data.error || 'Error al guardar')
       }
-    } catch {
-      setError('Error de conexión')
+    } catch (err) {
+      setError(mensajeDeError(err))
     } finally {
       setSaving(false)
     }

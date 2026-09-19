@@ -1,0 +1,88 @@
+/* Ventana centrada, común a toda la aplicación. */
+
+.fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* El padding evita que la caja toque los bordes en pantallas pequeñas. */
+  padding: var(--spacing-lg);
+  background: rgba(15, 23, 30, 0.72);
+  backdrop-filter: blur(2px);
+  /* Si el contenido no cabe, se desplaza el fondo y no la caja: así la
+     ventana nunca queda recortada por arriba. */
+  overflow-y: auto;
+  animation: modalFondoEntra 0.2s ease-out both;
+}
+
+.caja {
+  width: 100%;
+  /* Nunca más alta que la pantalla: el contenido interno hace su scroll. */
+  max-height: calc(100vh - var(--spacing-lg) * 2);
+  overflow-y: auto;
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  /* Misma curva que el resto de ventanas de la sección. */
+  animation: modalCajaEntra 0.28s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.ancho_estrecho { max-width: 400px; }
+.ancho_medio { max-width: 620px; }
+.ancho_ancho { max-width: 940px; }
+
+/* Salida más rápida que la entrada: al cerrar la decisión ya está tomada. */
+.fondoSaliendo {
+  animation: modalFondoSale 0.18s ease-in forwards;
+}
+
+.cajaSaliendo {
+  animation: modalCajaSale 0.18s ease-in forwards;
+}
+
+@keyframes modalFondoEntra {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalCajaEntra {
+  from { opacity: 0; transform: translateY(10px) scale(0.99); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes modalFondoSale {
+  to { opacity: 0; }
+}
+
+@keyframes modalCajaSale {
+  to { opacity: 0; transform: translateY(6px) scale(0.99); }
+}
+
+@media (max-width: 520px) {
+  .fondo {
+    padding: var(--spacing-sm);
+    /* En móvil la ventana se pega abajo: es donde llega el pulgar. */
+    align-items: flex-end;
+  }
+  .caja {
+    max-height: calc(100vh - var(--spacing-sm) * 2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fondo,
+  .caja {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  /* La salida se conserva como desvanecido: sin ella la ventana se quedaría
+     visible los 180 ms del temporizador y desaparecería de golpe. */
+  .fondoSaliendo,
+  .cajaSaliendo {
+    animation: none;
+    opacity: 0;
+  }
+}

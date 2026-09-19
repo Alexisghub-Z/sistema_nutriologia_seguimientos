@@ -501,6 +501,43 @@ model ConfiguracionMensajePaciente {
 // PLANTILLAS DE WHATSAPP
 // ============================================
 
+/// Receta de trabajo del nutriólogo, para no rehacerla en cada paciente.
+///
+/// Guarda lo que NO depende de quién tiene delante: la fórmula, el reparto de
+/// macros y los equivalentes por grupo. El peso, la talla y la edad se capturan
+/// siempre, porque son de la persona y no de la receta.
+model PlantillaDieta {
+  id     String @id @default(cuid())
+  nombre String @unique // Ej: "Déficit 1500", "Volumen 2200"
+
+  // --- La receta ---
+  objetivo        ObjetivoDieta
+  nivel_actividad NivelActividad
+  formula         String         @default("MIFFLIN") // MIFFLIN | HARRIS | KATCH | CUNNINGHAM
+
+  pct_proteina     Float @default(25)
+  pct_grasa        Float @default(25)
+  pct_carbohidrato Float @default(50)
+
+  /// Ajuste manual de kcal sobre el gasto calculado (déficit o superávit).
+  ajuste_kcal_custom Int?
+
+  /// Equivalentes por grupo SMAE: { "VERDURAS": 3, "FRUTAS": 2.5, ... }
+  equivalentes         Json?
+  /// Tiempos de comida y su reparto: { tiempos: [...], reparto: { t1: {...} } }
+  distribucion_tiempos Json?
+
+  /// Las kcal del cuadro del que salió, solo para reconocerla en la lista.
+  kcal_referencia Float?
+
+  activa    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([activa])
+  @@map("plantillas_dieta")
+}
+
 model PlantillaWhatsApp {
   id         String             @id @default(cuid())
   nombre     String             @unique
@@ -648,10 +685,10 @@ model DietaGenerada {
   cuadro_id   String
   paciente_id String // desnormalizado: historial del paciente sin join
 
-  modo      ModoDieta
-  contenido Json // { tiempos: [...] } con los alimentos/opciones concretos
+  modo                ModoDieta
+  contenido           Json // { tiempos: [...] } con los alimentos/opciones concretos
   // Recomendaciones generales que encabezan el recetario (solo modo RECETARIO).
-  indicaciones_inicio String? @db.Text
+  indicaciones_inicio String?   @db.Text
 
   estado        EstadoDieta @default(BORRADOR)
   finalizada_at DateTime?
@@ -704,22 +741,22 @@ model PerfilEstiloDietas {
   id String @id @default(cuid())
 
   // Región / contexto geográfico (ej. "Oaxaca, México")
-  region String? @db.Text
+  region               String? @db.Text
   // Alimentos que suele usar (ej. "tlayudas, quintoniles, frijol negro, quesillo")
-  alimentos_tipicos String? @db.Text
+  alimentos_tipicos    String? @db.Text
   // Alimentos que evita o no recomienda (ej. "ultraprocesados, refrescos")
-  alimentos_evitar String? @db.Text
+  alimentos_evitar     String? @db.Text
   // Cómo estructura sus dietas (ej. "5 tiempos, porciones caseras en tazas/piezas")
-  estructura_notas String? @db.Text
+  estructura_notas     String? @db.Text
   // Reglas propias (ej. "siempre incluyo verdura en comida y cena")
-  reglas_propias String? @db.Text
+  reglas_propias       String? @db.Text
   // Tono de las indicaciones al paciente (ej. "cercano, explico el porqué")
-  tono String? @db.Text
+  tono                 String? @db.Text
   // Instrucciones libres adicionales para la IA
   instrucciones_libres String? @db.Text
   // Indicaciones de inicio: recomendaciones generales que el nutriólogo pone al
   // principio de cada dieta (evitar frituras, sustitutos de azúcar, agua, etc.).
-  indicaciones_inicio String? @db.Text
+  indicaciones_inicio  String? @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

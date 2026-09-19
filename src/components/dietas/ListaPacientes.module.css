@@ -1,0 +1,272 @@
+/* "Pendientes de dieta": un panel más del resumen, hermano de "Borradores". */
+
+.contenedor {
+  background-color: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.encabezado {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--dash-border);
+}
+
+.titulo {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dash-heading);
+}
+
+.conteo {
+  font-size: 12px;
+  color: var(--dash-muted, var(--color-gray-500));
+}
+
+/* --- Paginación --- */
+
+.paginacion {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.pagBoton {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--dash-muted, var(--color-gray-500));
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+
+.pagBoton:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.pagBoton:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.pagBoton:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.pagTexto {
+  font-size: 11px;
+  color: var(--dash-muted, var(--color-gray-500));
+  font-variant-numeric: tabular-nums; /* el ancho no baila al pasar de página */
+  min-width: 30px;
+  text-align: center;
+}
+
+/* --- Filas --- */
+
+.cuerpo {
+  padding: 8px 20px;
+}
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1 1 auto;
+}
+
+.lista > li + li {
+  border-top: 1px solid var(--dash-border);
+}
+
+.fila {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.55rem 20px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.fila:hover {
+  background: rgba(var(--color-primary-rgb), 0.04);
+}
+
+.fila:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.avatar {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+/* Cita en tres días o menos: el ámbar avisa sin gritar, porque sigue siendo
+   trabajo por hacer y no un error. */
+.avatarUrgente {
+  background: #f59e0b;
+}
+
+.datos {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.nombre {
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--dash-heading);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* El motivo es lo que justifica la recomendación: sin él, la lista sería
+   un orden arbitrario que el nutriólogo no puede juzgar. */
+.motivo {
+  font-size: 11px;
+  color: var(--dash-muted, var(--color-gray-500));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.motivoUrgente {
+  color: #b45309;
+  font-weight: 600;
+}
+
+.accion {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-primary);
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(var(--color-primary-rgb), 0.25);
+  background: rgba(var(--color-primary-rgb), 0.06);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+/* La acción aparece al apuntar la fila: en reposo el panel se lee limpio,
+   y al acercarse queda claro qué pasa si haces clic. */
+.fila:hover .accion,
+.fila:focus-visible .accion {
+  opacity: 1;
+}
+
+/* --- Vacío y carga --- */
+
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 20px;
+  text-align: center;
+}
+
+.vacioIcono {
+  color: #2d9f5d;
+  margin-bottom: 8px;
+}
+
+.vacioTexto {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dash-heading);
+}
+
+.vacioPista {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: var(--dash-muted, var(--color-gray-500));
+}
+
+.esqueleto {
+  height: 38px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    90deg,
+    var(--color-gray-100) 25%,
+    var(--color-gray-50) 50%,
+    var(--color-gray-100) 75%
+  );
+  background-size: 200% 100%;
+  animation: brillo 1.4s ease-in-out infinite;
+  margin-bottom: 6px;
+}
+
+@keyframes brillo {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fila, .accion, .pagBoton { transition: none; }
+  .esqueleto { animation: none; }
+  /* Sin animación, la acción se muestra siempre: ocultarla dependía del hover. */
+  .accion { opacity: 1; }
+}
+
+/* ── Entrada de las filas ───────────────────────────────────────────────
+   Las recomendaciones aparecían de golpe al terminar la carga. Entran
+   escalonadas, en el mismo orden de prioridad en que se leen. */
+
+.fila {
+  opacity: 0;
+  animation: filaEntra 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes filaEntra {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fila {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

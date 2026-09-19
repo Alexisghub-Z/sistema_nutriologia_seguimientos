@@ -1,0 +1,264 @@
+/* Plantillas de dieta: las recetas que se repiten entre pacientes.
+   Tienen color propio —teal— porque el verde de marca ya viste los botones,
+   el último paso del recorrido y buena parte de la pantalla: con él, este
+   bloque se leía como una sección más del formulario en lugar de como un
+   atajo. El teal es el único tono libre; azul, morado y ámbar están tomados
+   por los pasos, y el rojo por el botón de quitar de la propia tarjeta.
+
+   El color va en el título y en las tarjetas, NO en un filo lateral: junto al
+   del paso activo formaban dos líneas de colores distintos en ángulo recto,
+   marcando cosas distintas en la misma esquina. Ninguna se leía como
+   intencionada. */
+
+.contenedor {
+  /* El color vive aquí para que lo hereden todos los descendientes. */
+  --plantilla: #0d9488;
+  --plantilla-fuerte: #0f766e;
+  --plantilla-rgb: 13, 148, 136;
+
+  margin-bottom: var(--spacing-lg);
+  opacity: 0;
+  animation: plantillasEntra 0.34s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.cabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  margin-bottom: 0.55rem;
+}
+
+.titulo {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--plantilla-fuerte);
+}
+
+.cuenta {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 0.5rem;
+}
+
+.item {
+  position: relative;
+  opacity: 0;
+  animation: itemEntra 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+/* Al quitarla se encoge en su sitio, así la rejilla no da un salto. */
+.itemSaliendo {
+  animation: itemSale 0.2s ease-in forwards;
+  pointer-events: none;
+}
+
+.tarjeta {
+  position: relative;
+  overflow: hidden;
+  /* En fila: el nombre manda a la izquierda y el dato de referencia se
+     alinea a la derecha. Apilados, cinco datos en una tarjeta pequeña se
+     leían como un bloque de texto. */
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  text-align: left;
+  background: white;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
+}
+
+.tarjeta:hover:not(:disabled) {
+  border-color: var(--plantilla);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+/* Al pulsar cede un poco: confirma el clic antes de que llegue el resultado. */
+.tarjeta:active:not(:disabled) {
+  transform: translateY(0) scale(0.995);
+}
+
+.tarjeta:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--plantilla-rgb), 0.35);
+  border-color: var(--plantilla);
+}
+
+.tarjeta:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.nombre {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--color-gray-900);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Las kcal son el dato con el que se distingue una plantilla de otra: van
+   a la derecha, alineadas entre filas para poder compararlas de un vistazo. */
+.receta {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-gray-700);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.objetivo {
+  font-size: var(--font-size-2xs);
+  font-weight: 400;
+  color: var(--color-gray-500);
+}
+
+/* Solo queda el distintivo de equivalentes, que SÍ cambia la decisión:
+   indica cuánto trabajo ahorra la plantilla. Los macros P/G/C se quitaron
+   porque nadie elige una plantilla mirando su reparto: la elige por nombre. */
+.macros {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+.conEquiv {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-2xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  background: rgba(var(--plantilla-rgb), 0.12);
+  color: var(--plantilla-fuerte);
+}
+
+
+/* Confirmación al aplicar: cubre la tarjeta y se va sola. */
+.confirmacion {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background: rgba(var(--plantilla-rgb), 0.95);
+  color: white;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tarjetaAplicada .confirmacion {
+  animation: confirmaAplicada 1.6s ease-out both;
+}
+
+.borrar {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-gray-300);
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.14s ease, color 0.14s ease, background 0.14s ease;
+}
+
+/* Aparece al acercarse a su tarjeta: en reposo la rejilla se lee limpia, y
+   quitar una plantilla no es algo que se haga a diario. */
+.item:hover .borrar,
+.borrar:focus-visible {
+  opacity: 1;
+}
+
+.borrar:hover {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.borrar:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+@keyframes plantillasEntra {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes itemEntra {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes itemSale {
+  to { opacity: 0; transform: scale(0.94); }
+}
+
+@keyframes confirmaAplicada {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Sin animación seguirían en opacity: 0 y no se verían nunca. */
+  .contenedor,
+  .item {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .itemSaliendo {
+    animation: none;
+    opacity: 0;
+  }
+  .tarjeta,
+  .borrar {
+    transition: none;
+  }
+  .tarjeta:hover:not(:disabled),
+  .tarjeta:active:not(:disabled) {
+    transform: none;
+  }
+  .tarjetaAplicada .confirmacion {
+    animation: none;
+    opacity: 1;
+  }
+}

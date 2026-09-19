@@ -5,16 +5,6 @@
 }
 
 /* Modal de confirmación de guardado */
-.modalOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: var(--spacing-lg);
-}
 
 .modal {
   background: white;
@@ -642,6 +632,7 @@
   font-size: var(--font-size-lg);
   line-height: 1;
   cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
 }
 
 .cuadroMenuBtn:hover {
@@ -693,6 +684,7 @@
 
 .menuPeligro {
   color: #dc2626 !important;
+  transition: background 0.14s ease, color 0.14s ease;
 }
 
 .menuPeligro:hover:not(:disabled) {
@@ -814,38 +806,248 @@
 }
 
 /* Pestañas */
-.tabs {
+/* ── El recorrido de la dieta ───────────────────────────────────────────
+   Cuatro pasos sobre un riel continuo. Cada uno enseña lo que produjo —kcal,
+   equivalentes, tiempos, alimentos—, así que la barra resume el trabajo en
+   lugar de ser solo una botonera. El color identifica el paso; el verde de la
+   marca queda para el último, que es donde acaba el proceso. */
+
+.recorrido {
+  position: relative;
   display: flex;
-  gap: 4px;
-  border-bottom: 2px solid var(--color-gray-200);
-  margin-bottom: var(--spacing-lg);
+  align-items: flex-start;
+  gap: 0;
+  margin-bottom: var(--spacing-xl);
+  padding: 0.25rem 0 0;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-.tab {
-  padding: 0.65rem 1.25rem;
+.recorrido::-webkit-scrollbar {
+  display: none;
+}
+
+/* El riel pasa por detrás de los nodos, de centro a centro. Los porcentajes
+   laterales dejan fuera la mitad del primer y del último nodo, que es donde
+   la línea no debe llegar. */
+.riel {
+  position: absolute;
+  top: calc(0.25rem + 17px);
+  left: 12.5%;
+  right: 12.5%;
+  height: 2px;
+  background: var(--color-gray-200);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.rielAvance {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #f59e0b, var(--color-primary));
+  background-size: 400% 100%;
+  border-radius: inherit;
+  transition: width 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.paso {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 0;
+  min-width: 128px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.4rem;
   border: none;
   background: none;
-  font-size: var(--font-size-base);
-  font-weight: 600;
-  color: var(--color-gray-500);
   cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.tab:hover:not(:disabled) {
-  color: var(--color-gray-800);
-}
-
-.tab:disabled {
-  opacity: 0.4;
+.paso:disabled {
   cursor: not-allowed;
 }
 
-.tabActivo {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
+/* --- Tonos --- */
+
+.tono_azul {
+  --tono: #3b82f6;
+  --tono-fuerte: #1d4ed8;
+  --tono-rgb: 59, 130, 246;
 }
+
+.tono_morado {
+  --tono: #8b5cf6;
+  --tono-fuerte: #6d28d9;
+  --tono-rgb: 139, 92, 246;
+}
+
+.tono_ambar {
+  --tono: #f59e0b;
+  --tono-fuerte: #b45309;
+  --tono-rgb: 245, 158, 11;
+}
+
+.tono_verde {
+  --tono: var(--color-primary);
+  --tono-fuerte: var(--color-primary-dark);
+  --tono-rgb: var(--color-primary-rgb);
+}
+
+/* --- Nodo --- */
+
+.nodo {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid var(--color-gray-200);
+  color: var(--color-gray-400);
+  font-weight: 700;
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.34s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.nodoNumero {
+  font-size: 13px;
+  line-height: 1;
+}
+
+/* --- Texto --- */
+
+.pasoTexto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  width: 100%;
+}
+
+.pasoNombre {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-gray-500);
+  transition: color 0.3s ease;
+  letter-spacing: -0.01em;
+}
+
+/* El dato producido por el paso. En reposo es tenue; cuando existe de verdad
+   se marca, porque entonces dice más que cualquier descripción. */
+.pasoDato {
+  font-size: var(--font-size-2xs);
+  color: var(--color-gray-400);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.3s ease;
+}
+
+.pasoDatoLleno {
+  color: var(--color-gray-600);
+  font-weight: 600;
+}
+
+/* --- Resuelto --- */
+
+.pasoHecho .nodo {
+  background: var(--tono);
+  border-color: var(--tono);
+  color: white;
+}
+
+.pasoHecho .pasoNombre {
+  color: var(--color-gray-700);
+}
+
+.pasoHecho .pasoDatoLleno {
+  color: var(--tono-fuerte);
+}
+
+/* --- En curso --- */
+
+.pasoActual .nodo {
+  background: var(--tono);
+  border-color: var(--tono);
+  color: white;
+  transform: scale(1.14);
+  box-shadow:
+    0 0 0 5px rgba(var(--tono-rgb), 0.15),
+    0 4px 10px -2px rgba(var(--tono-rgb), 0.45);
+}
+
+.pasoActual .pasoNombre {
+  color: var(--tono-fuerte);
+  font-weight: 700;
+}
+
+.pasoActual .pasoDato,
+.pasoActual .pasoDatoLleno {
+  color: var(--tono);
+}
+
+/* --- Bloqueado --- */
+
+.pasoBloqueado {
+  opacity: 0.4;
+}
+
+.pasoBloqueado .nodo {
+  border-style: dashed;
+}
+
+/* --- Interacción --- */
+
+.paso:not(:disabled):hover .nodo {
+  border-color: var(--tono);
+  transform: scale(1.07);
+}
+
+.paso:not(:disabled):hover .pasoNombre {
+  color: var(--tono-fuerte);
+}
+
+.paso:focus-visible {
+  outline: none;
+  border-radius: var(--radius-md);
+  box-shadow: var(--ring-focus);
+}
+
+@media (max-width: 620px) {
+  .paso {
+    min-width: 92px;
+  }
+  .pasoDato {
+    display: none;
+  }
+  .riel {
+    top: calc(0.25rem + 17px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nodo,
+  .pasoNombre,
+  .pasoDato,
+  .rielAvance {
+    transition: none;
+  }
+  .pasoActual .nodo,
+  .paso:not(:disabled):hover .nodo {
+    transform: none;
+  }
+}
+
 
 /* Pestaña 2: distribución en tiempos */
 .tiemposHeader {
@@ -1283,6 +1485,7 @@
   cursor: pointer;
   font-size: var(--font-size-md);
   line-height: 1;
+  transition: background 0.14s ease;
 }
 
 .recalcularBtn:hover {
@@ -1459,19 +1662,73 @@
 
 .tablaSmae th,
 .tablaSmae td {
-  padding: 0.4rem 0.6rem;
+  padding: 0.45rem 0.7rem;
   text-align: right;
   border-bottom: 1px solid var(--color-gray-100);
   white-space: nowrap;
 }
 
+/* La cabecera se queda fija al desplazar: con 17 grupos, a media tabla ya no
+   se sabe qué columna se está leyendo. */
 .tablaSmae thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: white;
   color: var(--color-gray-500);
   font-size: var(--font-size-2xs);
   text-transform: uppercase;
   letter-spacing: 0.03em;
   font-weight: 600;
   border-bottom: 2px solid var(--color-gray-200);
+}
+
+/* Seguir una fila de ocho columnas sin ayuda visual es fácil de perder. */
+.tablaSmae tbody tr:hover td {
+  background: rgba(var(--color-primary-rgb), 0.035);
+}
+
+.tablaSmae tbody tr:hover .tdGrupo {
+  color: var(--color-primary-dark);
+}
+
+/* Los grupos en cero se atenúan: de 17, una dieta normal usa seis o siete, y
+   los vacíos sepultaban a los que sí importan. Siguen ahí —hay que poder
+   añadirlos— pero dejan de competir por la atención. */
+/* Un gris más claro no bastaba para separarlos de un vistazo: se baja también
+   la opacidad de toda la fila, control deslizante incluido. */
+.filaSinUso {
+  opacity: 0.5;
+  transition: opacity 0.14s ease;
+}
+
+.filaSinUso:hover {
+  opacity: 1;
+}
+
+.filaSinUso .tdGrupo,
+.filaSinUso .tdNum,
+.filaSinUso .tdPct {
+  color: var(--color-gray-500);
+  font-weight: 400;
+}
+
+.filaSinUso:hover .tdGrupo,
+.filaSinUso:hover .tdNum,
+.filaSinUso:hover .tdPct {
+  color: var(--color-gray-600);
+}
+
+/* El pie lleva los totales: es lo que se consulta al cuadrar, así que se
+   separa del cuerpo en vez de ser una fila más. */
+.tablaSmae tfoot td {
+  border-top: 2px solid var(--color-gray-200);
+  border-bottom: none;
+  font-weight: 700;
+  color: var(--color-gray-800);
+  background: var(--color-gray-50);
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
 }
 
 .thGrupo,
@@ -1974,9 +2231,31 @@
 /* Un tiempo de comida se lee como una sección de documento: sin caja, separado
    por aire y una regla fina. Así la jerarquía la marca la tipografía, no bordes
    que compiten entre sí. */
+/* Cada tiempo de comida es una pieza, no un párrafo separado por una línea.
+   Con cinco tiempos y sus alimentos, la lista plana obligaba a rastrear dónde
+   acababa uno y empezaba el siguiente. */
 .iaTiempo {
-  padding: 0 0 var(--spacing-md);
-  border-bottom: 1px solid var(--color-gray-100);
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  background: white;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+/* Al apuntar un tiempo se despega del resto: ayuda a no perder el sitio
+   mientras se revisan los alimentos uno por uno. */
+.iaTiempo:hover {
+  border-color: var(--color-gray-300);
+  box-shadow: var(--shadow-sm);
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .iaTiempo {
+    transition: none;
+  }
 }
 
 .iaTiempo:last-child {
@@ -1987,13 +2266,18 @@
 /* ============================================================
    Cabecera de un tiempo de comida (icono · nombre · cuadre · aporte)
    ============================================================ */
+/* La cabecera del tiempo es una banda, no una línea: con cinco tiempos
+   seguidos, un borde inferior de 2 px no marcaba dónde empezaba cada uno.
+   Los márgenes negativos la llevan hasta los bordes de la tarjeta. */
 .tiempoCabecera {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding-bottom: 0.5rem;
-  margin-bottom: 0.6rem;
-  border-bottom: 2px solid var(--color-gray-100);
+  gap: 0.55rem;
+  margin: calc(var(--spacing-md) * -1) calc(var(--spacing-md) * -1) 0.75rem;
+  padding: 0.6rem var(--spacing-md);
+  background: var(--color-gray-50);
+  border-bottom: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .tiempoIcono {
@@ -2012,11 +2296,13 @@
   flex: 1;
   min-width: 0;
   margin: 0;
-  font-size: var(--font-size-sm);
+  /* Un escalón por encima de los alimentos: antes ambos usaban el mismo
+     tamaño y el nombre del tiempo no destacaba. */
+  font-size: var(--font-size-base);
   font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--color-gray-800);
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: var(--color-gray-900);
 }
 
 /* Aporte del tiempo: kcal grande y macros discretos. */
@@ -2065,19 +2351,35 @@
   color: #b45309;
 }
 
+/* Cada alimento es una fila con su franja de familia. La franja pasa de 3 a
+   4 px y gana un fondo del mismo color al 4 %: a 3 px sobre blanco el color
+   de familia era casi invisible, que era justo lo que debía identificar. */
 .iaAlimento {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  margin-bottom: 0.4rem;
-  padding: 2px 4px 2px 10px;
-  margin-left: -4px;
-  border-radius: var(--radius-sm);
-  /* Franja del color de su familia de alimento (la fija el componente). */
-  border-left: 3px solid var(--color-familia, var(--color-gray-300));
+  margin-bottom: 0.3rem;
+  padding: 0.3rem 0.5rem 0.3rem 0.65rem;
+  margin-left: 0;
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--color-familia, var(--color-gray-300));
+  background: color-mix(in srgb, var(--color-familia, transparent) 4%, transparent);
   transition:
     background-color 0.15s ease,
-    border-color 0.15s ease;
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+/* Al apuntar una fila, el color de su familia sube: identifica el grupo sin
+   tener que leer la etiqueta. */
+.iaAlimento:hover {
+  background: color-mix(in srgb, var(--color-familia, transparent) 10%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iaAlimento {
+    transition: none;
+  }
 }
 
 .iaAlimento:hover {
@@ -2110,6 +2412,7 @@
 .alimentoFijado {
   background-color: rgba(45, 159, 93, 0.07);
   box-shadow: inset 0 0 0 1px rgba(45, 159, 93, 0.2);
+  transition: background-color 0.16s ease;
 }
 
 .alimentoFijado:hover {
@@ -2224,6 +2527,7 @@
 .accionBtnActiva {
   background-color: rgba(45, 159, 93, 0.14);
   color: var(--color-primary);
+  transition: background-color 0.14s ease, color 0.14s ease;
 }
 
 .accionBtnActiva:hover:not(:disabled) {
@@ -2807,6 +3111,7 @@
   color: var(--color-gray-500);
   font-size: var(--font-size-xs);
   cursor: pointer;
+  transition: color 0.14s ease;
 }
 
 .agregarCancelar:hover {
@@ -3018,6 +3323,7 @@
   color: var(--color-gray-400);
   cursor: help;
   font-size: var(--font-size-base);
+  transition: color 0.14s ease;
 }
 
 .iaCalculo:hover {
@@ -3503,22 +3809,6 @@
     padding: var(--spacing-md) var(--spacing-sm);
   }
 
-  /* Pestañas: mismo patrón que la ficha del paciente. Reparten el ancho a
-     partes iguales en lugar de desbordar. */
-  .tabs {
-    gap: 0;
-  }
-
-  .tab {
-    flex: 1;
-    padding: var(--spacing-sm) var(--spacing-xs);
-    font-size: var(--font-size-sm);
-    text-align: center;
-    /* Las etiquetas son largas ("Cuadro dietosintético"): que partan en dos
-       líneas antes que desbordar. */
-    white-space: normal;
-    line-height: 1.25;
-  }
 
   /* Formularios a una columna: a dos, cada campo se queda en ~150px. */
   .formRow,
@@ -3632,5 +3922,219 @@
   .chatMensajes {
     max-height: 45vh;
     min-height: 120px;
+  }
+}
+
+/* ── Entrada del contenido al cambiar de paso ──────────────────────────
+   El contenido llega desde el lado hacia el que se navegó: avanzar lo trae
+   desde la derecha, retroceder desde la izquierda. Es un desplazamiento
+   corto —12 px— porque el gesto tiene que leerse como continuidad, no como
+   una transición que hay que esperar. */
+
+.pasoContenido {
+  animation: entraDerecha 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+
+.entraDerecha {
+  animation-name: entraDerecha;
+}
+
+.entraIzquierda {
+  animation-name: entraIzquierda;
+}
+
+@keyframes entraDerecha {
+  from {
+    opacity: 0;
+    transform: translate3d(12px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes entraIzquierda {
+  from {
+    opacity: 0;
+    transform: translate3d(-12px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pasoContenido {
+    animation: none;
+  }
+}
+
+/* ── Comparar dos dietas ────────────────────────────────────────────────
+   La casilla vive en la cabecera de cada tarjeta del historial. Solo la
+   llevan los cuadros CON dieta: sin ella no hay nada que cruzar, y los que
+   no la tienen reservan el hueco para que las fechas sigan alineadas. */
+
+.compararCasilla {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  cursor: pointer;
+  /* Área de toque mayor que la casilla, sin desplazar el resto de la fila. */
+  margin: -6px 0 -6px -4px;
+  padding: 6px 4px;
+}
+
+.compararCasilla input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+  margin: 0;
+}
+
+.compararCasilla input:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+  border-radius: var(--radius-sm);
+}
+
+/* Mantiene la fecha a la misma altura en las tarjetas sin dieta. */
+.compararHueco {
+  flex: 0 0 auto;
+  width: 14px;
+}
+
+.cuadroCardMarcado {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+/* La barra solo aparece cuando hay algo marcado, así que no ocupa sitio
+   mientras no se usa. */
+.barraComparar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+  margin-top: var(--spacing-md);
+  padding: 0.6rem 0.85rem;
+  background: rgba(var(--color-primary-rgb), 0.05);
+  border: 1px solid rgba(var(--color-primary-rgb), 0.25);
+  border-radius: var(--radius-md);
+}
+
+.barraCompararTexto {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-700);
+}
+
+.barraCompararAcciones {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.barraCompararLimpiar {
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--color-gray-600);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+
+.barraCompararLimpiar:hover {
+  border-color: var(--color-gray-400);
+  color: var(--color-gray-800);
+}
+
+.barraCompararLimpiar:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barraCompararLimpiar {
+    transition: none;
+  }
+}
+
+/* ── Modal para nombrar una plantilla ───────────────────────────────────
+   Ventana pequeña: pide un dato y se va. Mismas curvas que el resto de la
+   sección para que se abra igual que el comparador y el visor. */
+
+
+
+
+
+.modalInput {
+  width: 100%;
+  margin-top: var(--spacing-sm);
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--font-size-md);
+  color: var(--color-gray-900);
+  transition: border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.modalInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--ring-focus);
+}
+
+.modalError {
+  margin: 0.5rem 0 0;
+  font-size: var(--font-size-xs);
+  color: #b91c1c;
+  animation: modalErrorEntra 0.22s ease-out both;
+}
+
+
+
+
+@keyframes modalErrorEntra {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modalError {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .modalInput {
+    transition: none;
+  }
+}
+
+/* Interior de las ventanas de la sección.
+   `ModalCentrado` aporta la caja, el centrado y el scroll; el relleno va aquí
+   para que cada pantalla ajuste el suyo sin tocar el componente común. */
+.modalCuerpo {
+  padding: 1.15rem;
+}
+
+/* Las transiciones de hover añadidas a los controles pequeños. Se apagan para
+   quien pidió menos movimiento: el cambio de color sigue ocurriendo, pero sin
+   recorrido. */
+@media (prefers-reduced-motion: reduce) {
+  .agregarCancelar,
+  .alimentoFijado,
+  .cuadroMenuBtn,
+  .iaCalculo,
+  .recalcularBtn,
+  .accionBtnActiva,
+  .menuPeligro {
+    transition: none;
   }
 }
