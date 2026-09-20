@@ -1,9 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { useSidebar } from '@/contexts/SidebarContext'
+import { useSalidaSegura } from '@/contexts/SalidaSeguraContext'
 import styles from './Sidebar.module.css'
 
 const menuItems = [
@@ -81,8 +82,43 @@ const menuItems = [
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const { isOpen, closeSidebar, isCollapsed, toggleCollapsed } = useSidebar()
+  const { puedeSalir, hayQueVigilar } = useSalidaSegura()
   const [mensajesNoLeidos, setMensajesNoLeidos] = useState(0)
+
+  /**
+   * Antes de irse, se le pregunta a la pantalla actual si tiene trabajo sin
+   * guardar. Si dice que no se puede salir, la navegación se cancela.
+   *
+   * Se conserva el `<Link>` en lugar de cambiarlo por un botón: así siguen
+   * funcionando el clic derecho, "abrir en pestaña nueva" y el prefetch de
+   * Next. Por eso mismo se respetan los clics con modificador (Ctrl, Cmd,
+   * Shift) y los del botón central: esos abren otra pestaña y no se llevan
+   * nada de la actual, así que no hay nada que proteger.
+   */
+  const alNavegar = async (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) {
+      closeSidebar()
+      return
+    }
+
+    // Sin nada que guardar no se toca el clic: se deja al <Link> hacer su
+    // navegación optimizada. Interceptar siempre costaba unos 8 segundos por
+    // cambio de pantalla, frente a los ~300 ms de un Link normal.
+    if (!hayQueVigilar()) {
+      closeSidebar()
+      return
+    }
+
+    e.preventDefault()
+    if (await puedeSalir()) {
+      closeSidebar()
+      router.push(href)
+    }
+    // Si no se puede salir, no se hace nada: la pantalla ya habrá explicado
+    // por qué (un modal, un aviso) y el menú se queda donde está.
+  }
 
   // Obtener contador de mensajes no leídos
   const fetchMensajesNoLeidos = async () => {
@@ -144,7 +180,7 @@ export default function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className={`${styles.navItem} ${isActive ? styles.active : ''}`}
-                onClick={closeSidebar}
+                onClick={(e) => alNavegar(e, item.href)}
                 // Con el menú reducido el nombre no se ve: el tooltip lo suple.
                 title={isCollapsed ? item.name : undefined}
               >

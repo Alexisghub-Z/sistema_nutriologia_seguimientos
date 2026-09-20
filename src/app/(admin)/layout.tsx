@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header'
 import PageTransition from '@/components/layout/PageTransition'
 import AvisoSinConexion from '@/components/ui/AvisoSinConexion'
 import { SidebarProvider, useSidebar } from '@/contexts/SidebarContext'
+import { SalidaSeguraProvider } from '@/contexts/SalidaSeguraContext'
 import styles from './admin-layout.module.css'
 
 /**
@@ -36,7 +37,11 @@ function AdminShell({ children }: { children: React.ReactNode }) {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
-      <AdminShell>{children}</AdminShell>
+      {/* Envuelve al menú: así puede preguntar a la pantalla actual si hay
+          trabajo sin guardar antes de navegar. */}
+      <SalidaSeguraProvider>
+        <AdminShell>{children}</AdminShell>
+      </SalidaSeguraProvider>
     </SidebarProvider>
   )
 }

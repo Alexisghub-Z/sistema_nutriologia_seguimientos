@@ -9,6 +9,7 @@ import dynamic from 'next/dynamic'
 import PanelAlternativas from '@/components/dietas/PanelAlternativas'
 import { useToast } from '@/components/ui/Toast'
 import { buscarAlergenos } from '@/lib/dietas/alergenos'
+import { useSalidaSegura } from '@/contexts/SalidaSeguraContext'
 import {
   perfilEstaVacio,
   type PerfilParaAviso,
@@ -423,6 +424,9 @@ export default function DietasPage() {
   const [confirmando, setConfirmando] = useState(false)
   const [noVolverAvisar, setNoVolverAvisar] = useState(false)
 
+  // Para que el menú lateral pregunte antes de llevarse al nutriólogo de aquí.
+  const { registrarGuardian } = useSalidaSegura()
+
   // Perfil de estilo del nutriólogo, solo para avisar si está sin configurar.
   // `null` significa "no se pudo leer" y NO dispara el aviso; el envoltorio
   // con `cargado` distingue ese caso de un perfil leído y vacío.
@@ -503,6 +507,10 @@ export default function DietasPage() {
   const autoguardadoPendiente = useRef(false)
   // Tras un 409 (el cuadro ya tiene versión definitiva) dejamos de insistir.
   const autoguardadoBloqueado = useRef(false)
+  // Espejo de `estadoAutoguardado === 'error'` en un ref, para poder leerlo
+  // JUSTO DESPUÉS de un `await autoguardar()`: el estado de React todavía
+  // tendría el valor anterior y el guardián al salir creería que todo fue bien.
+  const autoguardadoFallido = useRef(false)
   // Huella de lo último persistido, para no repetir un POST idéntico.
   const firmaGuardada = useRef<string | null>(null)
   // Ya avisamos de que el guardado falla: no repetirlo en cada reintento.
@@ -2100,6 +2108,48 @@ export default function DietasPage() {
       window.removeEventListener('beforeunload', alCerrar)
     }
   }, [guardarPendienteYa, hayCambiosSinGuardar])
+
+  // El ref sigue al estado desde un único sitio. Hacerlo en cada uno de los
+  // diez `setEstadoAutoguardado` repartidos por el archivo sería olvidarse de
+  // alguno tarde o temprano.
+  useEffect(() => {
+    autoguardadoFallido.current = estadoAutoguardado === 'error'
+  }, [estadoAutoguardado])
+
+  /**
+   * Salir por el menú lateral sin perder los últimos retoques.
+   *
+   * `beforeunload` solo salta al cerrar o recargar la pestaña. El menú usa
+   * `<Link>` de Next, que navega sin recargar, así que quien pulsaba
+   * "Pacientes" en mitad de una dieta se iba sin aviso y perdía lo que el
+   * autoguardado tuviera aún en cola.
+   *
+   * En lugar de preguntar a bocajarro, primero se INTENTA guardar: si sale
+   * bien, se le deja ir sin molestarle, que es lo que espera. Solo se
+   * pregunta cuando el guardado falla de verdad.
+   */
+  useEffect(() => {
+    return registrarGuardian(async () => {
+      if (!hayCambiosSinGuardar()) return true
+
+      cancelarAutoguardado()
+      try {
+        await autoguardar()
+      } catch {
+        // Se ignora: lo que decide es el estado posterior, no esta excepción.
+      }
+
+      // Se relee del ref y no del estado de React: `estadoAutoguardado` viene
+      // capturado de cuando se registró el guardián y no refleja el guardado
+      // que se acaba de hacer.
+      if (!autoguardadoFallido.current) return true
+
+      return window.confirm(
+        'No se pudieron guardar los últimos cambios de la dieta.\n\n' +
+          '¿Salir de todas formas? Se perderá lo último que escribiste.'
+      )
+    }, hayCambiosSinGuardar)
+  }, [registrarGuardian, hayCambiosSinGuardar, cancelarAutoguardado, autoguardar])
 
   /**
    * Al cambiar de paso, lo pendiente se guarda sin esperar el temporizador.
