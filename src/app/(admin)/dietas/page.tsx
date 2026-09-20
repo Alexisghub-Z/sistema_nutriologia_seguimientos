@@ -10,6 +10,10 @@ import PanelAlternativas from '@/components/dietas/PanelAlternativas'
 import { useToast } from '@/components/ui/Toast'
 import { buscarAlergenos } from '@/lib/dietas/alergenos'
 import {
+  perfilEstaVacio,
+  type PerfilParaAviso,
+} from '@/lib/dietas/perfil-vacio'
+import {
   firmaContenido,
   hayTrabajoEnElAire,
   formaDeTiempos,
@@ -418,6 +422,14 @@ export default function DietasPage() {
   // Modal de confirmación antes de guardar.
   const [confirmando, setConfirmando] = useState(false)
   const [noVolverAvisar, setNoVolverAvisar] = useState(false)
+
+  // Perfil de estilo del nutriólogo, solo para avisar si está sin configurar.
+  // `null` significa "no se pudo leer" y NO dispara el aviso; el envoltorio
+  // con `cargado` distingue ese caso de un perfil leído y vacío.
+  const [perfilEstilo, setPerfilEstilo] = useState<{
+    cargado: true
+    datos: PerfilParaAviso
+  } | null>(null)
 
   // Generación con IA (pestaña 3).
   const [dietaIA, setDietaIA] = useState<TiempoGeneradoUI[] | null>(null)
@@ -1105,6 +1117,19 @@ export default function DietasPage() {
     if (localStorage.getItem('dietas.historialColapsado') === '1') {
       setHistorialColapsado(true)
     }
+  }, [])
+
+  // El perfil de estilo alimenta el prompt de la IA. Se carga aquí solo para
+  // saber si está vacío y poder avisar antes de generar: sin él, la IA cae en
+  // un modo genérico que no se nota en el resultado.
+  useEffect(() => {
+    fetch('/api/dietas/perfil-estilo')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setPerfilEstilo(data ? { cargado: true, datos: data } : null))
+      // Si falla, se queda en null y NO se avisa. Importa la distinción entre
+      // "no lo he podido leer" y "está vacío": tratar el error como perfil
+      // vacío soltaría una advertencia falsa a quien sí lo tiene relleno.
+      .catch(() => setPerfilEstilo(null))
   }, [])
 
   /** Pliega o despliega el historial, recordando la preferencia. */
@@ -4032,6 +4057,36 @@ export default function DietasPage() {
       {/* PESTAÑA 4: Generar con IA */}
       {paciente && pestana === 'ia' && resultado && (
         <div className={styles.iaWrap}>
+          {/* Si el perfil de estilo está sin tocar, la IA genera en modo
+              genérico —alimentos básicos, sin cocina nacional— y eso no se nota
+              en el resultado. Se avisa ANTES de generar, que es cuando todavía
+              se puede arreglar. No bloquea: quien tenga prisa genera igual. */}
+          {perfilEstilo?.cargado && perfilEstaVacio(perfilEstilo.datos) && (
+            <div className={styles.avisoSinEstilo} role="status">
+              <span className={styles.avisoSinEstiloIcono} aria-hidden>
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01" />
+                  <circle cx="12" cy="12" r="9" />
+                </svg>
+              </span>
+              <div className={styles.avisoSinEstiloTexto}>
+                <strong>La IA no conoce tu estilo todavía.</strong> Sin tu perfil configurado
+                propondrá alimentos básicos y genéricos, sin la cocina de tu región ni tus reglas.
+                Rellenarlo una vez mejora todas las dietas que generes a partir de ahora.
+              </div>
+              <a href="/configuracion/estilo-dietas" className={styles.avisoSinEstiloBtn}>
+                Configurar mi estilo
+              </a>
+            </div>
+          )}
+
           <div className={styles.iaGrid}>
             {/* Columna izquierda: dieta generada (editable) */}
             <div className={styles.card}>
