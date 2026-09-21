@@ -20,6 +20,11 @@ import {
   olvidarBorrador,
 } from '@/lib/dietas/borrador-local'
 import {
+  guardarSesion,
+  leerSesion,
+  olvidarSesion,
+} from '@/lib/dietas/sesion-dietas'
+import {
   firmaContenido,
   hayTrabajoEnElAire,
   formaDeTiempos,
@@ -515,6 +520,10 @@ export default function DietasPage() {
   // Se recuperó un paso 1 a medias del navegador: se avisa para que el
   // nutriólogo sepa por qué el formulario no está como lo dejó el prellenado.
   const [borradorRecuperado, setBorradorRecuperado] = useState(false)
+  // Paso al que hay que volver al restaurar la sesión. Espera aquí hasta que
+  // el cuadro esté cargado: antes de eso los pasos 2-4 están bloqueados y
+  // saltar a ellos dejaría al nutriólogo en una pantalla vacía.
+  const sesionPendiente = useRef<PasoId | null>(null)
   // Huella del último cuadro persistido, para no repetir un POST idéntico.
   const firmaCuadroGuardado = useRef<string | null>(null)
   // Estado del autoguardado del CUADRO, aparte del de la dieta: un fallo al
@@ -1633,6 +1642,9 @@ export default function DietasPage() {
     // Sin retardo: nos vamos ya. La ref del contexto todavía apunta a este
     // paciente, así que el guardado va al sitio correcto.
     void autoguardar()
+    // Volver al buscador es querer empezar otra cosa: devolverlo luego a este
+    // mismo paciente seria pelearse con el.
+    olvidarSesion()
     setPaciente(null)
     setResultado(null)
     setEquivalentes({})
@@ -2155,6 +2167,91 @@ export default function DietasPage() {
   useEffect(() => {
     autoguardadoFallido.current = estadoAutoguardado === 'error'
   }, [estadoAutoguardado])
+
+  /**
+   * Dónde se está, para poder volver aquí.
+   *
+   * El trabajo ya se guardaba, pero la pantalla arrancaba en blanco: había que
+   * buscar otra vez al paciente y recorrer los pasos hasta el punto donde uno
+   * estaba. Esto recuerda solo el SITIO —paciente, paso, cuadro—, no contenido
+   * clínico: de eso se encargan la base de datos y el borrador local.
+   */
+  useEffect(() => {
+    if (!paciente) return
+    guardarSesion({
+      pacienteId: paciente.id,
+      pacienteNombre: paciente.nombre,
+      pacienteEmail: paciente.email,
+      paso: pestana,
+      cuadroId,
+      consultaId,
+    })
+  }, [paciente, pestana, cuadroId, consultaId])
+
+  /**
+   * Al entrar, volver donde se dejó.
+   *
+   * Se reutiliza `seleccionarPaciente`, que ya sabe traer el prellenado, las
+   * restricciones y el historial: replicar aquí ese trabajo dejaría dos
+   * caminos distintos para lo mismo y uno de los dos se quedaría atrás.
+   *
+   * El paso se restaura DESPUÉS, porque `seleccionarPaciente` lleva a 'cuadro'
+   * y hay que dejarle terminar antes de mover al nutriólogo a su sitio.
+   */
+  useEffect(() => {
+    const sesion = leerSesion()
+    if (!sesion) return
+
+    let cancelado = false
+    void (async () => {
+      await seleccionarPaciente({
+        id: sesion.pacienteId,
+        nombre: sesion.pacienteNombre,
+        email: sesion.pacienteEmail ?? '',
+      })
+      if (cancelado) return
+
+      // Se carga el cuadro entero, no solo su id: trae los equivalentes y el
+      // reparto, que son los que desbloquean los pasos 2-4. Con el id suelto,
+      // el paso quedaría bloqueado para siempre y nunca se volvería a él.
+      if (sesion.cuadroId) {
+        await cargarCuadro(sesion.cuadroId)
+        if (cancelado) return
+      }
+      if (sesion.consultaId) setConsultaId(sesion.consultaId)
+
+      // El paso se decide aparte, cuando ya se sepa si es alcanzable.
+      sesionPendiente.current = sesion.paso as PasoId
+    })()
+
+    return () => {
+      cancelado = true
+    }
+    // Solo al montar: es "volver donde lo dejaste", no un seguimiento continuo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /**
+   * Lleva al paso donde se estaba, en cuanto deja de estar bloqueado.
+   *
+   * El cuadro se carga de forma asíncrona, así que al restaurar la sesión los
+   * pasos 2-4 todavía están cerrados. Este efecto espera a que el paso pedido
+   * sea alcanzable y entonces salta. Si nunca lo es —porque el cuadro ya no
+   * existe— se descarta y el nutriólogo se queda en 'cuadro', que siempre es
+   * un sitio válido.
+   */
+  useEffect(() => {
+    const destino = sesionPendiente.current
+    if (!destino || !paciente) return
+    if (destino === 'cuadro') {
+      sesionPendiente.current = null
+      return
+    }
+    if (motivoBloqueo(destino)) return // aún no: se reintenta al cargar el cuadro
+
+    sesionPendiente.current = null
+    setPestana(destino)
+  }, [paciente, resultado, gruposConEquiv.length, motivoBloqueo, setPestana])
 
   /**
    * El paso 1, a salvo en el navegador ANTES de calcular.
