@@ -4233,3 +4233,21 @@
     transform: none;
   }
 }
+
+/* Estado del borrador del cuadro, sobre el recorrido de pasos.
+   Alineado a la derecha y discreto: informa cuando se busca, sin competir
+   con los pasos, que son lo que el nutriólogo mira. */
+.guardadoCuadro {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: calc(var(--spacing-xs) * -1);
+  padding-right: 2px;
+}
+
+@media (max-width: 640px) {
+  /* En móvil va centrado: pegado al borde derecho queda como un descuelgue. */
+  .guardadoCuadro {
+    justify-content: center;
+    margin-bottom: var(--spacing-xs);
+  }
+}
