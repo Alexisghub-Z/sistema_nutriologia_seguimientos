@@ -3258,6 +3258,10 @@ export default function DietasPage() {
             </div>
           )}
 
+          {/* Suelta al paciente y devuelve al resumen de dietas. Antes decía
+              "Cambiar", que describía solo la mitad de lo que hace: también es
+              la salida hacia el resumen, y con ese nombre nadie la encontraba
+              para eso. */}
           <button className={styles.cambiarBtn} onClick={cambiarPaciente}>
             <svg
               width="15"
@@ -3274,7 +3278,7 @@ export default function DietasPage() {
                 d="M4.5 9a6 6 0 0110.5-2.5M15.5 11a6 6 0 01-10.5 2.5"
               />
             </svg>
-            Cambiar
+            Volver a dietas
           </button>
         </div>
       )}
