@@ -3109,6 +3109,30 @@ export default function DietasPage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
+        {/* La salida, arriba del todo: es donde el ojo busca un "volver", y
+            dentro de la tarjeta del paciente competía con su nombre y parecía
+            una acción más de esa tarjeta en vez de una salida. Solo con
+            paciente abierto: sin él ya se está en el resumen. */}
+        {paciente && (
+          <button
+            className={styles.volverDietasBtn}
+            onClick={cambiarPaciente}
+            title="Guarda lo pendiente y vuelve al resumen de dietas"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              aria-hidden
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4l-6 6 6 6" />
+            </svg>
+            Volver a dietas
+          </button>
+        )}
         <h1 className={styles.title}>Dietas</h1>
         <p className={styles.subtitle}>
           Cuadro dietosintético: captura los datos del paciente y el sistema calcula sus
@@ -3262,24 +3286,6 @@ export default function DietasPage() {
               "Cambiar", que describía solo la mitad de lo que hace: también es
               la salida hacia el resumen, y con ese nombre nadie la encontraba
               para eso. */}
-          <button className={styles.cambiarBtn} onClick={cambiarPaciente}>
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 20 20"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h5M16 16v-5h-5" />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4.5 9a6 6 0 0110.5-2.5M15.5 11a6 6 0 01-10.5 2.5"
-              />
-            </svg>
-            Volver a dietas
-          </button>
         </div>
       )}
 

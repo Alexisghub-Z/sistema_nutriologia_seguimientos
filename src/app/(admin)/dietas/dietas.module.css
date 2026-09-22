@@ -64,6 +64,8 @@
 }
 
 .header {
+  display: flex;
+  flex-direction: column;
   margin-bottom: var(--spacing-xl);
 }
 
@@ -4249,5 +4251,71 @@
   .guardadoCuadro {
     justify-content: center;
     margin-bottom: var(--spacing-xs);
+  }
+}
+
+/* ------------------------------------------------------------------
+   "Volver a dietas": la salida desde un paciente hacia el resumen.
+
+   Sólido y en el verde de marca, a diferencia del resto de botones de la
+   barra —grises y planos—: es la única acción que saca de la pantalla, y en
+   gris sobre gris se perdía justo cuando alguien la buscaba.
+   ------------------------------------------------------------------ */
+.volverDietasBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  /* Bloque propio encima del título: la salida se lee antes que el nombre de
+     la pantalla, que es el orden en que se busca al querer irse. */
+  align-self: flex-start;
+  margin-bottom: var(--spacing-sm);
+  padding: 0.55rem 1rem;
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgb(45 159 93 / 28%);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.volverDietasBtn:hover {
+  background: var(--color-primary-dark);
+  box-shadow: 0 2px 8px rgb(45 159 93 / 38%);
+}
+
+.volverDietasBtn:active {
+  /* Hundido al pulsar: confirma el clic sin necesidad de esperar la pantalla. */
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgb(45 159 93 / 30%);
+}
+
+.volverDietasBtn:focus-visible {
+  outline: 2px solid var(--color-primary-dark);
+  outline-offset: 2px;
+}
+
+/* La flecha se separa al pasar el ratón: sugiere el gesto de salir. */
+.volverDietasBtn svg {
+  transition: transform 0.15s ease;
+}
+
+.volverDietasBtn:hover svg {
+  transform: translateX(-3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .volverDietasBtn,
+  .volverDietasBtn svg {
+    transition: none;
+  }
+  .volverDietasBtn:hover svg,
+  .volverDietasBtn:active {
+    transform: none;
   }
 }
