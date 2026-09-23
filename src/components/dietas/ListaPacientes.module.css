@@ -270,3 +270,19 @@
     transform: none;
   }
 }
+
+/* Aviso de que la lista está recortada.
+
+   Discreto a propósito: informa a quien lo busca sin alarmar. La prioridad se
+   calcula solo con los pacientes recibidos, así que con muchos en cartera
+   conviene saber que esto no lo abarca todo. */
+.aviso {
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-gray-100);
+  color: var(--color-gray-600);
+  font-size: var(--font-size-2xs);
+  font-weight: 500;
+  cursor: help;
+}
