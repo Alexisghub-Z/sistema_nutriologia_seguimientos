@@ -34,13 +34,21 @@ export default function ListaPacientes({ onElegir }: Props) {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(false)
   const [pagina, setPagina] = useState(1)
+  // Cuántos pacientes hay en total frente a los que llegaron. La prioridad se
+  // calcula solo con los recibidos, así que si el servidor truncó hay que
+  // decirlo: alguien con cita mañana podría no estar en esta lista.
+  const [hayMas, setHayMas] = useState(false)
+  const [total, setTotal] = useState(0)
 
   useEffect(() => {
     let vigente = true
     fetch('/api/dietas/pacientes')
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('fallo'))))
       .then((d) => {
-        if (vigente) setPacientes(d.pacientes ?? [])
+        if (!vigente) return
+        setPacientes(d.pacientes ?? [])
+        setHayMas(Boolean(d.hayMas))
+        setTotal(d.total ?? 0)
       })
       .catch(() => {
         if (vigente) setError(true)
@@ -83,7 +91,18 @@ export default function ListaPacientes({ onElegir }: Props) {
   return (
     <section className={styles.contenedor}>
       <div className={styles.encabezado}>
-        <h3 className={styles.titulo}>Pendientes de dieta</h3>
+        <h3 className={styles.titulo}>
+          Pendientes de dieta
+          {/* La urgencia se calcula solo con los pacientes que llegaron. Si el
+              servidor truncó, hay que decirlo: dar la lista por completa haría
+              creer que no falta nadie cuando puede faltar quien tiene cita
+              mañana. El buscador de arriba sí llega a todos. */}
+          {hayMas && (
+            <span className={styles.aviso} title={`Se revisan los ${pacientes.length} más recientes de ${total} pacientes. Usa el buscador para el resto.`}>
+              {pacientes.length} de {total}
+            </span>
+          )}
+        </h3>
         {totalPaginas > 1 ? (
           <div className={styles.paginacion}>
             <button

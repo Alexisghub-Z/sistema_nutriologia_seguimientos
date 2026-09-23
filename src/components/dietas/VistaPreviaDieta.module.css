@@ -306,3 +306,47 @@
     transform: translateY(6px) scale(0.99);
   }
 }
+
+/* Descargar en Word.
+
+   En contorno y no sólido como el PDF: el PDF es el formato de entrega —lo
+   que el paciente recibe— y el Word es la vía secundaria, para retocar algo
+   antes. La jerarquía visual lo dice sin necesidad de explicarlo. */
+.descargarWord {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border: 1.5px solid #00b3e3;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: #0098c2;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease;
+}
+
+.descargarWord:hover:not(:disabled) {
+  background: rgba(0, 179, 227, 0.1);
+}
+
+.descargarWord:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 179, 227, 0.35);
+}
+
+.descargarWord:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* Si la generación falla hay que decirlo: un botón que no produce archivo deja
+   al nutriólogo esperando algo que nunca llega. */
+.errorDescarga {
+  flex-basis: 100%;
+  margin: 0.5rem 0 0;
+  color: #b23b3b;
+  font-size: var(--font-size-xs);
+}

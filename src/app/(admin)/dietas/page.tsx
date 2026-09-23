@@ -9,6 +9,21 @@ import dynamic from 'next/dynamic'
 import PanelAlternativas from '@/components/dietas/PanelAlternativas'
 import { useToast } from '@/components/ui/Toast'
 import { buscarAlergenos } from '@/lib/dietas/alergenos'
+import { useSalidaSegura } from '@/contexts/SalidaSeguraContext'
+import {
+  perfilEstaVacio,
+  type PerfilParaAviso,
+} from '@/lib/dietas/perfil-vacio'
+import {
+  guardarBorrador,
+  leerBorrador,
+  olvidarBorrador,
+} from '@/lib/dietas/borrador-local'
+import {
+  guardarSesion,
+  leerSesion,
+  olvidarSesion,
+} from '@/lib/dietas/sesion-dietas'
 import {
   firmaContenido,
   hayTrabajoEnElAire,
@@ -419,6 +434,17 @@ export default function DietasPage() {
   const [confirmando, setConfirmando] = useState(false)
   const [noVolverAvisar, setNoVolverAvisar] = useState(false)
 
+  // Para que el menú lateral pregunte antes de llevarse al nutriólogo de aquí.
+  const { registrarGuardian } = useSalidaSegura()
+
+  // Perfil de estilo del nutriólogo, solo para avisar si está sin configurar.
+  // `null` significa "no se pudo leer" y NO dispara el aviso; el envoltorio
+  // con `cargado` distingue ese caso de un perfil leído y vacío.
+  const [perfilEstilo, setPerfilEstilo] = useState<{
+    cargado: true
+    datos: PerfilParaAviso
+  } | null>(null)
+
   // Generación con IA (pestaña 3).
   const [dietaIA, setDietaIA] = useState<TiempoGeneradoUI[] | null>(null)
   const [mensajesIA, setMensajesIA] = useState<MensajeChat[]>([])
@@ -491,6 +517,23 @@ export default function DietasPage() {
   const autoguardadoPendiente = useRef(false)
   // Tras un 409 (el cuadro ya tiene versión definitiva) dejamos de insistir.
   const autoguardadoBloqueado = useRef(false)
+  // Se recuperó un paso 1 a medias del navegador: se avisa para que el
+  // nutriólogo sepa por qué el formulario no está como lo dejó el prellenado.
+  const [borradorRecuperado, setBorradorRecuperado] = useState(false)
+  // Paso al que hay que volver al restaurar la sesión. Espera aquí hasta que
+  // el cuadro esté cargado: antes de eso los pasos 2-4 están bloqueados y
+  // saltar a ellos dejaría al nutriólogo en una pantalla vacía.
+  const sesionPendiente = useRef<PasoId | null>(null)
+  // Huella del último cuadro persistido, para no repetir un POST idéntico.
+  const firmaCuadroGuardado = useRef<string | null>(null)
+  // Estado del autoguardado del CUADRO, aparte del de la dieta: un fallo al
+  // guardar el cuadro no debe teñir el indicador de la dieta, ni al revés.
+  const [estadoCuadro, setEstadoCuadro] = useState<EstadoAutoguardado>('inactivo')
+  const [guardadoCuadroEn, setGuardadoCuadroEn] = useState<Date | null>(null)
+  // Espejo de `estadoAutoguardado === 'error'` en un ref, para poder leerlo
+  // JUSTO DESPUÉS de un `await autoguardar()`: el estado de React todavía
+  // tendría el valor anterior y el guardián al salir creería que todo fue bien.
+  const autoguardadoFallido = useRef(false)
   // Huella de lo último persistido, para no repetir un POST idéntico.
   const firmaGuardada = useRef<string | null>(null)
   // Ya avisamos de que el guardado falla: no repetirlo en cada reintento.
@@ -580,6 +623,21 @@ export default function DietasPage() {
   const soloLectura = estadoDieta === 'FINALIZADA'
 
   // Qué mostrar en el indicador de guardado de la cabecera.
+  /**
+   * Estado del borrador del CUADRO, para el indicador de los pasos.
+   *
+   * Reutiliza `textoAutoguardado` para que se lea igual que el de la dieta: un
+   * segundo vocabulario para lo mismo obligaría a aprender dos cosas.
+   *
+   * `hayContenido` es `Boolean(resultado)` porque el cuadro solo se persiste
+   * tras calcular: antes no hay nada guardado y anunciar un borrador sería
+   * mentir.
+   */
+  const indicadorCuadro = useMemo(
+    () => textoAutoguardado(estadoCuadro, guardadoCuadroEn, soloLectura, Boolean(resultado)),
+    [estadoCuadro, guardadoCuadroEn, soloLectura, resultado]
+  )
+
   const indicadorGuardado = useMemo(
     () =>
       textoAutoguardado(
@@ -1107,6 +1165,19 @@ export default function DietasPage() {
     }
   }, [])
 
+  // El perfil de estilo alimenta el prompt de la IA. Se carga aquí solo para
+  // saber si está vacío y poder avisar antes de generar: sin él, la IA cae en
+  // un modo genérico que no se nota en el resultado.
+  useEffect(() => {
+    fetch('/api/dietas/perfil-estilo')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setPerfilEstilo(data ? { cargado: true, datos: data } : null))
+      // Si falla, se queda en null y NO se avisa. Importa la distinción entre
+      // "no lo he podido leer" y "está vacío": tratar el error como perfil
+      // vacío soltaría una advertencia falsa a quien sí lo tiene relleno.
+      .catch(() => setPerfilEstilo(null))
+  }, [])
+
   /** Pliega o despliega el historial, recordando la preferencia. */
   const alternarHistorial = () => {
     setHistorialColapsado((c) => {
@@ -1186,6 +1257,17 @@ export default function DietasPage() {
     } catch {
       /* si falla, el nutriólogo llena a mano */
     }
+
+    // Lo que quedó a medias en el navegador manda sobre el prellenado: el
+    // prellenado propone la última consulta, pero el borrador es lo que el
+    // nutriólogo escribió a mano y no llegó a calcular. Va después para no
+    // ser pisado por la petición de arriba, que es asíncrona.
+    const enElNavegador = leerBorrador(p.id)
+    if (enElNavegador) {
+      setForm((f) => ({ ...f, ...enElNavegador }))
+    }
+    setBorradorRecuperado(Boolean(enElNavegador))
+
     cargarHistorial(p.id)
   }, [])
 
@@ -1560,6 +1642,9 @@ export default function DietasPage() {
     // Sin retardo: nos vamos ya. La ref del contexto todavía apunta a este
     // paciente, así que el guardado va al sitio correcto.
     void autoguardar()
+    // Volver al buscador es querer empezar otra cosa: devolverlo luego a este
+    // mismo paciente seria pelearse con el.
+    olvidarSesion()
     setPaciente(null)
     setResultado(null)
     setEquivalentes({})
@@ -2075,6 +2160,228 @@ export default function DietasPage() {
       window.removeEventListener('beforeunload', alCerrar)
     }
   }, [guardarPendienteYa, hayCambiosSinGuardar])
+
+  // El ref sigue al estado desde un único sitio. Hacerlo en cada uno de los
+  // diez `setEstadoAutoguardado` repartidos por el archivo sería olvidarse de
+  // alguno tarde o temprano.
+  useEffect(() => {
+    autoguardadoFallido.current = estadoAutoguardado === 'error'
+  }, [estadoAutoguardado])
+
+  /**
+   * Dónde se está, para poder volver aquí.
+   *
+   * El trabajo ya se guardaba, pero la pantalla arrancaba en blanco: había que
+   * buscar otra vez al paciente y recorrer los pasos hasta el punto donde uno
+   * estaba. Esto recuerda solo el SITIO —paciente, paso, cuadro—, no contenido
+   * clínico: de eso se encargan la base de datos y el borrador local.
+   */
+  useEffect(() => {
+    if (!paciente) return
+    guardarSesion({
+      pacienteId: paciente.id,
+      pacienteNombre: paciente.nombre,
+      pacienteEmail: paciente.email,
+      paso: pestana,
+      cuadroId,
+      consultaId,
+    })
+  }, [paciente, pestana, cuadroId, consultaId])
+
+  /**
+   * Al entrar, volver donde se dejó.
+   *
+   * Se reutiliza `seleccionarPaciente`, que ya sabe traer el prellenado, las
+   * restricciones y el historial: replicar aquí ese trabajo dejaría dos
+   * caminos distintos para lo mismo y uno de los dos se quedaría atrás.
+   *
+   * El paso se restaura DESPUÉS, porque `seleccionarPaciente` lleva a 'cuadro'
+   * y hay que dejarle terminar antes de mover al nutriólogo a su sitio.
+   */
+  useEffect(() => {
+    const sesion = leerSesion()
+    if (!sesion) return
+
+    let cancelado = false
+    void (async () => {
+      await seleccionarPaciente({
+        id: sesion.pacienteId,
+        nombre: sesion.pacienteNombre,
+        email: sesion.pacienteEmail ?? '',
+      })
+      if (cancelado) return
+
+      // Se carga el cuadro entero, no solo su id: trae los equivalentes y el
+      // reparto, que son los que desbloquean los pasos 2-4. Con el id suelto,
+      // el paso quedaría bloqueado para siempre y nunca se volvería a él.
+      if (sesion.cuadroId) {
+        await cargarCuadro(sesion.cuadroId)
+        if (cancelado) return
+      }
+      if (sesion.consultaId) setConsultaId(sesion.consultaId)
+
+      // El paso se decide aparte, cuando ya se sepa si es alcanzable.
+      sesionPendiente.current = sesion.paso as PasoId
+    })()
+
+    return () => {
+      cancelado = true
+    }
+    // Solo al montar: es "volver donde lo dejaste", no un seguimiento continuo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /**
+   * Lleva al paso donde se estaba, en cuanto deja de estar bloqueado.
+   *
+   * El cuadro se carga de forma asíncrona, así que al restaurar la sesión los
+   * pasos 2-4 todavía están cerrados. Este efecto espera a que el paso pedido
+   * sea alcanzable y entonces salta. Si nunca lo es —porque el cuadro ya no
+   * existe— se descarta y el nutriólogo se queda en 'cuadro', que siempre es
+   * un sitio válido.
+   */
+  useEffect(() => {
+    const destino = sesionPendiente.current
+    if (!destino || !paciente) return
+    if (destino === 'cuadro') {
+      sesionPendiente.current = null
+      return
+    }
+    if (motivoBloqueo(destino)) return // aún no: se reintenta al cargar el cuadro
+
+    sesionPendiente.current = null
+    setPestana(destino)
+  }, [paciente, resultado, gruposConEquiv.length, motivoBloqueo, setPestana])
+
+  /**
+   * El paso 1, a salvo en el navegador ANTES de calcular.
+   *
+   * Hasta que no se pulsa "Calcular" no existe cuadro en la base de datos, así
+   * que no hay nada que actualizar: lo escrito solo vivía en la pantalla y se
+   * perdía al salir. Guardarlo en el servidor obligaría a crear cuadros a
+   * medias, sin validar, que llenarían el historial del paciente de tanteos.
+   *
+   * En cuanto se calcula esto deja de hacer falta —manda la base de datos— y
+   * el borrador se borra para no resucitar datos viejos.
+   */
+  useEffect(() => {
+    if (!paciente || soloLectura) return
+    if (resultado) return // ya hay cuadro: manda el autoguardado del servidor
+
+    const t = setTimeout(() => {
+      guardarBorrador(paciente.id, {
+        peso: form.peso,
+        talla_cm: form.talla_cm,
+        edad: form.edad,
+        sexo: form.sexo,
+        nivel_actividad: form.nivel_actividad,
+        objetivo: form.objetivo,
+        formula: form.formula,
+        mlg_kg: form.mlg_kg,
+        notas: form.notas,
+      })
+    }, 600)
+
+    return () => clearTimeout(t)
+  }, [paciente, soloLectura, resultado, form])
+
+  /**
+   * Autoguardado del CUADRO (pasos 1-3), no de la dieta.
+   * ------------------------------------------------------------
+   * El autoguardado de más arriba solo salva lo que produce la IA: mira
+   * `dietaIA`/`recetario` y se va si no hay tiempos. Eso dejaba fuera todo el
+   * trabajo previo —peso, talla, meta calórica, equivalentes SMAE, reparto por
+   * tiempos—: quien rellenaba el cuadro entero y salía antes de generar lo
+   * perdía sin aviso.
+   *
+   * Solo actúa DESPUÉS de calcular: antes los datos no están validados y un
+   * cuadro a medias no sirve ni para retomarlo. Y reutiliza `cuadroId`, así que
+   * reescribe siempre el mismo borrador en lugar de sembrar duplicados.
+   */
+  useEffect(() => {
+    if (!paciente || !resultado || soloLectura) return
+
+    // Se toma del contexto de guardado, que ya lo mantiene al día: construirlo
+    // aquí obligaría a repetir la lista de campos y a mantener dos copias.
+    const payload = ctxGuardado.current.payloadCuadro
+    if (!payload) return
+
+    // Misma huella = nada que guardar. Evita repetir el POST cuando el efecto
+    // se vuelve a disparar sin que el nutriólogo haya tocado nada.
+    const firma = JSON.stringify(payload)
+    if (firma === firmaCuadroGuardado.current) return
+
+    // Hay cambios y el temporizador corre: el indicador ya puede decirlo.
+    setEstadoCuadro('pendiente')
+
+    const t = setTimeout(async () => {
+      setEstadoCuadro('guardando')
+      try {
+        const res = await fetch('/api/dietas/cuadros', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...payload,
+            guardar: true,
+            // Con cuadroId actualiza; sin él, crea el primer borrador.
+            ...(cuadroId ? { cuadro_id: cuadroId } : {}),
+          }),
+        })
+        if (!res.ok) {
+          // Un 409 es "este cuadro ya tiene dieta finalizada": no es un fallo,
+          // es que no se debe tocar. Marcarlo como error alarmaría sin motivo.
+          setEstadoCuadro(res.status === 409 ? 'inactivo' : 'error')
+          return
+        }
+        const data = await res.json()
+        firmaCuadroGuardado.current = firma
+        // El primer guardado devuelve el id: a partir de ahí se reescribe.
+        if (!cuadroId && data.cuadro?.id) setCuadroId(data.cuadro.id)
+        setGuardadoCuadroEn(new Date())
+        setEstadoCuadro('guardado')
+      } catch {
+        // Se reintenta al siguiente cambio; el indicador lo deja ver.
+        setEstadoCuadro('error')
+      }
+    }, 1500)
+
+    return () => clearTimeout(t)
+  }, [paciente, resultado, soloLectura, cuadroId, form, equivalentes, reparto, tiempos])
+
+  /**
+   * Salir por el menú lateral sin perder los últimos retoques.
+   *
+   * `beforeunload` solo salta al cerrar o recargar la pestaña. El menú usa
+   * `<Link>` de Next, que navega sin recargar, así que quien pulsaba
+   * "Pacientes" en mitad de una dieta se iba sin aviso y perdía lo que el
+   * autoguardado tuviera aún en cola.
+   *
+   * En lugar de preguntar a bocajarro, primero se INTENTA guardar: si sale
+   * bien, se le deja ir sin molestarle, que es lo que espera. Solo se
+   * pregunta cuando el guardado falla de verdad.
+   */
+  useEffect(() => {
+    return registrarGuardian(async () => {
+      if (!hayCambiosSinGuardar()) return true
+
+      cancelarAutoguardado()
+      try {
+        await autoguardar()
+      } catch {
+        // Se ignora: lo que decide es el estado posterior, no esta excepción.
+      }
+
+      // Se relee del ref y no del estado de React: `estadoAutoguardado` viene
+      // capturado de cuando se registró el guardián y no refleja el guardado
+      // que se acaba de hacer.
+      if (!autoguardadoFallido.current) return true
+
+      return window.confirm(
+        'No se pudieron guardar los últimos cambios de la dieta.\n\n' +
+          '¿Salir de todas formas? Se perderá lo último que escribiste.'
+      )
+    }, hayCambiosSinGuardar)
+  }, [registrarGuardian, hayCambiosSinGuardar, cancelarAutoguardado, autoguardar])
 
   /**
    * Al cambiar de paso, lo pendiente se guarda sin esperar el temporizador.
@@ -2622,6 +2929,10 @@ export default function DietasPage() {
       })
       const data = await res.json()
       if (res.ok) {
+        // Ya hay cuadro calculado: a partir de aquí manda el servidor y
+        // conservar la copia del navegador solo podría resucitar datos viejos.
+        if (paciente) olvidarBorrador(paciente.id)
+        setBorradorRecuperado(false)
         setResultado(data.resultado)
       } else {
         setError(data.error || 'Error al calcular')
@@ -2798,6 +3109,30 @@ export default function DietasPage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
+        {/* La salida, arriba del todo: es donde el ojo busca un "volver", y
+            dentro de la tarjeta del paciente competía con su nombre y parecía
+            una acción más de esa tarjeta en vez de una salida. Solo con
+            paciente abierto: sin él ya se está en el resumen. */}
+        {paciente && (
+          <button
+            className={styles.volverDietasBtn}
+            onClick={cambiarPaciente}
+            title="Guarda lo pendiente y vuelve al resumen de dietas"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              aria-hidden
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4l-6 6 6 6" />
+            </svg>
+            Volver a dietas
+          </button>
+        )}
         <h1 className={styles.title}>Dietas</h1>
         <p className={styles.subtitle}>
           Cuadro dietosintético: captura los datos del paciente y el sistema calcula sus
@@ -2947,24 +3282,10 @@ export default function DietasPage() {
             </div>
           )}
 
-          <button className={styles.cambiarBtn} onClick={cambiarPaciente}>
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 20 20"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h5M16 16v-5h-5" />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4.5 9a6 6 0 0110.5-2.5M15.5 11a6 6 0 01-10.5 2.5"
-              />
-            </svg>
-            Cambiar
-          </button>
+          {/* Suelta al paciente y devuelve al resumen de dietas. Antes decía
+              "Cambiar", que describía solo la mitad de lo que hace: también es
+              la salida hacia el resumen, y con ese nombre nadie la encontraba
+              para eso. */}
         </div>
       )}
 
@@ -3224,6 +3545,36 @@ export default function DietasPage() {
       {/* El recorrido de la dieta. Cada paso enseña lo que produjo —kcal,
           equivalentes, tiempos, alimentos—, así que la barra funciona como
           resumen del trabajo y no solo como navegación. */}
+      {/* Se recuperó lo que quedó a medias. Se avisa porque si no, el
+          formulario aparece con datos que no vienen de la última consulta y no
+          hay forma de saber de dónde salieron. */}
+      {paciente && borradorRecuperado && !resultado && (
+        <div className={styles.guardadoCuadro}>
+          <span className={`${styles.badgeGuardado} ${styles.badgeOk}`} role="status">
+            Recuperamos lo que habías escrito
+          </span>
+        </div>
+      )}
+
+      {/* El estado del borrador, visible en CUALQUIER paso. Sin esto el cuadro
+          se guardaba en silencio y el nutriólogo no tenía forma de saberlo:
+          seguía con la duda de si perdería el trabajo al salir. */}
+      {paciente && indicadorCuadro && (
+        <div className={styles.guardadoCuadro}>
+          <span
+            className={`${styles.badgeGuardado} ${TONO_GUARDADO[indicadorCuadro.tono]}`}
+            // Cambia solo; que un lector de pantalla lo anuncie sin interrumpir.
+            role="status"
+            aria-live="polite"
+          >
+            {indicadorCuadro.tono === 'trabajando' && (
+              <span className={styles.puntoGuardando} aria-hidden />
+            )}
+            {indicadorCuadro.texto}
+          </span>
+        </div>
+      )}
+
       {paciente && (
         <nav className={styles.recorrido} aria-label="Progreso de la dieta">
           {/* Riel continuo por detrás de los nodos: sostiene el recorrido y
@@ -3794,23 +4145,30 @@ export default function DietasPage() {
                   })}
                 </tbody>
                 <tfoot>
+                  {/* TOTAL y META con la MISMA precisión que DIFERENCIA.
+                      Antes se redondeaban a entero con toFixed(0) mientras la
+                      diferencia mostraba su decimal, y la tabla parecía sumar
+                      mal: con TOTAL 79 y META 79 la diferencia decía "+0.2".
+                      No fallaba la suma —79.1 − 78.9 sí es 0.2— sino que las
+                      dos primeras filas escondían el decimal que la tercera
+                      enseñaba. */}
                   <tr className={styles.filaTotal}>
                     <td className={styles.tdGrupo}>TOTAL</td>
                     <td></td>
-                    <td className={styles.tdNum}>{totalesSmae.hco.toFixed(0)}</td>
-                    <td className={styles.tdNum}>{totalesSmae.proteina.toFixed(0)}</td>
-                    <td className={styles.tdNum}>{totalesSmae.lipidos.toFixed(0)}</td>
-                    <td className={styles.tdNum}>{totalesSmae.kcal.toFixed(0)}</td>
+                    <td className={styles.tdNum}>{fmtNum(totalesSmae.hco)}</td>
+                    <td className={styles.tdNum}>{fmtNum(totalesSmae.proteina)}</td>
+                    <td className={styles.tdNum}>{fmtNum(totalesSmae.lipidos)}</td>
+                    <td className={styles.tdNum}>{fmtNum(totalesSmae.kcal)}</td>
                   </tr>
                   <tr className={styles.filaMeta}>
                     <td className={styles.tdGrupo}>META</td>
                     <td></td>
                     <td className={styles.tdNum}>
-                      {resultado.macros.carbohidrato.gramos.toFixed(0)}
+                      {fmtNum(resultado.macros.carbohidrato.gramos)}
                     </td>
-                    <td className={styles.tdNum}>{resultado.macros.proteina.gramos.toFixed(0)}</td>
-                    <td className={styles.tdNum}>{resultado.macros.grasa.gramos.toFixed(0)}</td>
-                    <td className={styles.tdNum}>{resultado.kcalMeta.toFixed(0)}</td>
+                    <td className={styles.tdNum}>{fmtNum(resultado.macros.proteina.gramos)}</td>
+                    <td className={styles.tdNum}>{fmtNum(resultado.macros.grasa.gramos)}</td>
+                    <td className={styles.tdNum}>{fmtNum(resultado.kcalMeta)}</td>
                   </tr>
                   <tr className={styles.filaDif}>
                     <td className={styles.tdGrupo}>DIFERENCIA</td>
@@ -4032,6 +4390,36 @@ export default function DietasPage() {
       {/* PESTAÑA 4: Generar con IA */}
       {paciente && pestana === 'ia' && resultado && (
         <div className={styles.iaWrap}>
+          {/* Si el perfil de estilo está sin tocar, la IA genera en modo
+              genérico —alimentos básicos, sin cocina nacional— y eso no se nota
+              en el resultado. Se avisa ANTES de generar, que es cuando todavía
+              se puede arreglar. No bloquea: quien tenga prisa genera igual. */}
+          {perfilEstilo?.cargado && perfilEstaVacio(perfilEstilo.datos) && (
+            <div className={styles.avisoSinEstilo} role="status">
+              <span className={styles.avisoSinEstiloIcono} aria-hidden>
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01" />
+                  <circle cx="12" cy="12" r="9" />
+                </svg>
+              </span>
+              <div className={styles.avisoSinEstiloTexto}>
+                <strong>La IA no conoce tu estilo todavía.</strong> Sin tu perfil configurado
+                propondrá alimentos básicos y genéricos, sin la cocina de tu región ni tus reglas.
+                Rellenarlo una vez mejora todas las dietas que generes a partir de ahora.
+              </div>
+              <a href="/configuracion/estilo-dietas" className={styles.avisoSinEstiloBtn}>
+                Configurar mi estilo
+              </a>
+            </div>
+          )}
+
           <div className={styles.iaGrid}>
             {/* Columna izquierda: dieta generada (editable) */}
             <div className={styles.card}>

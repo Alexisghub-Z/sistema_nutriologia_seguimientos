@@ -80,14 +80,27 @@ export async function GET() {
       select: seleccionFila,
     }),
     // Series de los últimos meses, para la gráfica y los sparklines.
-    prisma.dietaGenerada.findMany({
-      where: { createdAt: { gte: inicioSerie } },
-      select: { createdAt: true },
-    }),
-    prisma.cuadroDietosintetico.findMany({
-      where: { createdAt: { gte: inicioSerie } },
-      select: { createdAt: true, paciente_id: true },
-    }),
+    //
+    // Se cuenta EN LA BASE DE DATOS, no trayendo las filas. Antes se
+    // descargaban todas las dietas y cuadros de seis meses —solo sus fechas—
+    // para contarlos en memoria y dibujar seis barras: con doscientas dietas
+    // al mes son mil doscientas filas viajando en cada carga del resumen para
+    // producir seis números. Postgres agrupa por mes sin mover una sola fila.
+    //
+    // Va en SQL porque el `groupBy` de Prisma agrupa por columnas, no por una
+    // expresión como date_trunc.
+    prisma.$queryRaw<Array<{ mes: Date; total: bigint }>>`
+      SELECT date_trunc('month', "createdAt") AS mes, COUNT(*) AS total
+      FROM dietas_generadas
+      WHERE "createdAt" >= ${inicioSerie}
+      GROUP BY mes
+    `,
+    prisma.$queryRaw<Array<{ mes: Date; total: bigint }>>`
+      SELECT date_trunc('month', "createdAt") AS mes, COUNT(*) AS total
+      FROM cuadros_dietosinteticos
+      WHERE "createdAt" >= ${inicioSerie}
+      GROUP BY mes
+    `,
   ])
 
   const finalizadas = porEstado.find((g) => g.estado === 'FINALIZADA')?._count._all ?? 0
@@ -116,13 +129,16 @@ export async function GET() {
     const d = new Date(Date.UTC(inicioSerie.getUTCFullYear(), inicioSerie.getUTCMonth() + i, 1))
     meses.set(claveMes(d), { label: NOMBRE_MES[d.getUTCMonth()] ?? '', dietas: 0, cuadros: 0 })
   }
-  for (const d of dietasSerie) {
-    const fila = meses.get(claveMes(d.createdAt))
-    if (fila) fila.dietas += 1
+  // Las consultas ya devuelven un total por mes, no filas sueltas. `COUNT(*)`
+  // de Postgres llega como BigInt, que no es un número de JavaScript y
+  // reventaría al serializar a JSON: hay que convertirlo.
+  for (const fila of dietasSerie) {
+    const mes = meses.get(claveMes(new Date(fila.mes)))
+    if (mes) mes.dietas = Number(fila.total)
   }
-  for (const c of cuadrosSerie) {
-    const fila = meses.get(claveMes(c.createdAt))
-    if (fila) fila.cuadros += 1
+  for (const fila of cuadrosSerie) {
+    const mes = meses.get(claveMes(new Date(fila.mes)))
+    if (mes) mes.cuadros = Number(fila.total)
   }
   const serieMensual = Array.from(meses.values())
 

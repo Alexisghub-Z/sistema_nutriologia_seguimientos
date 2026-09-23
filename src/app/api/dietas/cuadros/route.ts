@@ -22,6 +22,14 @@ import {
 const cuadroSchema = datosCuadroSchema.extend({
   // Si es true, guarda el cuadro en la BD. Si false (default), solo calcula.
   guardar: z.boolean().default(false),
+  /**
+   * Cuadro que hay que ACTUALIZAR en lugar de crear uno nuevo.
+   *
+   * Lo usa el autoguardado del cuadro: sin esto, cada pocos segundos nacería
+   * un cuadro más y el historial del paciente se llenaría de borradores
+   * repetidos. Con él, el borrador se reescribe siempre sobre el mismo.
+   */
+  cuadro_id: z.string().min(1).optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -64,6 +72,50 @@ export async function POST(request: NextRequest) {
   // Si no se pide guardar, devolvemos solo el cálculo (para la vista previa)
   if (!data.guardar) {
     return NextResponse.json({ resultado, smae }, { status: 200 })
+  }
+
+  // Actualizar un borrador existente en lugar de crear otro: es lo que permite
+  // que el autoguardado del cuadro no llene el historial de duplicados.
+  if (data.cuadro_id) {
+    const existente = await prisma.cuadroDietosintetico.findUnique({
+      where: { id: data.cuadro_id },
+      select: {
+        id: true,
+        paciente_id: true,
+        dietas: { where: { estado: 'FINALIZADA' }, select: { id: true }, take: 1 },
+      },
+    })
+
+    if (!existente) {
+      return NextResponse.json({ error: 'Cuadro no encontrado' }, { status: 404 })
+    }
+
+    // No se permite mover un cuadro de un paciente a otro: si el nutriólogo
+    // cambió de paciente, lo correcto es un cuadro nuevo, no reescribir el del
+    // anterior con datos que no son suyos.
+    if (existente.paciente_id !== data.paciente_id) {
+      return NextResponse.json(
+        { error: 'El cuadro pertenece a otro paciente' },
+        { status: 409 }
+      )
+    }
+
+    // Un cuadro con dieta ya entregada es historia clínica: sus números
+    // respaldan lo que el paciente tiene en la mano. Reescribirlo dejaría la
+    // dieta entregada apoyada en cálculos que ya no son los que se usaron.
+    if (existente.dietas.length > 0) {
+      return NextResponse.json(
+        { error: 'Este cuadro ya tiene una dieta finalizada y no se puede modificar' },
+        { status: 409 }
+      )
+    }
+
+    const actualizado = await prisma.cuadroDietosintetico.update({
+      where: { id: data.cuadro_id },
+      data: datosParaGuardar(data, calc),
+    })
+
+    return NextResponse.json({ cuadro: actualizado, resultado, smae }, { status: 200 })
   }
 
   // Guardar el cuadro (inputs + resultados calculados)

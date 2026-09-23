@@ -35,6 +35,11 @@ export async function GET(request: NextRequest) {
     const plantillas = await prisma.plantillaMensaje.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      // Tope de seguridad: los filtros (tipo, activa) son opcionales, así que
+      // sin esto una petición sin parámetros devuelve TODAS las plantillas que
+      // existan. Cien es muy holgado para un consultorio y frena el caso
+      // absurdo sin cambiar el comportamiento normal.
+      take: 100,
     })
 
     return NextResponse.json({ plantillas })

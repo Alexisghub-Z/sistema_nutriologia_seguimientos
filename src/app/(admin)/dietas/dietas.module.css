@@ -64,6 +64,8 @@
 }
 
 .header {
+  display: flex;
+  flex-direction: column;
   margin-bottom: var(--spacing-xl);
 }
 
@@ -4136,5 +4138,184 @@
   .accionBtnActiva,
   .menuPeligro {
     transition: none;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Aviso: el perfil de estilo está sin configurar.
+
+   Sale en el paso de la IA, antes de generar. La misma paleta ámbar que
+   el resto de avisos del proyecto: informa, no alarma — se puede generar
+   igual, solo que la dieta saldrá genérica.
+   ------------------------------------------------------------------ */
+.avisoSinEstilo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: var(--spacing-md);
+  padding: 0.8rem 1rem;
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-md);
+  color: #92400e;
+  animation: avisoSinEstiloEntra 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.avisoSinEstiloIcono {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: #b45309;
+}
+
+.avisoSinEstiloTexto {
+  flex: 1;
+  font-size: var(--font-size-xs);
+  line-height: 1.45;
+}
+
+.avisoSinEstiloTexto strong {
+  font-weight: 600;
+}
+
+.avisoSinEstiloBtn {
+  flex-shrink: 0;
+  padding: 0.45rem 0.85rem;
+  background-color: #b45309;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: var(--font-size-2xs);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.18s ease;
+}
+
+.avisoSinEstiloBtn:hover {
+  background-color: #92400e;
+}
+
+.avisoSinEstiloBtn:focus-visible {
+  outline: 2px solid #b45309;
+  outline-offset: 2px;
+}
+
+@keyframes avisoSinEstiloEntra {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* En móvil el aviso se apila: el botón a ancho completo se pulsa mejor. */
+@media (max-width: 640px) {
+  .avisoSinEstilo {
+    flex-wrap: wrap;
+  }
+
+  .avisoSinEstiloTexto {
+    flex-basis: calc(100% - 2rem);
+  }
+
+  .avisoSinEstiloBtn {
+    flex-basis: 100%;
+    text-align: center;
+  }
+}
+
+/* Quien pide menos movimiento debe ver el aviso igual: se quita el
+   desplazamiento, pero hay que devolver la opacidad, o se queda invisible. */
+@media (prefers-reduced-motion: reduce) {
+  .avisoSinEstilo {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Estado del borrador del cuadro, sobre el recorrido de pasos.
+   Alineado a la derecha y discreto: informa cuando se busca, sin competir
+   con los pasos, que son lo que el nutriólogo mira. */
+.guardadoCuadro {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: calc(var(--spacing-xs) * -1);
+  padding-right: 2px;
+}
+
+@media (max-width: 640px) {
+  /* En móvil va centrado: pegado al borde derecho queda como un descuelgue. */
+  .guardadoCuadro {
+    justify-content: center;
+    margin-bottom: var(--spacing-xs);
+  }
+}
+
+/* ------------------------------------------------------------------
+   "Volver a dietas": la salida desde un paciente hacia el resumen.
+
+   Sólido y en el verde de marca, a diferencia del resto de botones de la
+   barra —grises y planos—: es la única acción que saca de la pantalla, y en
+   gris sobre gris se perdía justo cuando alguien la buscaba.
+   ------------------------------------------------------------------ */
+.volverDietasBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  /* Bloque propio encima del título: la salida se lee antes que el nombre de
+     la pantalla, que es el orden en que se busca al querer irse. */
+  align-self: flex-start;
+  margin-bottom: var(--spacing-sm);
+  padding: 0.55rem 1rem;
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgb(45 159 93 / 28%);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.volverDietasBtn:hover {
+  background: var(--color-primary-dark);
+  box-shadow: 0 2px 8px rgb(45 159 93 / 38%);
+}
+
+.volverDietasBtn:active {
+  /* Hundido al pulsar: confirma el clic sin necesidad de esperar la pantalla. */
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgb(45 159 93 / 30%);
+}
+
+.volverDietasBtn:focus-visible {
+  outline: 2px solid var(--color-primary-dark);
+  outline-offset: 2px;
+}
+
+/* La flecha se separa al pasar el ratón: sugiere el gesto de salir. */
+.volverDietasBtn svg {
+  transition: transform 0.15s ease;
+}
+
+.volverDietasBtn:hover svg {
+  transform: translateX(-3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .volverDietasBtn,
+  .volverDietasBtn svg {
+    transition: none;
+  }
+  .volverDietasBtn:hover svg,
+  .volverDietasBtn:active {
+    transform: none;
   }
 }

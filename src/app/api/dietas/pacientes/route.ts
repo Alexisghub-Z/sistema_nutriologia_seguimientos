@@ -40,41 +40,52 @@ export async function GET(request: NextRequest) {
 
   const ahora = new Date()
 
-  const pacientes = await prisma.paciente.findMany({
-    where: texto
-      ? {
-          OR: [
-            { nombre: { contains: texto, mode: 'insensitive' } },
-            { email: { contains: texto, mode: 'insensitive' } },
-          ],
-        }
-      : undefined,
-    // Por actividad reciente: quien acaba de pasar por consulta es a quien más
-    // probablemente haya que hacerle la dieta ahora mismo.
-    orderBy: { updatedAt: 'desc' },
-    take: limit,
-    select: {
-      id: true,
-      nombre: true,
-      email: true,
-      consultas: {
-        take: 1,
-        orderBy: { fecha: 'desc' },
-        select: { fecha: true, peso: true },
+  const filtro = texto
+    ? {
+        OR: [
+          { nombre: { contains: texto, mode: 'insensitive' as const } },
+          { email: { contains: texto, mode: 'insensitive' as const } },
+        ],
+      }
+    : undefined
+
+  const [total, pacientes] = await Promise.all([
+    prisma.paciente.count({ where: filtro }),
+    prisma.paciente.findMany({
+      where: filtro,
+      // Por actividad reciente: quien acaba de pasar por consulta es a quien más
+      // probablemente haya que hacerle la dieta ahora mismo.
+      //
+      // OJO con el corte: la pantalla ordena estos pacientes por urgencia clínica
+      // (`recomendar()`), cruzando cita, consulta y dieta. Ese cálculo solo puede
+      // hacerse con lo que llegue aquí, así que un paciente que se quede fuera es
+      // invisible para el panel aunque tenga cita mañana. Por eso se devuelve
+      // también el total: la pantalla puede avisar de que está viendo una parte.
+      orderBy: { updatedAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        nombre: true,
+        email: true,
+        consultas: {
+          take: 1,
+          orderBy: { fecha: 'desc' },
+          select: { fecha: true, peso: true },
+        },
+        citas: {
+          where: { estado: 'PENDIENTE', fecha_hora: { gte: ahora } },
+          take: 1,
+          orderBy: { fecha_hora: 'asc' },
+          select: { fecha_hora: true },
+        },
+        dietas_generadas: {
+          take: 1,
+          orderBy: { createdAt: 'desc' },
+          select: { createdAt: true, estado: true },
+        },
       },
-      citas: {
-        where: { estado: 'PENDIENTE', fecha_hora: { gte: ahora } },
-        take: 1,
-        orderBy: { fecha_hora: 'asc' },
-        select: { fecha_hora: true },
-      },
-      dietas_generadas: {
-        take: 1,
-        orderBy: { createdAt: 'desc' },
-        select: { createdAt: true, estado: true },
-      },
-    },
-  })
+    }),
+  ])
 
   // Se aplana aquí para que la pantalla reciba justo lo que pinta y no tenga
   // que saber cómo están anidadas las relaciones.
@@ -89,5 +100,9 @@ export async function GET(request: NextRequest) {
       ultima_dieta: p.dietas_generadas[0]?.createdAt ?? null,
       dieta_finalizada: p.dietas_generadas[0]?.estado === 'FINALIZADA',
     })),
+    total,
+    // La pantalla ordena por urgencia solo con lo que recibe: si hay más, tiene
+    // que poder decirlo en lugar de dar la lista por completa.
+    hayMas: total > pacientes.length,
   })
 }

@@ -29,6 +29,15 @@ export async function GET() {
   const plantillas = await prisma.plantillaDieta.findMany({
     where: { activa: true },
     orderBy: { createdAt: 'desc' },
+    // Tope de seguridad. Esto se pide cada vez que se abre Dietas y cada
+    // plantilla trae dos campos JSON (equivalentes, distribucion_tiempos): sin
+    // límite, un consultorio con cien plantillas acumuladas descargaría
+    // cientos de KB en cada visita para mostrar unas pocas.
+    //
+    // Cincuenta es holgado a propósito: un nutriólogo trabaja con cinco o seis
+    // patrones base, así que nadie lo notará. No es paginación porque no hace
+    // falta todavía; es un freno ante el caso absurdo.
+    take: 50,
     select: {
       id: true,
       nombre: true,

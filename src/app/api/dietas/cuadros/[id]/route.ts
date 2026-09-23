@@ -72,6 +72,13 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   return NextResponse.json({ cuadro }, { status: 200 })
 }
 
+/**
+ * El cuadro tiene una dieta ya entregada. Se usa para abortar la transacción
+ * de borrado: es la única forma de deshacerla desde dentro, y así la
+ * comprobación y el borrado no pueden separarse.
+ */
+class ErrorTieneFinalizada extends Error {}
+
 export async function DELETE(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const user = await getAuthUser()
   if (!user) {
@@ -89,16 +96,31 @@ export async function DELETE(_request: NextRequest, context: { params: Promise<{
 
   // Las dietas se borran en cascada con el cuadro, así que no permitimos
   // eliminar uno que tenga versiones definitivas: se perderían sin aviso.
-  const finalizadas = await prisma.dietaGenerada.count({
-    where: { cuadro_id: id, estado: 'FINALIZADA' },
-  })
-  if (finalizadas > 0) {
-    return NextResponse.json(
-      { error: 'Este cuadro tiene una dieta finalizada y no se puede eliminar.' },
-      { status: 409 }
-    )
+  //
+  // Comprobar y borrar van en una TRANSACCIÓN. Por separado queda una ventana
+  // entre las dos consultas: si alguien finaliza una dieta justo ahí —otra
+  // pestaña, el propio autoguardado— el recuento diría cero, el borrado
+  // seguiría adelante y la cascada se llevaría una dieta ya entregada al
+  // paciente. Es improbable, pero irreversible.
+  try {
+    await prisma.$transaction(async (tx) => {
+      const finalizadas = await tx.dietaGenerada.count({
+        where: { cuadro_id: id, estado: 'FINALIZADA' },
+      })
+      if (finalizadas > 0) {
+        throw new ErrorTieneFinalizada()
+      }
+      await tx.cuadroDietosintetico.delete({ where: { id } })
+    })
+  } catch (e) {
+    if (e instanceof ErrorTieneFinalizada) {
+      return NextResponse.json(
+        { error: 'Este cuadro tiene una dieta finalizada y no se puede eliminar.' },
+        { status: 409 }
+      )
+    }
+    throw e
   }
 
-  await prisma.cuadroDietosintetico.delete({ where: { id } })
   return NextResponse.json({ ok: true }, { status: 200 })
 }
