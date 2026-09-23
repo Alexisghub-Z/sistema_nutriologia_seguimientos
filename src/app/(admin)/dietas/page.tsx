@@ -4145,23 +4145,30 @@ export default function DietasPage() {
                   })}
                 </tbody>
                 <tfoot>
+                  {/* TOTAL y META con la MISMA precisión que DIFERENCIA.
+                      Antes se redondeaban a entero con toFixed(0) mientras la
+                      diferencia mostraba su decimal, y la tabla parecía sumar
+                      mal: con TOTAL 79 y META 79 la diferencia decía "+0.2".
+                      No fallaba la suma —79.1 − 78.9 sí es 0.2— sino que las
+                      dos primeras filas escondían el decimal que la tercera
+                      enseñaba. */}
                   <tr className={styles.filaTotal}>
                     <td className={styles.tdGrupo}>TOTAL</td>
                     <td></td>
-                    <td className={styles.tdNum}>{totalesSmae.hco.toFixed(0)}</td>
-                    <td className={styles.tdNum}>{totalesSmae.proteina.toFixed(0)}</td>
-                    <td className={styles.tdNum}>{totalesSmae.lipidos.toFixed(0)}</td>
-                    <td className={styles.tdNum}>{totalesSmae.kcal.toFixed(0)}</td>
+                    <td className={styles.tdNum}>{fmtNum(totalesSmae.hco)}</td>
+                    <td className={styles.tdNum}>{fmtNum(totalesSmae.proteina)}</td>
+                    <td className={styles.tdNum}>{fmtNum(totalesSmae.lipidos)}</td>
+                    <td className={styles.tdNum}>{fmtNum(totalesSmae.kcal)}</td>
                   </tr>
                   <tr className={styles.filaMeta}>
                     <td className={styles.tdGrupo}>META</td>
                     <td></td>
                     <td className={styles.tdNum}>
-                      {resultado.macros.carbohidrato.gramos.toFixed(0)}
+                      {fmtNum(resultado.macros.carbohidrato.gramos)}
                     </td>
-                    <td className={styles.tdNum}>{resultado.macros.proteina.gramos.toFixed(0)}</td>
-                    <td className={styles.tdNum}>{resultado.macros.grasa.gramos.toFixed(0)}</td>
-                    <td className={styles.tdNum}>{resultado.kcalMeta.toFixed(0)}</td>
+                    <td className={styles.tdNum}>{fmtNum(resultado.macros.proteina.gramos)}</td>
+                    <td className={styles.tdNum}>{fmtNum(resultado.macros.grasa.gramos)}</td>
+                    <td className={styles.tdNum}>{fmtNum(resultado.kcalMeta)}</td>
                   </tr>
                   <tr className={styles.filaDif}>
                     <td className={styles.tdGrupo}>DIFERENCIA</td>
