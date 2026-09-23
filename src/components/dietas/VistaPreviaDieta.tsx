@@ -14,6 +14,7 @@ import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer'
 import {
   DocumentoDieta,
   OPCIONES_POR_DEFECTO,
+  nombreDeArchivo,
   type DatosDocumento,
   type OpcionesDocumento,
 } from '@/lib/dietas/documento-dieta'
@@ -22,33 +23,6 @@ import styles from './VistaPreviaDieta.module.css'
 interface Props {
   datos: DatosDocumento
   onCerrar: () => void
-}
-
-/** Convierte un nombre en algo que un sistema de archivos acepte. */
-function comoNombreDeArchivo(texto: string): string {
-  return texto
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .toLowerCase()
-}
-
-/**
- * Nombre del archivo, reconocible en la carpeta de descargas.
- *
- * Lleva la fecha porque un paciente recibe varios planes a lo largo del
- * tratamiento: sin ella el segundo se guardaba como "plan-ana (1).pdf" o
- * pisaba al primero, y ninguno decía de cuándo era.
- */
-function nombreArchivo(paciente: string): string {
-  const hoy = new Date()
-  const fecha = [
-    hoy.getFullYear(),
-    String(hoy.getMonth() + 1).padStart(2, '0'),
-    String(hoy.getDate()).padStart(2, '0'),
-  ].join('-')
-  return `plan-${comoNombreDeArchivo(paciente) || 'paciente'}-${fecha}.pdf`
 }
 
 /**
@@ -240,7 +214,7 @@ export default function VistaPreviaDieta({ datos, onCerrar }: Props) {
           <div className={styles.acciones}>
             <PDFDownloadLink
               document={doc}
-              fileName={nombreArchivo(datos.paciente)}
+              fileName={nombreDeArchivo(datos.paciente, 'pdf')}
               className={styles.descargar}
             >
               {({ loading }) => (loading ? 'Preparando…' : 'Descargar PDF')}

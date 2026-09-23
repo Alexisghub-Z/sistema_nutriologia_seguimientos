@@ -96,9 +96,17 @@ export interface DatosDocumento {
 /**
  * Nombre del archivo que se descarga.
  *
- * Lleva paciente y fecha porque sin ella dos planes del mismo paciente se
- * guardan como "plan-ana (1).pdf" y ya no se sabe cuál es cuál. Compartido
- * entre PDF y Word para que ambos nombren igual.
+ * Lleva paciente, fecha Y HORA. La fecha sola no bastaba: al corregir algo y
+ * volver a descargar el mismo día, los dos archivos se llamaban igual y el
+ * navegador guardaba el segundo como "plan-ana (1).pdf". Con la hora, cada
+ * descarga tiene nombre propio y quedan ordenadas cronológicamente en la
+ * carpeta.
+ *
+ * Se usa la hora LOCAL y no `toISOString()`, que da UTC: el servidor de
+ * producción corre en Europa, y un plan descargado a las 14:30 en México se
+ * habría guardado como "2230". El nombre lo lee una persona, no una máquina.
+ *
+ * Compartido entre PDF y Word para que ambos nombren igual.
  */
 export function nombreDeArchivo(paciente: string, extension: 'pdf' | 'docx', fecha = new Date()): string {
   const limpio = paciente
@@ -108,5 +116,13 @@ export function nombreDeArchivo(paciente: string, extension: 'pdf' | 'docx', fec
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
 
-  return `plan-${limpio || 'paciente'}-${fecha.toISOString().slice(0, 10)}.${extension}`
+  const dosDigitos = (n: number) => String(n).padStart(2, '0')
+  const marca = [
+    fecha.getFullYear(),
+    dosDigitos(fecha.getMonth() + 1),
+    dosDigitos(fecha.getDate()),
+  ].join('-')
+  const hora = `${dosDigitos(fecha.getHours())}${dosDigitos(fecha.getMinutes())}`
+
+  return `plan-${limpio || 'paciente'}-${marca}-${hora}.${extension}`
 }

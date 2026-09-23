@@ -137,17 +137,35 @@ describe('documento Word de la dieta', () => {
 })
 
 describe('nombreDeArchivo (compartido con el PDF)', () => {
-  it('lleva paciente y fecha, para no pisar planes anteriores', () => {
-    const nombre = nombreDeArchivo('Ana Martínez López', 'docx', new Date('2026-09-21T10:00:00Z'))
-    expect(nombre).toBe('plan-ana-martinez-lopez-2026-09-21.docx')
+  it('lleva paciente, fecha y hora', () => {
+    // Fecha construida en hora local: el nombre lo lee una persona, y con
+    // toISOString() un plan de las 14:30 en México saldría como "2230".
+    const nombre = nombreDeArchivo('Ana Martínez López', 'docx', new Date(2026, 8, 21, 14, 30))
+    expect(nombre).toBe('plan-ana-martinez-lopez-2026-09-21-1430.docx')
+  })
+
+  it('dos descargas el mismo día NO se pisan', () => {
+    // El caso que motivó añadir la hora: se corrige algo, se vuelve a
+    // descargar, y antes los dos archivos se llamaban igual.
+    const primera = nombreDeArchivo('Ana López', 'pdf', new Date(2026, 8, 21, 9, 15))
+    const segunda = nombreDeArchivo('Ana López', 'pdf', new Date(2026, 8, 21, 17, 42))
+    expect(primera).not.toBe(segunda)
+    expect(primera).toBe('plan-ana-lopez-2026-09-21-0915.pdf')
+    expect(segunda).toBe('plan-ana-lopez-2026-09-21-1742.pdf')
+  })
+
+  it('el PDF y el Word del mismo plan se distinguen por la extensión', () => {
+    const momento = new Date(2026, 8, 21, 14, 30)
+    expect(nombreDeArchivo('Ana López', 'pdf', momento)).toBe('plan-ana-lopez-2026-09-21-1430.pdf')
+    expect(nombreDeArchivo('Ana López', 'docx', momento)).toBe('plan-ana-lopez-2026-09-21-1430.docx')
   })
 
   it('aguanta nombres raros', () => {
-    expect(nombreDeArchivo('  ', 'docx', new Date('2026-01-01T10:00:00Z'))).toBe(
-      'plan-paciente-2026-01-01.docx'
+    expect(nombreDeArchivo('  ', 'docx', new Date(2026, 0, 1, 8, 5))).toBe(
+      'plan-paciente-2026-01-01-0805.docx'
     )
-    expect(nombreDeArchivo('José/María #2', 'docx', new Date('2026-01-01T10:00:00Z'))).toBe(
-      'plan-jose-maria-2-2026-01-01.docx'
+    expect(nombreDeArchivo('José/María #2', 'docx', new Date(2026, 0, 1, 8, 5))).toBe(
+      'plan-jose-maria-2-2026-01-01-0805.docx'
     )
   })
 })
