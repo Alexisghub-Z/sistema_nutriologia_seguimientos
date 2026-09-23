@@ -24,86 +24,25 @@ import {
 } from '@react-pdf/renderer'
 
 /** Un alimento tal como se entrega: qué es y cuánto. */
-export interface AlimentoImpreso {
-  descripcion: string
-}
-
 /**
- * Una opción de platillo en un recetario: el paciente elige UNA de ellas.
- * Lleva sus propios ingredientes y su preparación, que es lo que la convierte
- * en algo cocinable y no en una lista de compra.
+ * La forma de la hoja vive en `hoja-paciente.ts`, sin JSX: así el generador de
+ * Word y las pruebas pueden usarla sin arrastrar el motor de PDF. Se reexporta
+ * para no romper a quien ya importaba desde aquí.
  */
-export interface OpcionImpresa {
-  nombre: string
-  alimentos: AlimentoImpreso[]
-  preparacion?: string
-}
+export type {
+  AlimentoImpreso,
+  OpcionImpresa,
+  TiempoImpreso,
+  OpcionesDocumento,
+  DatosDocumento,
+} from './hoja-paciente'
+export { OPCIONES_POR_DEFECTO, nombreDeArchivo } from './hoja-paciente'
 
-export interface TiempoImpreso {
-  nombre: string
-  /** Dieta precisa: los alimentos de ese tiempo, sin alternativas. */
-  alimentos?: AlimentoImpreso[]
-  /** Recetario: varias opciones entre las que elegir. */
-  opciones?: OpcionImpresa[]
-  nota?: string
-  /** Aporte del tiempo; solo se pinta si se pidió mostrarlo. */
-  kcal?: number
-}
-
-/**
- * Qué se incluye en la hoja. Cada opción es una decisión clínica, no un
- * adorno: un paciente que empieza necesita saber qué comer y poco más,
- * mientras que uno que ya maneja el sistema aprovecha las cifras.
- */
-export interface OpcionesDocumento {
-  indicaciones: boolean
-  datosConsulta: boolean
-  metaCalorica: boolean
-  macros: boolean
-  kcalPorTiempo: boolean
-  restricciones: boolean
-  notasTiempo: boolean
-  preparacion: boolean
-  espacioNotas: boolean
-}
-
-export const OPCIONES_POR_DEFECTO: OpcionesDocumento = {
-  // Qué comer, cómo empezar, y de dónde sale el plan: el peso y la fecha de
-  // la consulta anclan la hoja a un momento concreto del tratamiento, que es
-  // lo que permite comparar cuando el paciente vuelve.
-  indicaciones: true,
-  datosConsulta: true,
-  metaCalorica: true,
-  macros: false,
-  kcalPorTiempo: false,
-  restricciones: false,
-  notasTiempo: true,
-  // La preparación viene con el platillo: sin ella el recetario es una lista
-  // de ingredientes que nadie sabe cocinar.
-  preparacion: true,
-  espacioNotas: false,
-}
-
-export interface DatosDocumento {
-  paciente: string
-  fecha: string
-  tiempos: TiempoImpreso[]
-  indicacionesInicio?: string
-  /** Meta diaria, si se decide mostrarla. */
-  kcalMeta?: number
-  macros?: { proteina: number; grasa: number; carbohidrato: number }
-  /** Alergias e intolerancias, para que queden por escrito. */
-  restricciones?: string[]
-  /** Medidas de la consulta en que se hizo el plan. */
-  consulta?: {
-    peso?: number
-    talla?: number
-    imc?: number
-    clasificacionImc?: string
-    pesoIdeal?: number
-    objetivo?: string
-  }
-}
+import {
+  OPCIONES_POR_DEFECTO,
+  type DatosDocumento,
+  type OpcionesDocumento,
+} from './hoja-paciente'
 
 // Helvetica va incrustada en el propio PDF: no depende de fuentes del sistema
 // ni de descargas, así que la hoja se ve igual en cualquier equipo e impresora.

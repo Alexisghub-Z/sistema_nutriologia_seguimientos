@@ -129,6 +129,30 @@ export default function VistaPreviaDieta({ datos, onCerrar }: Props) {
     })
   }, [onCerrar])
   const [opciones, setOpciones] = useState<OpcionesDocumento>(OPCIONES_POR_DEFECTO)
+  // Generar el .docx tarda un momento; sin este estado el botón parecería no
+  // responder y se pulsaría dos veces.
+  const [generandoWord, setGenerandoWord] = useState(false)
+  const [errorWord, setErrorWord] = useState('')
+
+  /**
+   * Descarga el plan en Word, con las mismas opciones marcadas a la izquierda.
+   *
+   * El módulo se carga solo al pulsar (`import()` dinámico): la librería de
+   * Word pesa, y la mayoría de las veces el nutriólogo se lleva el PDF y no
+   * llega a usarla. Cargarla siempre penalizaría a todos por una minoría.
+   */
+  const descargarComoWord = useCallback(async () => {
+    setGenerandoWord(true)
+    setErrorWord('')
+    try {
+      const { descargarWord } = await import('@/lib/dietas/documento-dieta-word')
+      await descargarWord(datos, opciones)
+    } catch {
+      setErrorWord('No se pudo generar el Word. Inténtalo de nuevo.')
+    } finally {
+      setGenerandoWord(false)
+    }
+  }, [datos, opciones])
 
   // Lo que se elige una vez suele repetirse: cada nutriólogo tiene su forma de
   // entregar la hoja. Se recuerda entre pacientes y entre sesiones, y si el
@@ -222,10 +246,31 @@ export default function VistaPreviaDieta({ datos, onCerrar }: Props) {
               {({ loading }) => (loading ? 'Preparando…' : 'Descargar PDF')}
             </PDFDownloadLink>
 
+            {/* Word para cuando hay que retocar algo antes de entregarlo: el
+                PDF es el formato de entrega, pero no se puede editar. Usa las
+                MISMAS opciones marcadas a la izquierda. */}
+            <button
+              type="button"
+              className={styles.descargarWord}
+              onClick={descargarComoWord}
+              disabled={generandoWord}
+              title="Descargar en Word para poder editarlo"
+            >
+              {generandoWord ? 'Preparando…' : 'Descargar Word'}
+            </button>
+
             <button type="button" className={styles.cerrar} onClick={cerrar} aria-label="Cerrar">
               ✕
             </button>
           </div>
+
+          {/* Si falla la generación hay que decirlo: un botón que no hace nada
+              deja al nutriólogo esperando un archivo que nunca llega. */}
+          {errorWord && (
+            <p className={styles.errorDescarga} role="alert">
+              {errorWord}
+            </p>
+          )}
         </header>
 
         <div className={styles.cuerpo}>
